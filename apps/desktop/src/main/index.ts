@@ -2,6 +2,7 @@
 // (docs/spec/build-order.md). For now it only opens a secure window.
 import { app, BrowserWindow } from 'electron';
 import { join } from 'node:path';
+import { WINDOW_BACKGROUND } from './window-background';
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -10,7 +11,7 @@ function createWindow(): void {
     minWidth: 960,
     minHeight: 640,
     title: 'Roastpilot',
-    backgroundColor: '#0B0C0E', // matches the dark `bg` token so there is no white flash
+    backgroundColor: WINDOW_BACKGROUND,
     webPreferences: {
       preload: join(import.meta.dirname, '../preload/index.cjs'),
       contextIsolation: true,
