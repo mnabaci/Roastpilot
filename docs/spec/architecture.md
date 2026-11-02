@@ -10,7 +10,7 @@ flowchart TB
   end
   Renderer <-->|typed IPC via preload| Main
   subgraph Main[Main process]
-    C[Controller: curve, PID, fan] --> D[Device layer: driver + transport]
+    C[Controller: phases, trim, fan] --> D[Device layer: driver + transport]
     S[Safety monitor] --> D
     C --> DB[(Storage: SQLite)]
   end
@@ -22,7 +22,7 @@ flowchart TB
   - `Transport` (`open`, `write`, `onLine`, `close`) only moves bytes: `SerialTransport` now, Wi-Fi or Bluetooth later.
   - `Tc4SkywalkerDriver` is the Adapter for the current Arduino mod; `SimulatedDriver` fakes a roaster for development and tests.
   - `DriverFactory` builds the driver chosen for the active roaster.
-- **Controller:** runs the roast state machine (preheat → charge → roast → drop → cool), the PID and the fan schedule.
+- **Controller:** runs the roast state machine (preheat → charge → phases → drop → cool), the planned heat and fan steps and the PID trim.
 - **Safety monitor:** watches every reading and can force a safe stop, whatever the controller is doing.
 - **Storage:** writes samples and events to SQLite during the roast, so a crash loses at most a second.
 - **Renderer:** React built from `@roastpilot/ui`, with uPlot for the live chart. It talks only through the typed `window.roastpilot` API: `startRoast`, `markFirstCrack`, `setOutput`, `onReading`, and so on.

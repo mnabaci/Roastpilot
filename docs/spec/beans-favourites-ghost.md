@@ -33,9 +33,10 @@ Before preheat the app picks in this order and shows why, e.g. "Your favourite r
 
 ## Favourite → profile
 
-- The actual curve is simplified to about 8 editable points.
-- Fan steps = the fan changes that actually ran, merged to at most 5 steps.
-- Drop temp, dry-end temp and development time come from the run.
+- Phases come from the heat and fan changes that actually ran (merged to at most 6), each triggered at the BT where it happened.
+- Reference points come from the run's BT curve, simplified to about 8 points.
+- Charge temp, dry-end temp, development time and BT cap come from the run.
+- The new profile belongs to the same roaster as the run.
 - The result is a new custom profile; the roast itself is never changed.
 
 ## Ghost layer
