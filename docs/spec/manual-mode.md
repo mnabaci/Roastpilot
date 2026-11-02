@@ -6,3 +6,35 @@
 - At most one new suggestion every 15 s, and only when it differs by 10% or more.
 - Milestone nudges: first crack expected soon (from the ghost), drop temp approaching.
 - All safety rules apply in Manual mode too.
+
+## Manual roast flow
+
+Until Auto mode exists (milestone 4), a roast is driven by hand through these states. The flow
+lives in `core` (`ManualRoast`) and runs in main, so a closed window changes nothing.
+
+| State       | Entered by                          | What the app does                                             | Next action (Guided) |
+| ----------- | ----------------------------------- | ------------------------------------------------------------- | -------------------- |
+| Ready       | Connecting                          | Nothing runs                                                  | Preheat              |
+| Preheat     | Preheat                             | Drum on                                                       | Start (beans in)     |
+| Roasting    | Start                               | Clock starts at 0; max roast time armed                       | First crack          |
+| Development | First crack                         | Records time and BT; development timer starts                 | Drop                 |
+| Cooling     | Drop (from Roasting or Development) | Heater 0, fan 100, cooling 100; "Dump beans"; 4 min countdown | –                    |
+| Done        | Cooling time ends                   | Heater 0, fan 0, cooling 0, drum off                          | Preheat (next batch) |
+
+- **Drum:** on at Preheat, off when cooling ends. A drum switch is always on screen to override it.
+- **Numbers:** BT, RoR (°C/min, slope of the last 30 s of BT), time since charge, development time and its % of the roast.
+- **Not saved yet:** readings and events stay in memory for the current roast; saving arrives with Logging (milestone 3). Main keeps them, so reloading the window keeps the chart.
+- An emergency stop or safety trip doesn't change the state; you decide what to do next.
+
+## Guided and Full control
+
+A setting, not a mode: it only changes how much of the screen is live.
+
+| Level            | Heater and fan           | Cooling switch | Drum switch |
+| ---------------- | ------------------------ | -------------- | ----------- |
+| Guided (default) | From Preheat until Drop  | Hidden         | Shown       |
+| Full control     | Any time while connected | Shown          | Shown       |
+
+- Guided keeps one obvious next action: Connect → Preheat → Start → First crack → Drop.
+- Full control still has the flow buttons for timing; it just doesn't wait for them.
+- Heater above 0 with the drum off shows one line: "Drum is off". It doesn't block.
