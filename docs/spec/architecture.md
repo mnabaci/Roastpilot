@@ -19,7 +19,7 @@ flowchart TB
 
 - **Device layer:** two interfaces, so the hardware can change without touching the rest.
   - `RoasterDriver` is all the controller ever sees: `channels`, `connect`, `read`, `setOutput(channel, value)`, `safeStop` ([ADR 0009](../adr/0009-generic-driver-outputs.md)).
-  - `connect`, `read` and `setOutput` return typed results (`disconnected`, `no-reply`, `bad-reply`, `version-mismatch`, `unknown-channel`); only `safeStop` never fails, it does its best and resolves.
+  - `connect`, `read` and `setOutput` return typed results (`disconnected`, `no-reply`, `bad-reply`, `version-mismatch`, `unknown-channel`, `safety-locked`); only `safeStop` never fails, it does its best and resolves.
   - Drivers clamp and round every value to the channel's range and step before sending.
   - Time comes from an injected `Clock` (`now`, `delay`), so drivers and the simulator run on fake time in tests.
   - `Transport` (`open`, `write`, `onLine`, `onClose`, `close`) only moves lines of text: `SerialTransport` now, Wi-Fi or Bluetooth later.

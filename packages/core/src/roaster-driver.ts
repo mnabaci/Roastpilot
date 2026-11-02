@@ -7,7 +7,9 @@ export type DriverError =
   /** `actual` is null when the sketch is too old to answer VERSION. */
   | { kind: 'version-mismatch'; expected: number; actual: number | null }
   | { kind: 'bad-reply'; line: string }
-  | { kind: 'unknown-channel'; channel: string };
+  | { kind: 'unknown-channel'; channel: string }
+  /** Refused by the safety lock after a safe stop (docs/spec/safety.md). */
+  | { kind: 'safety-locked'; channel: string };
 
 /**
  * Everything the controller knows about a roaster (ADR 0009).
