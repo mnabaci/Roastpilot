@@ -2,7 +2,7 @@
 
 Roasts coffee on autopilot. Coaches you when you take the controls.
 
-A macOS desktop app for small drum roasters, starting with a modded Skywalker
+A desktop app for macOS and Windows, for small drum roasters, starting with a modded Skywalker
 ([SkywalkerRoaster](https://github.com/jmoore52/SkywalkerRoaster)). Pick a bean and a profile,
 press Start, and Roastpilot drives heater and fan along the curve, marks dry end, waits for your
 first-crack tap, then drops and cools on its own.

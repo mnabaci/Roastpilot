@@ -65,5 +65,6 @@ Enforced by ESLint (`eslint-plugin-boundaries`) and CI. Only `apps/desktop` may 
 
 - Feature branches and pull requests; `main` is protected.
 - Conventional commits (`feat:`, `fix:`, `chore:`, `docs:`).
-- GitHub Actions on every PR: install, format check, lint, typecheck, test, build.
+- GitHub Actions on every PR, on Ubuntu and Windows: install, format check, lint, typecheck, test, build.
+- commitlint checks commit messages; Dependabot opens grouped weekly update PRs.
 - Design tokens flow one way: design system → `packages/ui/tokens.json` (`sync-tokens`) → generated CSS.

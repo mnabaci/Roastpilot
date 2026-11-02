@@ -1,6 +1,6 @@
 # Roastpilot
 
-Desktop app (Electron + React + TypeScript) that roasts coffee on autopilot and coaches you in
+Desktop app for macOS and Windows (Electron + React + TypeScript) that roasts coffee on autopilot and coaches you in
 manual mode. Spec: `docs/spec/`. Decisions: `docs/adr/`. Design system tokens: `packages/ui/tokens.json`.
 
 ## Before writing any code
@@ -33,6 +33,8 @@ ESLint enforces these. Each package has its own `CLAUDE.md` with local rules.
 pnpm install        # install
 pnpm dev            # run the app (rebuilds native modules for Electron first)
 pnpm check          # format check, lint, typecheck, test: run before every commit
+pnpm test:watch     # tests in watch mode
+pnpm test:coverage  # tests with coverage
 pnpm --filter @roastpilot/ui tokens   # regenerate CSS from tokens.json
 ```
 
@@ -45,4 +47,8 @@ pnpm --filter @roastpilot/ui tokens   # regenerate CSS from tokens.json
 
 ## Workflow
 
-Branch from `main` (`feat/…`, `fix/…`), conventional commits, open a PR. Never push to `main`.
+Branch from `main` (`feat/…`, `fix/…`), conventional commits (checked by commitlint), open a PR. Never push to `main`.
+
+## Cross-platform
+
+Everything must work on macOS and Windows: paths via `node:path`, no shell-only scripts, serial ports picked from a list.

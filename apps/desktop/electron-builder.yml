@@ -5,8 +5,14 @@ directories:
 files:
   - out/**
   - package.json
+npmRebuild: true
 mac:
   category: public.app-category.utilities
   target:
     - dmg
-npmRebuild: true
+win:
+  target:
+    - nsis
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true

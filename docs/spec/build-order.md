@@ -9,7 +9,7 @@ Eight milestones. Each one is usable on its own before the next starts.
 5. **Roasters:** roaster records, capability-driven UI, PID tuning per roaster.
 6. **Manual coach:** background controller, suggestion card, Apply.
 7. **Beans and favourites:** bean library, stock and yield, batch calculator, stars, custom profiles, profile suggestion, ghost layer.
-8. **Polish + packaging:** profile editor, CSV export, `electron-builder` DMG for macOS.
+8. **Polish + packaging:** profile editor, CSV export, macOS DMG and Windows installer.
 
 ## Open questions
 

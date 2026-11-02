@@ -19,7 +19,14 @@ function createWindow(): void {
     },
   });
 
-  const devUrl = process.env['ELECTRON_RENDERER_URL'];
+  const devUrl = process.env.ELECTRON_RENDERER_URL;
+
+  // Never open new windows or navigate away from the app's own pages.
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  win.webContents.on('will-navigate', (event, url) => {
+    if (!devUrl || !url.startsWith(devUrl)) event.preventDefault();
+  });
+
   if (devUrl) {
     void win.loadURL(devUrl);
   } else {

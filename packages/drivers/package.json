@@ -14,5 +14,8 @@
     "@roastpilot/core": "workspace:*",
     "@roastpilot/shared": "workspace:*",
     "serialport": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6"
   }
 }

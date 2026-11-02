@@ -1,6 +1,6 @@
 # Overview
 
-A simple macOS desktop app (Electron) that roasts automatically on a modded Skywalker roaster:
+A simple desktop app for macOS and Windows (Electron) that roasts automatically on a modded Skywalker roaster:
 pick Light, Medium or Dark, press Start, and the app drives heater and fan to follow that
 profile's curve, then drops and cools on its own. It replaces Artisan for day-to-day roasting.
 
@@ -19,7 +19,7 @@ profile's curve, then drops and cools on its own. It replaces Artisan for day-to
 | End of roast          | Auto drop: heater off, cooling on, prompt to dump beans                         |
 | Safety                | Max temp cutoff, lost-connection stop, max roast time, stalled-temp alarm       |
 | Storage               | Local SQLite file                                                               |
-| Platform              | macOS laptop first                                                              |
+| Platform              | macOS and Windows: macOS DMG and Windows installer                              |
 
 Out of scope for v1: microphone crack detection, cloud sync and the phone app, running several
-roasters at once, Windows and Linux builds.
+roasters at once, Linux builds.
