@@ -10,7 +10,7 @@ The real Skywalker light profile is run as heat and fan steps at milestones, sta
 ## Decision
 
 - A profile is an ordered list of phases: heat mode (`fixed` or `trim`), heat %, fan %, RoR band, and a next-phase trigger (BT, time or first-crack tap) with a backup time.
-- In `trim` phases a PID corrects heat by at most ±10% around the plan to keep RoR in the band; `fixed` phases send exactly the planned heat.
+- In `trim` phases a PID corrects heat by at most ±10% around the plan to keep RoR in the band; `fixed` phases send exactly the planned heat; `follow` phases let the PID track the curve points freely, so curve-following profiles use the same format.
 - Every preheat runs the between-batch protocol (cool if hot, climb, hold at charge temp).
 - Drop at development time after first crack, capped by a maximum BT.
 - Profiles belong to a roaster; each roaster model ships its own built-in set.
