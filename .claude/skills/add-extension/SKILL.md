@@ -20,7 +20,7 @@ Extension points are listed in `docs/spec/extensibility.md`. Each is an interfac
 
 ## Drivers specifically
 
-- Implement `RoasterDriver`: `connect`, `read`, `setHeater`, `setFan`, `setCooling`, `safeStop`, `channels`.
+- Implement `RoasterDriver`: `channels`, `connect`, `read`, `setOutput(channel, value)`, `safeStop`.
 - Declare channels (id, unit, range, step, read/control) so the UI adapts; never hard-code UI for a roaster.
 - Parse and validate every incoming line; reject garbage without throwing in the read loop.
 - `safeStop()` must work with a half-broken connection; test it.
