@@ -7,6 +7,33 @@
   --radius-lg: 14px;
   --radius-xl: 16px;
   --radius-full: 9999px;
+  --text-readout-xl: 56px;
+  --text-readout-xl--line-height: 56px;
+  --text-readout-xl--font-weight: 700;
+  --text-readout-xl--letter-spacing: -0.02em;
+  --text-readout-lg: 26px;
+  --text-readout-lg--line-height: 32px;
+  --text-readout-lg--font-weight: 700;
+  --text-title: 28px;
+  --text-title--line-height: 34px;
+  --text-title--font-weight: 700;
+  --text-title--letter-spacing: -0.01em;
+  --text-heading: 17px;
+  --text-heading--line-height: 24px;
+  --text-heading--font-weight: 600;
+  --text-body: 15px;
+  --text-body--line-height: 22px;
+  --text-body--font-weight: 400;
+  --text-label: 13px;
+  --text-label--line-height: 18px;
+  --text-label--font-weight: 500;
+  --text-badge: 11px;
+  --text-badge--line-height: 14px;
+  --text-badge--font-weight: 700;
+  --text-badge--letter-spacing: 0.06em;
+  --spacing-control-sm: 44px;
+  --spacing-control-md: 48px;
+  --spacing-control-lg: 56px;
 }
 
 @theme inline {
@@ -30,6 +57,7 @@
   --color-good: var(--good);
   --color-warning: var(--warning);
   --color-critical: var(--critical);
+  --color-on-critical: var(--on-critical);
   --color-critical-text: var(--critical-text);
   --color-critical-surface: var(--critical-surface);
   --color-focus: var(--focus);

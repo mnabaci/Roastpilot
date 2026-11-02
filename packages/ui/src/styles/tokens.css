@@ -22,6 +22,7 @@
   --good: #3ddc97;
   --warning: #ffc23d;
   --critical: #d93036;
+  --on-critical: #ffffff;
   --critical-text: #ff7a7f;
   --critical-surface: #2a1214;
   --focus: var(--air);
@@ -48,6 +49,7 @@
   --good: #0f7a4d;
   --warning: #8a5a00;
   --critical: #d93036;
+  --on-critical: #ffffff;
   --critical-text: #c42b2b;
   --critical-surface: #fdecec;
   --focus: var(--air);
