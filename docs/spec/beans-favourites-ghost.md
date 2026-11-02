@@ -31,13 +31,17 @@ Before preheat the app picks in this order and shows why, e.g. "Your favourite r
 3. Then: same process only.
 4. Otherwise: Medium.
 
-## Favourite → profile
+## Favourite → step profile
 
 - Phases come from the heat and fan changes that actually ran (merged to at most 6), each triggered at the BT where it happened.
 - Reference points come from the run's BT curve, simplified to about 8 points.
 - Charge temp, dry-end temp, development time and BT cap come from the run.
 - The new profile belongs to the same roaster as the run.
 - The result is a new custom profile; the roast itself is never changed.
+
+## Favourite → curve profile
+
+See [roast-control.md](roast-control.md#creating-a-curve-profile): the run's BT curve becomes the target, simplified to about 10 points.
 
 ## Ghost layer
 

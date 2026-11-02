@@ -20,7 +20,9 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 
 - List of profiles; built-ins can be duplicated, not overwritten.
 - Edit phases in a table (heat mode, heat %, fan %, RoR band, next-phase trigger), with a preview chart.
-- "Make profile from this roast" turns a past roast into phases.
+- Curve editor: drag points on the chart or edit them in a table; milestone builder to draw a curve from a few milestones.
+- New profile from a roast: "Make step profile" (phases from its heat/fan changes) or "Make curve profile" (its BT curve).
+- Import an Artisan `.alog` as a curve profile.
 - "Copy to another roaster" makes a copy marked "needs calibration".
 
 ## History screen
