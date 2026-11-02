@@ -20,4 +20,15 @@ describe('AlertBanner', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
     expect(onDismiss).toHaveBeenCalledOnce();
   });
+
+  it('can label its button for the case, e.g. Acknowledge', async () => {
+    const onDismiss = vi.fn();
+    render(
+      <AlertBanner kind="critical" onDismiss={onDismiss} dismissLabel="Acknowledge">
+        Heater locked
+      </AlertBanner>,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Acknowledge' }));
+    expect(onDismiss).toHaveBeenCalledOnce();
+  });
 });
