@@ -1,2 +1,3 @@
-// @roastpilot/core: implementation starts at its milestone (docs/spec/build-order.md).
-export {};
+export { ManualClock, type Clock } from './clock';
+export { quantize } from './quantize';
+export type { DriverError, RoasterDriver } from './roaster-driver';
