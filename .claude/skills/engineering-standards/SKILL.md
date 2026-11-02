@@ -24,6 +24,7 @@ Read this before touching code. It is the checklist `code-review` holds you to.
 
 ## 3. Types and errors
 
+- TypeScript for everything, including configs and scripts; no new `.js` files.
 - `strict` TypeScript; no `any`, no non-null `!` without a comment saying why it is safe.
 - Validate data at boundaries (IPC with zod, serial lines in the driver, DB rows in repositories).
 - Errors: return typed results for expected failures; throw only for programmer errors.

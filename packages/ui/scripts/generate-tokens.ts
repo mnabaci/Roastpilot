@@ -4,20 +4,40 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const root = new URL('../', import.meta.url);
-const tokens = JSON.parse(readFileSync(new URL('tokens.json', root), 'utf8'));
+interface ColorToken {
+  name: string;
+  value: string | Record<string, string>;
+}
+interface ScaleToken {
+  name: string;
+  value: string;
+}
+interface Tokens {
+  name: string;
+  color: { themes: { id: string }[]; tokens: ColorToken[] };
+  type: { families: Record<string, string> };
+  spacing?: { tokens: ScaleToken[] };
+  radius: { tokens: ScaleToken[] };
+  size?: { tokens: ScaleToken[] };
+}
+
+const tokens = JSON.parse(readFileSync(new URL('tokens.json', root), 'utf8')) as Tokens;
 
 const themes = tokens.color.themes.map((t) => t.id);
-const value = (v) => (typeof v === 'string' ? v.replace(/^\{(.+)\}$/, 'var(--$1)') : v);
-const colorsFor = (theme) =>
+const [firstTheme] = themes;
+if (!firstTheme) throw new Error('tokens.json defines no colour themes');
+const value = (v: string): string =>
+  typeof v === 'string' ? v.replace(/^\{(.+)\}$/, 'var(--$1)') : v;
+const colorsFor = (theme: string): string =>
   tokens.color.tokens
     .map((t) => {
-      const raw = typeof t.value === 'string' ? t.value : (t.value[theme] ?? t.value[themes[0]]);
+      const raw =
+        typeof t.value === 'string' ? t.value : (t.value[theme] ?? t.value[firstTheme] ?? '');
       return `  --${t.name}: ${value(raw)};`;
     })
     .join('\n');
 
-const scale = ['spacing', 'size']
-  .flatMap((family) => tokens[family]?.tokens ?? [])
+const scale = [...(tokens.spacing?.tokens ?? []), ...(tokens.size?.tokens ?? [])]
   .map((t) => `  --${t.name}: ${t.value};`)
   .join('\n');
 
@@ -31,7 +51,7 @@ const colorUtilities = tokens.color.tokens
 
 const css = [
   `/* ${tokens.name}: generated from tokens.json. Do not edit. */`,
-  `:root,\n[data-theme='${themes[0]}'] {\n${colorsFor(themes[0])}\n}`,
+  `:root,\n[data-theme='${firstTheme}'] {\n${colorsFor(firstTheme)}\n}`,
   ...themes.slice(1).map((id) => `[data-theme='${id}'] {\n${colorsFor(id)}\n}`),
   `:root {\n${scale}\n}`,
 ].join('\n\n');

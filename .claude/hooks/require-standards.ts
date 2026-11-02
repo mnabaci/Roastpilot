@@ -6,11 +6,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 let input = '';
-process.stdin.on('data', (chunk) => (input += chunk));
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (chunk: string) => (input += chunk));
 process.stdin.on('end', () => {
   let session = 'unknown';
   try {
-    session = JSON.parse(input).session_id ?? 'unknown';
+    const parsed = JSON.parse(input) as { session_id?: string };
+    session = parsed.session_id ?? 'unknown';
   } catch {
     // Missing or invalid input: fall back to one marker for all sessions.
   }

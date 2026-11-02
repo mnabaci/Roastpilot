@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM"],
+    "types": ["node"],
+    "allowImportingTsExtensions": true
+  },
+  "include": [
+    "*.config.ts",
+    "vitest.setup.dom.ts",
+    ".claude/hooks/**/*.ts",
+    "packages/ui/scripts/**/*.ts",
+    "types/**/*.d.ts"
+  ]
+}

@@ -1,4 +1,4 @@
-// @ts-check
+import { defineConfig } from 'eslint/config';
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import boundaries from 'eslint-plugin-boundaries';
@@ -19,7 +19,7 @@ const elements = [
 ];
 
 /** Who may import whom. Keep in sync with CLAUDE.md and docs/spec/repository.md. */
-const allowedImports = {
+const allowedImports: Record<string, string[]> = {
   shared: [],
   core: ['shared'],
   drivers: ['core', 'shared'],
@@ -30,7 +30,7 @@ const allowedImports = {
 
 const reactFiles = ['packages/ui/src/**/*.{ts,tsx}', 'apps/desktop/src/renderer/**/*.{ts,tsx}'];
 
-export default tseslint.config(
+export default defineConfig(
   {
     ignores: [
       '**/dist/**',
@@ -51,7 +51,7 @@ export default tseslint.config(
     extends: [...tseslint.configs.strictTypeChecked, ...tseslint.configs.stylisticTypeChecked],
     languageOptions: {
       parserOptions: {
-        projectService: { allowDefaultProject: ['*.config.ts', 'vitest.setup.dom.ts'] },
+        projectService: true,
         tsconfigRootDir: import.meta.dirname,
       },
     },
