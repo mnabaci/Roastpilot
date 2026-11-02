@@ -13,3 +13,5 @@ May import: `shared`.
 - Follow the brand book: one primary action per state, numbers before sentences, no walls of text.
 - React function components with typed props (`interface ButtonProps extends ComponentProps<'button'>`); pass `className` through `cn()`.
 - Tests with Testing Library in jsdom: roles, labels and events, not class names.
+- Every component has a `<Name>.stories.tsx` covering its variants and states; check it in both themes in Storybook (`pnpm storybook`). Accessibility checks run in the a11y panel.
+- Type styles (`text-body`, `text-readout-xl`, ...) and control sizes (`h-control-lg`) are generated from `tokens.json`; always merge classes with `cn()`, which knows about them.
