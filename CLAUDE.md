@@ -36,6 +36,7 @@ pnpm dev            # run the app (rebuilds native modules for Electron first)
 pnpm check          # format check, lint, typecheck, test: run before every commit
 pnpm test:watch     # tests in watch mode
 pnpm test:coverage  # tests with coverage
+pnpm storybook      # component workshop at http://localhost:6006 (dark/light switch in the toolbar)
 pnpm --filter @roastpilot/ui tokens   # regenerate CSS from tokens.json
 ```
 

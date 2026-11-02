@@ -12,4 +12,4 @@ description: Review a Roastpilot screen or component against the design system a
 5. **Colour meaning:** ember = heat, cyan = air, grey = reference, state colours only for real states, red only for safety.
 6. **Accessibility:** 4.5:1 text contrast in dark and light, focus ring visible, 44px targets, labels on inputs, `aria-label` on icon-only buttons.
 7. **Copy:** sentence case, value then unit (`212 °C`, `1:58`), verbs on buttons.
-8. Check both themes. List issues with the exact fix.
+8. Check both themes in Storybook (`pnpm storybook`, theme switch in the toolbar) and the a11y panel. List issues with the exact fix.

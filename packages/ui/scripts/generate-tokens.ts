@@ -12,10 +12,17 @@ interface ScaleToken {
   name: string;
   value: string;
 }
+interface TypeStyle {
+  name: string;
+  fontSize: string;
+  lineHeight?: string | number;
+  fontWeight?: number | string;
+  letterSpacing?: string;
+}
 interface Tokens {
   name: string;
   color: { themes: { id: string }[]; tokens: ColorToken[] };
-  type: { families: Record<string, string> };
+  type: { families: Record<string, string>; groups: { styles: TypeStyle[] }[] };
   spacing?: { tokens: ScaleToken[] };
   radius: { tokens: ScaleToken[] };
   size?: { tokens: ScaleToken[] };
@@ -44,6 +51,32 @@ const scale = [...(tokens.spacing?.tokens ?? []), ...(tokens.size?.tokens ?? [])
 const fonts = Object.entries(tokens.type.families)
   .map(([key, stack]) => `  --font-${key}: ${stack};`)
   .join('\n');
+// Type styles become text utilities: text-readout-xl sets size, line height, weight and tracking.
+const typeStyles = tokens.type.groups
+  .flatMap((group) => group.styles)
+  .map((style) =>
+    [
+      `  --text-${style.name}: ${style.fontSize};`,
+      style.lineHeight === undefined
+        ? ''
+        : `  --text-${style.name}--line-height: ${String(style.lineHeight)};`,
+      style.fontWeight === undefined
+        ? ''
+        : `  --text-${style.name}--font-weight: ${String(style.fontWeight)};`,
+      style.letterSpacing === undefined
+        ? ''
+        : `  --text-${style.name}--letter-spacing: ${style.letterSpacing};`,
+    ]
+      .filter(Boolean)
+      .join('\n'),
+  )
+  .join('\n');
+
+// Control sizes become spacing utilities: h-control-lg, min-h-control-sm, ...
+const controlSizes = (tokens.size?.tokens ?? [])
+  .map((t) => `  --spacing-${t.name}: ${t.value};`)
+  .join('\n');
+
 const radii = tokens.radius.tokens.map((t) => `  --${t.name}: ${t.value};`).join('\n');
 const colorUtilities = tokens.color.tokens
   .map((t) => `  --color-${t.name}: var(--${t.name});`)
@@ -60,7 +93,7 @@ const css = [
 // utilities that follow the active theme (bg-surface, text-ink-muted, stroke-heat, ...).
 const theme = [
   `/* ${tokens.name}: generated from tokens.json. Do not edit. */`,
-  `@theme {\n${fonts}\n${radii}\n}`,
+  `@theme {\n${fonts}\n${radii}\n${typeStyles}\n${controlSizes}\n}`,
   `@theme inline {\n${colorUtilities}\n}`,
 ].join('\n\n');
 

@@ -17,6 +17,7 @@ Requires Node 24 LTS (22.22+ works) and pnpm 10 (`corepack enable`).
 pnpm install
 pnpm dev      # start the app
 pnpm check    # format check, lint, typecheck, test
+pnpm storybook  # browse the UI components
 ```
 
 ## Repository

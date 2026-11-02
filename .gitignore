@@ -12,3 +12,4 @@ logs/
 .vscode/*
 !.vscode/extensions.json
 .claude/settings.local.json
+storybook-static/
