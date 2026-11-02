@@ -1,6 +1,7 @@
 import { ManualClock } from '@roastpilot/core';
 import { err } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
+import { COMMAND_GAP_MS } from './command-queue';
 import { FakeTransport } from './fake-transport';
 import { Tc4SkywalkerDriver } from './tc4-skywalker-driver';
 
@@ -141,7 +142,7 @@ describe('Tc4SkywalkerDriver', () => {
       await run(driver.safeStop());
       expect(transport.sentLines()).toEqual(['OT1;0', 'OT2;100', 'COOL;100']);
       const gaps = transport.sent.slice(1).map((s, i) => s.atMs - (transport.sent[i]?.atMs ?? 0));
-      expect(gaps.every((gap) => gap >= 150)).toBe(true);
+      expect(gaps.every((gap) => gap >= COMMAND_GAP_MS)).toBe(true);
     });
 
     it('falls back to ESTOP when a safe-stop command fails', async () => {

@@ -1,8 +1,10 @@
 # Hardware and serial protocol
 
-The app talks only to the controller board over USB serial. The board runs the SkyCommand sketch from
-[SkywalkerRoaster](https://github.com/jmoore52/SkywalkerRoaster) (`SkyCommand/SkyCommand.ino`,
-GPL-3.0), which handles the roaster's pulse-timing protocol. Flash the latest upstream sketch; it reports protocol version `1`.
+The app talks only to the controller board over USB serial. The board runs the SkyCommand sketch,
+adapted from [SkywalkerRoaster](https://github.com/jmoore52/SkywalkerRoaster) (GPL-3.0), which
+handles the roaster's pulse-timing protocol. Flash the copy in
+[`firmware/skywalker-tc4/`](../../firmware/skywalker-tc4/README.md); it reports protocol version `1`.
+It also still works with Artisan.
 
 - **Board:** ESP32-WROOM-32 on the roaster's controller line, connected through its USB-to-serial chip. On macOS it shows up as `/dev/cu.usbserial-*`, on Windows as `COMx`; the app lists ports and you pick one.
 - **Serial:** 115200 baud, text commands, one per line.
@@ -32,23 +34,24 @@ Comma-separated: `0.00,<temp>,<temp>,<heater>,<fan>,0`, for example `0.00,180.25
 
 ## Sketch behaviour the driver must respect
 
-- **One command at a time.** The sketch reads whatever arrived within 100 ms as one message, so two commands sent back to back can merge and one is lost. The driver queues commands and sends the next only after a short gap (≥ 150 ms) or after the previous reply.
+- **One command per line.** The sketch reads serial without blocking, several times per loop, and runs every line ending in `\n` or `\r` as its own command, so commands sent back to back are all kept. A line with no line ending runs after 100 ms of silence (for senders that don't add one). The driver still sends one at a time, 20 ms apart, so each reply matches its command.
+- **Why this changed:** upstream reads with `Serial.readString()` once per roaster cycle (~330 ms, up to ~750 ms when the roaster is silent) and treats everything buffered as one message. Commands closer than a cycle merged and were lost, so `UNITS;C` then `VERSION` 150 ms apart failed to connect.
 - **Clean integers only.** Values above 100 are silently ignored and decimals are truncated. The driver clamps and rounds to the roaster's step (5%) before sending.
 - **Celsius on connect.** The driver sends `UNITS;C` right after opening the port, then verifies with a `READ`.
 - **Version check on connect.** The driver sends `VERSION` and refuses to roast if the reply is not the protocol version it speaks, with a banner saying which sketch to flash. No reply to `VERSION` means an older sketch: also a mismatch.
-- **Replies:** only `READ` and `VERSION` reply. The driver waits up to 500 ms; no reply is a `no-reply` error, and a line that doesn't parse is a `bad-reply`. Neither throws: the safety monitor's lost-connection rule decides what to do.
+- **Replies:** only `READ` and `VERSION` reply. The driver waits up to 1.5 s (measured: under 150 ms with the roaster on); no reply is a `no-reply` error, and a line that doesn't parse is a `bad-reply`. Neither throws: the safety monitor's lost-connection rule decides what to do.
 - **Port closed:** if the port closes (cable pulled), every call returns `disconnected` until `connect()` succeeds again.
 - **Watchdog:** after 10 s without a heater, fan, drum, cooling or filter command (`READ` included), the sketch switches everything off. The app polls `READ` every 1 s, which keeps it alive. The roaster itself stops after about 1 s without a control message from the board.
 - **Stale readings:** if the board fails to read the roaster, `READ` keeps returning the last good temperature with no error. The stalled-temperature alarm ([safety.md](safety.md)) is the app's only signal for this.
 - **Sketch over-temperature:** the sketch runs `ESTOP` above 300 °C. The app's own limit (240 °C per roaster) trips long before.
-- **Safe stop from the app:** `OT1;0`, then `OT2;100`, then `COOL;100`, spaced like any other commands; `ESTOP` as a fallback.
+- **Safe stop from the app:** `OT1;0`, then `OT2;100`, then `COOL;100`, queued like any other commands; `ESTOP` as a fallback.
 
 ## Simulator
 
 `SimulatedDriver` is a twin of this setup, so whatever runs on it runs on the real roaster.
 
 - **Same channels:** `bt` (°C, read), `heater`, `fan`, `cooling`, `filter` (0–100, step 5) and `drum` (on/off), with the same safe-stop sequence.
-- **Same sketch behaviour:** 10 s watchdog switches everything off; `ESTOP` above 300 °C; reports protocol version `1`.
+- **Same sketch behaviour:** keeps every command, 10 s watchdog switches everything off; `ESTOP` above 300 °C; reports protocol version `1`.
 - **Thermal model:** one temperature, updated in 100 ms steps from the injected clock. Heater adds heat; loss to the room grows with the gap to ambient, the fan and the cooling fan.
 
 | Constant         | Default   | Effect                                       |

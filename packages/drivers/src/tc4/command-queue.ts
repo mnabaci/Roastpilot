@@ -1,9 +1,10 @@
 import type { Clock, DriverError, Transport } from '@roastpilot/core';
 import { err, ok, type Result } from '@roastpilot/shared';
 
-/** The sketch merges commands that arrive within 100 ms (docs/spec/hardware.md). */
-export const COMMAND_GAP_MS = 150;
-export const REPLY_TIMEOUT_MS = 500;
+/** The sketch keeps every line; a short gap just keeps writes apart (docs/spec/hardware.md). */
+export const COMMAND_GAP_MS = 20;
+/** Measured replies take under 150 ms; worst case ~750 ms when the roaster is silent. Inside the 3 s lost-connection rule. */
+export const REPLY_TIMEOUT_MS = 1500;
 
 type ReplyListener = (line: string | null) => void;
 
