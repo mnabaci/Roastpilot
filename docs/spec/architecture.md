@@ -18,7 +18,10 @@ flowchart TB
 ```
 
 - **Device layer:** two interfaces, so the hardware can change without touching the rest.
-  - `RoasterDriver` (`connect`, `read`, `setHeater`, `setFan`, `setCooling`, `safeStop`, `channels`) is all the controller ever sees.
+  - `RoasterDriver` is all the controller ever sees: `channels`, `connect`, `read`, `setOutput(channel, value)`, `safeStop` ([ADR 0009](../adr/0009-generic-driver-outputs.md)).
+  - `connect`, `read` and `setOutput` return typed results (`disconnected`, `version-mismatch`, `bad-reply`); only `safeStop` never fails, it does its best and resolves.
+  - Drivers clamp and round every value to the channel's range and step before sending.
+  - Time comes from an injected `Clock`, so drivers and the simulator run on fake time in tests.
   - `Transport` (`open`, `write`, `onLine`, `close`) only moves bytes: `SerialTransport` now, Wi-Fi or Bluetooth later.
   - `Tc4SkywalkerDriver` is the Adapter for the current ESP32 mod; `SimulatedDriver` fakes a roaster for development and tests.
   - `DriverFactory` builds the driver chosen for the active roaster.

@@ -41,6 +41,27 @@ Comma-separated: `0.00,<temp>,<temp>,<heater>,<fan>,0`, for example `0.00,180.25
 - **Sketch over-temperature:** the sketch runs `ESTOP` above 300 °C. The app's own limit (240 °C per roaster) trips long before.
 - **Safe stop from the app:** `OT1;0`, then `OT2;100`, then `COOL;100`, spaced like any other commands; `ESTOP` as a fallback.
 
+## Simulator
+
+`SimulatedDriver` is a twin of this setup, so whatever runs on it runs on the real roaster.
+
+- **Same channels:** `bt` (°C, read), `heater`, `fan`, `cooling`, `filter` (0–100, step 5) and `drum` (on/off), with the same safe-stop sequence.
+- **Same sketch behaviour:** 10 s watchdog switches everything off; `ESTOP` above 300 °C; reports protocol version `1`.
+- **Thermal model:** one temperature, updated in 100 ms steps from the injected clock. Heater adds heat; loss to the room grows with the gap to ambient, the fan and the cooling fan.
+
+| Constant         | Default   | Effect                                       |
+| ---------------- | --------- | -------------------------------------------- |
+| Ambient          | 22 °C     | Start temperature and where it cools back to |
+| Heat gain        | 1.5 °C/s  | Rise per second at heater 100, before losses |
+| Room loss        | 0.0054 /s | Heater 100, fan 0 levels off near 300 °C     |
+| Fan loss factor  | 1.0       | Fan 100 doubles the loss                     |
+| Cool loss factor | 3.0       | Cooling 100 adds three times the loss        |
+
+Hand-picked for now; refit from the first real manual roast.
+
+- **Faults for tests:** stall the reported temperature (like the sketch's stale readings), disconnect and reconnect, report another protocol version.
+- **Deterministic:** no noise, no randomness; same inputs and clock give the same readings.
+
 ## Firmware in this repo
 
 `firmware/skywalker-tc4/` may hold a copy of the sketch with its GPL-3.0 license and credit kept beside it. The app is a separate program that talks to it over serial, so the app's own license is unaffected.
