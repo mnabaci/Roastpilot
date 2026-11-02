@@ -1,0 +1,36 @@
+/* Roastpilot: generated from tokens.json. Do not edit. */
+
+@theme {
+  --font-sans: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-heat: var(--heat);
+  --color-heat-fill: var(--heat-fill);
+  --color-heat-fill-hover: var(--heat-fill-hover);
+  --color-heat-tint: var(--heat-tint);
+  --color-on-heat: var(--on-heat);
+  --color-air: var(--air);
+  --color-air-tint: var(--air-tint);
+  --color-target: var(--target);
+  --color-ghost: var(--ghost);
+  --color-good: var(--good);
+  --color-warning: var(--warning);
+  --color-critical: var(--critical);
+  --color-critical-text: var(--critical-text);
+  --color-critical-surface: var(--critical-surface);
+  --color-focus: var(--focus);
+}

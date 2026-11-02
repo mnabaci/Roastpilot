@@ -1,0 +1,23 @@
+{
+  "name": "@roastpilot/storage",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "SQLite persistence: Drizzle schema, migrations and repositories (better-sqlite3).",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@roastpilot/core": "workspace:*",
+    "@roastpilot/shared": "workspace:*",
+    "better-sqlite3": "^13.0.3",
+    "drizzle-orm": "^0.45.4"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "drizzle-kit": "^0.31.11"
+  }
+}

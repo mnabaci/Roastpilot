@@ -1,0 +1,20 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "new-york",
+  "rsc": false,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/styles/globals.css",
+    "baseColor": "neutral",
+    "cssVariables": true
+  },
+  "iconLibrary": "lucide",
+  "aliases": {
+    "components": "@roastpilot/ui/components",
+    "utils": "@roastpilot/ui/lib/utils",
+    "ui": "@roastpilot/ui/components",
+    "lib": "@roastpilot/ui/lib",
+    "hooks": "@roastpilot/ui/hooks"
+  }
+}

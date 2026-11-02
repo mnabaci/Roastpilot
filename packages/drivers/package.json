@@ -1,0 +1,18 @@
+{
+  "name": "@roastpilot/drivers",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "RoasterDriver and Transport implementations: Skywalker TC4 adapter, simulator, serial transport.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@roastpilot/core": "workspace:*",
+    "@roastpilot/shared": "workspace:*",
+    "serialport": "^13.0.0"
+  }
+}

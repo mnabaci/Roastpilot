@@ -1,0 +1,16 @@
+{
+  "name": "@roastpilot/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Types, the IPC contract with zod schemas, units and constants shared by every package.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  }
+}

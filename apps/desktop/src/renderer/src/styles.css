@@ -1,0 +1,5 @@
+@import 'tailwindcss';
+@import '@roastpilot/ui/globals.css';
+
+/* Let Tailwind see the shared component classes. */
+@source '../../../../../packages/ui/src';

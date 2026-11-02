@@ -1,0 +1,16 @@
+{
+  "name": "@roastpilot/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Pure roasting logic: roast state machine, PID and output controllers, end rules, profile suggestion, manual coach, safety rules, extension registries and domain events.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@roastpilot/shared": "workspace:*"
+  }
+}

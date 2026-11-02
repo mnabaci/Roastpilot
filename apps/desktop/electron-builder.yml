@@ -1,0 +1,12 @@
+appId: app.roastpilot.desktop
+productName: Roastpilot
+directories:
+  buildResources: build
+files:
+  - out/**
+  - package.json
+mac:
+  category: public.app-category.utilities
+  target:
+    - dmg
+npmRebuild: true

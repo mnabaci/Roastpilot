@@ -1,0 +1,38 @@
+{
+  "name": "@roastpilot/desktop",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The Roastpilot Electron app (main, preload, renderer).",
+  "scripts": {
+    "predev": "electron-builder install-app-deps",
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "dist:mac": "electron-vite build && electron-builder --mac",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "uplot": "^1.6.32",
+    "zustand": "^5.0.16"
+  },
+  "devDependencies": {
+    "@roastpilot/core": "workspace:*",
+    "@roastpilot/drivers": "workspace:*",
+    "@roastpilot/shared": "workspace:*",
+    "@roastpilot/storage": "workspace:*",
+    "@roastpilot/ui": "workspace:*",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "electron": "^45.2.1",
+    "electron-builder": "^26.18.0",
+    "electron-vite": "^6.0.0",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.3.5"
+  },
+  "main": "./out/main/index.js"
+}
