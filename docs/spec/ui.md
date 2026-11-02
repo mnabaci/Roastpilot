@@ -6,10 +6,11 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 ## Roast screen (main)
 
 - **Top bar:** connection status, active roaster, selected bean and profile, phase name.
+- **Preheat:** shows the between-batch protocol (cool, climb, hold countdown), then "Add beans".
 - **Before preheat:** bean picker (search + recent), batch weight (prefilled from the bean's batch plan), then the suggested profile and ghost with a one-line reason and a Change link for each.
 - **Phase stepper:** Preheat, Roast, First crack, Drop, Cool.
 - **Big numbers:** current temp, RoR (°C/min), elapsed time, development time, delta vs ghost.
-- **Chart:** live temperature vs target curve, RoR on a second axis, ghost faded behind, markers for charge, dry end, FC and drop.
+- **Chart:** live temperature vs the profile's reference points (dashed), the current phase's RoR band, RoR on a second axis, ghost faded behind, markers for charge, dry end, FC and drop.
 - **Mode switch:** Auto / Manual. In Manual, the coach card sits above the outputs.
 - **Outputs:** heater % and fan %, each with a slider and an Auto/Manual badge.
 - **Buttons:** Preheat, Start (charge), First crack, Drop now, and a red Emergency stop that is always visible.
@@ -18,8 +19,9 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 ## Profiles screen
 
 - List of profiles; built-ins can be duplicated, not overwritten.
-- Edit curve points and fan steps in a table, with a preview chart.
-- "Make profile from this roast" copies a past roast's curve.
+- Edit phases in a table (heat mode, heat %, fan %, RoR band, next-phase trigger), with a preview chart.
+- "Make profile from this roast" turns a past roast into phases.
+- "Copy to another roaster" makes a copy marked "needs calibration".
 
 ## History screen
 

@@ -1,6 +1,6 @@
 # 0006: Handle room conditions with the PID alone
 
-Status: accepted
+Status: superseded by 0008
 Date: 2026-11-02
 
 ## Context
