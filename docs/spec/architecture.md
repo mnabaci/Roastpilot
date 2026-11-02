@@ -24,8 +24,25 @@ flowchart TB
   - Time comes from an injected `Clock` (`now`, `delay`), so drivers and the simulator run on fake time in tests.
   - `Transport` (`open`, `write`, `onLine`, `onClose`, `close`) only moves lines of text: `SerialTransport` now, Wi-Fi or Bluetooth later.
   - `Tc4SkywalkerDriver` is the Adapter for the current ESP32 mod; `SimulatedDriver` fakes a roaster for development and tests.
-  - `DriverFactory` builds the driver chosen for the active roaster.
+  - `DriverFactory` builds the driver chosen for the active roaster: `Tc4SkywalkerDriver` over `SerialTransport` for a port, or `SimulatedDriver`.
+- **Roaster session:** `RoasterSession` in `core` owns the connected roaster: it wraps the driver in `SafetyGuardedDriver`, polls `READ` every 1 s, runs the safety `check()` on its own 1 s loop, reconnects by itself after a lost connection, and publishes readings, safety events and connection changes. One session lives for the whole app, so the heater lock survives a reconnect.
 - **Controller:** runs the roast state machine (preheat → charge → phases → drop → cool), the planned heat and fan steps and the PID trim.
 - **Safety monitor:** watches every reading and can force a safe stop, whatever the controller is doing.
 - **Storage:** writes samples and events to SQLite during the roast, so a crash loses at most a second.
 - **Renderer:** React built from `@roastpilot/ui`, with uPlot for the live chart. It talks only through the typed `window.roastpilot` API: `startRoast`, `markFirstCrack`, `setOutput`, `onReading`, and so on.
+- **IPC contract:** channel names and zod schemas live in `@roastpilot/shared`. Main validates every payload from the renderer before acting on it.
+
+| Call                | Kind   | Payload → result                                                    |
+| ------------------- | ------ | ------------------------------------------------------------------- |
+| `listPorts`         | invoke | – → serial ports                                                    |
+| `connect`           | invoke | `{ kind: 'serial', path }` or `{ kind: 'simulator' }` → result      |
+| `disconnect`        | invoke | – → safe stop, then closed                                          |
+| `setOutput`         | invoke | `{ channel, value }` → result (`safety-locked` while locked)        |
+| `emergencyStop`     | invoke | – → safe stop and heater lock                                       |
+| `acknowledgeSafety` | invoke | – → result (`still-tripped` while a rule holds)                     |
+| `onReading`         | event  | reading every 1 s                                                   |
+| `onConnection`      | event  | `disconnected`, `connecting`, `connected` (with channels) or `lost` |
+| `onSafetyEvent`     | event  | `tripped`, `cleared`, `unlocked`                                    |
+
+- **Quit and crash:** before the app quits, and on an uncaught error in main, the session sends the safe stop (given up to 2 s) before anything else.
+- **Clock:** main uses a monotonic clock (`performance.now()`), so a system clock change can't fool the lost-connection rule.
