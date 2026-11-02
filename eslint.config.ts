@@ -195,7 +195,11 @@ export default defineConfig(
   // Tests may be looser.
   {
     files: ['**/*.test.{ts,tsx}'],
-    rules: { '@typescript-eslint/no-non-null-assertion': 'off' },
+    rules: {
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      // `expect(api.connect).toHaveBeenCalled()` reads a mock, it never calls it unbound.
+      '@typescript-eslint/unbound-method': 'off',
+    },
   },
 
   // Formatting is Prettier's job; turn off rules that conflict with it. Keep last.

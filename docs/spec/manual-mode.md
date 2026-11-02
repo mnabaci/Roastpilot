@@ -38,3 +38,4 @@ A setting, not a mode: it only changes how much of the screen is live.
 - Guided keeps one obvious next action: Connect → Preheat → Start → First crack → Drop.
 - Full control still has the flow buttons for timing; it just doesn't wait for them.
 - Heater above 0 with the drum off shows one line: "Drum is off". It doesn't block.
+- Sliders show what you set until the roaster reports a change (at most 2 s), then follow the readings, so Drop or a safety stop always shows the real value.
