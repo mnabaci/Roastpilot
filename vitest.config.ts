@@ -1,7 +1,37 @@
 import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
 
+// Two test environments: plain Node for logic packages, jsdom for React code.
 export default defineConfig({
   test: {
-    include: ['packages/*/src/**/*.test.ts', 'apps/*/src/**/*.test.{ts,tsx}'],
+    projects: [
+      {
+        test: {
+          name: 'node',
+          environment: 'node',
+          include: [
+            'packages/{core,shared,drivers,storage}/src/**/*.test.ts',
+            'apps/desktop/src/{main,preload}/**/*.test.ts',
+          ],
+        },
+      },
+      {
+        plugins: [react()],
+        test: {
+          name: 'dom',
+          environment: 'jsdom',
+          setupFiles: ['./vitest.setup.dom.ts'],
+          include: [
+            'packages/ui/src/**/*.test.{ts,tsx}',
+            'apps/desktop/src/renderer/**/*.test.{ts,tsx}',
+          ],
+        },
+      },
+    ],
+    coverage: {
+      provider: 'v8',
+      include: ['packages/*/src/**', 'apps/desktop/src/**'],
+      exclude: ['**/*.test.{ts,tsx}', '**/index.ts'],
+    },
   },
 });

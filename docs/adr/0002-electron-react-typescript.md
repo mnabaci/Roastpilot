@@ -9,7 +9,7 @@ The user knows React and TypeScript well; Electron gives serial port access and 
 
 ## Decision
 
-A macOS Electron app built with electron-vite, React, Tailwind CSS v4 and shadcn/ui.
+An Electron app for macOS and Windows built with electron-vite, React, Tailwind CSS v4 and shadcn/ui.
 
 ## Consequences
 

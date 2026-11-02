@@ -1,6 +1,6 @@
 # Roastpilot
 
-Desktop app (Electron + React + TypeScript) that roasts coffee on autopilot and coaches you in
+Desktop app for macOS and Windows (Electron + React + TypeScript) that roasts coffee on autopilot and coaches you in
 manual mode. Spec: `docs/spec/`. Decisions: `docs/adr/`. Design system tokens: `packages/ui/tokens.json`.
 
 ## Before writing any code
@@ -12,6 +12,7 @@ Load the `engineering-standards` skill and follow it. New features start with `p
 - **UX first, no walls of text:** one obvious next action per state, numbers before sentences, one-line hints.
 - **SOLID, KISS, DRY:** small single-purpose modules; depend on interfaces; no speculative abstractions.
 - **Extend by adding, not editing:** new hardware, rules, layers or exporters are new implementations of an extension point (`docs/spec/extensibility.md`), registered at startup.
+- **TypeScript everywhere:** app code, config files, scripts and agent hooks are `.ts` (Node 22.22+ and 24 run `.ts` directly). No new `.js` files.
 - **Design tokens only:** no hex colours or magic sizes in UI code.
 - **Safety first:** any path that can leave the heater on must end in `safeStop()`; safety rules are tested.
 
@@ -33,6 +34,8 @@ ESLint enforces these. Each package has its own `CLAUDE.md` with local rules.
 pnpm install        # install
 pnpm dev            # run the app (rebuilds native modules for Electron first)
 pnpm check          # format check, lint, typecheck, test: run before every commit
+pnpm test:watch     # tests in watch mode
+pnpm test:coverage  # tests with coverage
 pnpm --filter @roastpilot/ui tokens   # regenerate CSS from tokens.json
 ```
 
@@ -45,4 +48,8 @@ pnpm --filter @roastpilot/ui tokens   # regenerate CSS from tokens.json
 
 ## Workflow
 
-Branch from `main` (`feat/…`, `fix/…`), conventional commits, open a PR. Never push to `main`.
+Branch from `main` (`feat/…`, `fix/…`), conventional commits (checked by commitlint), open a PR. Never push to `main`.
+
+## Cross-platform
+
+Everything must work on macOS and Windows: paths via `node:path`, no shell-only scripts, serial ports picked from a list.

@@ -5,7 +5,7 @@ The app talks only to the Arduino over USB serial, reusing the
 commands. The Arduino handles the roaster's pulse-timing protocol. No firmware changes are needed
 for v1.
 
-- **Board:** Arduino Leonardo on the roaster's controller line. On macOS it shows up as `/dev/cu.usbmodem*`.
+- **Board:** Arduino Leonardo on the roaster's controller line. On macOS it shows up as `/dev/cu.usbmodem*`, on Windows as `COMx`; the app lists ports and you pick one.
 
 | Command               | Purpose                                                  |
 | --------------------- | -------------------------------------------------------- |

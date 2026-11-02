@@ -11,7 +11,7 @@
     "./lib/*": "./src/lib/*.ts"
   },
   "scripts": {
-    "tokens": "node scripts/generate-tokens.mjs && prettier --write src/styles/tokens.css src/styles/theme.css",
+    "tokens": "node scripts/generate-tokens.ts && prettier --write src/styles/tokens.css src/styles/theme.css",
     "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {

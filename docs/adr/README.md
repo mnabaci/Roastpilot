@@ -8,5 +8,6 @@ One file per decision: context, decision, consequences. Add one with the `plan-f
 - [Driver and transport layers for hardware](0004-driver-and-transport-layers.md)
 - [Design tokens flow one way from the design system](0005-design-tokens-flow.md)
 - [Handle room conditions with the PID alone](0006-pid-only-for-conditions.md)
+- [Tooling baseline for long-term maintenance](0007-tooling-baseline.md)
 
 Template: [template.md](template.md)

@@ -11,3 +11,5 @@ May import: `shared`.
 - Components are presentational: props in, events out. No IPC, no stores.
 - Accessible by default: real buttons and inputs, labels, focus ring, 44px minimum targets, 4.5:1 text contrast.
 - Follow the brand book: one primary action per state, numbers before sentences, no walls of text.
+- React function components with typed props (`interface ButtonProps extends ComponentProps<'button'>`); pass `className` through `cn()`.
+- Tests with Testing Library in jsdom: roles, labels and events, not class names.
