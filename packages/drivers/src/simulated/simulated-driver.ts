@@ -105,6 +105,12 @@ export class SimulatedDriver implements RoasterDriver {
     for (const [channel, value] of SKYWALKER_SAFE_STOP) await this.setOutput(channel, value);
   }
 
+  disconnect(): Promise<void> {
+    this.#advance();
+    this.#connected = false;
+    return Promise.resolve();
+  }
+
   /** Fault: keep reporting the current temperature, like the sketch's stale readings. */
   stallTemperature(stalled: boolean): void {
     this.#advance();

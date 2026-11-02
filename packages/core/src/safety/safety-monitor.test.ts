@@ -1,6 +1,7 @@
-import { err, ok, type Reading } from '@roastpilot/shared';
+import { err, ok, type LogEntry, type Reading } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { ManualClock } from '../clock';
+import { createLogger } from '../logging/logger';
 import { SafetyMonitor, type SafetyEvent } from './safety-monitor';
 
 function setup() {
@@ -156,5 +157,49 @@ describe('SafetyMonitor', () => {
       }
       expect(kinds(events)).toContain('tripped:slow-rise');
     });
+  });
+});
+
+describe('SafetyMonitor emergency stop and disconnect', () => {
+  it('emergency stop safe-stops and locks, and can be acknowledged straight away', () => {
+    const { monitor, events, safeStops } = setup();
+    monitor.emergencyStop();
+    expect(kinds(events)).toEqual(['tripped:emergency-stop']);
+    expect(safeStops()).toBe(1);
+    expect(monitor.locked).toBe(true);
+    expect(monitor.acknowledge()).toEqual(ok(undefined));
+    expect(monitor.locked).toBe(false);
+  });
+
+  it('a deliberate disconnect disarms lost connection until the next connect', () => {
+    const { clock, monitor, events } = setup();
+    monitor.disconnected();
+    clock.advance(60_000);
+    monitor.check();
+    expect(events).toEqual([]);
+    monitor.connected();
+    clock.advance(3000);
+    monitor.check();
+    expect(kinds(events)).toEqual(['tripped:lost-connection']);
+  });
+});
+
+describe('SafetyMonitor when the driver breaks its contract', () => {
+  it('logs a safe stop that rejects instead of losing it', async () => {
+    const entries: LogEntry[] = [];
+    const clock = new ManualClock();
+    const monitor = new SafetyMonitor({
+      clock,
+      safeStop: () => Promise.reject(new Error('port exploded')),
+      onEvent: () => undefined,
+      logger: createLogger({ write: (e) => entries.push(e) }, 'safety'),
+    });
+    monitor.emergencyStop();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(entries.map((e) => [e.level, e.event])).toEqual([
+      ['error', 'safety.safe-stop-rejected'],
+    ]);
+    expect(entries[0]?.context?.error).toMatchObject({ message: 'port exploded' });
   });
 });

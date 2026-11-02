@@ -1,15 +1,21 @@
-import { err, ok, type Reading, type Result } from '@roastpilot/shared';
+import {
+  err,
+  ok,
+  type AcknowledgeError,
+  type Reading,
+  type Result,
+  type SafetyEvent,
+} from '@roastpilot/shared';
 import type { Clock } from '../clock';
+import { silentLogger, type Logger } from '../logging/logger';
+import { serializeError } from '../logging/serialize-error';
 import type { DriverError } from '../roaster-driver';
 import { DEFAULT_SAFETY_LIMITS, type SafetyLimits } from './safety-limits';
-import { BEAN_TEMP, type SafetyAction, type SafetyState } from './safety-rule';
+import { BEAN_TEMP, type SafetyRule, type SafetyState } from './safety-rule';
 import { lostConnectionRule } from './rules/lost-connection';
 import { SAFETY_RULES } from './rules';
 
-export type SafetyEvent =
-  | { kind: 'tripped'; rule: string; action: SafetyAction; atMs: number }
-  | { kind: 'cleared'; rule: string; atMs: number }
-  | { kind: 'unlocked'; atMs: number };
+export type { SafetyEvent } from '@roastpilot/shared';
 
 export interface SafetyMonitorOptions {
   clock: Clock;
@@ -17,7 +23,10 @@ export interface SafetyMonitorOptions {
   safeStop: () => Promise<void>;
   onEvent: (event: SafetyEvent) => void;
   limits?: SafetyLimits;
+  logger?: Logger;
 }
+
+export const EMERGENCY_STOP = 'emergency-stop';
 
 /** Keeps a little more than the longest rule window, so a window always has a reading at its start. */
 const HISTORY_MARGIN_MS = 5_000;
@@ -28,6 +37,7 @@ export class SafetyMonitor {
   readonly #safeStop: () => Promise<void>;
   readonly #onEvent: (event: SafetyEvent) => void;
   readonly #limits: SafetyLimits;
+  readonly #logger: Logger;
   readonly #historyMs: number;
   readonly #tripped = new Set<string>();
   #history: Reading[] = [];
@@ -41,6 +51,7 @@ export class SafetyMonitor {
     this.#safeStop = options.safeStop;
     this.#onEvent = options.onEvent;
     this.#limits = options.limits ?? DEFAULT_SAFETY_LIMITS;
+    this.#logger = options.logger ?? silentLogger;
     this.#historyMs =
       Math.max(this.#limits.slowRise.windowMs, this.#limits.frozenReadingMs) + HISTORY_MARGIN_MS;
   }
@@ -55,8 +66,26 @@ export class SafetyMonitor {
     return [...this.#tripped];
   }
 
+  /** A deliberate disconnect: lost connection is disarmed until the next connect. */
+  disconnected(): void {
+    this.#armed = false;
+    this.check();
+  }
+
+  /** The red button: same as a safe-stop trip, but it holds nothing, so you can acknowledge at once. */
+  emergencyStop(): void {
+    this.#onEvent({
+      kind: 'tripped',
+      rule: EMERGENCY_STOP,
+      action: 'safe-stop',
+      atMs: this.#clock.now(),
+    });
+    this.#locked = true;
+    this.#stop();
+  }
+
   connected(): void {
-    // Only the first connect starts the clock. A reconnect is not a reading: lost connection stays
+    // Only an arming connect starts the clock. A reconnect is not a reading: lost connection stays
     // tripped until real readings return, which is what sends the second safe stop.
     if (!this.#armed) {
       this.#armed = true;
@@ -87,7 +116,7 @@ export class SafetyMonitor {
   }
 
   /** Lifts the heater lock, unless a safe-stop rule is still tripped. */
-  acknowledge(): Result<void, { kind: 'still-tripped'; rules: string[] }> {
+  acknowledge(): Result<void, AcknowledgeError> {
     this.check();
     const stillTripped = SAFETY_RULES.filter(
       (r) => r.action === 'safe-stop' && this.#tripped.has(r.id),
@@ -104,7 +133,7 @@ export class SafetyMonitor {
   check(): void {
     const state = this.#state();
     for (const rule of SAFETY_RULES) {
-      const isTripped = rule.isTripped(state, this.#limits);
+      const isTripped = this.#evaluate(rule, state);
       const wasTripped = this.#tripped.has(rule.id);
       if (isTripped && !wasTripped) {
         this.#tripped.add(rule.id);
@@ -117,6 +146,16 @@ export class SafetyMonitor {
         this.#tripped.delete(rule.id);
         this.#onEvent({ kind: 'cleared', rule: rule.id, atMs: state.nowMs });
       }
+    }
+  }
+
+  /** A rule that throws is a bug in safety code: fail safe by treating it as tripped. */
+  #evaluate(rule: SafetyRule, state: SafetyState): boolean {
+    try {
+      return rule.isTripped(state, this.#limits);
+    } catch (error) {
+      this.#logger.error('safety.rule-failed', { rule: rule.id, error: serializeError(error) });
+      return true;
     }
   }
 
@@ -137,8 +176,9 @@ export class SafetyMonitor {
   }
 
   #stop(): void {
-    this.#safeStop().catch(() => {
+    this.#safeStop().catch((error: unknown) => {
       // Contract says safeStop never rejects; if one does, the sketch watchdog is the backstop.
+      this.#logger.error('safety.safe-stop-rejected', { error: serializeError(error) });
     });
   }
 }

@@ -1,8 +1,39 @@
-// The only API the renderer can call. Every method is typed by the IPC contract in
-// @roastpilot/shared and filled in from milestone 2.
-import { contextBridge } from 'electron';
-import type { RoastpilotApi } from '@roastpilot/shared';
+// The only API the renderer can call, typed by the IPC contract in @roastpilot/shared.
+import {
+  IPC_CHANNELS,
+  type IpcEventChannel,
+  type IpcEventPayloads,
+  type RoastpilotApi,
+  type Unsubscribe,
+} from '@roastpilot/shared';
+import { contextBridge, ipcRenderer } from 'electron';
 
-const api: RoastpilotApi = {};
+function subscribe<C extends IpcEventChannel>(
+  channel: C,
+  listener: (payload: IpcEventPayloads[C]) => void,
+): Unsubscribe {
+  const handler = (_event: unknown, payload: IpcEventPayloads[C]) => {
+    listener(payload);
+  };
+  ipcRenderer.on(channel, handler);
+  return () => {
+    ipcRenderer.removeListener(channel, handler);
+  };
+}
+
+const api: RoastpilotApi = {
+  listPorts: () => ipcRenderer.invoke(IPC_CHANNELS.listPorts),
+  connect: (target) => ipcRenderer.invoke(IPC_CHANNELS.connect, target),
+  disconnect: () => ipcRenderer.invoke(IPC_CHANNELS.disconnect),
+  setOutput: (request) => ipcRenderer.invoke(IPC_CHANNELS.setOutput, request),
+  emergencyStop: () => ipcRenderer.invoke(IPC_CHANNELS.emergencyStop),
+  acknowledgeSafety: () => ipcRenderer.invoke(IPC_CHANNELS.acknowledgeSafety),
+  onReading: (listener) => subscribe(IPC_CHANNELS.reading, listener),
+  onConnection: (listener) => subscribe(IPC_CHANNELS.connection, listener),
+  onSafetyEvent: (listener) => subscribe(IPC_CHANNELS.safetyEvent, listener),
+  log: (entry) => {
+    ipcRenderer.send(IPC_CHANNELS.log, entry);
+  },
+};
 
 contextBridge.exposeInMainWorld('roastpilot', api);

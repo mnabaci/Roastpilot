@@ -29,6 +29,9 @@ class RecordingDriver implements RoasterDriver {
     this.safeStops++;
     return Promise.resolve();
   }
+  disconnect(): Promise<void> {
+    return Promise.resolve();
+  }
 }
 
 async function setup() {

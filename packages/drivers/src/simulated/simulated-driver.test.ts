@@ -178,4 +178,14 @@ describe('SimulatedDriver', () => {
       expect(values.bt).toBeGreaterThan(22);
     });
   });
+
+  it('refuses calls after disconnect until connect, and keeps running the roaster', async () => {
+    const { clock, driver } = await connected();
+    await driver.setOutput('heater', 100);
+    await driver.disconnect();
+    expect(await driver.read()).toEqual({ ok: false, error: { kind: 'disconnected' } });
+    clock.advance(5000);
+    await driver.connect();
+    expect((await readValues(driver)).bt).toBeGreaterThan(22);
+  });
 });

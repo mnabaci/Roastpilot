@@ -1,4 +1,10 @@
-import type { Transport, TransportError } from '@roastpilot/core';
+import {
+  serializeError,
+  silentLogger,
+  type Logger,
+  type Transport,
+  type TransportError,
+} from '@roastpilot/core';
 import { err, ok, type Result } from '@roastpilot/shared';
 import { ReadlineParser, SerialPort, type SerialPortMock } from 'serialport';
 
@@ -9,6 +15,7 @@ export interface SerialTransportOptions {
   baudRate?: number;
   /** Builds the port, unopened. Tests pass a SerialPortMock. */
   createPort?: (path: string, baudRate: number) => Port;
+  logger?: Logger;
 }
 
 const DEFAULT_BAUD_RATE = 115_200;
@@ -28,12 +35,15 @@ export class SerialTransport implements Transport {
   readonly #createPort: (path: string, baudRate: number) => Port;
   readonly #lineListeners: ((line: string) => void)[] = [];
   readonly #closeListeners: (() => void)[] = [];
+  readonly #logger: Logger;
   #port: Port | undefined;
+  #closing = false;
 
   constructor(options: SerialTransportOptions) {
     this.#path = options.path;
     this.#baudRate = options.baudRate ?? DEFAULT_BAUD_RATE;
     this.#createPort = options.createPort ?? createSerialPort;
+    this.#logger = options.logger ?? silentLogger;
   }
 
   async open(): Promise<Result<void, TransportError>> {
@@ -44,17 +54,22 @@ export class SerialTransport implements Transport {
       for (const listener of this.#lineListeners) listener(text);
     });
     port.on('close', () => {
+      if (!this.#closing) this.#logger.warn('serial.closed-unexpectedly', { path: this.#path });
       if (this.#port === port) this.#port = undefined;
       for (const listener of this.#closeListeners) listener();
     });
-    // Errors also surface through open/write callbacks or a close event; this keeps them from crashing the process.
-    port.on('error', () => {
-      // Ignored on purpose.
+    // Errors also surface through open/write callbacks or a close event; listening keeps them from crashing the process.
+    port.on('error', (error: Error) => {
+      this.#logger.warn('serial.port-error', { path: this.#path, error: serializeError(error) });
     });
 
     return new Promise((resolve) => {
       port.open((error) => {
         if (error) {
+          this.#logger.warn('serial.open-failed', {
+            path: this.#path,
+            error: serializeError(error),
+          });
           resolve(err(disconnected(error, 'could not open the port')));
           return;
         }
@@ -85,8 +100,15 @@ export class SerialTransport implements Transport {
   close(): Promise<void> {
     const port = this.#port;
     if (!port?.isOpen) return Promise.resolve();
+    this.#closing = true;
     return new Promise((resolve) => {
-      port.close(() => {
+      port.close((error) => {
+        this.#closing = false;
+        if (error)
+          this.#logger.warn('serial.close-failed', {
+            path: this.#path,
+            error: serializeError(error),
+          });
         resolve();
       });
     });

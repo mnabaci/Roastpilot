@@ -1,8 +1,69 @@
-// Composition root. Milestone 2 wires core, drivers, storage and IPC here
-// (docs/spec/build-order.md). For now it only opens a secure window.
+// Composition root: wires core, drivers, logging and IPC (docs/spec/architecture.md).
+import { RoasterSession, serializeError } from '@roastpilot/core';
+import { listSerialPorts } from '@roastpilot/drivers';
+import { IPC_CHANNELS } from '@roastpilot/shared';
 import { app, BrowserWindow } from 'electron';
 import { join } from 'node:path';
+import { installCrashHandlers } from './crash-handlers';
+import { createDriver } from './driver-factory';
+import { broadcast, registerIpcHandlers, registerIpcListener } from './ipc';
+import { createIpcHandlers, handleRendererLog, withErrorLogging } from './ipc-handlers';
+import { createAppLogger } from './logging/app-logger';
+import { pruneOldLogsLater } from './logging/prune';
+import { createQuitGuard } from './quit-guard';
+import { systemClock } from './system-clock';
 import { WINDOW_BACKGROUND } from './window-background';
+
+const logs = createAppLogger({ dir: app.getPath('logs'), dev: !app.isPackaged });
+const logger = logs.logger;
+logger.info('app.started', {
+  version: app.getVersion(),
+  platform: process.platform,
+  arch: process.arch,
+});
+pruneOldLogsLater(app.getPath('logs'), logger);
+
+const session = new RoasterSession({
+  clock: systemClock,
+  logger: logger.child('session'),
+  onReading: (reading) => {
+    broadcast(IPC_CHANNELS.reading, reading);
+  },
+  onConnection: (state) => {
+    broadcast(IPC_CHANNELS.connection, state);
+  },
+  onSafetyEvent: (event) => {
+    broadcast(IPC_CHANNELS.safetyEvent, event);
+  },
+});
+
+installCrashHandlers({
+  process,
+  logger,
+  stopRoaster: () => session.disconnect(),
+  emergencyStop: () => {
+    session.emergencyStop();
+  },
+  flushLogs: () => logs.flush(),
+  exit: (code) => {
+    app.exit(code);
+  },
+});
+
+// Safe stop before anything else on quit (docs/spec/safety.md).
+app.on(
+  'before-quit',
+  createQuitGuard({
+    logger,
+    stop: async () => {
+      await session.disconnect();
+      await logs.flush();
+    },
+    quit: () => {
+      app.quit();
+    },
+  }),
+);
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -25,22 +86,49 @@ function createWindow(): void {
   // Never open new windows or navigate away from the app's own pages.
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', (event, url) => {
-    if (!devUrl || !url.startsWith(devUrl)) event.preventDefault();
+    if (!devUrl || !url.startsWith(devUrl)) {
+      logger.warn('window.navigation-blocked', { url });
+      event.preventDefault();
+    }
+  });
+  win.webContents.on('render-process-gone', (_event, details) => {
+    logger.error('window.renderer-gone', { reason: details.reason, exitCode: details.exitCode });
   });
 
-  if (devUrl) {
-    void win.loadURL(devUrl);
-  } else {
-    void win.loadFile(join(import.meta.dirname, '../renderer/index.html'));
-  }
+  const loaded = devUrl
+    ? win.loadURL(devUrl)
+    : win.loadFile(join(import.meta.dirname, '../renderer/index.html'));
+  loaded.catch((error: unknown) => {
+    logger.error('window.load-failed', { error: serializeError(error) });
+  });
 }
 
-void app.whenReady().then(() => {
-  createWindow();
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+app
+  .whenReady()
+  .then(() => {
+    const ipcLogger = logger.child('ipc');
+    registerIpcHandlers(
+      withErrorLogging(
+        createIpcHandlers({
+          session,
+          listPorts: () => listSerialPorts(),
+          createDriver: (target) => createDriver(target, systemClock, logger.child('driver')),
+        }),
+        ipcLogger,
+      ),
+    );
+    const rendererLogger = logger.child('renderer');
+    registerIpcListener(IPC_CHANNELS.log, (payload) => {
+      handleRendererLog(payload, rendererLogger);
+    });
+    createWindow();
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    });
+  })
+  .catch((error: unknown) => {
+    logger.error('app.start-failed', { error: serializeError(error) });
   });
-});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
