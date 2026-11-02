@@ -13,4 +13,5 @@ Review the diff (`git diff main...HEAD`) against `engineering-standards`. Report
 4. **Types:** no `any`, no unexplained `!`, zod at IPC boundaries.
 5. **Tests:** every new rule, branch and state transition covered; tests use public APIs and a fake clock.
 6. **Docs:** spec, ADRs and skills updated when behaviour or workflow changed.
-7. Run `pnpm check` and include the result.
+7. **Touched files comply:** every file in the diff follows the rules and skills as a whole, not just the changed lines. A violation left in a touched file is a finding.
+8. Run `pnpm check` and include the result.

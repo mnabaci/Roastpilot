@@ -15,6 +15,7 @@ Load the `engineering-standards` skill and follow it. New features start with `p
 - **TypeScript everywhere:** app code, config files, scripts and agent hooks are `.ts` (Node 22.22+ and 24 run `.ts` directly). No new `.js` files.
 - **Design tokens only:** no hex colours or magic sizes in UI code.
 - **Safety first:** any path that can leave the heater on must end in `safeStop()`; safety rules are tested.
+- **Fix what you find:** if a file you touch or read for a change breaks these rules or a skill's checklist, refactor it to comply in the same PR, as its own `refactor:` commit. Don't build on top of a violation.
 
 ## Package boundaries
 
