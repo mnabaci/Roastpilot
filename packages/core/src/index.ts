@@ -20,3 +20,7 @@ export { fanOut, withMinLevel, type LogSink } from './logging/log-sink';
 export { createLogger, silentLogger, type LogContext, type Logger } from './logging/logger';
 export { serializeError, type SerializedError } from './logging/serialize-error';
 export { FailureStreak } from './logging/failure-streak';
+export { DEFAULT_COOLING_MS, ManualRoast, type ManualRoastDeps } from './roast/manual-roast';
+export { rateOfRise, ROR_WINDOW_MS } from './roast/rate-of-rise';
+export { MAX_HISTORY_READINGS, ReadingHistory } from './roast/reading-history';
+export type { SettingsStore } from './settings/settings-store';

@@ -38,6 +38,7 @@ export interface RoasterSessionOptions {
 export class RoasterSession {
   readonly #clock: Clock;
   /** The caller's listeners, guarded so a throwing listener can't break polling or safety. */
+  #connection: ConnectionState = { status: 'disconnected' };
   readonly #publish: Pick<RoasterSessionOptions, 'onReading' | 'onConnection' | 'onSafetyEvent'>;
   readonly #monitor: SafetyMonitor;
   readonly #logger: Logger;
@@ -52,7 +53,10 @@ export class RoasterSession {
     this.#logger = options.logger ?? silentLogger;
     this.#publish = {
       onReading: this.#guard('onReading', options.onReading),
-      onConnection: this.#guard('onConnection', options.onConnection),
+      onConnection: this.#guard('onConnection', (state: ConnectionState) => {
+        this.#connection = state;
+        options.onConnection(state);
+      }),
       onSafetyEvent: this.#guard('onSafetyEvent', options.onSafetyEvent),
     };
     this.#reads = new FailureStreak(this.#logger, 'session.read');
@@ -125,6 +129,25 @@ export class RoasterSession {
   emergencyStop(): void {
     this.#logger.warn('session.emergency-stop');
     this.#monitor.emergencyStop();
+  }
+
+  /** The latest connection state, for a window that opens mid-roast. */
+  get connection(): ConnectionState {
+    return this.#connection;
+  }
+
+  get safetyStatus(): { locked: boolean; tripped: string[] } {
+    return { locked: this.#monitor.locked, tripped: [...this.#monitor.tripped] };
+  }
+
+  /** Charge: arms the max-roast-time rule. */
+  roastStarted(): void {
+    this.#monitor.roastStarted();
+  }
+
+  /** Drop: the max-roast-time rule stands down. */
+  roastEnded(): void {
+    this.#monitor.roastEnded();
   }
 
   acknowledgeSafety(): Result<void, AcknowledgeError> {

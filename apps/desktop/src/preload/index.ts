@@ -31,6 +31,11 @@ const api: RoastpilotApi = {
   onReading: (listener) => subscribe(IPC_CHANNELS.reading, listener),
   onConnection: (listener) => subscribe(IPC_CHANNELS.connection, listener),
   onSafetyEvent: (listener) => subscribe(IPC_CHANNELS.safetyEvent, listener),
+  getSnapshot: () => ipcRenderer.invoke(IPC_CHANNELS.getSnapshot),
+  roastAction: (action) => ipcRenderer.invoke(IPC_CHANNELS.roastAction, action),
+  onRoast: (listener) => subscribe(IPC_CHANNELS.roast, listener),
+  getSettings: () => ipcRenderer.invoke(IPC_CHANNELS.getSettings),
+  setSettings: (settings) => ipcRenderer.invoke(IPC_CHANNELS.setSettings, settings),
   log: (entry) => {
     ipcRenderer.send(IPC_CHANNELS.log, entry);
   },
