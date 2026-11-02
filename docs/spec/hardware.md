@@ -30,6 +30,7 @@ Comma-separated: `0.00,<temp>,<temp>,<heater>,<fan>,0`, for example `0.00,180.25
 
 - Field 2 (and its copy, field 3) is the roaster temperature, in °F unless `UNITS;C` was sent.
 - Fields 4 and 5 echo the heater and fan values the sketch is sending.
+- The sketch doesn't report cooling, filter or drum, so the driver's reading fills them in from the last value it sent. Every reading holds every channel (bt, heater, fan, cooling, filter, drum), which is what the UI shows and what a roast sample stores.
 - The temperature comes from a fitted polynomial over two raw sensor values. It is not a true bean probe, so profile temperatures are in "Skywalker degrees", tuned by taste.
 
 ## Sketch behaviour the driver must respect
