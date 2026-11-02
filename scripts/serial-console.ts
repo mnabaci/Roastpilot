@@ -137,7 +137,10 @@ async function main(): Promise<void> {
     if (command) queue.push(command);
   });
 
+  let shuttingDown = false;
   const shutdown = async (): Promise<void> => {
+    if (shuttingDown) return;
+    shuttingDown = true;
     console.log('\nSafe-stopping...');
     if (pollTimer) clearInterval(pollTimer);
     stdin.close();
