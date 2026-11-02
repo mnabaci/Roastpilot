@@ -126,6 +126,16 @@ export default defineConfig(
     },
   },
 
+  // App code: log through the injected Logger, and never drop a promise's error (docs/spec/errors-and-logging.md).
+  {
+    files: ['packages/*/src/**/*.{ts,tsx}', 'apps/desktop/src/**/*.{ts,tsx}'],
+    ignores: ['**/*.test.{ts,tsx}', '**/*.stories.{ts,tsx}'],
+    rules: {
+      'no-console': 'error',
+      '@typescript-eslint/no-floating-promises': ['error', { ignoreVoid: false }],
+    },
+  },
+
   // Only the desktop app talks to Electron.
   {
     files: ['packages/*/src/**/*.{ts,tsx}'],

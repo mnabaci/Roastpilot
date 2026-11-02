@@ -28,7 +28,10 @@ Read this before touching code. It is the checklist `code-review` holds you to.
 - TypeScript for everything, including configs and scripts; no new `.js` files.
 - `strict` TypeScript; no `any`, no non-null `!` without a comment saying why it is safe.
 - Validate data at boundaries (IPC with zod, serial lines in the driver, DB rows in repositories).
-- Errors: return typed results for expected failures; throw only for programmer errors.
+- Errors: return typed results for expected failures; throw only for programmer errors (`docs/spec/errors-and-logging.md`).
+- Never hide an error: no empty `catch`; every `void promise` gets a `.catch` that logs; a `catch` either handles, returns a typed error, or logs and rethrows.
+- Think through the edge cases before coding: timeouts, disconnects mid-call, bad or missing input, a call during another, quit at any moment. Each gets a test.
+- Log through the injected `Logger` (`logger.child('scope')`), never `console`. One event name per thing that happened (`session.connect-failed`) plus context; failures and state changes, not every reading.
 - Anything that can leave the heater on ends in `safeStop()`.
 
 ## 4. UI
