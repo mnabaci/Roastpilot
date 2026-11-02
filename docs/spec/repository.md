@@ -15,7 +15,7 @@ roastpilot/
     storage/             Drizzle schema, migrations, repositories (better-sqlite3)
     shared/              types, IPC contract + zod schemas, units, constants
     ui/                  design-system components (shadcn), tokens.json, generated CSS
-  firmware/skywalker-tc4/  the Arduino sketch, credited to SkywalkerRoaster, with a protocol version
+  firmware/skywalker-tc4/  the SkyCommand sketch, credited to SkywalkerRoaster, with a protocol version
   docs/spec/             this spec, split by topic
   docs/adr/              decision records
   .claude/               skills, hooks, rules summary

@@ -2,7 +2,7 @@
 // UNITS;C and polls READ every second, and lets you type raw commands. Every line sent and
 // received is appended to logs/serial-sessions/<timestamp>.jsonl as a dataset for the simulator.
 //
-// Run with: node scripts/serial-console.ts [--port /dev/cu.usbmodemXXXX]
+// Run with: node scripts/serial-console.ts [--port /dev/cu.usbserial-XXXX]
 import { createWriteStream, mkdirSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { parseArgs } from 'node:util';
@@ -41,7 +41,7 @@ async function pickPort(requested: string | undefined): Promise<string> {
     return requested;
   }
   if (ports.length === 0) {
-    throw new Error('No serial ports found. Plug in the Arduino and try again.');
+    throw new Error('No serial ports found. Plug in the roaster board and try again.');
   }
   const [onlyPort] = ports;
   if (ports.length === 1 && onlyPort) {

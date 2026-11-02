@@ -1,6 +1,6 @@
 ---
 name: firmware-change
-description: Change the Arduino sketch together with the Roastpilot driver and protocol version. Use for any change to the serial protocol or firmware.
+description: Change the SkyCommand sketch together with the Roastpilot driver and protocol version. Use for any change to the serial protocol or firmware.
 ---
 
 # Firmware change
