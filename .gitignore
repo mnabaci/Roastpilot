@@ -8,6 +8,7 @@ coverage/
 .env.*
 *.db
 *.db-journal
+logs/
 .vscode/*
 !.vscode/extensions.json
 .claude/settings.local.json

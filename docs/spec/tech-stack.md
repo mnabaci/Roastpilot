@@ -34,7 +34,7 @@ the `package.json` files and `pnpm-lock.yaml`.
 
 ## Cross-platform
 
-- The serial port is picked from a list (`/dev/cu.usbmodem…` on macOS, `COMx` on Windows).
+- The serial port is picked from a list (`/dev/cu.usbserial-…` on macOS, `COMx` on Windows).
 - Paths always via `node:path` and Electron's `app.getPath`; no hard-coded separators.
 - Line endings are LF everywhere (`.gitattributes`); agent hooks are Node scripts, not shell.
 - CI runs on Ubuntu and Windows.
