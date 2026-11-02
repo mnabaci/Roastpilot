@@ -35,7 +35,9 @@ Comma-separated: `0.00,<temp>,<temp>,<heater>,<fan>,0`, for example `0.00,180.25
 - **One command at a time.** The sketch reads whatever arrived within 100 ms as one message, so two commands sent back to back can merge and one is lost. The driver queues commands and sends the next only after a short gap (≥ 150 ms) or after the previous reply.
 - **Clean integers only.** Values above 100 are silently ignored and decimals are truncated. The driver clamps and rounds to the roaster's step (5%) before sending.
 - **Celsius on connect.** The driver sends `UNITS;C` right after opening the port, then verifies with a `READ`.
-- **Version check on connect.** The driver sends `VERSION` and refuses to roast if the reply is not the protocol version it speaks, with a banner saying which sketch to flash.
+- **Version check on connect.** The driver sends `VERSION` and refuses to roast if the reply is not the protocol version it speaks, with a banner saying which sketch to flash. No reply to `VERSION` means an older sketch: also a mismatch.
+- **Replies:** only `READ` and `VERSION` reply. The driver waits up to 500 ms; no reply is a `no-reply` error, and a line that doesn't parse is a `bad-reply`. Neither throws: the safety monitor's lost-connection rule decides what to do.
+- **Port closed:** if the port closes (cable pulled), every call returns `disconnected` until `connect()` succeeds again.
 - **Watchdog:** after 10 s without a heater, fan, drum, cooling or filter command (`READ` included), the sketch switches everything off. The app polls `READ` every 1 s, which keeps it alive. The roaster itself stops after about 1 s without a control message from the board.
 - **Stale readings:** if the board fails to read the roaster, `READ` keeps returning the last good temperature with no error. The stalled-temperature alarm ([safety.md](safety.md)) is the app's only signal for this.
 - **Sketch over-temperature:** the sketch runs `ESTOP` above 300 °C. The app's own limit (240 °C per roaster) trips long before.

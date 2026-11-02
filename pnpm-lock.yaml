@@ -187,6 +187,9 @@ importers:
         specifier: ^13.0.0
         version: 13.0.0
     devDependencies:
+      '@serialport/binding-mock':
+        specifier: 10.2.2
+        version: 10.2.2
       '@types/node':
         specifier: ^26.6.6
         version: 26.6.6
