@@ -28,7 +28,7 @@ the `package.json` files and `pnpm-lock.yaml`.
 - `tsconfig.base.json`: strict, `noUncheckedIndexedAccess`, `verbatimModuleSyntax`, `erasableSyntaxOnly` (no enums or namespaces), bundler resolution, no implicit `@types`.
 - Each package picks its runtime: `core` and `shared` get plain ES only (no DOM, no Node), `drivers` and `storage` add Node types, `ui` adds DOM and React JSX.
 - `apps/desktop` has two configs: `tsconfig.node.json` for main and preload (Node + Electron) and `tsconfig.web.json` for the React renderer (DOM + Vite).
-- Config files, scripts and agent hooks are TypeScript too: the root `tsconfig.json` type-checks them, and Node 22.18+ runs `.ts` files directly.
+- Config files, scripts and agent hooks are TypeScript too: the root `tsconfig.json` type-checks them, and Node 22.22+ and 24 run `.ts` files directly.
 - Workspace packages export TypeScript source; electron-vite bundles them, so there is no per-package build.
 
 ## Cross-platform

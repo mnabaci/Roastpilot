@@ -12,7 +12,7 @@ Load the `engineering-standards` skill and follow it. New features start with `p
 - **UX first, no walls of text:** one obvious next action per state, numbers before sentences, one-line hints.
 - **SOLID, KISS, DRY:** small single-purpose modules; depend on interfaces; no speculative abstractions.
 - **Extend by adding, not editing:** new hardware, rules, layers or exporters are new implementations of an extension point (`docs/spec/extensibility.md`), registered at startup.
-- **TypeScript everywhere:** app code, config files, scripts and agent hooks are `.ts` (Node 22.18+ runs `.ts` directly). No new `.js` files.
+- **TypeScript everywhere:** app code, config files, scripts and agent hooks are `.ts` (Node 22.22+ and 24 run `.ts` directly). No new `.js` files.
 - **Design tokens only:** no hex colours or magic sizes in UI code.
 - **Safety first:** any path that can leave the heater on must end in `safeStop()`; safety rules are tested.
 

@@ -11,7 +11,7 @@ first-crack tap, then drops and cools on its own.
 
 ## Getting started
 
-Requires Node 22 and pnpm 10 (`corepack enable`).
+Requires Node 24 LTS (22.22+ works) and pnpm 10 (`corepack enable`).
 
 ```sh
 pnpm install
