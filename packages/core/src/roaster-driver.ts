@@ -3,7 +3,9 @@ import type { Channel, Reading, Result } from '@roastpilot/shared';
 /** Expected failures a driver reports instead of throwing. */
 export type DriverError =
   | { kind: 'disconnected' }
-  | { kind: 'version-mismatch'; expected: number; actual: number }
+  | { kind: 'no-reply'; command: string }
+  /** `actual` is null when the sketch is too old to answer VERSION. */
+  | { kind: 'version-mismatch'; expected: number; actual: number | null }
   | { kind: 'bad-reply'; line: string }
   | { kind: 'unknown-channel'; channel: string };
 

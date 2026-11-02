@@ -1,7 +1,12 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node"],
+    // @serialport/binding-mock@10.2.2 has no "types" condition in its exports, so Bundler
+    // resolution finds no declarations. Point at them directly until upstream fixes it.
+    "paths": {
+      "@serialport/binding-mock": ["./node_modules/@serialport/binding-mock/dist/index.d.ts"]
+    }
   },
   "include": ["src"]
 }

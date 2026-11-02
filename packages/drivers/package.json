@@ -16,6 +16,7 @@
     "serialport": "^13.0.0"
   },
   "devDependencies": {
+    "@serialport/binding-mock": "10.2.2",
     "@types/node": "^26.6.6"
   }
 }
