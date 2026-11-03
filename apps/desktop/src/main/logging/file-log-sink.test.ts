@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from 'node:fs';
 import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -43,13 +44,17 @@ describe('FileLogSink', () => {
   });
 
   it('returns from write before anything is on disk: logging never blocks', async () => {
-    const sink = new FileLogSink({ dir, onError: () => undefined });
+    const sink = new FileLogSink({
+      dir,
+      now: () => new Date(2026, 10, 2),
+      onError: () => undefined,
+    });
     sink.write({ level: 'info', scope: 'app', event: 'app.started' });
-    const contents = await Promise.all(
-      (await readdir(dir)).map((n) => readFile(join(dir, n), 'utf8')),
-    );
-    expect(contents.every((c) => c === '')).toBe(true);
+    // Checked synchronously, before the event loop runs: a blocking write would already be on disk.
+    const file = join(dir, 'roastpilot-2026-11-02.log');
+    expect(existsSync(file) ? readFileSync(file, 'utf8') : '').toBe('');
     await sink.flush();
+    expect(readFileSync(file, 'utf8')).toContain('app.started');
   });
 
   it('starts a new file when the day changes', async () => {

@@ -1,9 +1,10 @@
 // Composition root: wires core, drivers, logging and IPC (docs/spec/architecture.md).
-import { RoasterSession, serializeError } from '@roastpilot/core';
+import { serializeError } from '@roastpilot/core';
 import { listSerialPorts } from '@roastpilot/drivers';
 import { IPC_CHANNELS } from '@roastpilot/shared';
 import { app, BrowserWindow } from 'electron';
 import { join } from 'node:path';
+import { createAppServices } from './app-services';
 import { installCrashHandlers } from './crash-handlers';
 import { createDriver } from './driver-factory';
 import { broadcast, registerIpcHandlers, registerIpcListener } from './ipc';
@@ -11,6 +12,7 @@ import { createIpcHandlers, handleRendererLog, withErrorLogging } from './ipc-ha
 import { createAppLogger } from './logging/app-logger';
 import { pruneOldLogsLater } from './logging/prune';
 import { createQuitGuard } from './quit-guard';
+import { JsonSettingsStore } from './settings/json-settings-store';
 import { systemClock } from './system-clock';
 import { WINDOW_BACKGROUND } from './window-background';
 
@@ -23,18 +25,13 @@ logger.info('app.started', {
 });
 pruneOldLogsLater(app.getPath('logs'), logger);
 
-const session = new RoasterSession({
+const { session, roast, settings, snapshot } = createAppServices({
   clock: systemClock,
-  logger: logger.child('session'),
-  onReading: (reading) => {
-    broadcast(IPC_CHANNELS.reading, reading);
-  },
-  onConnection: (state) => {
-    broadcast(IPC_CHANNELS.connection, state);
-  },
-  onSafetyEvent: (event) => {
-    broadcast(IPC_CHANNELS.safetyEvent, event);
-  },
+  logger,
+  settingsStore: new JsonSettingsStore(join(app.getPath('userData'), 'settings.json'), {
+    logger: logger.child('settings'),
+  }),
+  publish: broadcast,
 });
 
 installCrashHandlers({
@@ -111,6 +108,9 @@ app
       withErrorLogging(
         createIpcHandlers({
           session,
+          roast,
+          settings,
+          snapshot,
           listPorts: () => listSerialPorts(),
           createDriver: (target) => createDriver(target, systemClock, logger.child('driver')),
         }),

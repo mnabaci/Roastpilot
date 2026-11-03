@@ -1,5 +1,11 @@
 import { createLogger, type RoasterDriver } from '@roastpilot/core';
-import { IPC_CHANNELS, ok, type LogEntry } from '@roastpilot/shared';
+import {
+  DEFAULT_SETTINGS,
+  IPC_CHANNELS,
+  ok,
+  type LogEntry,
+  type Snapshot,
+} from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import {
   createIpcHandlers,
@@ -7,6 +13,20 @@ import {
   withErrorLogging,
   type IpcDeps,
 } from './ipc-handlers';
+
+const SNAPSHOT: Snapshot = {
+  connection: { status: 'disconnected' },
+  roast: {
+    phase: 'ready',
+    chargedAtMs: null,
+    firstCrackAtMs: null,
+    droppedAtMs: null,
+    coolingEndsAtMs: null,
+    events: [],
+  },
+  readings: [],
+  safety: { locked: false, tripped: [] },
+};
 
 function setup() {
   const calls: unknown[][] = [];
@@ -28,6 +48,20 @@ function setup() {
       emergencyStop: () => calls.push(['emergencyStop']),
       acknowledgeSafety: () => ok(undefined),
     },
+    roast: {
+      act: (action) => {
+        calls.push(['roast', action]);
+        return Promise.resolve(ok(undefined));
+      },
+    },
+    settings: {
+      get: () => Promise.resolve(DEFAULT_SETTINGS),
+      set: (next) => {
+        calls.push(['settings', next]);
+        return Promise.resolve(ok(DEFAULT_SETTINGS));
+      },
+    },
+    snapshot: () => SNAPSHOT,
     listPorts: () => Promise.resolve([{ path: 'COM3' }]),
     createDriver: (target) => {
       calls.push(['createDriver', target]);
@@ -58,6 +92,10 @@ describe('createIpcHandlers', () => {
         IPC_CHANNELS.setOutput,
         IPC_CHANNELS.emergencyStop,
         IPC_CHANNELS.acknowledgeSafety,
+        IPC_CHANNELS.getSnapshot,
+        IPC_CHANNELS.roastAction,
+        IPC_CHANNELS.getSettings,
+        IPC_CHANNELS.setSettings,
       ].sort(),
     );
   });
@@ -78,6 +116,9 @@ describe('createIpcHandlers', () => {
     [IPC_CHANNELS.connect, undefined],
     [IPC_CHANNELS.setOutput, { channel: 'heater', value: '100' }],
     [IPC_CHANNELS.setOutput, { channel: 'heater', value: Number.NaN }],
+    [IPC_CHANNELS.roastAction, 'charge-now'],
+    [IPC_CHANNELS.roastAction, undefined],
+    [IPC_CHANNELS.setSettings, 'full'],
   ])('rejects a bad %s payload %j without touching the roaster', async (channel, payload) => {
     const { handlers, calls } = setup();
     await expect(handle(handlers, channel, payload)).rejects.toThrow();
@@ -88,6 +129,30 @@ describe('createIpcHandlers', () => {
     const { handlers, calls } = setup();
     await handle(handlers, IPC_CHANNELS.setOutput, { channel: 'fan', value: 40 });
     expect(calls).toEqual([['setOutput', 'fan', 40]]);
+  });
+});
+
+describe('roast, snapshot and settings handlers', () => {
+  it('passes a valid roast action on', async () => {
+    const { handlers, calls } = setup();
+    expect(await handle(handlers, IPC_CHANNELS.roastAction, 'first-crack')).toEqual(ok(undefined));
+    expect(calls).toEqual([['roast', 'first-crack']]);
+  });
+
+  it('returns the snapshot and the settings', async () => {
+    const { handlers } = setup();
+    expect(await handle(handlers, IPC_CHANNELS.getSnapshot)).toEqual(SNAPSHOT);
+    expect(await handle(handlers, IPC_CHANNELS.getSettings)).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it('cleans settings at the boundary before the service saves them', async () => {
+    const { handlers, calls } = setup();
+    await handle(handlers, IPC_CHANNELS.setSettings, {
+      controls: 'full',
+      extra: 1,
+      connection: { kind: 'wifi' },
+    });
+    expect(calls).toEqual([['settings', { controls: 'full', connection: null }]]);
   });
 });
 

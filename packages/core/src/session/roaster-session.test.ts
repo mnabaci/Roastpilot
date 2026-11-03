@@ -298,3 +298,32 @@ describe('RoasterSession error handling and logging', () => {
     expect(events()).toContain('warn:session.set-output-failed');
   });
 });
+
+describe('RoasterSession state for a window that opens mid-roast', () => {
+  it('remembers the latest connection state', async () => {
+    const { roaster, session } = setup();
+    expect(session.connection).toEqual({ status: 'disconnected' });
+    await session.connect(roaster);
+    expect(session.connection).toEqual({ status: 'connected', channels: CHANNELS });
+  });
+
+  it('reports the safety lock and tripped rules', async () => {
+    const { roaster, session } = setup();
+    await session.connect(roaster);
+    session.emergencyStop();
+    expect(session.safetyStatus).toEqual({ locked: true, tripped: [] });
+  });
+
+  it('arms max roast time on roastStarted and stands it down on roastEnded', async () => {
+    const { clock, roaster, session, tripped } = setup();
+    await session.connect(roaster);
+    session.roastStarted();
+    await clock.runFor(19 * 60_000);
+    session.roastEnded();
+    await clock.runFor(5 * 60_000);
+    expect(tripped()).toEqual([]);
+    session.roastStarted();
+    await clock.runFor(20 * 60_000 + 1000);
+    expect(tripped()).toEqual(['max-roast-time']);
+  });
+});

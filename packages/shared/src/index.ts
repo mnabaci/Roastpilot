@@ -19,6 +19,8 @@ export {
 export { DriverErrorSchema, type DriverError } from './driver-error';
 export {
   IPC_CHANNELS,
+  SnapshotSchema,
+  type Snapshot,
   type IpcEventChannel,
   type IpcEventPayloads,
   SetOutputRequestSchema,
@@ -36,6 +38,27 @@ export {
   type RendererLogEntry,
 } from './log-entry';
 export { err, ok, type Result } from './result';
+export {
+  RoastActionErrorSchema,
+  RoastActionSchema,
+  RoastEventSchema,
+  RoastPhaseSchema,
+  RoastStateSchema,
+  type RoastAction,
+  type RoastActionError,
+  type RoastEvent,
+  type RoastPhase,
+  type RoastState,
+} from './roast';
+export {
+  ControlsLevelSchema,
+  DEFAULT_SETTINGS,
+  SettingsSchema,
+  SettingsWriteErrorSchema,
+  type ControlsLevel,
+  type Settings,
+  type SettingsWriteError,
+} from './settings';
 export {
   AcknowledgeErrorSchema,
   SafetyActionSchema,

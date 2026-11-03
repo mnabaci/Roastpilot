@@ -1,6 +1,7 @@
 import {
   serializeError,
   type Logger,
+  type ManualRoast,
   type RoasterDriver,
   type RoasterSession,
 } from '@roastpilot/core';
@@ -8,16 +9,23 @@ import {
   ConnectTargetSchema,
   IPC_CHANNELS,
   RendererLogEntrySchema,
+  RoastActionSchema,
   SetOutputRequestSchema,
+  SettingsSchema,
   type ConnectTarget,
   type SerialPortInfo,
+  type Snapshot,
 } from '@roastpilot/shared';
+import type { SettingsService } from './settings/settings-service';
 
 export interface IpcDeps {
   session: Pick<
     RoasterSession,
     'connect' | 'disconnect' | 'setOutput' | 'emergencyStop' | 'acknowledgeSafety'
   >;
+  roast: Pick<ManualRoast, 'act'>;
+  settings: Pick<SettingsService, 'get' | 'set'>;
+  snapshot: () => Snapshot;
   listPorts: () => Promise<SerialPortInfo[]>;
   createDriver: (target: ConnectTarget) => RoasterDriver;
 }
@@ -35,6 +43,9 @@ function handler(fn: (payload: unknown) => unknown): IpcHandler {
  */
 export function createIpcHandlers({
   session,
+  roast,
+  settings,
+  snapshot,
   listPorts,
   createDriver,
 }: IpcDeps): Record<string, IpcHandler> {
@@ -52,6 +63,10 @@ export function createIpcHandlers({
       session.emergencyStop();
     }),
     [IPC_CHANNELS.acknowledgeSafety]: handler(() => session.acknowledgeSafety()),
+    [IPC_CHANNELS.getSnapshot]: handler(() => snapshot()),
+    [IPC_CHANNELS.roastAction]: handler((payload) => roast.act(RoastActionSchema.parse(payload))),
+    [IPC_CHANNELS.getSettings]: handler(() => settings.get()),
+    [IPC_CHANNELS.setSettings]: handler((payload) => settings.set(SettingsSchema.parse(payload))),
   };
 }
 

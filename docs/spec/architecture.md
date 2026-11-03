@@ -32,17 +32,21 @@ flowchart TB
 - **Renderer:** React built from `@roastpilot/ui`, with uPlot for the live chart. It talks only through the typed `window.roastpilot` API: `startRoast`, `markFirstCrack`, `setOutput`, `onReading`, and so on.
 - **IPC contract:** channel names and zod schemas live in `@roastpilot/shared`. Main validates every payload from the renderer before acting on it.
 
-| Call                | Kind   | Payload → result                                                    |
-| ------------------- | ------ | ------------------------------------------------------------------- |
-| `listPorts`         | invoke | – → serial ports                                                    |
-| `connect`           | invoke | `{ kind: 'serial', path }` or `{ kind: 'simulator' }` → result      |
-| `disconnect`        | invoke | – → safe stop, then closed                                          |
-| `setOutput`         | invoke | `{ channel, value }` → result (`safety-locked` while locked)        |
-| `emergencyStop`     | invoke | – → safe stop and heater lock                                       |
-| `acknowledgeSafety` | invoke | – → result (`still-tripped` while a rule holds)                     |
-| `onReading`         | event  | reading every 1 s                                                   |
-| `onConnection`      | event  | `disconnected`, `connecting`, `connected` (with channels) or `lost` |
-| `onSafetyEvent`     | event  | `tripped`, `cleared`, `unlocked`                                    |
+| Call                          | Kind   | Payload → result                                                                                                           |
+| ----------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `listPorts`                   | invoke | – → serial ports                                                                                                           |
+| `connect`                     | invoke | `{ kind: 'serial', path }` or `{ kind: 'simulator' }` → result                                                             |
+| `disconnect`                  | invoke | – → safe stop, then closed                                                                                                 |
+| `setOutput`                   | invoke | `{ channel, value }` → result (`safety-locked` while locked)                                                               |
+| `emergencyStop`               | invoke | – → safe stop and heater lock                                                                                              |
+| `acknowledgeSafety`           | invoke | – → result (`still-tripped` while a rule holds)                                                                            |
+| `onReading`                   | event  | reading every 1 s                                                                                                          |
+| `onConnection`                | event  | `disconnected`, `connecting`, `connected` (with channels) or `lost`                                                        |
+| `onSafetyEvent`               | event  | `tripped`, `cleared`, `unlocked`                                                                                           |
+| `getSnapshot`                 | invoke | – → connection, roast state, readings so far, safety lock and tripped rules (for a window that opens or reloads mid-roast) |
+| `roastAction`                 | invoke | `preheat`, `start`, `first-crack`, `drop` → result (`not-allowed` in the wrong state)                                      |
+| `onRoast`                     | event  | roast state, events (charge, first crack, drop) and timings                                                                |
+| `getSettings` / `setSettings` | invoke | – / settings → settings (validated)                                                                                        |
 
 - **Quit and crash:** before the app quits, and on an uncaught error in main, the session sends the safe stop (given up to 2 s) before anything else.
 - **Clock:** main uses a monotonic clock (`performance.now()`), so a system clock change can't fool the lost-connection rule.
