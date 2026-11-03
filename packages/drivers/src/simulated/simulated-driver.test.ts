@@ -45,7 +45,14 @@ describe('SimulatedDriver', () => {
 
   it('starts at ambient with outputs off', async () => {
     const { driver } = await connected();
-    expect(await readValues(driver)).toEqual({ bt: 22, heater: 0, fan: 0 });
+    expect(await readValues(driver)).toEqual({
+      bt: 22,
+      heater: 0,
+      fan: 0,
+      cooling: 0,
+      filter: 0,
+      drum: 0,
+    });
   });
 
   it('stamps readings with the clock time', async () => {

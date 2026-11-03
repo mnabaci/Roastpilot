@@ -22,7 +22,8 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.66.0",
-    "tailwind-merge": "^3.7.0"
+    "tailwind-merge": "^3.7.0",
+    "uplot": "^1.6.32"
   },
   "devDependencies": {
     "@storybook/addon-a11y": "^10.6.5",

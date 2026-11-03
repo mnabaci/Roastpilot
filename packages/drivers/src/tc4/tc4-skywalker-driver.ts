@@ -44,6 +44,8 @@ export class Tc4SkywalkerDriver implements RoasterDriver {
   readonly #queue: CommandQueue;
   readonly #logger: Logger;
   readonly #outputs = new Map<string, OutputChannel>();
+  /** Last value sent per output. READ only echoes heater and fan, so the rest come from here. */
+  readonly #sent = new Map<string, number>();
   #connected = false;
 
   constructor(options: Tc4SkywalkerDriverOptions) {
@@ -52,7 +54,10 @@ export class Tc4SkywalkerDriver implements RoasterDriver {
     this.#queue = new CommandQueue(options.transport, options.clock);
     this.#logger = options.logger ?? silentLogger;
     for (const channel of this.channels) {
-      if (channel.kind === 'output') this.#outputs.set(channel.id, channel);
+      if (channel.kind === 'output') {
+        this.#outputs.set(channel.id, channel);
+        this.#sent.set(channel.id, 0);
+      }
     }
     options.transport.onClose(() => {
       this.#connected = false;
@@ -78,7 +83,11 @@ export class Tc4SkywalkerDriver implements RoasterDriver {
     if (!this.#connected) return err({ kind: 'disconnected' });
     const parsed = await this.#readOnce();
     if (!parsed.ok) return parsed;
-    return ok({ atMs: this.#clock.now(), values: { ...parsed.value } });
+    // Every channel in every reading (docs/spec/hardware.md): the reply wins for what it reports.
+    return ok({
+      atMs: this.#clock.now(),
+      values: { ...Object.fromEntries(this.#sent), ...parsed.value },
+    });
   }
 
   async setOutput(channel: string, value: number): Promise<Result<void, DriverError>> {
@@ -96,7 +105,11 @@ export class Tc4SkywalkerDriver implements RoasterDriver {
       }
       if (!allSent) {
         this.#logger.warn('driver.safe-stop-incomplete', { fallback: 'ESTOP' });
-        await this.#queue.send('ESTOP');
+        const estop = await this.#queue.send('ESTOP');
+        if (estop.ok) {
+          this.#sent.set('heater', 0);
+          this.#sent.set('fan', 100);
+        }
       }
     } catch (error) {
       // Nothing more to do from here: the sketch's 10 s watchdog switches everything off.
@@ -138,10 +151,13 @@ export class Tc4SkywalkerDriver implements RoasterDriver {
     return reply.ok ? parseReadReply(reply.value) : reply;
   }
 
-  #sendOutput(channel: string, value: number): Promise<Result<void, DriverError>> {
+  async #sendOutput(channel: string, value: number): Promise<Result<void, DriverError>> {
     const output = this.#outputs.get(channel);
     const command = OUTPUT_COMMANDS[channel];
-    if (!output || !command) return Promise.resolve(err({ kind: 'unknown-channel', channel }));
-    return this.#queue.send(`${command};${String(quantize(output, value))}`);
+    if (!output || !command) return err({ kind: 'unknown-channel', channel });
+    const quantized = quantize(output, value);
+    const sent = await this.#queue.send(`${command};${String(quantized)}`);
+    if (sent.ok) this.#sent.set(channel, quantized);
+    return sent;
   }
 }

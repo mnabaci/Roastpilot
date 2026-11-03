@@ -9,11 +9,19 @@ export interface AlertBannerProps {
   /** One line: what happened, then what the app did. */
   children: ReactNode;
   onDismiss?: () => void;
+  /** Button text for `onDismiss`, e.g. "Acknowledge" for a safety trip. */
+  dismissLabel?: string;
   className?: string;
 }
 
 /** A full-width banner that needs attention without blocking the roast. Never a modal. */
-export function AlertBanner({ kind, children, onDismiss, className }: AlertBannerProps) {
+export function AlertBanner({
+  kind,
+  children,
+  onDismiss,
+  dismissLabel = 'Dismiss',
+  className,
+}: AlertBannerProps) {
   const critical = kind === 'critical';
   const Icon = critical ? TriangleAlert : CircleAlert;
   return (
@@ -34,7 +42,7 @@ export function AlertBanner({ kind, children, onDismiss, className }: AlertBanne
       </p>
       {onDismiss ? (
         <Button variant="ghost" size="sm" onClick={onDismiss}>
-          Dismiss
+          {dismissLabel}
         </Button>
       ) : null}
     </div>

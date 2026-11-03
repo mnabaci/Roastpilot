@@ -37,7 +37,7 @@ export function StatCard({
       {...props}
     >
       <p className="text-label text-ink-muted">{label}</p>
-      <p className="flex items-baseline gap-1.5">
+      <p className="flex flex-wrap items-baseline gap-x-1.5">
         <span className={valueVariants({ tone })}>{hasValue ? value : '—'}</span>
         {unit && hasValue ? <span className="text-heading text-ink-muted">{unit}</span> : null}
       </p>

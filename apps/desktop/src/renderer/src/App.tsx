@@ -1,16 +1,30 @@
-// Placeholder screen proving the toolchain and design tokens work.
-// Replaced by the Roast screen at milestone 2.
+import { useState } from 'react';
+import { useAppState } from './state/app-context';
+import { RoastScreen } from './screens/RoastScreen';
+import { SettingsScreen } from './screens/SettingsScreen';
+import { SafetyBanners } from './shell/SafetyBanners';
+import { TopBar, type Screen } from './shell/TopBar';
+
+/** The app shell: top bar, safety banners, and the Roast or Settings screen. */
 export function App() {
+  const ready = useAppState((s) => s.ready);
+  const connected = useAppState((s) => s.connection.status !== 'disconnected');
+  // Start where the next action is: Settings until a roaster is connected.
+  const [screen, setScreen] = useState<Screen | undefined>();
+  const shown = screen ?? (connected ? 'roast' : 'settings');
   return (
-    <main className="flex min-h-screen flex-col items-start justify-center gap-3 bg-bg p-6 font-sans text-ink">
-      <h1 className="text-3xl font-bold tracking-tight">Roastpilot</h1>
-      <p className="text-ink-muted">Scaffold ready. Implementation starts at milestone 1.</p>
-      <div className="flex items-center gap-2 text-sm text-ink-muted">
-        <span aria-hidden="true" className="size-2 rounded-full bg-heat-fill" />
-        heat
-        <span aria-hidden="true" className="ml-4 size-2 rounded-full bg-air" />
-        air
-      </div>
-    </main>
+    <div className="flex min-h-screen flex-col bg-bg font-sans text-ink">
+      <TopBar screen={shown} onNavigate={setScreen} />
+      <SafetyBanners />
+      {!ready ? null : shown === 'roast' ? (
+        <RoastScreen
+          onConnect={() => {
+            setScreen('settings');
+          }}
+        />
+      ) : (
+        <SettingsScreen />
+      )}
+    </div>
   );
 }

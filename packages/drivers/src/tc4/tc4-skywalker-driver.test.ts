@@ -79,7 +79,26 @@ describe('Tc4SkywalkerDriver', () => {
       const startedAt = clock.now();
       expect(await run(driver.read())).toEqual({
         ok: true,
-        value: { atMs: startedAt, values: { bt: 42.39, heater: 30, fan: 0 } },
+        value: {
+          atMs: startedAt,
+          values: { bt: 42.39, heater: 30, fan: 0, cooling: 0, filter: 0, drum: 0 },
+        },
+      });
+    });
+
+    it('fills in the outputs READ does not report from what was last sent', async () => {
+      const { driver, run } = await connected();
+      await run(driver.setOutput('cooling', 100));
+      await run(driver.setOutput('drum', 1));
+      const reading = await run(driver.read());
+      // Heater and fan still come from the reply (30 and 0 in the bench line), not from what was sent.
+      expect(reading.ok && reading.value.values).toEqual({
+        bt: 42.39,
+        heater: 30,
+        fan: 0,
+        cooling: 100,
+        filter: 0,
+        drum: 1,
       });
     });
 

@@ -1,0 +1,67 @@
+import { OutputControl } from '@roastpilot/ui';
+import { controlsAccess } from '../lib/controls-access';
+import { isConnected } from '../lib/flow-step';
+import { useOutput } from '../hooks/use-output';
+import { useAppState } from '../state/app-context';
+import { OnOffButton } from './OnOffButton';
+
+/** Heater and fan sliders, the drum switch and, in Full control, the cooling switch. */
+export function OutputsPanel() {
+  const level = useAppState((s) => s.settings.controls);
+  const phase = useAppState((s) => s.roast.phase);
+  const connected = useAppState((s) => isConnected(s.connection));
+  const locked = useAppState((s) => s.safety.locked);
+  const access = controlsAccess(level, phase, connected);
+  const heater = useOutput('heater');
+  const fan = useOutput('fan');
+  const drum = useOutput('drum');
+  const cooling = useOutput('cooling');
+  const hint = locked
+    ? 'Heater locked · acknowledge above'
+    : heater.value > 0 && drum.value === 0
+      ? 'Drum is off'
+      : !access.outputs && connected
+        ? 'Heater and fan wait for Preheat'
+        : undefined;
+  return (
+    <section aria-label="Outputs" className="flex flex-col gap-5 rounded-xl bg-surface px-5 py-4.5">
+      <OutputControl
+        label="Heater"
+        tone="heat"
+        mode="manual"
+        value={heater.value}
+        onChange={heater.set}
+        disabled={!access.outputs || locked}
+      />
+      <OutputControl
+        label="Fan"
+        tone="air"
+        mode="manual"
+        value={fan.value}
+        onChange={fan.set}
+        disabled={!access.outputs}
+      />
+      <div className="flex flex-col gap-2">
+        <OnOffButton
+          label="Drum"
+          on={drum.value > 0}
+          disabled={!access.drum}
+          onToggle={(on) => {
+            drum.set(on ? 1 : 0);
+          }}
+        />
+        {access.showCooling ? (
+          <OnOffButton
+            label="Cooling"
+            on={cooling.value > 0}
+            disabled={!connected}
+            onToggle={(on) => {
+              cooling.set(on ? 100 : 0);
+            }}
+          />
+        ) : null}
+      </div>
+      {hint ? <p className="text-label text-ink-muted">{hint}</p> : null}
+    </section>
+  );
+}

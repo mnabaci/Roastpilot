@@ -6,3 +6,6 @@ export { CoachCard, type CoachCardProps } from './components/CoachCard';
 export { OutputControl, type OutputControlProps } from './components/OutputControl';
 export { PhaseStepper, type PhaseStepperProps } from './components/PhaseStepper';
 export { StatCard, type StatCardProps } from './components/StatCard';
+export { RoastChart, type RoastChartProps } from './components/RoastChart';
+export type { ChartLayer, ChartMarker, ChartPoint } from './components/roast-chart/chart-layer';
+export { formatClock, formatNumber } from './lib/format';

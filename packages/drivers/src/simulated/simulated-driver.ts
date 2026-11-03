@@ -80,12 +80,8 @@ export class SimulatedDriver implements RoasterDriver {
     return Promise.resolve(
       ok({
         atMs: this.#clock.now(),
-        // Like the sketch's READ reply: temperature plus the heater and fan echo.
-        values: {
-          bt: this.#stalledTempC ?? this.#tempC,
-          heater: this.#value('heater'),
-          fan: this.#value('fan'),
-        },
+        // Like the real driver: the temperature plus every output (docs/spec/hardware.md).
+        values: { ...Object.fromEntries(this.#values), bt: this.#stalledTempC ?? this.#tempC },
       }),
     );
   }
