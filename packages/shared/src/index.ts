@@ -37,6 +37,15 @@ export {
   type LogLevel,
   type RendererLogEntry,
 } from './log-entry';
+export {
+  LogDayReadSchema,
+  LogDaySchema,
+  LogRecordSchema,
+  MAX_LOG_RECORDS,
+  type LogDay,
+  type LogDayRead,
+  type LogRecord,
+} from './log-record';
 export { err, ok, type Result } from './result';
 export {
   RoastActionErrorSchema,

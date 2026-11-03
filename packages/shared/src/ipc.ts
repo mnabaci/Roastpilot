@@ -8,6 +8,7 @@ import {
 } from './connection';
 import type { DriverError } from './driver-error';
 import type { RendererLogEntry } from './log-entry';
+import type { LogDay, LogDayRead, LogRecord } from './log-record';
 import type { Result } from './result';
 import {
   RoastStateSchema,
@@ -35,6 +36,10 @@ export const IPC_CHANNELS = {
   roast: 'roast:state',
   getSettings: 'settings:get',
   setSettings: 'settings:set',
+  listLogDays: 'logs:list-days',
+  readLogDay: 'logs:read-day',
+  logEntries: 'logs:entries',
+  openLogFolder: 'logs:open-folder',
 } as const;
 
 /** Everything a window needs when it opens or reloads mid-roast. */
@@ -53,6 +58,7 @@ export interface IpcEventPayloads {
   [IPC_CHANNELS.connection]: ConnectionState;
   [IPC_CHANNELS.safetyEvent]: SafetyEvent;
   [IPC_CHANNELS.roast]: RoastState;
+  [IPC_CHANNELS.logEntries]: LogRecord[];
 }
 export type IpcEventChannel = keyof IpcEventPayloads;
 
@@ -86,4 +92,10 @@ export interface RoastpilotApi {
   getSettings(): Promise<Settings>;
   /** Saves and returns what was saved (unknown or bad fields fall back to defaults). */
   setSettings(settings: Settings): Promise<Result<Settings, SettingsWriteError>>;
+  /** Days with a log file, newest first. */
+  listLogDays(): Promise<LogDay[]>;
+  readLogDay(day: LogDay): Promise<LogDayRead>;
+  /** New log entries as they are written, in batches. */
+  onLogEntries(listener: (records: LogRecord[]) => void): Unsubscribe;
+  openLogFolder(): Promise<void>;
 }

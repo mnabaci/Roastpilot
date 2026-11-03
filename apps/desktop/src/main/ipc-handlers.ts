@@ -8,11 +8,14 @@ import {
 import {
   ConnectTargetSchema,
   IPC_CHANNELS,
+  LogDaySchema,
   RendererLogEntrySchema,
   RoastActionSchema,
   SetOutputRequestSchema,
   SettingsSchema,
   type ConnectTarget,
+  type LogDay,
+  type LogDayRead,
   type SerialPortInfo,
   type Snapshot,
 } from '@roastpilot/shared';
@@ -28,6 +31,11 @@ export interface IpcDeps {
   snapshot: () => Snapshot;
   listPorts: () => Promise<SerialPortInfo[]>;
   createDriver: (target: ConnectTarget) => RoasterDriver;
+  logs: {
+    listDays: () => Promise<LogDay[]>;
+    readDay: (day: LogDay) => Promise<LogDayRead>;
+    openFolder: () => Promise<void>;
+  };
 }
 
 export type IpcHandler = (payload: unknown) => Promise<unknown>;
@@ -48,6 +56,7 @@ export function createIpcHandlers({
   snapshot,
   listPorts,
   createDriver,
+  logs,
 }: IpcDeps): Record<string, IpcHandler> {
   return {
     [IPC_CHANNELS.listPorts]: handler(() => listPorts()),
@@ -67,6 +76,9 @@ export function createIpcHandlers({
     [IPC_CHANNELS.roastAction]: handler((payload) => roast.act(RoastActionSchema.parse(payload))),
     [IPC_CHANNELS.getSettings]: handler(() => settings.get()),
     [IPC_CHANNELS.setSettings]: handler((payload) => settings.set(SettingsSchema.parse(payload))),
+    [IPC_CHANNELS.listLogDays]: handler(() => logs.listDays()),
+    [IPC_CHANNELS.readLogDay]: handler((payload) => logs.readDay(LogDaySchema.parse(payload))),
+    [IPC_CHANNELS.openLogFolder]: handler(() => logs.openFolder()),
   };
 }
 
