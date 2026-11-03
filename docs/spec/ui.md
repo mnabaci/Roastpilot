@@ -6,12 +6,13 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 ## Roast screen (main)
 
 - **Top bar:** connection status, active roaster, selected bean and profile, phase name.
-- **Milestone 2:** the manual flow from [manual-mode.md](manual-mode.md): top bar (connection status, state), phase stepper, big numbers (BT, RoR, time, development), live chart (BT and RoR, charge/FC/drop markers), heater and fan controls, drum switch, flow buttons and the red Emergency stop. Safety trips show as banners with Acknowledge. Bean, profile, ghost and coach come later.
+- **Milestone 2:** the manual flow from [manual-mode.md](manual-mode.md): top bar (connection status, state), phase stepper, big numbers (BT, RoR, time, development), live chart (BT and RoR, charge/FC/drop markers, heater and fan strip), heater and fan controls, drum switch, flow buttons and the red Emergency stop. Safety trips show as banners with Acknowledge. Bean, profile, ghost and coach come later.
 - **Preheat:** shows the between-batch protocol (cool, climb, hold countdown), then "Add beans".
 - **Before preheat:** bean picker (search + recent), batch weight (prefilled from the bean's batch plan), then the suggested profile and ghost with a one-line reason and a Change link for each.
 - **Phase stepper:** Preheat, Roast, First crack, Drop, Cool.
 - **Big numbers:** current temp, RoR (°C/min), elapsed time, development time, delta vs ghost.
 - **Chart:** live temperature vs the profile's reference points (dashed), the current phase's RoR band, RoR on a second axis, ghost faded behind, markers for charge, dry end, FC and drop.
+- **Outputs strip:** a slim band under the chart with heater and fan as step lines (0–100 %), on the chart's time axis and markers, so every change lines up with the curve it caused.
 - **Mode switch:** Auto / Manual. In Manual, the coach card sits above the outputs.
 - **Outputs:** heater % and fan %, each with a slider and an Auto/Manual badge.
 - **Buttons:** Preheat, Start (charge), First crack, Drop now, and a red Emergency stop that is always visible.
