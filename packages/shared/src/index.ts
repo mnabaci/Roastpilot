@@ -24,7 +24,13 @@ export {
   type IpcEventChannel,
   type IpcEventPayloads,
   SetOutputRequestSchema,
+  type AppApi,
+  type LogsApi,
+  type RoastApi,
+  type RoasterApi,
   type RoastpilotApi,
+  type SafetyApi,
+  type SettingsApi,
   type SetOutputRequest,
   type Unsubscribe,
 } from './ipc';

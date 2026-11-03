@@ -71,27 +71,42 @@ export type SetOutputRequest = z.infer<typeof SetOutputRequestSchema>;
 /** Stops listening. */
 export type Unsubscribe = () => void;
 
-/** The typed API the preload script exposes to the renderer as `window.roastpilot`. */
-export interface RoastpilotApi {
+// The renderer API, one interface per area (interface segregation): code that needs one area
+// depends on that interface only. `RoastpilotApi` is all of them, as `window.roastpilot`.
+
+/** The roaster connection and its outputs. */
+export interface RoasterApi {
   listPorts(): Promise<SerialPortInfo[]>;
   connect(target: ConnectTarget): Promise<Result<void, DriverError>>;
   /** Safe stop, then close the port. */
   disconnect(): Promise<void>;
   setOutput(request: SetOutputRequest): Promise<Result<void, DriverError>>;
+  onReading(listener: (reading: Reading) => void): Unsubscribe;
+  onConnection(listener: (state: ConnectionState) => void): Unsubscribe;
+}
+
+export interface SafetyApi {
   /** Safe stop and lock the heater until acknowledged. */
   emergencyStop(): Promise<void>;
   acknowledgeSafety(): Promise<Result<void, AcknowledgeError>>;
-  onReading(listener: (reading: Reading) => void): Unsubscribe;
-  onConnection(listener: (state: ConnectionState) => void): Unsubscribe;
   onSafetyEvent(listener: (event: SafetyEvent) => void): Unsubscribe;
-  /** Fire and forget: sends a renderer error or event to main's log. */
-  log(entry: RendererLogEntry): void;
-  getSnapshot(): Promise<Snapshot>;
+}
+
+export interface RoastApi {
   roastAction(action: RoastAction): Promise<Result<void, RoastActionError>>;
   onRoast(listener: (state: RoastState) => void): Unsubscribe;
+}
+
+export interface SettingsApi {
   getSettings(): Promise<Settings>;
   /** Saves and returns what was saved (unknown or bad fields fall back to defaults). */
   setSettings(settings: Settings): Promise<Result<Settings, SettingsWriteError>>;
+}
+
+/** The log: writing from the renderer and the log viewer. */
+export interface LogsApi {
+  /** Fire and forget: sends a renderer error or event to main's log. */
+  log(entry: RendererLogEntry): void;
   /** Days with a log file, newest first. */
   listLogDays(): Promise<LogDay[]>;
   readLogDay(day: LogDay): Promise<LogDayRead>;
@@ -99,3 +114,12 @@ export interface RoastpilotApi {
   onLogEntries(listener: (records: LogRecord[]) => void): Unsubscribe;
   openLogFolder(): Promise<void>;
 }
+
+/** Everything a window needs when it opens. */
+export interface AppApi {
+  getSnapshot(): Promise<Snapshot>;
+}
+
+/** The typed API the preload script exposes to the renderer as `window.roastpilot`. */
+export interface RoastpilotApi
+  extends RoasterApi, SafetyApi, RoastApi, SettingsApi, LogsApi, AppApi {}

@@ -1,4 +1,4 @@
-import type { RoastpilotApi } from '@roastpilot/shared';
+import type { LogsApi } from '@roastpilot/shared';
 
 function describe(error: unknown): Record<string, unknown> {
   return error instanceof Error
@@ -9,7 +9,7 @@ function describe(error: unknown): Record<string, unknown> {
 /** Sends every uncaught renderer error to main's log (docs/spec/errors-and-logging.md). */
 export function forwardErrors(
   target: Pick<Window, 'addEventListener'>,
-  api: Pick<RoastpilotApi, 'log'>,
+  api: Pick<LogsApi, 'log'>,
 ): void {
   target.addEventListener('error', (event: ErrorEvent) => {
     api.log({
