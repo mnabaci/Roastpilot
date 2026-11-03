@@ -43,6 +43,10 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 
 - Order weight in, two plans out side by side; pick one to save it to a bean.
 
+## Logs screen
+
+- Milestone 2: the log viewer from [errors-and-logging.md](errors-and-logging.md#viewer).
+
 ## Settings
 
 - Roasters: list, add, edit, set active. Safety limits and tuning live in each roaster.

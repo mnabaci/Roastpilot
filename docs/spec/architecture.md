@@ -47,6 +47,10 @@ flowchart TB
 | `roastAction`                 | invoke | `preheat`, `start`, `first-crack`, `drop` → result (`not-allowed` in the wrong state)                                      |
 | `onRoast`                     | event  | roast state, events (charge, first crack, drop) and timings                                                                |
 | `getSettings` / `setSettings` | invoke | – / settings → settings (validated)                                                                                        |
+| `listLogDays`                 | invoke | – → days with a log file, newest first                                                                                     |
+| `readLogDay`                  | invoke | `YYYY-MM-DD` → the day's last 2,000 entries and how many lines were unreadable                                             |
+| `onLogEntries`                | event  | new log entries as they are written, batched                                                                               |
+| `openLogFolder`               | invoke | – → opens the log folder in Finder or Explorer                                                                             |
 
 - **Quit and crash:** before the app quits, and on an uncaught error in main, the session sends the safe stop (given up to 2 s) before anything else.
 - **Clock:** main uses a monotonic clock (`performance.now()`), so a system clock change can't fool the lost-connection rule.
