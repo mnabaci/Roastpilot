@@ -1,6 +1,6 @@
 import type { Reading } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import { INITIAL_STATE } from '../state/app-state';
+import { READY_ROAST } from '../../stores/roast-store';
 import { roastChartData } from './roast-chart-data';
 
 const readings: Reading[] = Array.from({ length: 61 }, (_, s) => ({
@@ -12,7 +12,7 @@ describe('roastChartData', () => {
   it('temperature and RoR layers in seconds since charge, with markers', () => {
     const { layers, markers } = roastChartData(
       {
-        ...INITIAL_STATE.roast,
+        ...READY_ROAST,
         phase: 'roasting',
         chargedAtMs: 20_000,
         events: [{ kind: 'charge', atMs: 20_000, bt: 101 }],
@@ -29,7 +29,7 @@ describe('roastChartData', () => {
   });
 
   it('before charge, time counts from the first reading and readings without BT are skipped', () => {
-    const { layers } = roastChartData(INITIAL_STATE.roast, [
+    const { layers } = roastChartData(READY_ROAST, [
       { atMs: 5_000, values: { heater: 0 } },
       ...readings,
     ]);
@@ -38,7 +38,7 @@ describe('roastChartData', () => {
 
   it('cool-end is not a marker', () => {
     const { markers } = roastChartData(
-      { ...INITIAL_STATE.roast, phase: 'done', events: [{ kind: 'cool-end', atMs: 1, bt: null }] },
+      { ...READY_ROAST, phase: 'done', events: [{ kind: 'cool-end', atMs: 1, bt: null }] },
       readings,
     );
     expect(markers).toEqual([]);

@@ -1,9 +1,10 @@
 import type { AcknowledgeError } from '@roastpilot/shared';
 import { AlertBanner } from '@roastpilot/ui';
 import { useState } from 'react';
-import { useAppState, useDeps } from '../state/app-context';
-import { safetyCopy } from '../lib/safety-copy';
-import { useRun } from '../hooks/use-run';
+import { useSafety } from '../stores/use-stores';
+import { useDeps } from './app-context';
+import { safetyCopy } from './safety-copy';
+import { useRun } from '../features/use-run';
 
 const refusedText = (error: AcknowledgeError) =>
   `Still tripped: ${error.rules.map((rule) => safetyCopy(rule).text.split(' · ')[0]).join(', ')}`;
@@ -12,7 +13,8 @@ const refusedText = (error: AcknowledgeError) =>
 export function SafetyBanners() {
   const { api } = useDeps();
   const run = useRun();
-  const { locked, tripped } = useAppState((s) => s.safety);
+  const locked = useSafety((s) => s.locked);
+  const tripped = useSafety((s) => s.tripped);
   const [refused, setRefused] = useState<string | undefined>();
   if (!locked && tripped.length === 0) return null;
   const acknowledge = () => {

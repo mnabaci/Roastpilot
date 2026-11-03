@@ -1,8 +1,9 @@
 import type { ConnectionState, RoastPhase } from '@roastpilot/shared';
 import { Badge, Button } from '@roastpilot/ui';
 import { OctagonX } from 'lucide-react';
-import { useAppState, useDeps } from '../state/app-context';
-import { useRun } from '../hooks/use-run';
+import { useConnection, useRoast } from '../stores/use-stores';
+import { useDeps } from './app-context';
+import { useRun } from '../features/use-run';
 
 export type Screen = 'roast' | 'settings';
 
@@ -37,8 +38,8 @@ export function TopBar({
 }) {
   const { api } = useDeps();
   const run = useRun();
-  const status = useAppState((s) => s.connection.status);
-  const phase = useAppState((s) => s.roast.phase);
+  const status = useConnection((s) => s.connection.status);
+  const phase = useRoast((s) => s.roast.phase);
   return (
     <header className="flex items-center gap-4 border-b border-border px-6 py-3">
       <nav aria-label="Screens" className="flex gap-1">

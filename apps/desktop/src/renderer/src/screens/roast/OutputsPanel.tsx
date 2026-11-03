@@ -1,16 +1,16 @@
 import { OutputControl } from '@roastpilot/ui';
-import { controlsAccess } from '../lib/controls-access';
-import { isConnected } from '../lib/flow-step';
-import { useOutput } from '../hooks/use-output';
-import { useAppState } from '../state/app-context';
+import { controlsAccess } from './controls-access';
+import { isConnected } from './flow-step';
+import { useOutput } from './use-output';
+import { useConnection, useRoast, useSafety, useSettings } from '../../stores/use-stores';
 import { OnOffButton } from './OnOffButton';
 
 /** Heater and fan sliders, the drum switch and, in Full control, the cooling switch. */
 export function OutputsPanel() {
-  const level = useAppState((s) => s.settings.controls);
-  const phase = useAppState((s) => s.roast.phase);
-  const connected = useAppState((s) => isConnected(s.connection));
-  const locked = useAppState((s) => s.safety.locked);
+  const level = useSettings((s) => s.settings.controls);
+  const phase = useRoast((s) => s.roast.phase);
+  const connected = useConnection((s) => isConnected(s.connection));
+  const locked = useSafety((s) => s.locked);
   const access = controlsAccess(level, phase, connected);
   const heater = useOutput('heater');
   const fan = useOutput('fan');

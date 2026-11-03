@@ -2,7 +2,7 @@ import { err } from '@roastpilot/shared';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { CONNECTED, fakeApi, renderApp } from '../test/render-app';
+import { CONNECTED, fakeApi, renderApp } from '../../test/render-app';
 import { SettingsScreen } from './SettingsScreen';
 
 const ports = () =>
@@ -63,10 +63,10 @@ describe('SettingsScreen', () => {
   });
 
   it('switches between Guided and Full control', async () => {
-    const { api, store } = renderApp(<SettingsScreen />);
+    const { api, stores } = renderApp(<SettingsScreen />);
     expect(screen.getByRole('button', { name: 'Guided' })).toHaveAttribute('aria-pressed', 'true');
     await userEvent.click(screen.getByRole('button', { name: 'Full control' }));
-    expect(store.getState().settings.controls).toBe('full');
+    expect(stores.settings.getState().settings.controls).toBe('full');
     expect(api.setSettings).toHaveBeenCalledWith({ connection: null, controls: 'full' });
   });
 
@@ -74,8 +74,8 @@ describe('SettingsScreen', () => {
     const api = fakeApi({
       setSettings: () => Promise.resolve(err({ kind: 'write-failed', message: 'disk full' })),
     });
-    const { store } = renderApp(<SettingsScreen />, {}, api);
+    const { stores } = renderApp(<SettingsScreen />, {}, api);
     await userEvent.click(screen.getByRole('button', { name: 'Full control' }));
-    expect(store.getState().settings.controls).toBe('full');
+    expect(stores.settings.getState().settings.controls).toBe('full');
   });
 });

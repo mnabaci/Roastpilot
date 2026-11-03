@@ -1,8 +1,9 @@
 import { serializeError } from '@roastpilot/core';
 import type { Reading } from '@roastpilot/shared';
 import { useEffect, useMemo, useState } from 'react';
-import { throttle } from '../lib/throttle';
-import { useAppState, useDeps } from '../state/app-context';
+import { throttle } from '../../lib/throttle';
+import { useDeps } from '../../app/app-context';
+import { useRoast } from '../../stores/use-stores';
 
 /** Slider commands go out at most this often while dragging. */
 export const OUTPUT_THROTTLE_MS = 150;
@@ -33,9 +34,9 @@ function pendingShown(pending: Pending, channel: string, readings: readonly Read
  * value; once the roaster reports a change (or refuses it), the slider follows the readings again.
  */
 export function useOutput(channel: string): { value: number; set: (value: number) => void } {
-  const { api, logger, store } = useDeps();
+  const { api, logger, stores } = useDeps();
   const [pending, setPending] = useState<Pending>();
-  const value = useAppState((s) => {
+  const value = useRoast((s) => {
     const reported = s.readings.at(-1)?.values[channel];
     return (pending && pendingShown(pending, channel, s.readings) ? pending.value : reported) ?? 0;
   });
@@ -71,7 +72,7 @@ export function useOutput(channel: string): { value: number; set: (value: number
   return {
     value,
     set: (next) => {
-      const latest = store.getState().readings.at(-1);
+      const latest = stores.roast.getState().readings.at(-1);
       setPending({ value: next, before: latest?.values[channel], sinceMs: latest?.atMs ?? 0 });
       sender.push(next);
     },

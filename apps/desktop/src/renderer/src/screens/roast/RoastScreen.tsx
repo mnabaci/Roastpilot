@@ -1,12 +1,12 @@
 import { PhaseStepper, RoastChart } from '@roastpilot/ui';
 import type { RoastPhase } from '@roastpilot/shared';
 import { useMemo } from 'react';
-import { roastChartData } from '../lib/roast-chart-data';
-import { roastNumbers } from '../lib/roast-numbers';
-import { FlowPanel } from '../roast/FlowPanel';
-import { OutputsPanel } from '../roast/OutputsPanel';
-import { RoastNumbersRow } from '../roast/RoastNumbersRow';
-import { useAppState } from '../state/app-context';
+import { roastChartData } from './roast-chart-data';
+import { roastNumbers } from './roast-numbers';
+import { FlowPanel } from './FlowPanel';
+import { OutputsPanel } from './OutputsPanel';
+import { RoastNumbersRow } from './RoastNumbersRow';
+import { useRoast } from '../../stores/use-stores';
 
 const STEPS = ['Preheat', 'Roast', 'First crack', 'Drop', 'Cool'] as const;
 
@@ -22,8 +22,8 @@ const CURRENT_STEP: Readonly<Record<RoastPhase, number>> = {
 
 /** The manual roast (docs/spec/ui.md, Roast screen, milestone 2). */
 export function RoastScreen({ onConnect }: { onConnect: () => void }) {
-  const roast = useAppState((s) => s.roast);
-  const readings = useAppState((s) => s.readings);
+  const roast = useRoast((s) => s.roast);
+  const readings = useRoast((s) => s.readings);
   const numbers = useMemo(() => roastNumbers(roast, readings), [roast, readings]);
   const chart = useMemo(() => roastChartData(roast, readings), [roast, readings]);
   return (

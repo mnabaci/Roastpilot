@@ -2,8 +2,7 @@ import type { Logger } from '@roastpilot/core';
 import type { Reading } from '@roastpilot/shared';
 import { describe, expect, it, vi } from 'vitest';
 import { fakeApi } from '../test/render-app';
-import { INITIAL_STATE } from './app-state';
-import { createAppStore } from './app-store';
+import { createStores } from '../stores/stores';
 import { syncWithMain } from './sync-with-main';
 
 const logger = () =>
@@ -19,14 +18,14 @@ describe('syncWithMain', () => {
       },
       getSettings: () => Promise.resolve({ connection: { kind: 'simulator' }, controls: 'full' }),
     });
-    const store = createAppStore();
-    syncWithMain(api, store, logger());
+    const stores = createStores();
+    syncWithMain(api, stores, logger());
     await vi.waitFor(() => {
-      expect(store.getState().ready).toBe(true);
+      expect(stores.sync.getState().ready).toBe(true);
     });
-    expect(store.getState().settings.controls).toBe('full');
+    expect(stores.settings.getState().settings.controls).toBe('full');
     onReading({ atMs: 1, values: { bt: 150 } });
-    expect(store.getState().readings).toEqual([{ atMs: 1, values: { bt: 150 } }]);
+    expect(stores.roast.getState().readings).toEqual([{ atMs: 1, values: { bt: 150 } }]);
   });
 
   it('listens before it loads, so nothing in between is lost', () => {
@@ -41,20 +40,20 @@ describe('syncWithMain', () => {
         return new Promise(() => undefined);
       },
     });
-    syncWithMain(api, createAppStore(), logger());
+    syncWithMain(api, createStores(), logger());
     expect(order).toEqual(['listen', 'snapshot']);
   });
 
   it('a failed snapshot is logged and the screens still show', async () => {
     const api = fakeApi({ getSnapshot: () => Promise.reject(new Error('main gone')) });
-    const store = createAppStore();
+    const stores = createStores();
     const log = logger();
-    syncWithMain(api, store, log);
+    syncWithMain(api, stores, log);
     await vi.waitFor(() => {
-      expect(store.getState().ready).toBe(true);
+      expect(stores.sync.getState().ready).toBe(true);
     });
     expect(log.error).toHaveBeenCalledWith('sync.snapshot-failed', expect.objectContaining({}));
-    expect(store.getState().connection).toEqual(INITIAL_STATE.connection);
+    expect(stores.connection.getState().connection).toEqual({ status: 'disconnected' });
   });
 
   it('stops every listener', () => {
@@ -65,7 +64,7 @@ describe('syncWithMain', () => {
       onSafetyEvent: () => stops[2]!,
       onRoast: () => stops[3]!,
     });
-    syncWithMain(api, createAppStore(), logger())();
+    syncWithMain(api, createStores(), logger())();
     for (const stop of stops) expect(stop).toHaveBeenCalledOnce();
   });
 });

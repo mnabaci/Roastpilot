@@ -2,12 +2,12 @@ import { screen } from '@testing-library/react';
 import type * as Ui from '@roastpilot/ui';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { CONNECTED, renderApp } from '../test/render-app';
 import { App } from './App';
-import { CONNECTED, renderApp } from './test/render-app';
 
 vi.mock('@roastpilot/ui', async (importOriginal) => ({
   ...(await importOriginal<typeof Ui>()),
-  RoastChart: (await import('./test/fake-ui')).FakeRoastChart,
+  RoastChart: (await import('../test/fake-ui')).FakeRoastChart,
 }));
 
 describe('App', () => {

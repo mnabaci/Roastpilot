@@ -1,15 +1,15 @@
 import type { Reading, RoastState } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import { INITIAL_STATE } from '../state/app-state';
+import { READY_ROAST } from '../../stores/roast-store';
 import { roastNumbers } from './roast-numbers';
 
 const readings = (untilS: number): Reading[] =>
   Array.from({ length: untilS + 1 }, (_, s) => ({ atMs: s * 1000, values: { bt: 100 + s / 6 } }));
-const roast = (patch: Partial<RoastState>): RoastState => ({ ...INITIAL_STATE.roast, ...patch });
+const roast = (patch: Partial<RoastState>): RoastState => ({ ...READY_ROAST, ...patch });
 
 describe('roastNumbers', () => {
   it('shows nothing before any reading', () => {
-    expect(roastNumbers(INITIAL_STATE.roast, [])).toEqual({
+    expect(roastNumbers(READY_ROAST, [])).toEqual({
       bt: undefined,
       ror: undefined,
       elapsedS: undefined,

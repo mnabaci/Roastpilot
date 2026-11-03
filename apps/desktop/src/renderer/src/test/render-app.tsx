@@ -1,11 +1,11 @@
 import { silentLogger } from '@roastpilot/core';
-import { ok, type RoastpilotApi } from '@roastpilot/shared';
+import { DEFAULT_SETTINGS, ok, type ConnectionState, type RoastpilotApi } from '@roastpilot/shared';
 import { render } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { vi, type Mocked } from 'vitest';
-import { INITIAL_STATE, type AppState } from '../state/app-state';
-import { createAppStore } from '../state/app-store';
-import { AppProvider } from '../state/AppProvider';
+import { AppProvider } from '../app/AppProvider';
+import { READY_ROAST } from '../stores/roast-store';
+import { createStores, type StoresSeed } from '../stores/stores';
 
 /** A `window.roastpilot` whose calls all succeed; override what a test needs. */
 export function fakeApi(overrides: Partial<RoastpilotApi> = {}): Mocked<RoastpilotApi> {
@@ -23,22 +23,22 @@ export function fakeApi(overrides: Partial<RoastpilotApi> = {}): Mocked<Roastpil
     log: vi.fn(),
     getSnapshot: vi.fn(() =>
       Promise.resolve({
-        connection: INITIAL_STATE.connection,
-        roast: INITIAL_STATE.roast,
+        connection: { status: 'disconnected' } as const,
+        roast: READY_ROAST,
         readings: [],
-        safety: INITIAL_STATE.safety,
+        safety: { locked: false, tripped: [] },
       }),
     ),
     roastAction: vi.fn(() => Promise.resolve(ok(undefined))),
     onRoast: vi.fn(() => unsubscribe),
-    getSettings: vi.fn(() => Promise.resolve(INITIAL_STATE.settings)),
+    getSettings: vi.fn(() => Promise.resolve(DEFAULT_SETTINGS)),
     setSettings: vi.fn((settings) => Promise.resolve(ok(settings))),
     ...overrides,
   } as Mocked<RoastpilotApi>;
 }
 
 const percent = { kind: 'output', unit: 'percent', min: 0, max: 100, step: 5 } as const;
-export const CONNECTED: AppState['connection'] = {
+export const CONNECTED: ConnectionState = {
   status: 'connected',
   channels: [
     { id: 'bt', kind: 'sensor', unit: 'celsius' },
@@ -49,9 +49,9 @@ export const CONNECTED: AppState['connection'] = {
   ],
 };
 
-/** Renders `ui` with a store already in `state` (ready), and returns the fakes. */
-export function renderApp(ui: ReactNode, state: Partial<AppState> = {}, api = fakeApi()) {
-  const store = createAppStore({ ...INITIAL_STATE, ready: true, ...state });
-  const view = render(<AppProvider deps={{ api, store, logger: silentLogger }}>{ui}</AppProvider>);
-  return { ...view, api, store };
+/** Renders `ui` with stores already seeded (and ready), and returns the fakes. */
+export function renderApp(ui: ReactNode, seed: StoresSeed = {}, api = fakeApi()) {
+  const stores = createStores({ ready: true, ...seed });
+  const view = render(<AppProvider deps={{ api, stores, logger: silentLogger }}>{ui}</AppProvider>);
+  return { ...view, api, stores };
 }

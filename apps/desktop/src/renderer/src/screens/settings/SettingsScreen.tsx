@@ -1,5 +1,5 @@
-import { ConnectionSection } from './settings/ConnectionSection';
-import { ControlsSection } from './settings/ControlsSection';
+import { ConnectionSection } from './ConnectionSection';
+import { ControlsSection } from './ControlsSection';
 
 export function SettingsScreen() {
   return (

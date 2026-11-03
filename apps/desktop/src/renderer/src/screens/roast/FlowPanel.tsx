@@ -1,8 +1,9 @@
 import type { RoastAction } from '@roastpilot/shared';
 import { Button, formatClock } from '@roastpilot/ui';
-import { flowStep, isConnected } from '../lib/flow-step';
-import { useRun } from '../hooks/use-run';
-import { useAppState, useDeps } from '../state/app-context';
+import { flowStep, isConnected } from './flow-step';
+import { useRun } from '../../features/use-run';
+import { useDeps } from '../../app/app-context';
+import { useConnection, useRoast } from '../../stores/use-stores';
 
 /** The one next action for the state, with its one-line hint. */
 export function FlowPanel({
@@ -14,8 +15,8 @@ export function FlowPanel({
 }) {
   const { api, logger } = useDeps();
   const run = useRun();
-  const connected = useAppState((s) => isConnected(s.connection));
-  const phase = useAppState((s) => s.roast.phase);
+  const connected = useConnection((s) => isConnected(s.connection));
+  const phase = useRoast((s) => s.roast.phase);
   if (!connected) {
     return (
       <div className="flex flex-col gap-2">

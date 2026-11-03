@@ -1,6 +1,6 @@
 import type { ControlsLevel } from '@roastpilot/shared';
 import { Button } from '@roastpilot/ui';
-import { useAppState } from '../../state/app-context';
+import { useSettings } from '../../stores/use-stores';
 import { useSaveSettings } from './use-save-settings';
 
 const LEVELS: readonly { id: ControlsLevel; label: string; hint: string }[] = [
@@ -10,7 +10,7 @@ const LEVELS: readonly { id: ControlsLevel; label: string; hint: string }[] = [
 
 /** Guided or Full control (docs/spec/manual-mode.md). */
 export function ControlsSection() {
-  const level = useAppState((s) => s.settings.controls);
+  const level = useSettings((s) => s.settings.controls);
   const save = useSaveSettings();
   const current = LEVELS.find((l) => l.id === level);
   return (

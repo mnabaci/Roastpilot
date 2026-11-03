@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { useAppState } from './state/app-context';
-import { RoastScreen } from './screens/RoastScreen';
-import { SettingsScreen } from './screens/SettingsScreen';
-import { SafetyBanners } from './shell/SafetyBanners';
-import { TopBar, type Screen } from './shell/TopBar';
+import { useConnection, useSync } from '../stores/use-stores';
+import { RoastScreen } from '../screens/roast/RoastScreen';
+import { SettingsScreen } from '../screens/settings/SettingsScreen';
+import { SafetyBanners } from './SafetyBanners';
+import { TopBar, type Screen } from './TopBar';
 
 /** The app shell: top bar, safety banners, and the Roast or Settings screen. */
 export function App() {
-  const ready = useAppState((s) => s.ready);
-  const connected = useAppState((s) => s.connection.status !== 'disconnected');
+  const ready = useSync((s) => s.ready);
+  const connected = useConnection((s) => s.connection.status !== 'disconnected');
   // Start where the next action is: Settings until a roaster is connected.
   const [screen, setScreen] = useState<Screen | undefined>();
   const shown = screen ?? (connected ? 'roast' : 'settings');

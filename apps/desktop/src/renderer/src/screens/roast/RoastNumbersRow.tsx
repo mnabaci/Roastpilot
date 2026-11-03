@@ -1,5 +1,5 @@
 import { formatClock, formatNumber, StatCard } from '@roastpilot/ui';
-import type { RoastNumbers } from '../lib/roast-numbers';
+import type { RoastNumbers } from './roast-numbers';
 
 const clock = (s: number | undefined) => (s === undefined ? undefined : formatClock(s));
 

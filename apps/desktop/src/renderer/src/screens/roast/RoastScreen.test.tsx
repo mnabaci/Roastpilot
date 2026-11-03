@@ -3,18 +3,18 @@ import { act, screen } from '@testing-library/react';
 import type * as Ui from '@roastpilot/ui';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { applyReading, INITIAL_STATE } from '../state/app-state';
-import { CONNECTED, fakeApi, renderApp } from '../test/render-app';
+import { addReading, READY_ROAST } from '../../stores/roast-store';
+import { CONNECTED, fakeApi, renderApp } from '../../test/render-app';
 import { RoastScreen } from './RoastScreen';
 
-const roast = (phase: (typeof INITIAL_STATE.roast)['phase']) => ({ ...INITIAL_STATE.roast, phase });
+const roast = (phase: (typeof READY_ROAST)['phase']) => ({ ...READY_ROAST, phase });
 const reading = (values: Reading['values'], atMs = 1000): Reading => ({ atMs, values });
 const connected = { connection: CONNECTED };
 const onConnect = () => undefined;
 
 vi.mock('@roastpilot/ui', async (importOriginal) => ({
   ...(await importOriginal<typeof Ui>()),
-  RoastChart: (await import('../test/fake-ui')).FakeRoastChart,
+  RoastChart: (await import('../../test/fake-ui')).FakeRoastChart,
 }));
 
 describe('RoastScreen', () => {
@@ -172,7 +172,7 @@ describe('RoastScreen', () => {
       );
 
     it('show your value until the roaster reports a change, then follow the readings', () => {
-      const { api, store } = setup();
+      const { api, stores } = setup();
       const heater = screen.getByRole('slider', { name: 'Heater' });
       act(() => {
         heater.focus();
@@ -189,37 +189,37 @@ describe('RoastScreen', () => {
       expect(heater).toHaveValue('70');
       // A reading from before the command landed doesn't pull the slider back.
       act(() => {
-        store.setState((s) => applyReading(s, reading({ heater: 50 }, 2000)));
+        stores.roast.setState((s) => addReading(s, reading({ heater: 50 }, 2000)));
       });
       expect(heater).toHaveValue('70');
       act(() => {
-        store.setState((s) => applyReading(s, reading({ heater: 70 }, 3000)));
+        stores.roast.setState((s) => addReading(s, reading({ heater: 70 }, 3000)));
       });
       act(() => {
-        store.setState((s) => applyReading(s, reading({ heater: 0 }, 4000)));
+        stores.roast.setState((s) => addReading(s, reading({ heater: 0 }, 4000)));
       });
       expect(heater).toHaveValue('0');
     });
 
     it('follow the roaster when it changes the value back, e.g. heater 0 at Drop', () => {
-      const { store } = setup();
+      const { stores } = setup();
       const heater = screen.getByRole('slider', { name: 'Heater' });
       slide(heater, '100');
       act(() => {
-        store.setState((s) => applyReading(s, reading({ heater: 100 }, 2000)));
+        stores.roast.setState((s) => addReading(s, reading({ heater: 100 }, 2000)));
       });
       act(() => {
-        store.setState((s) => applyReading(s, reading({ heater: 50 }, 2500)));
+        stores.roast.setState((s) => addReading(s, reading({ heater: 50 }, 2500)));
       });
       expect(heater).toHaveValue('50');
     });
 
     it('follow the readings after two polls whatever they say', () => {
-      const { store } = setup();
+      const { stores } = setup();
       const heater = screen.getByRole('slider', { name: 'Heater' });
       slide(heater, '70');
       act(() => {
-        store.setState((s) => applyReading(s, reading({ heater: 50 }, 3000)));
+        stores.roast.setState((s) => addReading(s, reading({ heater: 50 }, 3000)));
       });
       expect(heater).toHaveValue('50');
     });
