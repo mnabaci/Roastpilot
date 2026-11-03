@@ -11,13 +11,15 @@ export interface ChartPoint {
 export interface ChartLayer {
   id: string;
   label: string;
-  /** Left axis in °C, or the right axis in °C/min. */
-  axis: 'temperature' | 'ror';
+  /** Left axis in °C, the right axis in °C/min, or `output` (0–100 %) in the strip under the chart. */
+  axis: 'temperature' | 'ror' | 'output';
   tone: 'heat' | 'air' | 'target' | 'ghost';
   /** Line width in px (design system: live 3.5, others 2). */
   width: number;
   /** Dash pattern in px, e.g. [6, 6] for the target. */
   dash?: readonly number[];
+  /** Holds each value until the next point (outputs change in steps). */
+  step?: boolean;
   points: readonly ChartPoint[];
 }
 

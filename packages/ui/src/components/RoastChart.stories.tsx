@@ -23,12 +23,41 @@ const ror: ChartLayer = {
   points: seconds.filter((t) => t > 30).map((t) => ({ t, v: Math.max(0, 18 - t / 40) })),
 };
 
+/** Heater 100 % until 3:00, then 80, 60 after first crack; fan 30 → 50 → 70. */
+const step = (
+  id: string,
+  label: string,
+  tone: 'heat' | 'air',
+  changes: [number, number][],
+): ChartLayer => ({
+  id,
+  label,
+  axis: 'output',
+  tone,
+  width: 2,
+  step: true,
+  points: seconds.map((t) => ({
+    t,
+    v: changes.filter(([at]) => at <= t).at(-1)?.[1] ?? 0,
+  })),
+});
+const heater = step('heater', 'Heater', 'heat', [
+  [-60, 100],
+  [180, 80],
+  [480, 60],
+]);
+const fan = step('fan', 'Fan', 'air', [
+  [-60, 30],
+  [240, 50],
+  [420, 70],
+]);
+
 const meta = {
   title: 'Data/RoastChart',
   component: RoastChart,
   args: {
     title: 'Roast curve',
-    layers: [temperature, ror],
+    layers: [temperature, ror, heater, fan],
     markers: [
       { id: 'charge', label: 'Charge', t: 0, tone: 'ink' },
       { id: 'fc', label: 'First crack', t: 480, tone: 'ink' },
@@ -46,3 +75,4 @@ export const BeforeCharge: Story = {
 export const NoReadings: Story = {
   args: { layers: [{ ...temperature, points: [] }], markers: [] },
 };
+export const WithoutOutputs: Story = { args: { layers: [temperature, ror] } };

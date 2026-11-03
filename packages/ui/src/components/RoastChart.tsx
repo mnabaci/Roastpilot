@@ -1,15 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import uPlot from 'uplot';
 import 'uplot/dist/uPlot.min.css';
 import { cn } from '../lib/utils';
 import { alignLayers } from './roast-chart/align-layers';
 import { readChartColors } from './roast-chart/chart-colors';
 import type { ChartLayer, ChartMarker } from './roast-chart/chart-layer';
-import { buildChartOptions } from './roast-chart/uplot-options';
+import { buildChartOptions, buildStripOptions } from './roast-chart/uplot-options';
+import { useUplot } from './roast-chart/use-uplot';
 
 export interface RoastChartProps {
   title: string;
-  /** Back to front. The first `heat` temperature layer gets the current-point dot. */
+  /** Back to front. The first `heat` temperature layer gets the current-point dot; `output` layers go to the strip. */
   layers: readonly ChartLayer[];
   markers?: readonly ChartMarker[];
   height?: number;
@@ -17,8 +18,16 @@ export interface RoastChartProps {
 }
 
 const DEFAULT_HEIGHT = 320;
+/** The outputs strip (design system: RoastChart, Outputs strip). */
+const STRIP_HEIGHT = 96;
 
-/** The live roast chart (design system: RoastChart): legend above, layers drawn with uPlot. */
+const structureOf = (layers: readonly ChartLayer[]) =>
+  layers.map((l) => `${l.id}:${l.axis}:${l.tone}:${String(l.step ?? false)}`).join('|');
+
+/**
+ * The live roast chart (design system: RoastChart): legend above, temperature and RoR drawn with
+ * uPlot, and heater and fan in a strip underneath on the same time axis.
+ */
 export function RoastChart({
   title,
   layers,
@@ -27,12 +36,22 @@ export function RoastChart({
   className,
 }: RoastChartProps) {
   const plotRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<uPlot | null>(null);
-  const markersRef = useRef(markers);
+  const stripRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
 
-  // Rebuild only when the set of layers changes; new points are a setData, not a new chart.
-  const structure = layers.map((l) => `${l.id}:${l.axis}:${l.tone}`).join('|');
+  const { main, strip, mainData, stripData } = useMemo(() => {
+    const main = layers.filter((l) => l.axis !== 'output');
+    const strip = layers.filter((l) => l.axis === 'output');
+    // One set of times for both plots, so they share a time range and line up.
+    const { xs, series } = alignLayers([...main, ...strip]);
+    return {
+      main,
+      strip,
+      mainData: [xs, ...series.slice(0, main.length)] as uPlot.AlignedData,
+      stripData: [xs, ...series.slice(main.length)] as uPlot.AlignedData,
+    };
+  }, [layers]);
+  const rightAxis = main.some((l) => l.axis === 'ror');
 
   useEffect(() => {
     const element = plotRef.current;
@@ -46,45 +65,41 @@ export function RoastChart({
     };
   }, []);
 
-  useEffect(() => {
-    const element = plotRef.current;
-    if (!element) return;
-    const aligned = alignLayers(layers);
-    const latestDotLayer = layers.findIndex((l) => l.tone === 'heat' && l.axis === 'temperature');
-    const chart = new uPlot(
+  useUplot({
+    element: plotRef,
+    structure: `${structureOf(main)}#${String(rightAxis)}`,
+    width,
+    height,
+    data: mainData,
+    markers,
+    build: (size, readMarkers) =>
       buildChartOptions({
-        width: width || element.clientWidth || 600,
-        height,
-        layers,
-        markers: () => markersRef.current,
-        latestDotLayer,
-        colors: readChartColors(element),
+        ...size,
+        layers: main,
+        markers: readMarkers,
+        latestDotLayer: main.findIndex((l) => l.tone === 'heat' && l.axis === 'temperature'),
+        // Element is mounted whenever a build runs.
+        colors: readChartColors(plotRef.current ?? document.documentElement),
+        rightAxis,
       }),
-      [aligned.xs, ...aligned.series],
-      element,
-    );
-    chartRef.current = chart;
-    return () => {
-      chart.destroy();
-      chartRef.current = null;
-    };
-    // Layers' points are pushed by the next effect; this one only runs when the structure changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [structure, height]);
-
-  useEffect(() => {
-    const aligned = alignLayers(layers);
-    chartRef.current?.setData([aligned.xs, ...aligned.series]);
-  }, [layers]);
-
-  useEffect(() => {
-    markersRef.current = markers;
-    chartRef.current?.redraw(false);
-  }, [markers]);
-
-  useEffect(() => {
-    if (width > 0) chartRef.current?.setSize({ width, height });
-  }, [width, height]);
+  });
+  useUplot({
+    element: stripRef,
+    structure: `${structureOf(strip)}#${String(rightAxis)}`,
+    width,
+    height: STRIP_HEIGHT,
+    data: stripData,
+    markers,
+    build: (size, readMarkers) =>
+      buildStripOptions({
+        ...size,
+        layers: strip,
+        markers: readMarkers,
+        colors: readChartColors(stripRef.current ?? document.documentElement),
+        rightAxis,
+        stepped: uPlot.paths.stepped?.({ align: 1 }),
+      }),
+  });
 
   return (
     <section
@@ -114,7 +129,10 @@ export function RoastChart({
           ))}
         </ul>
       </div>
-      <div ref={plotRef} role="img" aria-label={describe(layers)} className="w-full" />
+      <div ref={plotRef} role="img" aria-label={describe(main)} className="w-full" />
+      {strip.length > 0 ? (
+        <div ref={stripRef} role="img" aria-label={describe(strip)} className="mt-0.5 w-full" />
+      ) : null}
     </section>
   );
 }
@@ -124,8 +142,12 @@ function describe(layers: readonly ChartLayer[]): string {
   const parts = layers.flatMap((layer) => {
     const latest = layer.points.at(-1);
     if (!latest) return [];
-    const unit = layer.axis === 'ror' ? '°C/min' : '°C';
-    return [`${layer.label} ${latest.v.toFixed(1)} ${unit}`];
+    const text = {
+      temperature: `${latest.v.toFixed(1)} °C`,
+      ror: `${latest.v.toFixed(1)} °C/min`,
+      output: `${String(Math.round(latest.v))}%`,
+    }[layer.axis];
+    return [`${layer.label} ${text}`];
   });
   return parts.length > 0 ? parts.join(', ') : 'No readings yet';
 }
