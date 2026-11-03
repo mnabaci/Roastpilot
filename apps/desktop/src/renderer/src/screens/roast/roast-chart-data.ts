@@ -8,6 +8,18 @@ const MARKER_LABELS: Partial<Record<RoastEvent['kind'], string>> = {
   drop: 'Drop',
 };
 
+/** A channel's value at each reading that has it. */
+function channelPoints(
+  readings: readonly Reading[],
+  channel: string,
+  toT: (atMs: number) => number,
+): ChartPoint[] {
+  return readings.flatMap((r) => {
+    const v = r.values[channel];
+    return v === undefined ? [] : [{ t: toT(r.atMs), v }];
+  });
+}
+
 /** RoR at each reading, from only the readings in its window, so the series stays O(n). */
 function rorPoints(readings: readonly Reading[], toT: (atMs: number) => number): ChartPoint[] {
   const points: ChartPoint[] = [];
@@ -20,7 +32,7 @@ function rorPoints(readings: readonly Reading[], toT: (atMs: number) => number):
   return points;
 }
 
-/** Bean temperature and RoR layers plus event markers, in seconds since charge (or since the first reading). */
+/** Bean temperature, RoR, heater and fan layers plus event markers, in seconds since charge (or since the first reading). */
 export function roastChartData(
   roast: RoastState,
   readings: readonly Reading[],
@@ -33,10 +45,7 @@ export function roastChartData(
     axis: 'temperature',
     tone: 'heat',
     width: 3.5,
-    points: readings.flatMap((r) => {
-      const bt = r.values.bt;
-      return bt === undefined ? [] : [{ t: toT(r.atMs), v: bt }];
-    }),
+    points: channelPoints(readings, 'bt', toT),
   };
   const ror: ChartLayer = {
     id: 'ror',
@@ -46,9 +55,22 @@ export function roastChartData(
     width: 2,
     points: rorPoints(readings, toT),
   };
+  // The outputs strip (docs/spec/ui.md): what you set, as steps under the curve.
+  const output = (id: string, label: string, tone: 'heat' | 'air'): ChartLayer => ({
+    id,
+    label,
+    axis: 'output',
+    tone,
+    width: 2,
+    step: true,
+    points: channelPoints(readings, id, toT),
+  });
   const markers = roast.events.flatMap((event): ChartMarker[] => {
     const label = MARKER_LABELS[event.kind];
     return label ? [{ id: event.kind, label, t: toT(event.atMs), tone: 'ink' }] : [];
   });
-  return { layers: [temperature, ror], markers };
+  return {
+    layers: [temperature, ror, output('heater', 'Heater', 'heat'), output('fan', 'Fan', 'air')],
+    markers,
+  };
 }

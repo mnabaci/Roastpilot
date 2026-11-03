@@ -2,13 +2,22 @@ import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChartLayer } from './roast-chart/chart-layer';
 
-const created: { opts: { series: { stroke?: string; width?: number }[] }; data: unknown[] }[] = [];
+interface Created {
+  opts: {
+    height: number;
+    scales: { x: { range: unknown } };
+    series: { stroke?: string; width?: number; paths?: unknown; scale?: string }[];
+  };
+  data: unknown[][];
+}
+const created: Created[] = [];
 const setData = vi.fn();
 const destroy = vi.fn();
 
 vi.mock('uplot', () => ({
   default: class {
-    constructor(opts: (typeof created)[number]['opts'], data: unknown[]) {
+    static paths = { stepped: () => 'stepped-path' };
+    constructor(opts: Created['opts'], data: unknown[][]) {
       created.push({ opts, data });
     }
     setData = setData;
@@ -113,5 +122,82 @@ describe('RoastChart', () => {
     expect(created).toHaveLength(2);
     unmount();
     expect(destroy).toHaveBeenCalledTimes(2);
+  });
+
+  describe('outputs strip', () => {
+    const output = (id: string, tone: 'heat' | 'air', points: [number, number][]): ChartLayer => ({
+      id,
+      label: id === 'heater' ? 'Heater' : 'Fan',
+      axis: 'output',
+      tone,
+      width: 2,
+      step: true,
+      points: points.map(([t, v]) => ({ t, v })),
+    });
+    const heater = output('heater', 'heat', [
+      [0, 100],
+      [60, 70],
+    ]);
+    const fan = output('fan', 'air', [
+      [0, 30],
+      [90, 50],
+    ]);
+
+    it('draws output layers in a strip under the chart, as steps', () => {
+      render(
+        <RoastChart
+          title="Roast curve"
+          layers={[
+            bt([
+              [0, 180],
+              [120, 150],
+            ]),
+            ror,
+            heater,
+            fan,
+          ]}
+        />,
+      );
+      expect(created).toHaveLength(2);
+      const [chart, strip] = created;
+      expect(chart?.opts.series.slice(1).map((s) => s.scale)).toEqual(['temperature', 'ror']);
+      expect(strip?.opts.height).toBe(96);
+      expect(strip?.opts.series.slice(1).map((s) => [s.scale, s.paths])).toEqual([
+        ['output', 'stepped-path'],
+        ['output', 'stepped-path'],
+      ]);
+    });
+
+    it('gives both plots the same times, so they line up', () => {
+      render(
+        <RoastChart
+          title="Roast curve"
+          layers={[
+            bt([
+              [0, 180],
+              [120, 150],
+            ]),
+            heater,
+            fan,
+          ]}
+        />,
+      );
+      const [chart, strip] = created;
+      expect(chart?.data[0]).toEqual([0, 60, 90, 120]);
+      expect(strip?.data[0]).toEqual(chart?.data[0]);
+      expect(strip?.data[1]).toEqual([100, 70, null, null]);
+    });
+
+    it('lists the outputs in the legend and describes their latest values', () => {
+      render(<RoastChart title="Roast curve" layers={[bt([[0, 180]]), heater, fan]} />);
+      expect(screen.getByRole('list', { name: 'Legend' })).toHaveTextContent('Heater');
+      expect(screen.getByRole('img', { name: 'Heater 70%, Fan 50%' })).toBeInTheDocument();
+    });
+
+    it('has no strip without output layers', () => {
+      render(<RoastChart title="Roast curve" layers={[bt([[0, 180]])]} />);
+      expect(created).toHaveLength(1);
+      expect(screen.getAllByRole('img')).toHaveLength(1);
+    });
   });
 });

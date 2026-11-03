@@ -19,8 +19,13 @@ export function labelRows(labels: readonly { x: number; width: number }[], gap: 
   });
 }
 
-/** Event markers: 1.5px dashed vertical lines, labelled at the top (design system: RoastChart). */
-export function drawMarkers(u: uPlot, markers: readonly ChartMarker[], colors: ChartColors): void {
+/** Event markers: 1.5px dashed vertical lines, labelled at the top unless `labels` is off (the strip). */
+export function drawMarkers(
+  u: uPlot,
+  markers: readonly ChartMarker[],
+  colors: ChartColors,
+  { labels }: { labels: boolean },
+): void {
   const { ctx, bbox } = u;
   const ratio = devicePixelRatio;
   ctx.save();
@@ -45,6 +50,7 @@ export function drawMarkers(u: uPlot, markers: readonly ChartMarker[], colors: C
     ctx.moveTo(x, bbox.top);
     ctx.lineTo(x, bbox.top + bbox.height);
     ctx.stroke();
+    if (!labels) return;
     const row = rows[i] ?? 0;
     ctx.fillText(marker.label, x + LABEL_GAP * ratio, bbox.top + (16 + row * LINE_HEIGHT) * ratio);
   });
