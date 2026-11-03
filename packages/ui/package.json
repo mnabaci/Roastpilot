@@ -8,7 +8,8 @@
     ".": "./src/index.ts",
     "./globals.css": "./src/styles/globals.css",
     "./components/*": "./src/components/*.tsx",
-    "./lib/*": "./src/lib/*.ts"
+    "./lib/*": "./src/lib/*.ts",
+    "./tokens.json": "./tokens.json"
   },
   "scripts": {
     "tokens": "node scripts/generate-tokens.ts && prettier --write src/styles/tokens.css src/styles/theme.css",

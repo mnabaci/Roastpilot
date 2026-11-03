@@ -1,5 +1,7 @@
 import type { MockPortBinding } from '@serialport/binding-mock';
 import { SerialPortMock } from 'serialport';
+import { createLogger } from '@roastpilot/core';
+import type { LogEntry } from '@roastpilot/shared';
 import { afterEach, describe, expect, it } from 'vitest';
 import { SerialTransport } from './serial-transport';
 
@@ -82,5 +84,36 @@ describe('SerialTransport', () => {
     await transport.close();
     expect((await transport.open()).ok).toBe(true);
     await transport.close();
+  });
+});
+
+describe('SerialTransport logging', () => {
+  function loggedSetup() {
+    const entries: LogEntry[] = [];
+    SerialPortMock.binding.createPort(PATH, { echo: false, record: true });
+    const transport = new SerialTransport({
+      path: PATH,
+      createPort: (path, baudRate) => new SerialPortMock({ path, baudRate, autoOpen: false }),
+      logger: createLogger({ write: (e) => entries.push(e) }, 'serial'),
+    });
+    return { transport, events: () => entries.map((e) => e.event) };
+  }
+
+  it('logs a port that fails to open', async () => {
+    const entries: LogEntry[] = [];
+    const transport = new SerialTransport({
+      path: '/dev/missing',
+      createPort: (path, baudRate) => new SerialPortMock({ path, baudRate, autoOpen: false }),
+      logger: createLogger({ write: (e) => entries.push(e) }, 'serial'),
+    });
+    await transport.open();
+    expect(entries.map((e) => e.event)).toEqual(['serial.open-failed']);
+  });
+
+  it('does not log a close it was asked for', async () => {
+    const { transport, events } = loggedSetup();
+    await transport.open();
+    await transport.close();
+    expect(events()).toEqual([]);
   });
 });

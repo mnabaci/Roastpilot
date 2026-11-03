@@ -1,5 +1,5 @@
-import { ManualClock } from '@roastpilot/core';
-import { err } from '@roastpilot/shared';
+import { createLogger, ManualClock } from '@roastpilot/core';
+import { err, type LogEntry } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { COMMAND_GAP_MS } from './command-queue';
 import { FakeTransport } from './fake-transport';
@@ -145,6 +145,26 @@ describe('Tc4SkywalkerDriver', () => {
       expect(gaps.every((gap) => gap >= COMMAND_GAP_MS)).toBe(true);
     });
 
+    it('logs when the safe stop needed the ESTOP fallback', async () => {
+      const entries: LogEntry[] = [];
+      const clock = new ManualClock();
+      const transport = new FakeTransport(clock);
+      transport.reply = sketch();
+      const driver = new Tc4SkywalkerDriver({
+        transport,
+        clock,
+        logger: createLogger({ write: (e) => entries.push(e) }, 'driver'),
+      });
+      const done = driver.connect();
+      await clock.runFor(5000);
+      await done;
+      transport.failWrite = (line) => line === 'OT1;0';
+      const stop = driver.safeStop();
+      await clock.runFor(5000);
+      await stop;
+      expect(entries.map((e) => e.event)).toEqual(['driver.safe-stop-incomplete']);
+    });
+
     it('falls back to ESTOP when a safe-stop command fails', async () => {
       const { transport, driver, run } = await connected();
       transport.failWrite = (line) => line === 'OT2;100';
@@ -175,6 +195,16 @@ describe('Tc4SkywalkerDriver', () => {
       const stop = driver.safeStop();
       await run(Promise.all([reading, stop]));
       expect(transport.sentLines()).toEqual(['READ', 'OT1;0', 'OT2;100', 'COOL;100']);
+    });
+  });
+
+  describe('disconnect', () => {
+    it('closes the port and refuses calls until connect', async () => {
+      const { transport, driver, run } = await connected();
+      await run(driver.disconnect());
+      expect(await transport.write('READ')).toMatchObject({ ok: false });
+      expect(await run(driver.read())).toEqual(err({ kind: 'disconnected' }));
+      expect((await run(driver.connect())).ok).toBe(true);
     });
   });
 });

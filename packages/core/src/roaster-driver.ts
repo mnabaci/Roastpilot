@@ -1,15 +1,6 @@
-import type { Channel, Reading, Result } from '@roastpilot/shared';
+import type { Channel, DriverError, Reading, Result } from '@roastpilot/shared';
 
-/** Expected failures a driver reports instead of throwing. */
-export type DriverError =
-  | { kind: 'disconnected' }
-  | { kind: 'no-reply'; command: string }
-  /** `actual` is null when the sketch is too old to answer VERSION. */
-  | { kind: 'version-mismatch'; expected: number; actual: number | null }
-  | { kind: 'bad-reply'; line: string }
-  | { kind: 'unknown-channel'; channel: string }
-  /** Refused by the safety lock after a safe stop (docs/spec/safety.md). */
-  | { kind: 'safety-locked'; channel: string };
+export type { DriverError } from '@roastpilot/shared';
 
 /**
  * Everything the controller knows about a roaster (ADR 0009).
@@ -22,4 +13,6 @@ export interface RoasterDriver {
   setOutput(channel: string, value: number): Promise<Result<void, DriverError>>;
   /** Heater off, air and cooling up. Never rejects: does what it can on a broken connection. */
   safeStop(): Promise<void>;
+  /** Closes the connection. Does not change outputs: call safeStop first. Never rejects. */
+  disconnect(): Promise<void>;
 }

@@ -1,4 +1,4 @@
-import type { Reading } from '@roastpilot/shared';
+import type { Reading, SafetyAction } from '@roastpilot/shared';
 import type { SafetyLimits } from './safety-limits';
 
 /** What the rules see. Built by the SafetyMonitor; rules never change it. */
@@ -11,8 +11,6 @@ export interface SafetyState {
   history: readonly Reading[];
   roastStartedMs: number | undefined;
 }
-
-export type SafetyAction = 'safe-stop' | 'alarm';
 
 export interface SafetyRule {
   id: string;

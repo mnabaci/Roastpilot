@@ -1,7 +1,10 @@
 import {
   quantize,
+  serializeError,
+  silentLogger,
   type Clock,
   type DriverError,
+  type Logger,
   type RoasterDriver,
   type Transport,
 } from '@roastpilot/core';
@@ -29,6 +32,7 @@ const OUTPUT_COMMANDS: Readonly<Record<string, string>> = {
 export interface Tc4SkywalkerDriverOptions {
   transport: Transport;
   clock: Clock;
+  logger?: Logger;
 }
 
 /** Adapter for the Skywalker roaster through the SkyCommand sketch over a line transport. */
@@ -38,6 +42,7 @@ export class Tc4SkywalkerDriver implements RoasterDriver {
   readonly #transport: Transport;
   readonly #clock: Clock;
   readonly #queue: CommandQueue;
+  readonly #logger: Logger;
   readonly #outputs = new Map<string, OutputChannel>();
   #connected = false;
 
@@ -45,6 +50,7 @@ export class Tc4SkywalkerDriver implements RoasterDriver {
     this.#transport = options.transport;
     this.#clock = options.clock;
     this.#queue = new CommandQueue(options.transport, options.clock);
+    this.#logger = options.logger ?? silentLogger;
     for (const channel of this.channels) {
       if (channel.kind === 'output') this.#outputs.set(channel.id, channel);
     }
@@ -88,10 +94,19 @@ export class Tc4SkywalkerDriver implements RoasterDriver {
         const sent = await this.#sendOutput(channel, value);
         allSent &&= sent.ok;
       }
-      if (!allSent) await this.#queue.send('ESTOP');
-    } catch {
+      if (!allSent) {
+        this.#logger.warn('driver.safe-stop-incomplete', { fallback: 'ESTOP' });
+        await this.#queue.send('ESTOP');
+      }
+    } catch (error) {
       // Nothing more to do from here: the sketch's 10 s watchdog switches everything off.
+      this.#logger.error('driver.safe-stop-threw', { error: serializeError(error) });
     }
+  }
+
+  async disconnect(): Promise<void> {
+    this.#connected = false;
+    await this.#transport.close();
   }
 
   async #handshake(): Promise<Result<void, DriverError>> {

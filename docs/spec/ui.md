@@ -45,3 +45,4 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 ## Settings
 
 - Roasters: list, add, edit, set active. Safety limits and tuning live in each roaster.
+- Simulator: always available as a roaster, for practice and demos. It never runs unless you pick it.

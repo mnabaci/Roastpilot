@@ -39,4 +39,10 @@ export class SafetyGuardedDriver implements RoasterDriver {
   safeStop(): Promise<void> {
     return this.#inner.safeStop();
   }
+
+  /** A deliberate disconnect: the monitor stops watching for a lost connection. */
+  async disconnect(): Promise<void> {
+    await this.#inner.disconnect();
+    this.#monitor.disconnected();
+  }
 }

@@ -15,6 +15,9 @@ Load the `engineering-standards` skill and follow it. New features start with `p
 - **TypeScript everywhere:** app code, config files, scripts and agent hooks are `.ts` (Node 22.22+ and 24 run `.ts` directly). No new `.js` files.
 - **Design tokens only:** no hex colours or magic sizes in UI code.
 - **Safety first:** any path that can leave the heater on must end in `safeStop()`; safety rules are tested.
+- **Errors are handled, never hidden:** expected failures are typed `Result`s; only programmer errors throw. No empty `catch`, and no fire-and-forget promise without a `.catch` that logs. Every error path and edge case (timeouts, disconnects, bad input, hardware faults) has a test. See `docs/spec/errors-and-logging.md`.
+- **Log what matters:** through the injected `Logger`, never `console`. Structured events with context; log every failure and state change, not every reading.
+- **Fix what you find:** if a file you touch or read for a change breaks these rules or a skill's checklist, refactor it to comply in the same PR, as its own `refactor:` commit. Don't build on top of a violation.
 
 ## Package boundaries
 

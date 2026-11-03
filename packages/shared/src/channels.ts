@@ -1,24 +1,34 @@
+import { z } from 'zod';
+
 /** Something a driver reads, such as bean temperature. Values are in °C. */
-export interface SensorChannel {
-  id: string;
-  kind: 'sensor';
-  unit: 'celsius';
-}
+export const SensorChannelSchema = z.object({
+  id: z.string(),
+  kind: z.literal('sensor'),
+  unit: z.literal('celsius'),
+});
 
 /** Something a driver controls. Values are clamped to [min, max] and rounded to `step`. */
-export interface OutputChannel {
-  id: string;
-  kind: 'output';
-  unit: 'percent' | 'on-off';
-  min: number;
-  max: number;
-  step: number;
-}
+export const OutputChannelSchema = z.object({
+  id: z.string(),
+  kind: z.literal('output'),
+  unit: z.enum(['percent', 'on-off']),
+  min: z.number(),
+  max: z.number(),
+  step: z.number().positive(),
+});
 
-export type Channel = SensorChannel | OutputChannel;
+export const ChannelSchema = z.discriminatedUnion('kind', [
+  SensorChannelSchema,
+  OutputChannelSchema,
+]);
 
 /** One poll of the roaster: a value per channel id, taken at `atMs` on the driver's clock. */
-export interface Reading {
-  atMs: number;
-  values: Record<string, number>;
-}
+export const ReadingSchema = z.object({
+  atMs: z.number(),
+  values: z.record(z.string(), z.number()),
+});
+
+export type SensorChannel = z.infer<typeof SensorChannelSchema>;
+export type OutputChannel = z.infer<typeof OutputChannelSchema>;
+export type Channel = z.infer<typeof ChannelSchema>;
+export type Reading = z.infer<typeof ReadingSchema>;

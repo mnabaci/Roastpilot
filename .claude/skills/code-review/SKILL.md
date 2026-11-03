@@ -11,6 +11,8 @@ Review the diff (`git diff main...HEAD`) against `engineering-standards`. Report
 2. **Boundaries:** imports follow the package table; `core` pure; Electron only in `apps/desktop`.
 3. **Design:** single responsibility, interfaces not concretions, extension points used instead of switches, no speculative abstractions, no duplication.
 4. **Types:** no `any`, no unexplained `!`, zod at IPC boundaries.
-5. **Tests:** every new rule, branch and state transition covered; tests use public APIs and a fake clock.
-6. **Docs:** spec, ADRs and skills updated when behaviour or workflow changed.
-7. Run `pnpm check` and include the result.
+5. **Errors and logging:** no hidden errors (empty `catch`, unhandled promise); every failure path returns a typed error or is logged with context; edge cases tested; nothing logged through `console`.
+6. **Tests:** every new rule, branch and state transition covered; tests use public APIs and a fake clock.
+7. **Docs:** spec, ADRs and skills updated when behaviour or workflow changed.
+8. **Touched files comply:** every file in the diff follows the rules and skills as a whole, not just the changed lines. A violation left in a touched file is a finding.
+9. Run `pnpm check` and include the result.

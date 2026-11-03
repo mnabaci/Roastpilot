@@ -8,6 +8,7 @@ The source of truth for what Roastpilot does and how it is built. Change the spe
 | [overview.md](overview.md)                             | Goal, scope and the decisions made so far                        |
 | [principles.md](principles.md)                         | UX rules, code rules, design patterns                            |
 | [extensibility.md](extensibility.md)                   | Extension points, generic data, where to stop                    |
+| [errors-and-logging.md](errors-and-logging.md)         | Error kinds, how each is handled, what and where we log          |
 | [tech-stack.md](tech-stack.md)                         | Libraries and why                                                |
 | [repository.md](repository.md)                         | Monorepo layout, dependency rules, agent setup, workflow         |
 | [hardware.md](hardware.md)                             | Skywalker mod, Arduino, serial protocol                          |

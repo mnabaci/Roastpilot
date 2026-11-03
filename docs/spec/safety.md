@@ -21,4 +21,6 @@ The app never claims it can be left alone. The roast screen says to stay with th
 - **Trips on the edge.** A rule trips when its condition becomes true and clears when it becomes false. Each trip and clear is an event (`SafetyTripped`, `SafetyCleared`) for the roast log and the UI.
 - **Heater locked after a safe stop.** While locked, any heater value above 0 is refused with `safety-locked`; fan, cooling, drum and filter still work. The lock lifts only when you acknowledge and no safe-stop rule is still tripped. Max roast time stays tripped until the roast ends.
 - **"Heating" means heater above 0.** The same-reading check starts counting when the heater turns on, so a steady idle temperature (seen on the real roaster: 29.98 °C for minutes) never alarms.
-- **Armed after the first connect.** Lost connection can't trip before the roaster has ever connected.
+- **Armed while connected.** Lost connection can't trip before the roaster has connected, or after you disconnect on purpose.
+- **Reconnects by itself.** After a lost connection the session tries to connect again every second; the second safe stop goes out with the first reading back.
+- **Emergency stop.** Same as a safe-stop trip: safe stop, heater locked, and the same acknowledge to carry on. It holds nothing, so you can acknowledge straight away.
