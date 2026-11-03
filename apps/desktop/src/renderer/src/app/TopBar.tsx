@@ -5,7 +5,7 @@ import { useConnection, useRoast } from '../stores/use-stores';
 import { useDeps } from './app-context';
 import { useRun } from '../features/use-run';
 
-export type Screen = 'roast' | 'settings';
+export type Screen = 'roast' | 'settings' | 'logs';
 
 const CONNECTION_LABEL: Readonly<Record<ConnectionState['status'], string>> = {
   disconnected: 'Not connected',
@@ -26,6 +26,7 @@ const PHASE_LABEL: Readonly<Record<RoastPhase, string>> = {
 const SCREENS: readonly { id: Screen; label: string }[] = [
   { id: 'roast', label: 'Roast' },
   { id: 'settings', label: 'Settings' },
+  { id: 'logs', label: 'Logs' },
 ];
 
 /** Status, navigation and an Emergency stop that is on every screen, connected or not. */

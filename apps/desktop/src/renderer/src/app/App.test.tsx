@@ -43,4 +43,10 @@ describe('App', () => {
     expect(screen.queryByRole('main')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Emergency stop' })).toBeInTheDocument();
   });
+
+  it('the Logs tab opens the log viewer', async () => {
+    renderApp(<App />);
+    await userEvent.click(screen.getByRole('button', { name: 'Logs' }));
+    expect(screen.getByRole('heading', { name: 'Logs' })).toBeInTheDocument();
+  });
 });
