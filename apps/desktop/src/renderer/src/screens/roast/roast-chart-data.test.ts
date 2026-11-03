@@ -43,4 +43,31 @@ describe('roastChartData', () => {
     );
     expect(markers).toEqual([]);
   });
+
+  it('heater and fan as step layers for the strip, skipping readings without them', () => {
+    const { layers } = roastChartData(READY_ROAST, [
+      { atMs: 0, values: { bt: 100, heater: 100, fan: 30 } },
+      { atMs: 1_000, values: { bt: 101 } },
+      { atMs: 2_000, values: { bt: 102, heater: 70, fan: 30 } },
+    ]);
+    const byId = Object.fromEntries(layers.map((l) => [l.id, l]));
+    expect(byId.heater).toMatchObject({
+      axis: 'output',
+      tone: 'heat',
+      step: true,
+      points: [
+        { t: 0, v: 100 },
+        { t: 2, v: 70 },
+      ],
+    });
+    expect(byId.fan).toMatchObject({
+      axis: 'output',
+      tone: 'air',
+      step: true,
+      points: [
+        { t: 0, v: 30 },
+        { t: 2, v: 30 },
+      ],
+    });
+  });
 });
