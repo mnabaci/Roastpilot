@@ -5,7 +5,10 @@ import { readdir, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { formatLogLine } from './format-log-line';
 
-const FILE_PATTERN = /^roastpilot-(\d{4}-\d{2}-\d{2})\.log$/;
+/** `roastpilot-2026-11-03.log`; the day is group 1. */
+export const LOG_FILE_PATTERN = /^roastpilot-(\d{4}-\d{2}-\d{2})\.log$/;
+
+export const logFileName = (day: string): string => `roastpilot-${day}.log`;
 
 /** Local calendar day, so a file holds the user's day: `2026-11-02`. */
 export function logDay(time: Date): string {
@@ -57,7 +60,7 @@ export class FileLogSink implements LogSink {
   #streamFor(day: string): WriteStream {
     if (this.#stream && this.#day === day) return this.#stream;
     this.#stream?.end();
-    const stream = createWriteStream(join(this.#dir, `roastpilot-${day}.log`), { flags: 'a' });
+    const stream = createWriteStream(join(this.#dir, logFileName(day)), { flags: 'a' });
     stream.on('error', this.#onError);
     this.#stream = stream;
     this.#day = day;
@@ -72,7 +75,7 @@ export async function pruneOldLogs(dir: string, now: Date, keepDays: number): Pr
   const oldest = logDay(cutoff);
   const names = await readdir(dir);
   const old = names.filter((name) => {
-    const day = FILE_PATTERN.exec(name)?.[1];
+    const day = LOG_FILE_PATTERN.exec(name)?.[1];
     return day !== undefined && day < oldest;
   });
   await Promise.all(old.map((name) => unlink(join(dir, name))));

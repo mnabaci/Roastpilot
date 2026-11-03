@@ -1,11 +1,12 @@
 import type { Settings } from '@roastpilot/shared';
 import { useCallback } from 'react';
-import { useRun } from '../../hooks/use-run';
-import { useDeps } from '../../state/app-context';
+import { useRun } from '../../features/use-run';
+import { useDeps } from '../../app/app-context';
 
 /** Saves a change to the settings and keeps what main actually saved. */
 export function useSaveSettings(): (change: Partial<Settings>) => void {
-  const { api, store, logger } = useDeps();
+  const { api, stores, logger } = useDeps();
+  const store = stores.settings;
   const run = useRun();
   return useCallback(
     (change) => {

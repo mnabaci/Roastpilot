@@ -2,9 +2,10 @@ import type { ConnectTarget, SerialPortInfo } from '@roastpilot/shared';
 import { Button, cn } from '@roastpilot/ui';
 import { RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { connectErrorText } from '../../lib/connect-error';
-import { useRun } from '../../hooks/use-run';
-import { useAppState, useDeps } from '../../state/app-context';
+import { connectErrorText } from './connect-error';
+import { useRun } from '../../features/use-run';
+import { useDeps } from '../../app/app-context';
+import { useConnection, useSettings } from '../../stores/use-stores';
 import { useSaveSettings } from './use-save-settings';
 
 const SIMULATOR: ConnectTarget = { kind: 'simulator' };
@@ -49,8 +50,8 @@ export function ConnectionSection() {
   const { api } = useDeps();
   const run = useRun();
   const save = useSaveSettings();
-  const target = useAppState((s) => s.settings.connection);
-  const status = useAppState((s) => s.connection.status);
+  const target = useSettings((s) => s.settings.connection);
+  const status = useConnection((s) => s.connection.status);
   const [ports, setPorts] = useState<SerialPortInfo[]>([]);
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);

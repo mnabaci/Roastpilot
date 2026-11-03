@@ -1,8 +1,8 @@
 import { createLogger, type Logger } from '@roastpilot/core';
-import type { RoastpilotApi } from '@roastpilot/shared';
+import type { LogsApi } from '@roastpilot/shared';
 
 /** A Logger whose entries go to main's log over IPC; main tags them `renderer`. */
-export function rendererLogger(api: Pick<RoastpilotApi, 'log'>): Logger {
+export function rendererLogger(api: Pick<LogsApi, 'log'>): Logger {
   return createLogger(
     {
       write: ({ level, scope, event, context }) => {

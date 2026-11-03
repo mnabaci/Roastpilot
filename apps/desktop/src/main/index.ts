@@ -2,7 +2,7 @@
 import { serializeError } from '@roastpilot/core';
 import { listSerialPorts } from '@roastpilot/drivers';
 import { IPC_CHANNELS } from '@roastpilot/shared';
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, shell } from 'electron';
 import { join } from 'node:path';
 import { createAppServices } from './app-services';
 import { installCrashHandlers } from './crash-handlers';
@@ -10,20 +10,28 @@ import { createDriver } from './driver-factory';
 import { broadcast, registerIpcHandlers, registerIpcListener } from './ipc';
 import { createIpcHandlers, handleRendererLog, withErrorLogging } from './ipc-handlers';
 import { createAppLogger } from './logging/app-logger';
+import { listLogDays, readLogDay } from './logging/log-reader';
 import { pruneOldLogsLater } from './logging/prune';
 import { createQuitGuard } from './quit-guard';
 import { JsonSettingsStore } from './settings/json-settings-store';
 import { systemClock } from './system-clock';
 import { WINDOW_BACKGROUND } from './window-background';
 
-const logs = createAppLogger({ dir: app.getPath('logs'), dev: !app.isPackaged });
+const logDir = app.getPath('logs');
+const logs = createAppLogger({
+  dir: logDir,
+  dev: !app.isPackaged,
+  publish: (records) => {
+    broadcast(IPC_CHANNELS.logEntries, records);
+  },
+});
 const logger = logs.logger;
 logger.info('app.started', {
   version: app.getVersion(),
   platform: process.platform,
   arch: process.arch,
 });
-pruneOldLogsLater(app.getPath('logs'), logger);
+pruneOldLogsLater(logDir, logger);
 
 const { session, roast, settings, snapshot } = createAppServices({
   clock: systemClock,
@@ -113,6 +121,15 @@ app
           snapshot,
           listPorts: () => listSerialPorts(),
           createDriver: (target) => createDriver(target, systemClock, logger.child('driver')),
+          logs: {
+            listDays: () => listLogDays(logDir),
+            readDay: (day) => readLogDay(logDir, day),
+            openFolder: async () => {
+              // openPath resolves with an error message, or '' when it worked.
+              const failure = await shell.openPath(logDir);
+              if (failure) throw new Error(`Couldn't open the log folder: ${failure}`);
+            },
+          },
         }),
         ipcLogger,
       ),

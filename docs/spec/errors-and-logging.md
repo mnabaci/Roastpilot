@@ -33,3 +33,21 @@ happens, returned as a typed error, or logged with enough context to explain it 
 - Written through a buffered async stream, so logging never blocks the roaster loop. The stream is flushed before quit, and before exit on a crash, so the last lines still reach disk.
 - Kept for 7 days; older files are deleted at start.
 - Level `info` and up in the packaged app, `debug` and up in `pnpm dev`. In dev, warnings and errors are also printed to the terminal.
+
+### Viewer
+
+A **Logs** screen in the app, next to Roast and Settings, so a trip or a failed connect can be explained without leaving the app.
+
+| Part   | What it does                                                                                                |
+| ------ | ----------------------------------------------------------------------------------------------------------- |
+| Day    | Today by default; any of the 7 kept days                                                                    |
+| Levels | Error, Warning, Info, Debug chips; opens on Error and Warning                                               |
+| Scope  | A chip per scope in the day (`app.session`, `renderer`, ...); none picked means all                         |
+| Search | Text in the event, scope or context                                                                         |
+| List   | Newest first: time, level, event, scope and a one-line context. Open an entry for its full context and Copy |
+| Live   | Today's list gets new entries as they are written, through a `LogSink` that sends them to the windows       |
+| Folder | "Open log folder" opens it in Finder or Explorer, for sending the files                                     |
+
+- Reads at most the last 2,000 entries of a day; a line that isn't valid JSON is skipped and counted ("3 lines unreadable").
+- The day is validated as `YYYY-MM-DD` before any file is opened, so the renderer can't read other files.
+- The live sink never logs its own failures (that would loop); they go to stderr like any failing sink.

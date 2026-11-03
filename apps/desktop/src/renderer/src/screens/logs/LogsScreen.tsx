@@ -1,0 +1,131 @@
+import type { LogLevel, LogRecord } from '@roastpilot/shared';
+import { Badge, Button, TextField } from '@roastpilot/ui';
+import { FolderOpen } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { useDeps } from '../../app/app-context';
+import { useRun } from '../../features/use-run';
+import { ChipGroup } from './ChipGroup';
+import { dayLabel, localDay, viewerDays } from './log-days';
+import { countLevels, DEFAULT_LEVELS, filterLogs, scopesOf } from './log-filter';
+import { LogRow } from './LogRow';
+import { useLogDay } from './use-log-day';
+import { useLogDays } from './use-log-days';
+
+const LEVELS: readonly { id: LogLevel; label: string }[] = [
+  { id: 'error', label: 'Error' },
+  { id: 'warn', label: 'Warning' },
+  { id: 'info', label: 'Info' },
+  { id: 'debug', label: 'Debug' },
+];
+
+const toggle = <T,>(set: ReadonlySet<T>, id: T): Set<T> => {
+  const next = new Set(set);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  return next;
+};
+
+/** The log viewer (docs/spec/errors-and-logging.md, Viewer). */
+export function LogsScreen() {
+  const { api } = useDeps();
+  const run = useRun();
+  const today = localDay(new Date());
+  const days = viewerDays(useLogDays(), today);
+  const [day, setDay] = useState(today);
+  const [levels, setLevels] = useState<ReadonlySet<LogLevel>>(DEFAULT_LEVELS);
+  const [scopes, setScopes] = useState<ReadonlySet<string>>(new Set());
+  const [text, setText] = useState('');
+  const log = useLogDay(day, day === today);
+
+  const records = useMemo(() => (log.status === 'loaded' ? log.records : []), [log]);
+  const shown = useMemo(
+    () => filterLogs(records, { levels, scopes, text }),
+    [records, levels, scopes, text],
+  );
+  const counts = countLevels(records);
+
+  const copy = (record: LogRecord) => {
+    run('logs.copy-failed', () => navigator.clipboard.writeText(JSON.stringify(record, null, 2)));
+  };
+
+  return (
+    <main className="flex w-full flex-col gap-5 p-6">
+      <div className="flex items-center gap-3">
+        <h1 className="text-title">Logs</h1>
+        {day === today ? <Badge tone="air">Live</Badge> : null}
+        <Button
+          className="ml-auto"
+          icon={<FolderOpen aria-hidden="true" />}
+          onClick={() => {
+            run('logs.open-folder-failed', () => api.openLogFolder());
+          }}
+        >
+          Open log folder
+        </Button>
+      </div>
+      <ChipGroup
+        label="Day"
+        chips={days.map((d) => ({ id: d, label: dayLabel(d, today) }))}
+        isOn={(d) => d === day}
+        onToggle={(d) => {
+          setDay(d);
+          setScopes(new Set());
+        }}
+      />
+      <div className="flex flex-wrap items-end gap-6">
+        <TextField
+          label="Search"
+          type="search"
+          placeholder="Event, scope or context"
+          value={text}
+          onChange={setText}
+          className="w-80"
+        />
+        <ChipGroup
+          label="Levels"
+          chips={LEVELS.map(({ id, label }) => ({ id, label: `${label} ${String(counts[id])}` }))}
+          isOn={(id) => levels.has(id)}
+          onToggle={(id) => {
+            setLevels(toggle(levels, id));
+          }}
+        />
+      </div>
+      <ChipGroup
+        label="Scopes"
+        chips={scopesOf(records).map((s) => ({ id: s, label: s }))}
+        isOn={(s) => scopes.has(s)}
+        onToggle={(s) => {
+          setScopes(toggle(scopes, s));
+        }}
+      />
+      {log.status === 'loaded' && (log.unreadable > 0 || log.truncated) ? (
+        <p className="text-label text-ink-muted">
+          {[
+            log.truncated ? 'Showing the newest 2,000 entries' : '',
+            log.unreadable > 0 ? `${String(log.unreadable)} lines unreadable` : '',
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+        </p>
+      ) : null}
+      {log.status === 'failed' ? (
+        <p role="alert" className="text-body text-critical-text">
+          Couldn't read this day's log · Open log folder to see the file
+        </p>
+      ) : log.status === 'loading' ? (
+        <p className="text-label text-ink-muted">Loading…</p>
+      ) : shown.length === 0 ? (
+        <p className="text-label text-ink-muted">
+          {records.length === 0 ? 'Nothing logged this day' : 'No entries match · try more levels'}
+        </p>
+      ) : (
+        <ul aria-label="Log entries" className="rounded-xl bg-surface">
+          {shown.map((record, i) => (
+            // Counted from the oldest, so a live entry arriving on top keeps the others' keys (and open rows).
+            <LogRow key={shown.length - i} record={record} onCopy={copy} />
+          ))}
+        </ul>
+      )}
+    </main>
+  );
+}

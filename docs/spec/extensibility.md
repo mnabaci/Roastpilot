@@ -16,7 +16,7 @@ extension point is a small interface plus a registry the app fills at startup.
 | Import / export    | `Exporter`, `Importer` | CSV export, Artisan `.alog` import                    | Artisan export, JSON                                         |
 | Sync               | `SyncTarget`           | None (local only)                                     | Cloud Postgres for the phone                                 |
 | Alerts             | `Notifier`             | Banner + sound                                        | Phone push                                                   |
-| Log output         | `LogSink`              | Daily file, dev terminal                              | Remote crash reporting                                       |
+| Log output         | `LogSink`              | Daily file, dev terminal, live viewer                 | Remote crash reporting                                       |
 
 ## Generic data, not fixed fields
 

@@ -67,6 +67,17 @@ function setup() {
       calls.push(['createDriver', target]);
       return driver;
     },
+    logs: {
+      listDays: () => Promise.resolve(['2026-11-03']),
+      readDay: (day) => {
+        calls.push(['readDay', day]);
+        return Promise.resolve({ records: [], unreadable: 0, truncated: false });
+      },
+      openFolder: () => {
+        calls.push(['openFolder']);
+        return Promise.resolve();
+      },
+    },
   };
   return { handlers: createIpcHandlers(deps), calls, driver };
 }
@@ -96,6 +107,9 @@ describe('createIpcHandlers', () => {
         IPC_CHANNELS.roastAction,
         IPC_CHANNELS.getSettings,
         IPC_CHANNELS.setSettings,
+        IPC_CHANNELS.listLogDays,
+        IPC_CHANNELS.readLogDay,
+        IPC_CHANNELS.openLogFolder,
       ].sort(),
     );
   });
@@ -119,6 +133,8 @@ describe('createIpcHandlers', () => {
     [IPC_CHANNELS.roastAction, 'charge-now'],
     [IPC_CHANNELS.roastAction, undefined],
     [IPC_CHANNELS.setSettings, 'full'],
+    [IPC_CHANNELS.readLogDay, '../../etc/passwd'],
+    [IPC_CHANNELS.readLogDay, undefined],
   ])('rejects a bad %s payload %j without touching the roaster', async (channel, payload) => {
     const { handlers, calls } = setup();
     await expect(handle(handlers, channel, payload)).rejects.toThrow();
@@ -210,4 +226,14 @@ describe('handleRendererLog', () => {
       ]);
     },
   );
+});
+
+describe('log viewer handlers', () => {
+  it('lists days, reads a valid day and opens the folder', async () => {
+    const { handlers, calls } = setup();
+    expect(await handle(handlers, IPC_CHANNELS.listLogDays)).toEqual(['2026-11-03']);
+    await handle(handlers, IPC_CHANNELS.readLogDay, '2026-11-03');
+    await handle(handlers, IPC_CHANNELS.openLogFolder);
+    expect(calls).toEqual([['readDay', '2026-11-03'], ['openFolder']]);
+  });
 });

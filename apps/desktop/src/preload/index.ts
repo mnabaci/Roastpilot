@@ -36,6 +36,10 @@ const api: RoastpilotApi = {
   onRoast: (listener) => subscribe(IPC_CHANNELS.roast, listener),
   getSettings: () => ipcRenderer.invoke(IPC_CHANNELS.getSettings),
   setSettings: (settings) => ipcRenderer.invoke(IPC_CHANNELS.setSettings, settings),
+  listLogDays: () => ipcRenderer.invoke(IPC_CHANNELS.listLogDays),
+  readLogDay: (day) => ipcRenderer.invoke(IPC_CHANNELS.readLogDay, day),
+  onLogEntries: (listener) => subscribe(IPC_CHANNELS.logEntries, listener),
+  openLogFolder: () => ipcRenderer.invoke(IPC_CHANNELS.openLogFolder),
   log: (entry) => {
     ipcRenderer.send(IPC_CHANNELS.log, entry);
   },
