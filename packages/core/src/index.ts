@@ -23,10 +23,20 @@ export { serializeError, type SerializedError } from './logging/serialize-error'
 export { FailureStreak } from './logging/failure-streak';
 export {
   DEFAULT_COOLING_MS,
+  EXTEND_COOLING_MS,
   FILTER_ON,
   ManualRoast,
   type ManualRoastDeps,
+  type RoastOptions,
 } from './roast/manual-roast';
+export { CHARGE_LOOKBACK_MS, findChargePoint } from './roast/charge-point';
+export { findTurningPoint } from './roast/turning-point';
+export {
+  ROASTER_COOL_C,
+  ROASTER_COOL_MAX_MS,
+  ROASTER_COOL_OFFER_C,
+  roasterCooldownCheck,
+} from './roast/roaster-cooldown';
 export { rateOfRise, ROR_DRAW_LIMITS, ROR_WINDOW_MS, rorReadings } from './roast/rate-of-rise';
 export { MAX_HISTORY_READINGS, ReadingHistory } from './roast/reading-history';
 export type { SettingsStore } from './settings/settings-store';

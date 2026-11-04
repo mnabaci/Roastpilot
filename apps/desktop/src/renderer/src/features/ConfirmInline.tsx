@@ -12,10 +12,12 @@ export interface ConfirmInlineProps {
   onConfirm: () => void;
   /** For narrow panels: a full-width button, and the question above its answers. */
   stacked?: boolean;
+  /** How the asking button looks: quiet by default, `secondary` for the one normal stop. */
+  variant?: 'ghost' | 'secondary';
   className?: string;
 }
 
-/** A quiet action that asks once, inline, never in a dialog (no modals during a roast). */
+/** An action that asks once, inline, never in a dialog (no modals during a roast). */
 export function ConfirmInline({
   label,
   icon,
@@ -23,6 +25,7 @@ export function ConfirmInline({
   confirmLabel,
   onConfirm,
   stacked = false,
+  variant = 'ghost',
   className,
 }: ConfirmInlineProps) {
   const [asking, setAsking] = useState(false);
@@ -31,7 +34,7 @@ export function ConfirmInline({
   if (!asking)
     return (
       <Button
-        variant="ghost"
+        variant={variant}
         size={size}
         icon={icon}
         className={cn(stacked && 'w-full', className)}

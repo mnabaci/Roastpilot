@@ -175,6 +175,36 @@ describe('SettingsScreen', () => {
     expect(within(list).getAllByRole('button')).toHaveLength(1);
   });
 
+  it('roast settings: charge point, cooling time and roaster cool-down', async () => {
+    const { api, stores } = renderApp(<SettingsScreen />);
+    const group = (name: string) => within(screen.getByRole('group', { name }));
+    expect(group('Find the charge point').getByRole('button', { name: 'On' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(group('Cooling time').getByRole('button', { name: '4 min' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await userEvent.click(group('Find the charge point').getByRole('button', { name: 'Off' }));
+    await userEvent.click(group('Cooling time').getByRole('button', { name: '6 min' }));
+    await userEvent.click(
+      group('Cool the roaster after each roast').getByRole('button', { name: 'Off' }),
+    );
+    expect(stores.settings.getState().settings).toMatchObject({
+      findChargePoint: false,
+      coolingTimeMin: 6,
+      coolRoasterAfter: false,
+    });
+    expect(api.setSettings).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        findChargePoint: false,
+        coolingTimeMin: 6,
+        coolRoasterAfter: false,
+      }),
+    );
+  });
+
   it('switches between Guided and Full control', async () => {
     const { api, stores } = renderApp(<SettingsScreen />);
     expect(screen.getByRole('button', { name: 'Guided' })).toHaveAttribute('aria-pressed', 'true');

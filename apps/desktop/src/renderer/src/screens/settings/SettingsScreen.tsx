@@ -1,6 +1,7 @@
 import { ConnectionSection } from './ConnectionSection';
 import { ChartSection } from './ChartSection';
 import { ControlsSection } from './ControlsSection';
+import { RoastSection } from './RoastSection';
 
 export function SettingsScreen() {
   return (
@@ -9,6 +10,7 @@ export function SettingsScreen() {
         <h1 className="text-title">Settings</h1>
         <ConnectionSection />
         <ControlsSection />
+        <RoastSection />
         <ChartSection />
       </div>
     </main>

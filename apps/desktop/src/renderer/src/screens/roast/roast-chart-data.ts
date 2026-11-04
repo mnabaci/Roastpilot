@@ -7,6 +7,7 @@ export const GAP_MS = 3_000;
 
 const MARKER_LABELS: Partial<Record<RoastEvent['kind'], string>> = {
   charge: 'Charge',
+  'turning-point': 'TP',
   'first-crack': 'First crack',
   drop: 'Drop',
   end: 'End',
@@ -90,14 +91,24 @@ function roastingReadings(roast: RoastState, readings: readonly Reading[]): read
 }
 
 /**
+ * The readings the lines are drawn from: up to cool end (or End roast), as History saves them.
+ * After that only the BT number stays live (docs/spec/ui.md, Chart).
+ */
+function untilRoastEnd(roast: RoastState, readings: readonly Reading[]): readonly Reading[] {
+  const ended = roast.events.find((e) => e.kind === 'cool-end' || e.kind === 'end');
+  return ended ? readings.filter((r) => r.atMs <= ended.atMs) : readings;
+}
+
+/**
  * Bean temperature, RoR, heater and fan layers plus event markers, in seconds since charge (or
  * since the first reading). Missing readings are breaks; the temperature line is smoothed.
  */
 export function roastChartData(
   roast: RoastState,
-  readings: readonly Reading[],
+  allReadings: readonly Reading[],
   { smoothingS }: { smoothingS: number },
 ): { layers: ChartLayer[]; markers: ChartMarker[] } {
+  const readings = untilRoastEnd(roast, allReadings);
   const zeroMs = roast.chargedAtMs ?? readings[0]?.atMs ?? 0;
   const toT = (atMs: number) => (atMs - zeroMs) / 1000;
   const breaks = breakTimes(readings).map(toT);

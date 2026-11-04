@@ -1,9 +1,8 @@
-import { err, type Reading, DEFAULT_SETTINGS } from '@roastpilot/shared';
-import { act, screen } from '@testing-library/react';
+import { DEFAULT_SETTINGS, err, READY_ROAST, type Reading } from '@roastpilot/shared';
+import { act, fireEvent, screen } from '@testing-library/react';
 import type * as Ui from '@roastpilot/ui';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { READY_ROAST } from '@roastpilot/shared';
 import { addReading } from '../../stores/roast-store';
 import { CONNECTED, fakeApi, renderApp } from '../../test/render-app';
 import { RoastScreen } from './RoastScreen';
@@ -59,6 +58,61 @@ describe('RoastScreen', () => {
     renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast('ready') }, api);
     await userEvent.click(screen.getByRole('button', { name: 'Preheat' }));
     expect(screen.getByRole('button', { name: 'Preheat' })).toBeInTheDocument();
+  });
+
+  it('cooling: +1 min adds a minute', async () => {
+    const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
+      ...connected,
+      roast: { ...roast('cooling'), coolingEndsAtMs: 200_000 },
+    });
+    await userEvent.click(screen.getByRole('button', { name: '+1 min' }));
+    expect(api.roastAction).toHaveBeenCalledWith('extend-cooling');
+  });
+
+  it('roasting: says when the charge point was found before the press', () => {
+    renderApp(<RoastScreen onConnect={onConnect} />, {
+      ...connected,
+      roast: { ...roast('roasting'), chargedAtMs: 10_000, startPressedAtMs: 17_262 },
+    });
+    expect(
+      screen.getByText('Charge found 0:07 before you pressed · press at first crack.'),
+    ).toBeInTheDocument();
+  });
+
+  describe('roaster cool-down', () => {
+    it.each(['ready', 'done'] as const)(
+      'in %s with a hot drum, offers Cool down roaster',
+      async (phase) => {
+        const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
+          ...connected,
+          roast: roast(phase),
+          readings: [reading({ bt: 92 })],
+        });
+        await userEvent.click(screen.getByRole('button', { name: 'Cool down roaster' }));
+        expect(api.roastAction).toHaveBeenCalledWith('cool-roaster');
+      },
+    );
+
+    it('not below 60 °C, nor during a roast', () => {
+      renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...connected,
+        roast: roast('done'),
+        readings: [reading({ bt: 59 })],
+      });
+      expect(screen.queryByRole('button', { name: 'Cool down roaster' })).not.toBeInTheDocument();
+    });
+
+    it('while it runs: the temperature it is heading to, and Stop', async () => {
+      const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...connected,
+        roast: { ...roast('done'), roasterCoolingSinceMs: 0 },
+        readings: [reading({ bt: 92.4 })],
+      });
+      expect(screen.getByText('Cooling the roaster · 92 °C → 50 °C')).toHaveRole('status');
+      expect(screen.queryByRole('button', { name: 'Cool down roaster' })).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Stop' }));
+      expect(api.roastAction).toHaveBeenCalledWith('stop-cooling-roaster');
+    });
   });
 
   it('cooling: the countdown, no next step, and the outputs say why they are locked', () => {
@@ -125,13 +179,21 @@ describe('RoastScreen', () => {
   });
 
   describe('Guided', () => {
-    it('heater and fan wait for Preheat; the drum and no cooling switch', () => {
-      renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast('ready') });
-      expect(screen.getByRole('slider', { name: 'Heater' })).toBeDisabled();
-      expect(screen.getByRole('slider', { name: 'Fan' })).toBeDisabled();
-      expect(screen.getByRole('button', { name: /Drum/ })).toBeEnabled();
+    it.each(['ready', 'done'] as const)(
+      'with no roast running (%s), everything but the heater works',
+      (phase) => {
+        renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast(phase) });
+        expect(screen.getByRole('slider', { name: 'Heater' })).toBeDisabled();
+        expect(screen.getByRole('slider', { name: 'Fan' })).toBeEnabled();
+        expect(screen.getByRole('button', { name: /Drum/ })).toBeEnabled();
+        expect(screen.getByRole('button', { name: /Cooling/ })).toBeEnabled();
+        expect(screen.getByText('Heater waits for Preheat')).toBeInTheDocument();
+      },
+    );
+
+    it('roasting hides the cooling switch, as Drop handles cooling', () => {
+      renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast('roasting') });
       expect(screen.queryByRole('button', { name: /Cooling/ })).not.toBeInTheDocument();
-      expect(screen.getByText('Heater and fan wait for Preheat')).toBeInTheDocument();
     });
 
     it('from Preheat the sliders are live', () => {
@@ -262,8 +324,8 @@ describe('RoastScreen', () => {
   });
 
   describe('sliders', () => {
-    /** A drag: sets the input's value the way the browser does, then fires input. */
-    const slide = (input: HTMLElement, value: string) => {
+    /** Moves the slider the way the browser does: sets its value, then fires input. */
+    const move = (input: HTMLElement, value: string) => {
       act(() => {
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(
           input,
@@ -271,6 +333,12 @@ describe('RoastScreen', () => {
         );
         input.dispatchEvent(new Event('input', { bubbles: true }));
       });
+    };
+    /** A drag: press, move through `values`, let go. */
+    const slide = (input: HTMLElement, ...values: string[]) => {
+      fireEvent.pointerDown(input);
+      for (const value of values) move(input, value);
+      fireEvent.pointerUp(window);
     };
     const setup = (api = fakeApi()) =>
       renderApp(
@@ -285,15 +353,9 @@ describe('RoastScreen', () => {
       act(() => {
         heater.focus();
       });
-      // A change event, as a drag fires.
-      act(() => {
-        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(
-          heater,
-          '70',
-        );
-        heater.dispatchEvent(new Event('input', { bubbles: true }));
-      });
-      expect(api.setOutput).toHaveBeenCalledWith({ channel: 'heater', value: 70 });
+      slide(heater, '60', '65', '70');
+      // Only the value you let go on goes to the roaster.
+      expect(api.setOutput).toHaveBeenCalledExactlyOnceWith({ channel: 'heater', value: 70 });
       expect(heater).toHaveValue('70');
       // A reading from before the command landed doesn't pull the slider back.
       act(() => {
