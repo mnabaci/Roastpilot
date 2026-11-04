@@ -11,15 +11,15 @@ export const RoastPhaseSchema = z.enum([
 ]);
 export const RoastActionSchema = z.enum([
   'preheat',
-  'cancel-preheat',
   'start',
   'first-crack',
   'drop',
   'clear',
+  'end',
 ]);
 
 export const RoastEventSchema = z.object({
-  kind: z.enum(['charge', 'first-crack', 'drop', 'cool-end']),
+  kind: z.enum(['charge', 'first-crack', 'drop', 'cool-end', 'end']),
   atMs: z.number(),
   /** Bean temperature when it happened; null if there was no reading yet. */
   bt: z.number().nullable(),

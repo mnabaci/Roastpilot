@@ -27,6 +27,8 @@ export interface RoastRecorderDeps {
 interface Recording {
   chargedAtMs: number;
   id: Promise<RoastId | undefined>;
+  /** The row's id once created. */
+  savedId?: RoastId;
   eventsSaved: number;
 }
 
@@ -40,6 +42,7 @@ const SUMMARY_FROM_EVENT: Readonly<
   'first-crack': (tS) => ({ fcTimeS: tS }),
   drop: (tS, event) => ({ dropTimeS: tS, dropTemp: event.bt }),
   'cool-end': (_tS, _event, nowIso) => ({ endedAt: nowIso }),
+  end: (_tS, _event, nowIso) => ({ endedAt: nowIso }),
 };
 
 /**
@@ -81,6 +84,11 @@ export class RoastRecorder {
       );
   }
 
+  /** Whether `id` is the roast being saved right now (it can't be deleted until it ends). */
+  isRecording(id: RoastId): boolean {
+    return this.#recording?.savedId === id;
+  }
+
   /** Resolves once every queued write has run. */
   flush(): Promise<void> {
     return this.#queue;
@@ -96,6 +104,7 @@ export class RoastRecorder {
     const recording: Recording = { chargedAtMs, id: created, eventsSaved: 0 };
     this.#recording = recording;
     this.#write(recording, async (id) => {
+      recording.savedId = id;
       this.#deps.onSaved(id);
       return earlier.length > 0
         ? this.#deps.repository.addSamples(
@@ -120,7 +129,8 @@ export class RoastRecorder {
         });
         if (!added.ok || Object.keys(patch).length === 0) return added;
         const updated = await this.#deps.repository.update(id, patch);
-        if (updated.ok && event.kind === 'cool-end') this.#deps.onSaved(id);
+        if (updated.ok && (event.kind === 'cool-end' || event.kind === 'end'))
+          this.#deps.onSaved(id);
         return updated;
       });
     }

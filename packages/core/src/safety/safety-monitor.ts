@@ -27,6 +27,8 @@ export interface SafetyMonitorOptions {
 }
 
 export const EMERGENCY_STOP = 'emergency-stop';
+/** The computer is about to sleep: nothing would watch the roaster (docs/spec/safety.md). */
+export const COMPUTER_SLEEP = 'computer-sleep';
 
 /** Keeps a little more than the longest rule window, so a window always has a reading at its start. */
 const HISTORY_MARGIN_MS = 5_000;
@@ -72,11 +74,14 @@ export class SafetyMonitor {
     this.check();
   }
 
-  /** The red button: same as a safe-stop trip, but it holds nothing, so you can acknowledge at once. */
-  emergencyStop(): void {
+  /**
+   * The red button, or another stop from outside the rules (`rule`, e.g. computer sleep): same as a
+   * safe-stop trip, but it holds nothing, so you can acknowledge at once.
+   */
+  emergencyStop(rule: typeof EMERGENCY_STOP | typeof COMPUTER_SLEEP = EMERGENCY_STOP): void {
     this.#onEvent({
       kind: 'tripped',
-      rule: EMERGENCY_STOP,
+      rule,
       action: 'safe-stop',
       atMs: this.#clock.now(),
     });

@@ -19,13 +19,14 @@ export const DEFAULT_COOLING_MS = 4 * 60_000;
 /** Which states each action may start from (docs/spec/manual-mode.md, Manual roast flow). */
 const ALLOWED_FROM: Readonly<Record<RoastAction, readonly RoastPhase[]>> = {
   preheat: ['ready', 'done'],
-  'cancel-preheat': ['preheat'],
   // Full control may skip Preheat; the drum and filter fan still come on.
   start: ['ready', 'preheat'],
   'first-crack': ['roasting'],
   drop: ['roasting', 'development'],
   // Only with no roast running, so a roast in progress can't be wiped by accident.
   clear: ['ready', 'done'],
+  // End roast / Finish cooling now: a normal stop, no heater lock (docs/spec/manual-mode.md).
+  end: ['preheat', 'roasting', 'development', 'cooling'],
 };
 
 type Outputs = readonly (readonly [channel: string, value: number])[];
@@ -116,11 +117,6 @@ export class ManualRoast {
       this.#set({ ...READY, phase: 'preheat', preheatAtMs: nowMs });
       await this.#send(ROAST_ON);
     },
-    // Back to Ready with everything off; the readings stay on the chart.
-    'cancel-preheat': async () => {
-      this.#set(READY);
-      await this.#send(ALL_OFF);
-    },
     start: async (nowMs) => {
       this.#set({
         ...this.#state,
@@ -149,6 +145,27 @@ export class ManualRoast {
     drop: async (nowMs) => {
       this.#drop(nowMs);
       await this.#send(DROP_OUTPUTS);
+    },
+    // In Preheat nothing has roasted: back to Ready, the readings stay on the chart. In Cooling it
+    // finishes cooling now. In between it ends the roast where it is.
+    end: async (nowMs) => {
+      this.#coolingRun++;
+      if (this.#state.phase === 'preheat') {
+        this.#set(READY);
+        await this.#send(ALL_OFF);
+        return;
+      }
+      if (this.#state.phase === 'cooling') {
+        await this.#finishCooling();
+        return;
+      }
+      this.#set({
+        ...this.#state,
+        phase: 'done',
+        events: [...this.#state.events, this.#event('end', nowMs)],
+      });
+      this.#deps.onRoastEnded();
+      await this.#send(ALL_OFF);
     },
   };
 
