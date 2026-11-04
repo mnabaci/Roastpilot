@@ -99,7 +99,7 @@ describe('SerialTransport logging', () => {
     return { transport, events: () => entries.map((e) => e.event) };
   }
 
-  it('logs a port that fails to open', async () => {
+  it('logs a port that keeps failing to open once, not on every retry', async () => {
     const entries: LogEntry[] = [];
     const transport = new SerialTransport({
       path: '/dev/missing',
@@ -107,7 +107,10 @@ describe('SerialTransport logging', () => {
       logger: createLogger({ write: (e) => entries.push(e) }, 'serial'),
     });
     await transport.open();
+    await transport.open();
+    await transport.open();
     expect(entries.map((e) => e.event)).toEqual(['serial.open-failed']);
+    expect(entries[0]?.context).toMatchObject({ path: '/dev/missing' });
   });
 
   it('does not log a close it was asked for', async () => {

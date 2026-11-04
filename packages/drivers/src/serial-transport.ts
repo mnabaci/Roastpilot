@@ -1,4 +1,5 @@
 import {
+  FailureStreak,
   serializeError,
   silentLogger,
   type Logger,
@@ -38,12 +39,15 @@ export class SerialTransport implements Transport {
   readonly #logger: Logger;
   #port: Port | undefined;
   #closing = false;
+  /** Reopening after the cable is pulled fails every second: log it once, and once when it's back. */
+  readonly #openFailures: FailureStreak;
 
   constructor(options: SerialTransportOptions) {
     this.#path = options.path;
     this.#baudRate = options.baudRate ?? DEFAULT_BAUD_RATE;
     this.#createPort = options.createPort ?? createSerialPort;
     this.#logger = options.logger ?? silentLogger;
+    this.#openFailures = new FailureStreak(this.#logger, 'serial.open', { path: this.#path });
   }
 
   async open(): Promise<Result<void, TransportError>> {
@@ -66,13 +70,12 @@ export class SerialTransport implements Transport {
     return new Promise((resolve) => {
       port.open((error) => {
         if (error) {
-          this.#logger.warn('serial.open-failed', {
-            path: this.#path,
-            error: serializeError(error),
-          });
-          resolve(err(disconnected(error, 'could not open the port')));
+          const failed = err(disconnected(error, 'could not open the port'));
+          this.#openFailures.record(failed);
+          resolve(failed);
           return;
         }
+        this.#openFailures.record(ok(undefined));
         this.#port = port;
         resolve(ok(undefined));
       });

@@ -39,4 +39,20 @@ describe('FailureStreak', () => {
     streak.record(err({ kind: 'disconnected' }));
     expect(events()).toEqual(['session.read-failed', 'session.read-failed']);
   });
+
+  it('puts its context on both entries', () => {
+    const entries: LogEntry[] = [];
+    const streak = new FailureStreak(
+      createLogger({ write: (e) => entries.push(e) }, 'serial'),
+      'serial.open',
+      { path: 'COM3' },
+    );
+    streak.record(err({ kind: 'disconnected' }));
+    streak.record(err({ kind: 'disconnected' }));
+    streak.record(ok(undefined));
+    expect(entries.map((e) => e.context)).toEqual([
+      { path: 'COM3', error: { kind: 'disconnected' } },
+      { path: 'COM3', failures: 2 },
+    ]);
+  });
 });

@@ -102,6 +102,41 @@ describe('Tc4SkywalkerDriver', () => {
       });
     });
 
+    it('logs once when the board reports a heater or fan we did not send, and once when it matches again', async () => {
+      const entries: LogEntry[] = [];
+      const clock = new ManualClock();
+      const transport = new FakeTransport(clock);
+      let line = '0.00,40.00,40.00,30,60,0';
+      transport.reply = (command) =>
+        command === 'VERSION' ? '1' : command === 'READ' ? line : undefined;
+      const driver = new Tc4SkywalkerDriver({
+        transport,
+        clock,
+        logger: createLogger({ write: (e) => entries.push(e) }, 'driver'),
+      });
+      const run = async <T>(call: Promise<T>) => {
+        await clock.runFor(5000);
+        return call;
+      };
+      await run(driver.connect());
+      await run(driver.setOutput('heater', 30));
+      await run(driver.setOutput('fan', 60));
+      await run(driver.read());
+      expect(entries).toEqual([]);
+      line = '0.00,40.00,40.00,30,100,0';
+      await run(driver.read());
+      await run(driver.read());
+      line = '0.00,40.00,40.00,30,60,0';
+      await run(driver.read());
+      expect(entries.map((e) => [e.event, e.context])).toEqual([
+        [
+          'driver.output-changed-by-board',
+          { channel: 'fan', sent: 60, reported: 100, line: '0.00,40.00,40.00,30,100,0' },
+        ],
+        ['driver.output-matches-again', { channel: 'fan', value: 60 }],
+      ]);
+    });
+
     it('reports a bad reply without throwing', async () => {
       const { transport, driver, run } = await connected();
       transport.reply = () => 'garbage';
