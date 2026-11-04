@@ -3,7 +3,7 @@ import { serializeError } from '@roastpilot/core';
 import { listSerialPorts } from '@roastpilot/drivers';
 import { drizzleOn, openDatabase, SqliteRoastRepository } from '@roastpilot/storage';
 import { IPC_CHANNELS } from '@roastpilot/shared';
-import { app, BrowserWindow, Menu, shell } from 'electron';
+import { app, BrowserWindow, Menu, powerMonitor, powerSaveBlocker, shell } from 'electron';
 import { join } from 'node:path';
 import { buildAppMenu } from './app-menu';
 import { createAppServices } from './app-services';
@@ -15,6 +15,7 @@ import { createIpcHandlers, handleRendererLog, withErrorLogging } from './ipc-ha
 import { createAppLogger } from './logging/app-logger';
 import { listLogDays, readLogDay } from './logging/log-reader';
 import { pruneOldLogsLater } from './logging/prune';
+import { createPowerGuard } from './power-guard';
 import { createQuitGuard } from './quit-guard';
 import { JsonSettingsStore } from './settings/json-settings-store';
 import { systemClock } from './system-clock';
@@ -51,6 +52,15 @@ const roasts = database.ok
       database.error.kind === 'storage-failed' ? database.error.message : 'unavailable',
     );
 
+// Asleep, nothing watches the roaster: stay awake while one is connected (docs/spec/safety.md).
+const power = createPowerGuard({
+  blocker: powerSaveBlocker,
+  emergencyStop: (rule) => {
+    session.emergencyStop(rule);
+  },
+  logger: logger.child('power'),
+});
+
 const { session, roast, settings, history, recorder, snapshot } = createAppServices({
   clock: systemClock,
   logger,
@@ -59,6 +69,9 @@ const { session, roast, settings, history, recorder, snapshot } = createAppServi
   }),
   roasts,
   nowIso: () => new Date().toISOString(),
+  onConnectionChange: (state) => {
+    power.onConnection(state);
+  },
   publish: broadcast,
 });
 
@@ -174,6 +187,12 @@ app
         }),
       ),
     );
+    powerMonitor.on('suspend', () => {
+      power.onSuspend();
+    });
+    powerMonitor.on('resume', () => {
+      power.onResume();
+    });
     createWindow();
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

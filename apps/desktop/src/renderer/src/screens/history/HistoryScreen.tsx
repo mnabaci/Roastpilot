@@ -5,7 +5,7 @@ import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
 import { useRoast, useSettings } from '../../stores/use-stores';
 import { DeleteRoast } from './DeleteRoast';
-import { roastRows, roastTitle, selectionAfterDelete } from './history-format';
+import { inProgressId, roastRows, roastTitle, selectionAfterDelete } from './history-format';
 import { SavedRoastChart } from './SavedRoastChart';
 import { SavedRoastStats } from './SavedRoastStats';
 import { useRoastList } from './use-roast-list';
@@ -22,9 +22,10 @@ export function HistoryScreen() {
   const smoothingS = useSettings((s) => s.settings.chartSmoothingS);
   const [picked, setPicked] = useState<RoastId>();
   const [compareId, setCompareId] = useState<string>(NONE);
-  const [deleteFailed, setDeleteFailed] = useState(false);
+  const [deleteError, setDeleteError] = useState<string>();
 
   const list = roasts ?? [];
+  const liveId = inProgressId(list, livePhase);
   // The picked roast while it exists, else the newest.
   const selectedId = list.some((r) => r.id === picked) ? picked : list[0]?.id;
   const others = list.filter((r) => r.id !== selectedId);
@@ -34,11 +35,15 @@ export function HistoryScreen() {
   const compareLabel = compareTo ? roastTitle(compareTo.startedAt) : '';
 
   const remove = (id: RoastId) => {
-    setDeleteFailed(false);
+    setDeleteError(undefined);
     run('history.delete-failed', async () => {
       const deleted = await api.deleteRoast(id);
       if (!deleted.ok) {
-        setDeleteFailed(true);
+        setDeleteError(
+          deleted.error.kind === 'in-progress'
+            ? 'Still roasting · delete it once it ends'
+            : "Couldn't delete this roast · see Logs",
+        );
         return;
       }
       setPicked(selectionAfterDelete(list, id));
@@ -66,7 +71,7 @@ export function HistoryScreen() {
           selectedId={selectedId}
           onSelect={(id) => {
             setPicked(id);
-            setDeleteFailed(false);
+            setDeleteError(undefined);
           }}
         />
       </div>
@@ -88,7 +93,11 @@ export function HistoryScreen() {
             disabled={others.length === 0}
             className="w-60"
           />
-          {selectedId === undefined ? null : (
+          {selectedId === undefined ? null : selectedId === liveId ? (
+            <p className="flex h-control-sm items-center text-label text-ink-muted">
+              Saving as it roasts
+            </p>
+          ) : (
             <DeleteRoast
               key={selectedId}
               onDelete={() => {
@@ -97,9 +106,9 @@ export function HistoryScreen() {
             />
           )}
         </div>
-        {deleteFailed ? (
+        {deleteError ? (
           <p role="alert" className="text-body text-critical-text">
-            Couldn't delete this roast · see Logs
+            {deleteError}
           </p>
         ) : null}
         {selected.status === 'failed' ? (

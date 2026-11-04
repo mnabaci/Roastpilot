@@ -23,7 +23,9 @@ export function OutputsPanel() {
     : heater.value > 0 && drum.value === 0
       ? 'Drum is off'
       : !access.outputs && connected
-        ? 'Heater and fan wait for Preheat'
+        ? phase === 'cooling'
+          ? 'Cooling · heater off, fan at 100%'
+          : 'Heater and fan wait for Preheat'
         : undefined;
   return (
     <section aria-label="Outputs" className="flex flex-col gap-5 rounded-xl bg-surface px-5 py-4.5">

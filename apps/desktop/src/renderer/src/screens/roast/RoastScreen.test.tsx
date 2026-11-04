@@ -60,7 +60,7 @@ describe('RoastScreen', () => {
     expect(screen.getByRole('button', { name: 'Preheat' })).toBeInTheDocument();
   });
 
-  it('cooling has no button, just the countdown', () => {
+  it('cooling: the countdown, no next step, and the outputs say why they are locked', () => {
     renderApp(<RoastScreen onConnect={onConnect} />, {
       ...connected,
       roast: { ...roast('cooling'), coolingEndsAtMs: 200_000 },
@@ -70,6 +70,36 @@ describe('RoastScreen', () => {
     expect(
       screen.getByText('Dump the beans into the cooling tray. 3:00 left.'),
     ).toBeInTheDocument();
+    expect(screen.getByText('Cooling · heater off, fan at 100%')).toBeInTheDocument();
+  });
+
+  it.each([
+    ['preheat', 'End roast', 'End the roast?'],
+    ['roasting', 'End roast', 'End the roast?'],
+    ['development', 'End roast', 'End the roast?'],
+    ['cooling', 'Finish cooling now', 'Finish cooling?'],
+  ] as const)('%s: %s asks once, then ends', async (phase, label, question) => {
+    const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
+      ...connected,
+      roast: roast(phase),
+    });
+    await userEvent.click(screen.getByRole('button', { name: label }));
+    expect(api.roastAction).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('group', { name: new RegExp(question.replace('?', '\\?')) }),
+    ).toHaveTextContent('everything turns off');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(api.roastAction).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: label }));
+    await userEvent.click(screen.getByRole('button', { name: label }));
+    expect(api.roastAction).toHaveBeenCalledWith('end');
+  });
+
+  it.each(['ready', 'done'] as const)('%s has no End roast', (phase) => {
+    renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast(phase) });
+    expect(
+      screen.queryByRole('button', { name: /End roast|Finish cooling/ }),
+    ).not.toBeInTheDocument();
   });
 
   it('marks where the roast is', () => {
@@ -147,15 +177,6 @@ describe('RoastScreen', () => {
     expect(screen.queryByText('42.7')).not.toBeInTheDocument();
     expect(screen.queryByText('100%')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Drum/ })).toHaveAttribute('aria-pressed', 'false');
-  });
-
-  it('preheat can be cancelled from a second button', async () => {
-    const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
-      ...connected,
-      roast: roast('preheat'),
-    });
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel preheat' }));
-    expect(api.roastAction).toHaveBeenCalledWith('cancel-preheat');
   });
 
   it('connection lost: Reconnecting with nothing to press, and dashes instead of old values', () => {

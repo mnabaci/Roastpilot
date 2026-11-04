@@ -25,6 +25,7 @@ function setup(roasts: RoastRepository = unavailableRepository('not in this test
     settingsStore,
     roasts,
     nowIso: () => '2026-11-04T10:00:00.000Z',
+    onConnectionChange: () => undefined,
     publish: (channel, payload) => {
       published.push([channel, payload]);
     },

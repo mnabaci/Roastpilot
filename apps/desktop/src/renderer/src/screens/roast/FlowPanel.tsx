@@ -1,5 +1,6 @@
 import type { RoastAction } from '@roastpilot/shared';
 import { Button, formatClock } from '@roastpilot/ui';
+import { ConfirmInline } from '../../features/ConfirmInline';
 import { flowStep, isConnected } from './flow-step';
 import { useRun } from '../../features/use-run';
 import { useDeps } from '../../app/app-context';
@@ -64,13 +65,25 @@ export function FlowPanel({
       <p className="text-label text-ink-muted">{hint}</p>
       {step.secondary ? (
         <Button
-          variant={step.secondary.quiet ? 'ghost' : 'secondary'}
+          variant="secondary"
           onClick={() => {
             if (step.secondary) act(step.secondary.action);
           }}
         >
           {step.secondary.label}
         </Button>
+      ) : null}
+      {step.stop ? (
+        <ConfirmInline
+          key={phase}
+          label={step.stop.label}
+          question={step.stop.question}
+          confirmLabel={step.stop.label}
+          onConfirm={() => {
+            act('end');
+          }}
+          stacked
+        />
       ) : null}
     </div>
   );

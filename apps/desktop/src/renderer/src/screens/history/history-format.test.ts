@@ -1,6 +1,12 @@
 import type { RoastSummary } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import { roastNumbers, roastRows, roastTitle, selectionAfterDelete } from './history-format';
+import {
+  inProgressId,
+  roastNumbers,
+  roastRows,
+  roastTitle,
+  selectionAfterDelete,
+} from './history-format';
 
 const UTC_GB = { locale: 'en-GB', timeZone: 'UTC' };
 const summary = (id: number, over: Partial<RoastSummary> = {}): RoastSummary => ({
@@ -48,5 +54,12 @@ describe('history formatting', () => {
     expect(selectionAfterDelete(roasts, 1)).toBe(2);
     expect(selectionAfterDelete([summary(1)], 1)).toBeUndefined();
     expect(selectionAfterDelete(roasts, 99)).toBe(3);
+  });
+
+  it('only the newest unended roast is in progress, and only while roasting', () => {
+    const roasts = [summary(2, { endedAt: null }), summary(1, { endedAt: null })];
+    expect(inProgressId(roasts, 'development')).toBe(2);
+    expect(inProgressId(roasts, 'done')).toBeUndefined();
+    expect(inProgressId([summary(3), ...roasts], 'roasting')).toBeUndefined();
   });
 });

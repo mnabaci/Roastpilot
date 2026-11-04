@@ -1,8 +1,18 @@
 import type { Logger, RoastRepository } from '@roastpilot/core';
-import type { Result, RoastDetail, RoastId, RoastSummary, StorageError } from '@roastpilot/shared';
+import {
+  err,
+  type DeleteRoastError,
+  type Result,
+  type RoastDetail,
+  type RoastId,
+  type RoastSummary,
+  type StorageError,
+} from '@roastpilot/shared';
 
 export interface HistoryServiceDeps {
   repository: Pick<RoastRepository, 'list' | 'get' | 'delete'>;
+  /** The roast being saved right now can't be deleted. */
+  isRecording: (id: RoastId) => boolean;
   /** A roast was deleted: tell the windows. */
   onDeleted: (id: RoastId) => void;
   logger: Logger;
@@ -30,7 +40,11 @@ export class HistoryService {
     return read;
   }
 
-  async delete(id: RoastId): Promise<Result<void, StorageError>> {
+  async delete(id: RoastId): Promise<Result<void, DeleteRoastError>> {
+    if (this.#deps.isRecording(id)) {
+      this.#deps.logger.warn('history.delete-refused', { id, reason: 'in-progress' });
+      return err({ kind: 'in-progress', id });
+    }
     const deleted = await this.#deps.repository.delete(id);
     if (!deleted.ok) {
       this.#deps.logger.warn('history.delete-failed', { id, error: deleted.error });
