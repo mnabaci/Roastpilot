@@ -32,9 +32,9 @@ export {
 export { CHARGE_LOOKBACK_MS, findChargePoint } from './roast/charge-point';
 export { findTurningPoint } from './roast/turning-point';
 export {
-  ROASTER_COOL_C,
+  DEFAULT_ROASTER_COOL_TO_C,
   ROASTER_COOL_MAX_MS,
-  ROASTER_COOL_OFFER_C,
+  ROASTER_COOL_OFFER_ABOVE_C,
   roasterCooldownCheck,
 } from './roast/roaster-cooldown';
 export { rateOfRise, ROR_DRAW_LIMITS, ROR_WINDOW_MS, rorReadings } from './roast/rate-of-rise';

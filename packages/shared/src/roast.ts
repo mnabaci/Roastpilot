@@ -40,10 +40,15 @@ export const RoastStateSchema = z.object({
   startPressedAtMs: z.number().nullable(),
   firstCrackAtMs: z.number().nullable(),
   droppedAtMs: z.number().nullable(),
+  /** When bean cooling ends: the countdown, or the 10 min cap when it ends by temperature. */
   coolingEndsAtMs: z.number().nullable(),
+  /** Bean cooling ends once BT is below this; null when it ends by time. */
+  coolingBelowC: z.number().nullable(),
   events: z.array(RoastEventSchema),
   /** When the roaster cool-down began; null when it isn't running. */
   roasterCoolingSinceMs: z.number().nullable(),
+  /** The running roaster cool-down's target, in °C; null when it isn't running. */
+  roasterCoolToC: z.number().nullable(),
 });
 
 /** No roast yet: what the app starts with and Clear goes back to. */
@@ -55,8 +60,10 @@ export const READY_ROAST: RoastState = {
   firstCrackAtMs: null,
   droppedAtMs: null,
   coolingEndsAtMs: null,
+  coolingBelowC: null,
   events: [],
   roasterCoolingSinceMs: null,
+  roasterCoolToC: null,
 };
 
 export const RoastActionErrorSchema = z.object({

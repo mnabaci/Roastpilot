@@ -20,8 +20,9 @@ export function FlowPanel({
   const connected = useConnection((s) => isConnected(s.connection));
   const lost = useConnection((s) => s.connection.status === 'lost');
   const roast = useRoast((s) => s.roast);
+  const temp = useRoast((s) => s.readings.at(-1)?.values.bt);
   const { phase } = roast;
-  const step = flowStep(phase);
+  const step = flowStep(roast);
   const act = (action: RoastAction) => {
     run('roast.action-failed', async () => {
       const result = await api.roastAction(action);
@@ -46,7 +47,7 @@ export function FlowPanel({
       </div>
     );
   }
-  const hint = flowHint(roast, coolingLeftS);
+  const hint = flowHint(roast, { coolingLeftS, temp });
   const noRoast = phase === 'ready' || phase === 'done';
   return (
     <div className="flex flex-col gap-2">

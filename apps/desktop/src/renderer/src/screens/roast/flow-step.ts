@@ -1,5 +1,5 @@
 import type { ConnectionState, RoastAction, RoastPhase, RoastState } from '@roastpilot/shared';
-import { formatClock } from '@roastpilot/ui';
+import { formatClock, formatNumber } from '@roastpilot/ui';
 
 export interface FlowButton {
   action: RoastAction;
@@ -62,19 +62,27 @@ const STEPS: Readonly<Record<RoastPhase, FlowStep>> = {
   },
 };
 
-export function flowStep(phase: RoastPhase): FlowStep {
-  return STEPS[phase];
+/** The step for this roast; cooling by temperature has no +1 min. */
+export function flowStep(roast: RoastState): FlowStep {
+  const step = STEPS[roast.phase];
+  return roast.coolingBelowC === null ? step : { ...step, quiet: undefined };
 }
 
 /** A charge point found at least this much before the press is worth saying. */
 const CHARGE_NOTE_MS = 1000;
 
 /**
- * The one-line hint under the primary action: the countdown while cooling, and while roasting,
- * how much earlier the charge point was found than the press (docs/spec/manual-mode.md).
+ * The one-line hint under the primary action: while cooling, the countdown or the temperature
+ * against its target; while roasting, how much earlier the charge point was found than the press
+ * (docs/spec/manual-mode.md).
  */
-export function flowHint(roast: RoastState, coolingLeftS: number | undefined): string {
+export function flowHint(
+  roast: RoastState,
+  { coolingLeftS, temp }: { coolingLeftS: number | undefined; temp: number | undefined },
+): string {
   const { hint } = STEPS[roast.phase];
+  if (roast.phase === 'cooling' && roast.coolingBelowC !== null)
+    return `${hint} ${formatNumber(temp, 0) ?? '–'} °C → ${String(roast.coolingBelowC)} °C.`;
   if (roast.phase === 'cooling' && coolingLeftS !== undefined)
     return `${hint} ${formatClock(coolingLeftS)} left.`;
   const { chargedAtMs, startPressedAtMs } = roast;

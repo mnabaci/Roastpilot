@@ -1,4 +1,3 @@
-import { ROASTER_COOL_C } from '@roastpilot/core';
 import type { Reading, RoastPhase, RoastState } from '@roastpilot/shared';
 import { formatClock, formatNumber, type RoastStripProps } from '@roastpilot/ui';
 import { roastNumbers } from '../screens/roast/roast-numbers';
@@ -20,7 +19,7 @@ export function roastStripData(
   roast: RoastState,
   readings: readonly Reading[],
 ): Omit<RoastStripProps, 'onOpen' | 'className'> | undefined {
-  const coolingRoaster = roast.roasterCoolingSinceMs !== null;
+  const coolingRoaster = roast.roasterCoolToC !== null;
   if (!RUNNING.includes(roast.phase) && !coolingRoaster) return undefined;
   const n = roastNumbers(roast, readings);
   const latest = readings.at(-1)?.values;
@@ -33,11 +32,14 @@ export function roastStripData(
   ];
   if (coolingRoaster)
     return {
-      lead: `Cooling the roaster · ${formatNumber(n.bt, 0) ?? '–'} °C → ${String(ROASTER_COOL_C)} °C`,
+      lead: `Cooling the roaster · ${formatNumber(n.bt, 0) ?? '–'} °C → ${String(roast.roasterCoolToC)} °C`,
       numbers: numbers.filter((x) => x.label === 'BT' || x.label === 'Fan'),
     };
   if (roast.phase === 'cooling') {
-    const left = `Cooling ${clock(n.coolingLeftS)} left`;
+    const left =
+      roast.coolingBelowC === null
+        ? `Cooling ${clock(n.coolingLeftS)} left`
+        : `Cooling · ${formatNumber(n.bt, 0) ?? '–'} °C → ${String(roast.coolingBelowC)} °C`;
     const nowMs = readings.at(-1)?.atMs;
     const justDropped =
       roast.droppedAtMs !== null &&

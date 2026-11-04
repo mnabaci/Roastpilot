@@ -107,8 +107,14 @@ export function createAppServices({
     readings: () => history.all(),
     canCoolRoaster: () => session.connection.status === 'connected' && !session.safetyStatus.locked,
     options: () => {
-      const { findChargePoint, coolingTimeMin, coolRoasterAfter } = settings.latest;
-      return { findChargePoint, coolingMs: coolingTimeMin * 60_000, coolRoasterAfter };
+      const latest = settings.latest;
+      return {
+        findChargePoint: latest.findChargePoint,
+        coolingMs: latest.coolingTimeMin * 60_000,
+        coolingBelowC: latest.coolingEnd === 'temperature' ? latest.coolingBelowC : null,
+        coolRoasterAfter: latest.coolRoasterAfter,
+        roasterCoolToC: latest.roasterCoolToC,
+      };
     },
     onChange: (state) => {
       recorder.onRoastChange(state);

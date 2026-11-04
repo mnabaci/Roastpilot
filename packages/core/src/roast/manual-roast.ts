@@ -11,29 +11,13 @@ import {
 } from '@roastpilot/shared';
 import { silentLogger, type Logger } from '../logging/logger';
 import { guardListener } from '../logging/guard-listener';
-import { CoolingTimer } from './cooling-timer';
+import { BeanCooling } from './bean-cooling';
 import type { ManualRoastDeps } from './manual-roast-deps';
 import { ALL_OFF, DROP_OUTPUTS, ROAST_ON, ROASTER_COOLING, type Outputs } from './roast-outputs';
-import {
-  ALLOWED_FROM,
-  DEFAULT_OPTIONS,
-  EXTEND_COOLING_MS,
-  PHASE_OUTPUTS,
-  type RoastOptions,
-} from './roast-rules';
-import { ROASTER_COOL_C } from './roaster-cooldown';
+import { ALLOWED_FROM, DEFAULT_OPTIONS, PHASE_OUTPUTS, type RoastOptions } from './roast-rules';
 import { RoasterCooling } from './roaster-cooling';
 import { chargeFor, turningPointEvent } from './roast-detections';
-import {
-  cleared,
-  cooled,
-  cracked,
-  dropped,
-  ended,
-  preheated,
-  preheatEnded,
-  started,
-} from './roast-transitions';
+import { cleared, cracked, ended, preheated, preheatEnded, started } from './roast-transitions';
 
 export { FILTER_ON } from './roast-outputs';
 export { DEFAULT_COOLING_MS, EXTEND_COOLING_MS, type RoastOptions } from './roast-rules';
@@ -48,7 +32,7 @@ export class ManualRoast {
   readonly #logger: Logger;
   #state: RoastState = READY_ROAST;
   readonly #cooling: RoasterCooling;
-  readonly #coolingTimer: CoolingTimer;
+  readonly #beans: BeanCooling;
   readonly #notify: (state: RoastState) => void;
 
   constructor(deps: ManualRoastDeps) {
@@ -57,17 +41,25 @@ export class ManualRoast {
     this.#readings = deps.readings ?? (() => []);
     this.#canCoolRoaster = deps.canCoolRoaster ?? (() => true);
     this.#logger = deps.logger ?? silentLogger;
-    this.#coolingTimer = new CoolingTimer(deps.clock, this.#logger);
     this.#notify = guardListener(this.#logger, 'roast.listener-failed', deps.onChange);
-    this.#cooling = new RoasterCooling(
-      {
-        state: () => this.#state,
-        set: (state) => {
-          this.#set(state);
-        },
-        send: (outputs) => this.#send(outputs),
-        latestBt: () => deps.latestBt(),
+    const host = {
+      state: () => this.#state,
+      set: (state: RoastState) => {
+        this.#set(state);
       },
+      send: (outputs: Outputs) => this.#send(outputs),
+      latestBt: () => deps.latestBt(),
+    };
+    this.#cooling = new RoasterCooling(host, this.#logger);
+    this.#beans = new BeanCooling(
+      {
+        ...host,
+        options: () => this.#options(),
+        canCoolRoaster: () => this.#canCoolRoaster(),
+        event: (kind, atMs) => this.#event(kind, atMs),
+      },
+      this.#cooling,
+      deps.clock,
       this.#logger,
     );
   }
@@ -78,9 +70,7 @@ export class ManualRoast {
 
   async act(action: RoastAction): Promise<Result<void, RoastActionError>> {
     const phase = this.#state.phase;
-    // The roaster cool-down also needs a roaster that can take it: connected, no safety stop.
-    const coolingRefused = action === 'cool-roaster' && !this.#canCoolRoaster();
-    if (!ALLOWED_FROM[action].includes(phase) || coolingRefused) {
+    if (!ALLOWED_FROM[action].includes(phase) || this.#refused(action)) {
       this.#logger.info('roast.action-not-allowed', { action, phase });
       return err({ kind: 'not-allowed', action, phase });
     }
@@ -96,6 +86,7 @@ export class ManualRoast {
    */
   async onReading(reading: Reading): Promise<void> {
     this.#markTurningPoint();
+    await this.#beans.onReading(reading);
     await this.#cooling.onReading(reading);
   }
 
@@ -158,17 +149,16 @@ export class ManualRoast {
       return Promise.resolve();
     },
     drop: async (nowMs) => {
-      this.#set(dropped(this.#state, this.#event('drop', nowMs), this.#options().coolingMs));
+      this.#beans.start(this.#event('drop', nowMs));
       this.#deps.onRoastEnded();
-      this.#scheduleCoolingEnd();
       await this.#send(DROP_OUTPUTS);
     },
     // In Preheat nothing has roasted: back to Ready, the preheat stays on the chart until Clear. In
     // Cooling it finishes cooling now. In between it ends the roast where it is.
     end: async (nowMs) => {
-      this.#coolingTimer.cancel();
+      this.#beans.cancel();
       if (this.#state.phase === 'cooling') {
-        await this.#finishCooling();
+        await this.#beans.finishNow();
         return;
       }
       if (this.#state.phase === 'preheat') this.#set(preheatEnded(this.#state));
@@ -178,15 +168,12 @@ export class ManualRoast {
       }
       await this.#send(ALL_OFF);
     },
-    // From the planned end, or from now if a late timer hasn't fired yet: always a minute more.
     'extend-cooling': (nowMs) => {
-      const endsAtMs = Math.max(this.#state.coolingEndsAtMs ?? nowMs, nowMs) + EXTEND_COOLING_MS;
-      this.#set({ ...this.#state, coolingEndsAtMs: endsAtMs });
-      this.#scheduleCoolingEnd();
+      this.#beans.extend(nowMs);
       return Promise.resolve();
     },
     'cool-roaster': async (nowMs) => {
-      await this.#cooling.start(nowMs, 'asked');
+      await this.#cooling.start(nowMs, this.#options().roasterCoolToC, 'asked');
     },
     'stop-cooling-roaster': async () => {
       await this.#cooling.end('stopped');
@@ -206,28 +193,13 @@ export class ManualRoast {
     return this.#cooling.stopWithoutOutputs(reason) ? [['fan', 0]] : [];
   }
 
-  #scheduleCoolingEnd(): void {
-    const endsAtMs = this.#state.coolingEndsAtMs;
-    if (endsAtMs === null) return;
-    this.#coolingTimer.schedule(endsAtMs, () =>
-      this.#state.phase === 'cooling' ? this.#finishCooling() : Promise.resolve(),
-    );
-  }
-
-  /**
-   * Bean cooling is over: everything off, or on to the roaster cool-down while the drum is hot
-   * and the roaster can take it (connected, no safety stop).
-   */
-  async #finishCooling(): Promise<void> {
-    const nowMs = this.#deps.clock.now();
-    this.#set(cooled(this.#state, this.#event('cool-end', nowMs)));
-    const bt = this.#deps.latestBt();
-    const hot = bt !== undefined && bt >= ROASTER_COOL_C;
-    if (this.#options().coolRoasterAfter && hot && this.#canCoolRoaster()) {
-      await this.#cooling.start(nowMs, 'after-roast');
-      return;
-    }
-    await this.#send(ALL_OFF);
+  /** Actions the phase allows but the moment doesn't. */
+  #refused(action: RoastAction): boolean {
+    // The roaster cool-down needs a roaster that can take it: connected, no safety stop.
+    if (action === 'cool-roaster') return !this.#canCoolRoaster();
+    // +1 min only counts when cooling ends by time.
+    if (action === 'extend-cooling') return this.#beans.byTemperature;
+    return false;
   }
 
   /** Sends outputs in order. A failure is logged and the rest still go out; safety covers the roaster. */

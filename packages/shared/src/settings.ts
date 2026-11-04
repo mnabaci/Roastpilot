@@ -21,6 +21,25 @@ export const CoolingTimeSchema = z.union([
   z.literal(6),
 ]);
 
+/** What ends bean cooling: the countdown, or BT falling below a temperature. */
+export const CoolingEndSchema = z.enum(['time', 'temperature']);
+
+/** Bean cooling by temperature ends once BT is below this, in °C. */
+export const CoolingBelowSchema = z.union([
+  z.literal(70),
+  z.literal(80),
+  z.literal(90),
+  z.literal(100),
+]);
+
+/** The roaster cool-down runs until BT is below this, in °C. */
+export const RoasterCoolToSchema = z.union([
+  z.literal(40),
+  z.literal(50),
+  z.literal(60),
+  z.literal(70),
+]);
+
 /** Missing or unknown fields fall back to defaults, so an older settings file still loads. */
 export const SettingsSchema = z.object({
   /** The roaster last picked in Settings; the app never connects by itself. */
@@ -29,9 +48,12 @@ export const SettingsSchema = z.object({
   chartSmoothingS: ChartSmoothingSchema.catch(3).default(3),
   /** Move charge back to the charge drop found before Start was pressed. */
   findChargePoint: z.boolean().catch(true).default(true),
+  coolingEnd: CoolingEndSchema.catch('time').default('time'),
   coolingTimeMin: CoolingTimeSchema.catch(4).default(4),
-  /** Keep cooling the empty roaster after bean cooling, down to 50 °C. */
+  coolingBelowC: CoolingBelowSchema.catch(90).default(90),
+  /** Keep cooling the empty roaster after bean cooling, down to `roasterCoolToC`. */
   coolRoasterAfter: z.boolean().catch(true).default(true),
+  roasterCoolToC: RoasterCoolToSchema.catch(50).default(50),
 });
 
 export const DEFAULT_SETTINGS = SettingsSchema.parse({});
@@ -44,5 +66,8 @@ export const SettingsWriteErrorSchema = z.object({
 export type ControlsLevel = z.infer<typeof ControlsLevelSchema>;
 export type ChartSmoothing = z.infer<typeof ChartSmoothingSchema>;
 export type CoolingTime = z.infer<typeof CoolingTimeSchema>;
+export type CoolingEnd = z.infer<typeof CoolingEndSchema>;
+export type CoolingBelow = z.infer<typeof CoolingBelowSchema>;
+export type RoasterCoolTo = z.infer<typeof RoasterCoolToSchema>;
 export type Settings = z.infer<typeof SettingsSchema>;
 export type SettingsWriteError = z.infer<typeof SettingsWriteErrorSchema>;

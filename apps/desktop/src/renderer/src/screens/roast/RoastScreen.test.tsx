@@ -105,7 +105,7 @@ describe('RoastScreen', () => {
     it('while it runs: the temperature it is heading to, and Stop', async () => {
       const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
         ...connected,
-        roast: { ...roast('done'), roasterCoolingSinceMs: 0 },
+        roast: { ...roast('done'), roasterCoolingSinceMs: 0, roasterCoolToC: 50 },
         readings: [reading({ bt: 92.4 })],
       });
       expect(screen.getByText('Cooling the roaster · 92 °C → 50 °C')).toHaveRole('status');

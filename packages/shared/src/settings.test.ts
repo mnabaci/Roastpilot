@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS, SettingsSchema } from './settings';
 
-const ROAST_DEFAULTS = { findChargePoint: true, coolingTimeMin: 4, coolRoasterAfter: true };
+const ROAST_DEFAULTS = {
+  findChargePoint: true,
+  coolingEnd: 'time',
+  coolingTimeMin: 4,
+  coolingBelowC: 90,
+  coolRoasterAfter: true,
+  roasterCoolToC: 50,
+};
 
 describe('SettingsSchema', () => {
   it('defaults to Guided and no roaster', () => {
@@ -19,8 +26,11 @@ describe('SettingsSchema', () => {
       controls: 'full',
       chartSmoothingS: 10,
       findChargePoint: false,
+      coolingEnd: 'temperature',
       coolingTimeMin: 6,
+      coolingBelowC: 70,
       coolRoasterAfter: false,
+      roasterCoolToC: 40,
     };
     expect(SettingsSchema.parse(settings)).toEqual(settings);
   });
@@ -61,5 +71,11 @@ describe('SettingsSchema', () => {
       ROAST_DEFAULTS,
     );
     expect(SettingsSchema.parse({ coolingTimeMin: 2 }).coolingTimeMin).toBe(2);
+  });
+
+  it('cools by time to 90 °C and the roaster to 50 °C unless set; odd values fall back', () => {
+    expect(
+      SettingsSchema.parse({ coolingEnd: 'colour', coolingBelowC: 85, roasterCoolToC: 20 }),
+    ).toMatchObject({ coolingEnd: 'time', coolingBelowC: 90, roasterCoolToC: 50 });
   });
 });

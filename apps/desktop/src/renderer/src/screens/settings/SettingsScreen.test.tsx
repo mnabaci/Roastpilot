@@ -205,6 +205,28 @@ describe('SettingsScreen', () => {
     );
   });
 
+  it('cooling ends by time or by temperature; the roaster cools to its own target', async () => {
+    const { api, stores } = renderApp(<SettingsScreen />);
+    const group = (name: string) => within(screen.getByRole('group', { name }));
+    expect(screen.queryByRole('group', { name: 'Cool until below' })).not.toBeInTheDocument();
+    await userEvent.click(group('Cooling ends').getByRole('button', { name: 'By temperature' }));
+    expect(screen.queryByRole('group', { name: 'Cooling time' })).not.toBeInTheDocument();
+    expect(group('Cool until below').getByRole('button', { name: '90 °C' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await userEvent.click(group('Cool until below').getByRole('button', { name: '80 °C' }));
+    await userEvent.click(group('Cool the roaster to').getByRole('button', { name: '60 °C' }));
+    expect(stores.settings.getState().settings).toMatchObject({
+      coolingEnd: 'temperature',
+      coolingBelowC: 80,
+      roasterCoolToC: 60,
+    });
+    expect(api.setSettings).toHaveBeenLastCalledWith(
+      expect.objectContaining({ coolingEnd: 'temperature', coolingBelowC: 80, roasterCoolToC: 60 }),
+    );
+  });
+
   it('switches between Guided and Full control', async () => {
     const { api, stores } = renderApp(<SettingsScreen />);
     expect(screen.getByRole('button', { name: 'Guided' })).toHaveAttribute('aria-pressed', 'true');

@@ -8,7 +8,8 @@ import {
 } from '@roastpilot/shared';
 import { ManualClock } from '../clock';
 import { createLogger } from '../logging/logger';
-import { DEFAULT_COOLING_MS, ManualRoast, type RoastOptions } from './manual-roast';
+import { ManualRoast, type RoastOptions } from './manual-roast';
+import { DEFAULT_OPTIONS } from './roast-rules';
 
 export interface HarnessOptions {
   failOutputs?: boolean;
@@ -48,12 +49,7 @@ export function manualRoastHarness({
     },
     onRoastStarted: (atMs) => signals.push(`roast-started@${String(atMs)}`),
     onRoastEnded: () => signals.push('roast-ended'),
-    options: () => ({
-      findChargePoint: true,
-      coolingMs: DEFAULT_COOLING_MS,
-      coolRoasterAfter: true,
-      ...options,
-    }),
+    options: () => ({ ...DEFAULT_OPTIONS, ...options }),
     canCoolRoaster: () => canCoolRoaster,
     logger: createLogger({ write: (e) => entries.push(e) }, 'roast'),
   });

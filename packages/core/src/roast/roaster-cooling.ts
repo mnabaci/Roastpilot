@@ -33,17 +33,17 @@ export class RoasterCooling {
     return this.#host.state().roasterCoolingSinceMs !== null;
   }
 
-  async start(nowMs: number, reason: 'asked' | 'after-roast'): Promise<void> {
-    this.#logger.info('roast.roaster-cooling-started', { reason, bt: this.#host.latestBt() });
-    this.#host.set({ ...this.#host.state(), roasterCoolingSinceMs: nowMs });
+  async start(nowMs: number, toC: number, reason: 'asked' | 'after-roast'): Promise<void> {
+    this.#logger.info('roast.roaster-cooling-started', { reason, toC, bt: this.#host.latestBt() });
+    this.#host.set({ ...this.#host.state(), roasterCoolingSinceMs: nowMs, roasterCoolToC: toC });
     await this.#host.send(ROASTER_COOLING);
   }
 
-  /** Every reading: done once the drum is cool, or after 15 min whatever the probe says. */
+  /** Every reading: done once the drum is below its target, or after 15 min whatever it says. */
   async onReading(reading: Reading): Promise<void> {
-    const since = this.#host.state().roasterCoolingSinceMs;
-    if (since === null) return;
-    const check = roasterCooldownCheck(since, reading.atMs, reading.values[BEAN_TEMP]);
+    const { roasterCoolingSinceMs: since, roasterCoolToC: toC } = this.#host.state();
+    if (since === null || toC === null) return;
+    const check = roasterCooldownCheck(since, reading.atMs, reading.values[BEAN_TEMP], toC);
     if (check !== 'running') await this.end(check);
   }
 
@@ -63,7 +63,7 @@ export class RoasterCooling {
     const context = { reason, bt: this.#host.latestBt() };
     if (reason === 'gave-up') this.#logger.warn('roast.roaster-cooling-ended', context);
     else this.#logger.info('roast.roaster-cooling-ended', context);
-    this.#host.set({ ...this.#host.state(), roasterCoolingSinceMs: null });
+    this.#host.set({ ...this.#host.state(), roasterCoolingSinceMs: null, roasterCoolToC: null });
     return true;
   }
 }

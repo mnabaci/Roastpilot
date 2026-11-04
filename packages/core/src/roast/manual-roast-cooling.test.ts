@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ok } from '@roastpilot/shared';
 import { DEFAULT_COOLING_MS, EXTEND_COOLING_MS, ManualRoast } from './manual-roast';
 import { manualRoastHarness } from './manual-roast.harness';
+import { BEAN_COOL_MAX_MS } from './roast-rules';
 import { ROASTER_COOL_MAX_MS } from './roaster-cooldown';
 
 const ALL_OFF = ['heater=0', 'fan=0', 'cooling=0', 'drum=0', 'filter=0'];
@@ -49,6 +50,52 @@ describe('ManualRoast cooling time', () => {
     expect(roast.state.coolingEndsAtMs).toBe(nowMs + EXTEND_COOLING_MS);
   });
 
+  it('by temperature: ends at the first reading below the target, then the roaster cool-down', async () => {
+    const { roast, act, feed, sent, events } = manualRoastHarness({
+      options: { coolingBelowC: 90, roasterCoolToC: 60 },
+    });
+    await act('start', 'drop');
+    expect(roast.state.coolingBelowC).toBe(90);
+    sent.length = 0;
+    await feed([150, 120, 95, 90]);
+    expect(roast.state.phase).toBe('cooling');
+    await feed([89.5]);
+    expect(roast.state).toMatchObject({
+      phase: 'done',
+      coolingBelowC: null,
+      coolingEndsAtMs: null,
+      roasterCoolToC: 60,
+    });
+    expect(roast.state.events.at(-1)).toMatchObject({ kind: 'cool-end', bt: 89.5 });
+    expect(sent).toEqual(ROASTER_COOLING);
+    expect(events('roast.cooling-reached')[0]?.context).toMatchObject({ belowC: 90, bt: 89.5 });
+    await feed([59]);
+    expect(roast.state.roasterCoolingSinceMs).toBeNull();
+  });
+
+  it('by temperature: ends after 10 min with a warning if BT never gets there', async () => {
+    const { clock, roast, act, events } = manualRoastHarness({ options: { coolingBelowC: 70 } });
+    await act('start', 'drop');
+    await clock.runFor(BEAN_COOL_MAX_MS - 1000);
+    expect(roast.state.phase).toBe('cooling');
+    await clock.runFor(1000);
+    expect(roast.state.phase).toBe('done');
+    expect(events('roast.cooling-gave-up')[0]).toMatchObject({
+      level: 'warn',
+      context: { belowC: 70 },
+    });
+  });
+
+  it('by temperature: no +1 min, and changing the setting mid-cooling changes nothing', async () => {
+    const options: { coolingBelowC: number | null } = { coolingBelowC: 90 };
+    const { roast, act, feed } = manualRoastHarness({ options });
+    await act('start', 'drop');
+    expect(await roast.act('extend-cooling')).toMatchObject({ ok: false });
+    options.coolingBelowC = null;
+    await feed([85]);
+    expect(roast.state.phase).toBe('done');
+  });
+
   it('+1 min only while cooling', async () => {
     const { act, roast } = manualRoastHarness();
     await act('start');
@@ -67,6 +114,7 @@ describe('ManualRoast roaster cool-down', () => {
     expect(sent).toEqual(ROASTER_COOLING);
     expect(events('roast.roaster-cooling-started')[0]?.context).toEqual({
       reason: 'after-roast',
+      toC: 50,
       bt: 110,
     });
     sent.length = 0;
@@ -79,6 +127,16 @@ describe('ManualRoast roaster cool-down', () => {
       reason: 'cooled',
       bt: 49.8,
     });
+  });
+
+  it('cools the roaster to the target set, offered as a setting', async () => {
+    const { roast, act, feed } = manualRoastHarness({ options: { roasterCoolToC: 70 } });
+    await act('cool-roaster');
+    expect(roast.state.roasterCoolToC).toBe(70);
+    await feed([75, 70]);
+    expect(roast.state.roasterCoolingSinceMs).not.toBeNull();
+    await feed([69]);
+    expect(roast.state).toMatchObject({ roasterCoolingSinceMs: null, roasterCoolToC: null });
   });
 
   it('turns everything off as before when the drum is already cool, or the setting is off', async () => {
