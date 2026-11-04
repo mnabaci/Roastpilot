@@ -147,8 +147,8 @@ export class RoasterSession {
   }
 
   /** Charge: arms the max-roast-time rule. */
-  roastStarted(): void {
-    this.#monitor.roastStarted();
+  roastStarted(atMs?: number): void {
+    this.#monitor.roastStarted(atMs);
   }
 
   /** Drop: the max-roast-time rule stands down. */

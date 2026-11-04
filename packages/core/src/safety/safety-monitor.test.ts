@@ -72,6 +72,19 @@ describe('SafetyMonitor', () => {
     });
   });
 
+  it('counts max roast time from the charge point when it was found before the press', () => {
+    const { clock, monitor, events, read } = setup();
+    const roastTime = () => kinds(events).filter((k) => k.endsWith('max-roast-time'));
+    clock.advance(10_000);
+    monitor.roastStarted(3_000);
+    clock.advance(20 * 60_000 - 7_000 - 1);
+    read(200);
+    expect(roastTime()).toEqual([]);
+    clock.advance(1);
+    read(200);
+    expect(roastTime()).toEqual(['tripped:max-roast-time']);
+  });
+
   describe('lost connection', () => {
     it('trips after 3 s without a valid reading, even if nothing reads', () => {
       const { clock, monitor, events, read, safeStops } = setup();

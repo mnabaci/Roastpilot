@@ -69,6 +69,10 @@ export function createAppServices({
       history.add(reading);
       recorder.onReading(reading);
       publish(IPC_CHANNELS.reading, reading);
+      // After it is kept: the turning point and the roaster cool-down look at the readings.
+      roast.onReading(reading).catch((error: unknown) => {
+        roastLogger.error('roast.reading-failed', { error: serializeError(error) });
+      });
     },
     onConnection: (state) => {
       onConnectionChange(state);
@@ -78,18 +82,29 @@ export function createAppServices({
         roast.restoreOutputs().catch((error: unknown) => {
           roastLogger.error('roast.restore-failed', { error: serializeError(error) });
         });
-      }
+      } else if (state.status === 'disconnected') roast.stopRoasterCooling('disconnected');
     },
     onSafetyEvent: (event) => {
       publish(IPC_CHANNELS.safetyEvent, event);
+      if (event.kind === 'tripped' && event.action === 'safe-stop')
+        roast.stopRoasterCooling('safety-stop');
     },
   });
   const roastLogger = logger.child('roast');
+  const settings = new SettingsService(settingsStore);
+  settings.get().catch((error: unknown) => {
+    logger.error('settings.load-failed', { error: serializeError(error) });
+  });
   const roast = new ManualRoast({
     clock,
     logger: roastLogger,
     setOutput: (channel, value) => session.setOutput(channel, value),
     latestBt: () => history.latest()?.values.bt,
+    readings: () => history.all(),
+    options: () => {
+      const { findChargePoint, coolingTimeMin, coolRoasterAfter } = settings.latest;
+      return { findChargePoint, coolingMs: coolingTimeMin * 60_000, coolRoasterAfter };
+    },
     onChange: (state) => {
       recorder.onRoastChange(state);
       publish(IPC_CHANNELS.roast, state);
@@ -97,8 +112,8 @@ export function createAppServices({
     onNewRoast: () => {
       history.clear();
     },
-    onRoastStarted: () => {
-      session.roastStarted();
+    onRoastStarted: (chargedAtMs) => {
+      session.roastStarted(chargedAtMs);
     },
     onRoastEnded: () => {
       session.roastEnded();
@@ -113,7 +128,7 @@ export function createAppServices({
   return {
     session,
     roast,
-    settings: new SettingsService(settingsStore),
+    settings,
     history: new HistoryService({
       repository: roasts,
       isRecording: (id) => recorder.isRecording(id),

@@ -1,6 +1,7 @@
 import {
   err,
   ok,
+  READY_ROAST,
   type LogEntry,
   type Reading,
   type Result,
@@ -16,15 +17,7 @@ import { createLogger } from '../logging/logger';
 import type { RoastRepository, RoastSummaryPatch } from './roast-repository';
 import { RoastRecorder } from './roast-recorder';
 
-const READY: RoastState = {
-  phase: 'ready',
-  preheatAtMs: null,
-  chargedAtMs: null,
-  firstCrackAtMs: null,
-  droppedAtMs: null,
-  coolingEndsAtMs: null,
-  events: [],
-};
+const READY: RoastState = READY_ROAST;
 
 type Saved<T> = Promise<Result<T, StorageError>>;
 
@@ -183,6 +176,36 @@ describe('RoastRecorder', () => {
     });
     // Saved once when created and once when finished, so History refreshes.
     expect(saved).toEqual([1, 1]);
+  });
+
+  it('saves the turning point, and moves the start back to a charge point found before the press', async () => {
+    const { recorder, repository } = setup([reading(110_000, 186), reading(120_000, 175)]);
+    // Charge found at 110 s; Start pressed at 117 s, when the wall clock said 10:00:00.
+    const charged: RoastState = {
+      ...PREHEAT,
+      phase: 'roasting',
+      chargedAtMs: 110_000,
+      startPressedAtMs: 117_000,
+      events: [{ kind: 'charge', atMs: 110_000, bt: 186 }],
+    };
+    recorder.onRoastChange(charged);
+    recorder.onRoastChange({
+      ...charged,
+      events: [...charged.events, { kind: 'turning-point', atMs: 174_000, bt: 92.2 }],
+    });
+    await recorder.flush();
+    expect(repository.roasts.get(1)).toMatchObject({
+      startedAt: '2026-11-04T09:59:53.000Z',
+      fcTimeS: null,
+      samples: [
+        { tS: 0, values: { bt: 186, heater: 50 } },
+        { tS: 10, values: { bt: 175, heater: 50 } },
+      ],
+      events: [
+        { kind: 'charge', tS: 0, bt: 186 },
+        { kind: 'turning-point', tS: 64, bt: 92.2 },
+      ],
+    });
   });
 
   it('a roast cut short stays unfinished', async () => {

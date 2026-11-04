@@ -10,7 +10,7 @@ import { render } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { vi, type Mocked } from 'vitest';
 import { AppProvider } from '../app/AppProvider';
-import { READY_ROAST } from '../stores/roast-store';
+import { READY_ROAST } from '@roastpilot/shared';
 import { createStores, type StoresSeed } from '../stores/stores';
 
 /** A `window.roastpilot` whose calls all succeed; override what a test needs. */

@@ -1,9 +1,10 @@
-import { err, type Reading } from '@roastpilot/shared';
+import { err, type Reading, DEFAULT_SETTINGS } from '@roastpilot/shared';
 import { act, screen } from '@testing-library/react';
 import type * as Ui from '@roastpilot/ui';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { addReading, READY_ROAST } from '../../stores/roast-store';
+import { READY_ROAST } from '@roastpilot/shared';
+import { addReading } from '../../stores/roast-store';
 import { CONNECTED, fakeApi, renderApp } from '../../test/render-app';
 import { RoastScreen } from './RoastScreen';
 
@@ -142,7 +143,7 @@ describe('RoastScreen', () => {
   it('Full control: everything is live, cooling switch included', async () => {
     const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
       ...connected,
-      settings: { connection: null, controls: 'full', chartSmoothingS: 5 },
+      settings: { ...DEFAULT_SETTINGS, connection: null, controls: 'full', chartSmoothingS: 5 },
       readings: [reading({ cooling: 0 })],
     });
     expect(screen.getByRole('slider', { name: 'Heater' })).toBeEnabled();

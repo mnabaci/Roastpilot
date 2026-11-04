@@ -4,6 +4,7 @@ import {
   err,
   IPC_CHANNELS,
   ok,
+  READY_ROAST,
   type LogEntry,
   type Snapshot,
 } from '@roastpilot/shared';
@@ -17,15 +18,7 @@ import {
 
 const SNAPSHOT: Snapshot = {
   connection: { status: 'disconnected' },
-  roast: {
-    phase: 'ready',
-    preheatAtMs: null,
-    chargedAtMs: null,
-    firstCrackAtMs: null,
-    droppedAtMs: null,
-    coolingEndsAtMs: null,
-    events: [],
-  },
+  roast: READY_ROAST,
   readings: [],
   safety: { locked: false, tripped: [] },
 };
@@ -184,9 +177,7 @@ describe('roast, snapshot and settings handlers', () => {
       extra: 1,
       connection: { kind: 'wifi' },
     });
-    expect(calls).toEqual([
-      ['settings', { controls: 'full', connection: null, chartSmoothingS: 3 }],
-    ]);
+    expect(calls).toEqual([['settings', { ...DEFAULT_SETTINGS, controls: 'full' }]]);
   });
 });
 

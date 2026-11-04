@@ -1,5 +1,5 @@
 import { MAX_HISTORY_READINGS } from '@roastpilot/core';
-import type { Reading, RoastState } from '@roastpilot/shared';
+import { READY_ROAST, type Reading, type RoastState } from '@roastpilot/shared';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 
 export interface RoastData {
@@ -9,16 +9,6 @@ export interface RoastData {
 }
 
 export type RoastStore = StoreApi<RoastData>;
-
-export const READY_ROAST: RoastState = {
-  phase: 'ready',
-  preheatAtMs: null,
-  chargedAtMs: null,
-  firstCrackAtMs: null,
-  droppedAtMs: null,
-  coolingEndsAtMs: null,
-  events: [],
-};
 
 export const createRoastStore = (data: Partial<RoastData> = {}): RoastStore =>
   createStore(() => ({ roast: READY_ROAST, readings: [], ...data }));

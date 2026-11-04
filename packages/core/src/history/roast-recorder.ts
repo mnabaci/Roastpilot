@@ -39,6 +39,7 @@ const SUMMARY_FROM_EVENT: Readonly<
   Record<RoastEvent['kind'], (tS: number, event: RoastEvent, nowIso: string) => RoastSummaryPatch>
 > = {
   charge: () => ({}),
+  'turning-point': () => ({}),
   'first-crack': (tS) => ({ fcTimeS: tS }),
   drop: (tS, event) => ({ dropTimeS: tS, dropTemp: event.bt }),
   'cool-end': (_tS, _event, nowIso) => ({ endedAt: nowIso }),
@@ -97,7 +98,9 @@ export class RoastRecorder {
   #start(state: RoastState, chargedAtMs: number): void {
     const since = state.preheatAtMs ?? chargedAtMs;
     const earlier = this.#deps.readingsSoFar().filter((r) => r.atMs >= since);
-    const startedAt = this.#deps.nowIso();
+    // A charge point found before the press moves the start back with it.
+    const earlierMs = state.startPressedAtMs === null ? 0 : state.startPressedAtMs - chargedAtMs;
+    const startedAt = new Date(Date.parse(this.#deps.nowIso()) - earlierMs).toISOString();
     const created = this.#enqueue(() =>
       this.#deps.repository.create({ startedAt, mode: 'manual' }),
     );

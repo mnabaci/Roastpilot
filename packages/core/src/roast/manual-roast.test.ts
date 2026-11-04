@@ -1,57 +1,16 @@
-import { err, ok, type LogEntry, type RoastAction, type RoastState } from '@roastpilot/shared';
+import { err, ok, READY_ROAST, type LogEntry, type RoastAction } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { ManualClock } from '../clock';
 import { createLogger } from '../logging/logger';
 import { DEFAULT_COOLING_MS, ManualRoast } from './manual-roast';
+import { manualRoastHarness } from './manual-roast.harness';
 
-function setup(options: { failOutputs?: boolean } = {}) {
-  const clock = new ManualClock();
-  const sent: string[] = [];
-  const signals: string[] = [];
-  const states: RoastState[] = [];
-  const entries: LogEntry[] = [];
-  let bt: number | undefined = 25;
-  const roast = new ManualRoast({
-    clock,
-    setOutput: (channel, value) => {
-      sent.push(`${channel}=${String(value)}`);
-      return Promise.resolve(options.failOutputs ? err({ kind: 'disconnected' }) : ok(undefined));
-    },
-    latestBt: () => bt,
-    onChange: (s) => states.push(s),
-    onNewRoast: () => signals.push('new-roast'),
-    onRoastStarted: () => signals.push('roast-started'),
-    onRoastEnded: () => signals.push('roast-ended'),
-    logger: createLogger({ write: (e) => entries.push(e) }, 'roast'),
-  });
-  const act = (...actions: RoastAction[]) =>
-    actions.reduce<Promise<unknown>>((p, a) => p.then(() => roast.act(a)), Promise.resolve());
-  return {
-    clock,
-    roast,
-    sent,
-    signals,
-    states,
-    entries,
-    act,
-    setBt: (value: number | undefined) => {
-      bt = value;
-    },
-  };
-}
+const setup = manualRoastHarness;
 
 describe('ManualRoast', () => {
   it('starts Ready with nothing recorded', () => {
     const { roast } = setup();
-    expect(roast.state).toEqual({
-      phase: 'ready',
-      preheatAtMs: null,
-      chargedAtMs: null,
-      firstCrackAtMs: null,
-      droppedAtMs: null,
-      coolingEndsAtMs: null,
-      events: [],
-    });
+    expect(roast.state).toEqual(READY_ROAST);
   });
 
   it('Preheat turns the drum and filter fan on and starts a new roast', async () => {
@@ -97,7 +56,7 @@ describe('ManualRoast', () => {
       'fan=100',
       'cooling=100',
     ]);
-    expect(signals).toEqual(['new-roast', 'roast-started', 'roast-ended']);
+    expect(signals).toEqual(['new-roast', 'roast-started@180000', 'roast-ended']);
   });
 
   it('turns everything off when cooling ends, then allows the next Preheat', async () => {
@@ -173,7 +132,7 @@ describe('ManualRoast', () => {
       expect(roast.state.events.at(-1)).toEqual({ kind: 'end', atMs: 60_000, bt: 25 });
       expect(sent).toEqual(['heater=0', 'fan=0', 'cooling=0', 'drum=0', 'filter=0']);
       // Max roast time is disarmed, as at Drop.
-      expect(signals).toEqual(['roast-started', 'roast-ended']);
+      expect(signals).toEqual(['roast-started@0', 'roast-ended']);
       await act('preheat');
       expect(roast.state.phase).toBe('preheat');
     },

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { READY_ROAST } from '../../stores/roast-store';
+import { READY_ROAST } from '@roastpilot/shared';
 import { skippedSteps, stageTimes } from './stage-times';
 
 describe('stageTimes', () => {

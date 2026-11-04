@@ -1,5 +1,5 @@
 import type { Logger } from '@roastpilot/core';
-import type { Reading } from '@roastpilot/shared';
+import { type Reading, DEFAULT_SETTINGS } from '@roastpilot/shared';
 import { describe, expect, it, vi } from 'vitest';
 import { fakeApi } from '../test/render-app';
 import { createStores } from '../stores/stores';
@@ -18,6 +18,7 @@ describe('syncWithMain', () => {
       },
       getSettings: () =>
         Promise.resolve({
+          ...DEFAULT_SETTINGS,
           connection: { kind: 'simulator' },
           controls: 'full',
           chartSmoothingS: 5,

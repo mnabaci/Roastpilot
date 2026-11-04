@@ -1,6 +1,6 @@
 import type { Reading, RoastState } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import { READY_ROAST } from '../../stores/roast-store';
+import { READY_ROAST } from '@roastpilot/shared';
 import { roastNumbers } from './roast-numbers';
 
 const readings = (untilS: number): Reading[] =>

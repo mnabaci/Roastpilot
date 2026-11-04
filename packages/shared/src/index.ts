@@ -60,6 +60,7 @@ export {
   RoastEventSchema,
   RoastPhaseSchema,
   RoastStateSchema,
+  READY_ROAST,
   type RoastAction,
   type RoastActionError,
   type RoastEvent,
@@ -86,11 +87,13 @@ export { ScreenSchema, type Screen } from './screen';
 export {
   ChartSmoothingSchema,
   ControlsLevelSchema,
+  CoolingTimeSchema,
   DEFAULT_SETTINGS,
   SettingsSchema,
   SettingsWriteErrorSchema,
   type ChartSmoothing,
   type ControlsLevel,
+  type CoolingTime,
   type Settings,
   type SettingsWriteError,
 } from './settings';

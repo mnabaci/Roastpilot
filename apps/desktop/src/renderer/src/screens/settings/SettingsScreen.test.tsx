@@ -1,4 +1,4 @@
-import { err, type RoastpilotApi } from '@roastpilot/shared';
+import { err, type RoastpilotApi, DEFAULT_SETTINGS } from '@roastpilot/shared';
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -20,6 +20,7 @@ describe('SettingsScreen', () => {
     const { api } = renderApp(<SettingsScreen />, {}, fakeApi({ listPorts: ports }));
     await userEvent.click(await screen.findByRole('button', { name: /usbserial-0001/ }));
     expect(api.setSettings).toHaveBeenCalledWith({
+      ...DEFAULT_SETTINGS,
       connection: { kind: 'serial', path: '/dev/cu.usbserial-0001' },
       controls: 'guided',
       chartSmoothingS: 3,
@@ -38,7 +39,14 @@ describe('SettingsScreen', () => {
     });
     renderApp(
       <SettingsScreen />,
-      { settings: { connection: { kind: 'simulator' }, controls: 'guided', chartSmoothingS: 5 } },
+      {
+        settings: {
+          ...DEFAULT_SETTINGS,
+          connection: { kind: 'simulator' },
+          controls: 'guided',
+          chartSmoothingS: 5,
+        },
+      },
       api,
     );
     await userEvent.click(screen.getByRole('button', { name: 'Connect' }));
@@ -55,7 +63,14 @@ describe('SettingsScreen', () => {
     });
     renderApp(
       <SettingsScreen />,
-      { settings: { connection: { kind: 'simulator' }, controls: 'guided', chartSmoothingS: 5 } },
+      {
+        settings: {
+          ...DEFAULT_SETTINGS,
+          connection: { kind: 'simulator' },
+          controls: 'guided',
+          chartSmoothingS: 5,
+        },
+      },
       api,
     );
     await userEvent.click(screen.getByRole('button', { name: 'Connect' }));
@@ -74,7 +89,12 @@ describe('SettingsScreen', () => {
   it('shows Connecting… while main reports connecting', () => {
     renderApp(<SettingsScreen />, {
       connection: { status: 'connecting', target: { kind: 'simulator' } },
-      settings: { connection: { kind: 'simulator' }, controls: 'guided', chartSmoothingS: 5 },
+      settings: {
+        ...DEFAULT_SETTINGS,
+        connection: { kind: 'simulator' },
+        controls: 'guided',
+        chartSmoothingS: 5,
+      },
     });
     expect(screen.getByRole('button', { name: 'Connecting…' })).toBeDisabled();
     expect(screen.queryByRole('button', { name: 'Disconnect' })).not.toBeInTheDocument();
@@ -91,7 +111,12 @@ describe('SettingsScreen', () => {
   it('while connected: the port in use, locked, and Disconnect', async () => {
     const { api } = renderApp(<SettingsScreen />, {
       connection: CONNECTED,
-      settings: { connection: { kind: 'simulator' }, controls: 'guided', chartSmoothingS: 5 },
+      settings: {
+        ...DEFAULT_SETTINGS,
+        connection: { kind: 'simulator' },
+        controls: 'guided',
+        chartSmoothingS: 5,
+      },
     });
     expect(screen.getByRole('button', { name: /usbserial-0001/ })).toBeDisabled();
     expect(screen.queryByRole('button', { name: /Simulator/ })).not.toBeInTheDocument();
@@ -104,7 +129,7 @@ describe('SettingsScreen', () => {
       <SettingsScreen />,
       {
         connection: { status: 'connected', target: { kind: 'simulator' }, channels: [] },
-        settings: { connection: null, controls: 'guided', chartSmoothingS: 5 },
+        settings: { ...DEFAULT_SETTINGS, connection: null, controls: 'guided', chartSmoothingS: 5 },
       },
       fakeApi({ listPorts: ports }),
     );
@@ -127,6 +152,7 @@ describe('SettingsScreen', () => {
       <SettingsScreen />,
       {
         settings: {
+          ...DEFAULT_SETTINGS,
           connection: { kind: 'serial', path: '/dev/cu.usbserial-0001' },
           controls: 'guided',
           chartSmoothingS: 5,
@@ -155,6 +181,7 @@ describe('SettingsScreen', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Full control' }));
     expect(stores.settings.getState().settings.controls).toBe('full');
     expect(api.setSettings).toHaveBeenCalledWith({
+      ...DEFAULT_SETTINGS,
       connection: null,
       controls: 'full',
       chartSmoothingS: 3,

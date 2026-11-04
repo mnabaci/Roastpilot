@@ -110,8 +110,9 @@ export class SafetyMonitor {
     this.check();
   }
 
-  roastStarted(): void {
-    this.#roastStartedMs = this.#clock.now();
+  /** Charge; `atMs` is the charge point when it was found before the press. */
+  roastStarted(atMs: number = this.#clock.now()): void {
+    this.#roastStartedMs = atMs;
     this.check();
   }
 

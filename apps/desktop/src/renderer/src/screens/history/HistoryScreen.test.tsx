@@ -10,7 +10,7 @@ import type * as Ui from '@roastpilot/ui';
 import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { READY_ROAST } from '../../stores/roast-store';
+import { READY_ROAST } from '@roastpilot/shared';
 import { fakeApi, renderApp } from '../../test/render-app';
 import { HistoryScreen } from './HistoryScreen';
 

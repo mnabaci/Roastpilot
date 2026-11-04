@@ -1,4 +1,4 @@
-import type { Reading, RoastDetail, RoastState } from '@roastpilot/shared';
+import { READY_ROAST, type Reading, type RoastDetail, type RoastState } from '@roastpilot/shared';
 import type { ChartLayer, ChartMarker } from '@roastpilot/ui';
 import { roastChartData } from '../roast/roast-chart-data';
 
@@ -12,12 +12,12 @@ export function savedAsLive(detail: RoastDetail): { roast: RoastState; readings:
   const first = detail.samples[0];
   return {
     roast: {
+      ...READY_ROAST,
       phase: detail.endedAt === null ? 'cooling' : 'done',
       preheatAtMs: first && first.tS < 0 ? atMs(first.tS) : null,
       chargedAtMs: 0,
       firstCrackAtMs: eventAt('first-crack'),
       droppedAtMs: eventAt('drop'),
-      coolingEndsAtMs: null,
       events: detail.events.map((e) => ({ kind: e.kind, atMs: atMs(e.tS), bt: e.bt })),
     },
     readings: detail.samples.map((s) => ({ atMs: atMs(s.tS), values: s.values })),
