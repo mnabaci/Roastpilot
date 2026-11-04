@@ -25,6 +25,7 @@ export {
   type IpcEventPayloads,
   SetOutputRequestSchema,
   type AppApi,
+  type HistoryApi,
   type LogsApi,
   type RoastApi,
   type RoasterApi,
@@ -65,6 +66,20 @@ export {
   type RoastPhase,
   type RoastState,
 } from './roast';
+export {
+  RoastDetailSchema,
+  RoastIdSchema,
+  RoastSummarySchema,
+  SavedEventSchema,
+  SavedSampleSchema,
+  StorageErrorSchema,
+  type RoastDetail,
+  type RoastId,
+  type RoastSummary,
+  type SavedEvent,
+  type SavedSample,
+  type StorageError,
+} from './saved-roast';
 export { ScreenSchema, type Screen } from './screen';
 export {
   ChartSmoothingSchema,

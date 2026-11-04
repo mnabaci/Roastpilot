@@ -29,3 +29,5 @@ export {
 export { rateOfRise, ROR_WINDOW_MS } from './roast/rate-of-rise';
 export { MAX_HISTORY_READINGS, ReadingHistory } from './roast/reading-history';
 export type { SettingsStore } from './settings/settings-store';
+export type { RoastRepository, RoastSummaryPatch } from './history/roast-repository';
+export { RoastRecorder, type RoastRecorderDeps } from './history/roast-recorder';
