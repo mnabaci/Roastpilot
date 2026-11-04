@@ -18,7 +18,7 @@ import {
 } from '@roastpilot/shared';
 import { SKYWALKER_CHANNELS, SKYWALKER_PROTOCOL_VERSION, SKYWALKER_SAFE_STOP } from '../skywalker';
 import { CommandQueue } from './command-queue';
-import { parseReadReply, parseVersionReply } from './replies';
+import { parseReadReply, parseVersionReply, type ReadReply } from './replies';
 
 /** Sketch command for each output channel (docs/spec/hardware.md, Commands). */
 const OUTPUT_COMMANDS: Readonly<Record<string, string>> = {
@@ -46,6 +46,8 @@ export class Tc4SkywalkerDriver implements RoasterDriver {
   readonly #outputs = new Map<string, OutputChannel>();
   /** Last value sent per output. READ only echoes heater and fan, so the rest come from here. */
   readonly #sent = new Map<string, number>();
+  /** Echoed outputs that differ from what was sent: logged once when it starts and when it ends. */
+  readonly #boardChanged = new Set<string>();
   #connected = false;
 
   constructor(options: Tc4SkywalkerDriverOptions) {
@@ -83,10 +85,12 @@ export class Tc4SkywalkerDriver implements RoasterDriver {
     if (!this.#connected) return err({ kind: 'disconnected' });
     const parsed = await this.#readOnce();
     if (!parsed.ok) return parsed;
+    const { reply, line } = parsed.value;
+    this.#noteBoardChanges(reply, line);
     // Every channel in every reading (docs/spec/hardware.md): the reply wins for what it reports.
     return ok({
       atMs: this.#clock.now(),
-      values: { ...Object.fromEntries(this.#sent), ...parsed.value },
+      values: { ...Object.fromEntries(this.#sent), ...reply },
     });
   }
 
@@ -146,9 +150,29 @@ export class Tc4SkywalkerDriver implements RoasterDriver {
     return reading.ok ? ok(undefined) : reading;
   }
 
-  async #readOnce() {
-    const reply = await this.#queue.request('READ');
-    return reply.ok ? parseReadReply(reply.value) : reply;
+  async #readOnce(): Promise<Result<{ reply: ReadReply; line: string }, DriverError>> {
+    const answer = await this.#queue.request('READ');
+    if (!answer.ok) return answer;
+    const parsed = parseReadReply(answer.value);
+    return parsed.ok ? ok({ reply: parsed.value, line: answer.value }) : parsed;
+  }
+
+  /**
+   * The sketch echoes the heater and fan it is sending the roaster. When that isn't what we sent,
+   * something else changed it (the sketch's own failsafe, or a garbled reply): log it with the raw
+   * line, once per change, so the cause can be found (docs/spec/hardware.md).
+   */
+  #noteBoardChanges(reply: ReadReply, line: string): void {
+    for (const channel of ['heater', 'fan'] as const) {
+      const sent = this.#sent.get(channel);
+      const reported = reply[channel];
+      if (reported !== sent && !this.#boardChanged.has(channel)) {
+        this.#boardChanged.add(channel);
+        this.#logger.warn('driver.output-changed-by-board', { channel, sent, reported, line });
+      } else if (reported === sent && this.#boardChanged.delete(channel)) {
+        this.#logger.info('driver.output-matches-again', { channel, value: reported });
+      }
+    }
   }
 
   async #sendOutput(channel: string, value: number): Promise<Result<void, DriverError>> {
