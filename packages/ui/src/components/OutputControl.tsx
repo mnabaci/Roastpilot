@@ -123,13 +123,16 @@ function useDraft(value: number | undefined, onChange: (value: number) => void) 
       if (!dragging.current) timer.current = setTimeout(commitNow, KEYBOARD_COMMIT_MS);
     },
     // Letting go may happen outside the slider, so the window listens; it bubbles there anyway.
+    // A cancelled pointer (touch or pen taken over by the system) ends the drag the same way.
     startDrag: () => {
       dragging.current = true;
       const release = () => {
         window.removeEventListener('pointerup', release);
+        window.removeEventListener('pointercancel', release);
         endDrag();
       };
       window.addEventListener('pointerup', release);
+      window.addEventListener('pointercancel', release);
     },
     commitNow,
   };

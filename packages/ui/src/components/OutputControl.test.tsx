@@ -40,6 +40,21 @@ describe('OutputControl', () => {
     expect(onChange).toHaveBeenCalledExactlyOnceWith(45);
   });
 
+  it('a cancelled pointer ends the drag and sends, so keys after it still send', () => {
+    vi.useFakeTimers();
+    const onChange = vi.fn();
+    render(<OutputControl label="Fan" value={30} mode="auto" onChange={onChange} />);
+    const slider = screen.getByRole('slider', { name: 'Fan' });
+    fireEvent.pointerDown(slider);
+    fireEvent.change(slider, { target: { value: '45' } });
+    fireEvent.pointerCancel(window);
+    expect(onChange).toHaveBeenCalledExactlyOnceWith(45);
+    fireEvent.change(slider, { target: { value: '50' } });
+    vi.advanceTimersByTime(300);
+    expect(onChange).toHaveBeenLastCalledWith(50);
+    vi.useRealTimers();
+  });
+
   it('with the keyboard, sends 300 ms after the last key', () => {
     vi.useFakeTimers();
     try {

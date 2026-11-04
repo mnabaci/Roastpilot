@@ -24,41 +24,40 @@ function defaultDbPath(): string {
   return join(base, 'Roastpilot', 'roastpilot.db');
 }
 
-interface SampleRow {
-  t_s: number;
-  values: string;
-}
+const isNumber = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 
-/** Saved channel values; anything missing counts as off. */
-function outputs(json: string): {
+/** A saved sample's channel values (JSON); anything missing or not a number counts as off. */
+function sampleValues(json: string): {
   bt: number | undefined;
   heater: number;
   fan: number;
   cooling: number;
 } {
-  const values = JSON.parse(json) as Record<string, number | undefined>;
+  const parsed: unknown = JSON.parse(json);
+  const values =
+    typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : {};
+  const channel = (name: string) => (isNumber(values[name]) ? values[name] : undefined);
   return {
-    bt: values.bt,
-    heater: values.heater ?? 0,
-    fan: values.fan ?? 0,
-    cooling: values.cooling ?? 0,
+    bt: channel('bt'),
+    heater: channel('heater') ?? 0,
+    fan: channel('fan') ?? 0,
+    cooling: channel('cooling') ?? 0,
   };
 }
 
 /** Beans are in from charge (t 0) until drop. */
 function loadRoast(db: DatabaseSync, roastId: number): FitSample[] {
-  const roast = db.prepare('SELECT drop_time_s FROM roasts WHERE id = ?').get(roastId) as
-    { drop_time_s: number | null } | undefined;
+  const roast = db.prepare('SELECT drop_time_s FROM roasts WHERE id = ?').get(roastId);
   if (!roast) throw new Error(`Roast ${roastId} not found`);
-  const dropS = roast.drop_time_s ?? Number.POSITIVE_INFINITY;
+  const dropS = isNumber(roast.drop_time_s) ? roast.drop_time_s : Number.POSITIVE_INFINITY;
   const rows = db
     .prepare('SELECT t_s, "values" FROM roast_samples WHERE roast_id = ? ORDER BY t_s')
-    .all(roastId) as unknown as SampleRow[];
+    .all(roastId);
   return rows.flatMap((row) => {
-    const { bt, ...inputs } = outputs(row.values);
-    return bt === undefined
-      ? []
-      : [{ tS: row.t_s, bt, beans: row.t_s >= 0 && row.t_s < dropS, ...inputs }];
+    const tS = row.t_s;
+    if (!isNumber(tS) || typeof row.values !== 'string') return [];
+    const { bt, ...inputs } = sampleValues(row.values);
+    return bt === undefined ? [] : [{ tS, bt, beans: tS >= 0 && tS < dropS, ...inputs }];
   });
 }
 
