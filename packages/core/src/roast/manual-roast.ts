@@ -19,6 +19,7 @@ export const DEFAULT_COOLING_MS = 4 * 60_000;
 /** Which states each action may start from (docs/spec/manual-mode.md, Manual roast flow). */
 const ALLOWED_FROM: Readonly<Record<RoastAction, readonly RoastPhase[]>> = {
   preheat: ['ready', 'done'],
+  'cancel-preheat': ['preheat'],
   // Full control may skip Preheat; the drum still comes on.
   start: ['ready', 'preheat'],
   'first-crack': ['roasting'],
@@ -58,6 +59,7 @@ export interface ManualRoastDeps {
 
 const READY: RoastState = {
   phase: 'ready',
+  preheatAtMs: null,
   chargedAtMs: null,
   firstCrackAtMs: null,
   droppedAtMs: null,
@@ -98,10 +100,15 @@ export class ManualRoast {
 
   /** One step per action; ALLOWED_FROM has already checked the state. */
   readonly #steps: Readonly<Record<RoastAction, (nowMs: number) => Promise<void>>> = {
-    preheat: async () => {
+    preheat: async (nowMs) => {
       this.#deps.onNewRoast();
-      this.#set({ ...READY, phase: 'preheat' });
+      this.#set({ ...READY, phase: 'preheat', preheatAtMs: nowMs });
       await this.#send(DRUM_ON);
+    },
+    // Back to Ready with everything off; the readings stay on the chart.
+    'cancel-preheat': async () => {
+      this.#set(READY);
+      await this.#send(ALL_OFF);
     },
     start: async (nowMs) => {
       this.#set({

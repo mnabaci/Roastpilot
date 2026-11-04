@@ -9,7 +9,13 @@ export const RoastPhaseSchema = z.enum([
   'cooling',
   'done',
 ]);
-export const RoastActionSchema = z.enum(['preheat', 'start', 'first-crack', 'drop']);
+export const RoastActionSchema = z.enum([
+  'preheat',
+  'cancel-preheat',
+  'start',
+  'first-crack',
+  'drop',
+]);
 
 export const RoastEventSchema = z.object({
   kind: z.enum(['charge', 'first-crack', 'drop', 'cool-end']),
@@ -20,6 +26,8 @@ export const RoastEventSchema = z.object({
 
 export const RoastStateSchema = z.object({
   phase: RoastPhaseSchema,
+  /** When Preheat was pressed; null if the roast started without it (Full control). */
+  preheatAtMs: z.number().nullable(),
   chargedAtMs: z.number().nullable(),
   firstCrackAtMs: z.number().nullable(),
   droppedAtMs: z.number().nullable(),

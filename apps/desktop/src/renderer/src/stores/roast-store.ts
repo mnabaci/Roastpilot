@@ -12,6 +12,7 @@ export type RoastStore = StoreApi<RoastData>;
 
 export const READY_ROAST: RoastState = {
   phase: 'ready',
+  preheatAtMs: null,
   chargedAtMs: null,
   firstCrackAtMs: null,
   droppedAtMs: null,

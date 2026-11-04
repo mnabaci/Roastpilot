@@ -66,10 +66,12 @@ export {
   type RoastState,
 } from './roast';
 export {
+  ChartSmoothingSchema,
   ControlsLevelSchema,
   DEFAULT_SETTINGS,
   SettingsSchema,
   SettingsWriteErrorSchema,
+  type ChartSmoothing,
   type ControlsLevel,
   type Settings,
   type SettingsWriteError,

@@ -18,6 +18,7 @@ const SNAPSHOT: Snapshot = {
   connection: { status: 'disconnected' },
   roast: {
     phase: 'ready',
+    preheatAtMs: null,
     chargedAtMs: null,
     firstCrackAtMs: null,
     droppedAtMs: null,
