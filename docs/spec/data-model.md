@@ -1,7 +1,8 @@
 # Data model
 
-One SQLite file in the app's user-data folder, accessed with `better-sqlite3` + Drizzle from the
-main process. Nine tables:
+One SQLite file in the app's user-data folder, accessed with `node:sqlite` + Drizzle from the
+main process (ADR 0010). Nine tables when complete; each milestone adds the tables and columns it
+writes, in a new migration.
 
 | Table            | Key columns                                                                                                                                                                        | Notes                                                                              |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
@@ -16,3 +17,24 @@ main process. Nine tables:
 | `roast_events`   | roast_id, t_s, type, detail                                                                                                                                                        | charge, dry_end, first_crack, drop, cool_end, override, coach_applied, safety_trip |
 
 A 12-minute roast is about 720 sample rows, so the file stays small for years.
+
+## Saving a roast (milestone 3)
+
+First migration: `roasts` (id, mode, started_at, ended_at, fc_time_s, drop_time_s, drop_temp),
+`roast_samples` and `roast_events`. Times in samples and events are seconds from charge; readings
+before charge (preheat) have negative times.
+
+| When                        | Written                                                                      |
+| --------------------------- | ---------------------------------------------------------------------------- |
+| Start (charge)              | the `roasts` row (`started_at` = wall clock), every reading since Preheat    |
+| Every reading               | one `roast_samples` row                                                      |
+| First crack, drop, cool end | one `roast_events` row; `fc_time_s`, `drop_time_s`, `drop_temp` on the roast |
+| Cool end                    | `ended_at`; the roast is complete                                            |
+
+- Saving never asks anything: weights, rating and star arrive with the Beans milestone.
+- Cancel preheat saves nothing; a roast only exists once charged.
+- A roast cut short (app quit, crash, cable pulled for good) keeps what was written, with
+  `ended_at` empty: History shows it as Unfinished.
+- A failed write is logged once per streak and never stops the roast; the roast screen keeps
+  working from memory.
+- Deleting a roast removes its samples and events (`ON DELETE CASCADE`).

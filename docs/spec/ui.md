@@ -51,10 +51,10 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 
 ## History screen
 
-- List of roasts: date, bean, profile, drop temp, total time, rating, star.
-- Filter by bean, profile or favourites.
-- Open a roast to see its chart and events; overlay another roast to compare.
-- Actions: star, Make profile from this, Export CSV.
+- List of roasts, newest first: date and time, total time (charge to drop), first crack time, drop temp; Unfinished when cooling never ended.
+- Open a roast to see its chart, stage times and events; Compare overlays one other roast, faded, aligned at charge.
+- Delete asks once ("Delete this roast? · can't be undone"), then the list moves to the next roast.
+- Later milestones: bean, profile, rating and star columns; filter by bean, profile or favourites; Make profile from this; Export CSV.
 
 ## Beans screen
 

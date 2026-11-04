@@ -11,5 +11,6 @@ One file per decision: context, decision, consequences. Add one with the `plan-f
 - [Tooling baseline for long-term maintenance](0007-tooling-baseline.md)
 - [Phase-based profiles with PID trim, per roaster](0008-phase-based-profiles.md)
 - [One generic output method on RoasterDriver](0009-generic-driver-outputs.md)
+- [Node's built-in SQLite instead of better-sqlite3](0010-node-sqlite.md)
 
 Template: [template.md](template.md)

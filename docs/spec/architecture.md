@@ -28,7 +28,7 @@ flowchart TB
 - **Roaster session:** `RoasterSession` in `core` owns the connected roaster: it wraps the driver in `SafetyGuardedDriver`, polls `READ` every 1 s, runs the safety `check()` on its own 1 s loop, reconnects by itself after a lost connection, and publishes readings, safety events and connection changes. One session lives for the whole app, so the heater lock survives a reconnect.
 - **Controller:** runs the roast state machine (preheat → charge → phases → drop → cool), the planned heat and fan steps and the PID trim.
 - **Safety monitor:** watches every reading and can force a safe stop, whatever the controller is doing.
-- **Storage:** writes samples and events to SQLite during the roast, so a crash loses at most a second.
+- **Storage:** a `RoastRecorder` in `core` turns roast and reading events into writes on a `RoastRepository` (implemented in `storage`), during the roast, so a crash loses at most a second (docs/spec/data-model.md, Saving a roast).
 - **Renderer:** React built from `@roastpilot/ui`, with uPlot for the live chart. It talks only through the typed `window.roastpilot` API: `startRoast`, `markFirstCrack`, `setOutput`, `onReading`, and so on.
 - **IPC contract:** channel names and zod schemas live in `@roastpilot/shared`. Main validates every payload from the renderer before acting on it.
 
@@ -51,6 +51,10 @@ flowchart TB
 | `readLogDay`                  | invoke | `YYYY-MM-DD` → the day's last 2,000 entries and how many lines were unreadable                                             |
 | `onLogEntries`                | event  | new log entries as they are written, batched                                                                               |
 | `openLogFolder`               | invoke | – → opens the log folder in Finder or Explorer                                                                             |
+| `listRoasts`                  | invoke | – → saved roasts, newest first (summary only)                                                                              |
+| `getRoast`                    | invoke | roast id → the roast with its samples and events, or `not-found`                                                           |
+| `deleteRoast`                 | invoke | roast id → result                                                                                                          |
+| `onRoastsChanged`             | event  | a roast was saved, finished or deleted (History refreshes)                                                                 |
 | `onNavigate`                  | event  | the app menu asks for a screen (`settings` from Settings…)                                                                 |
 
 - **Quit and crash:** before the app quits, and on an uncaught error in main, the session sends the safe stop (given up to 2 s) before anything else.
