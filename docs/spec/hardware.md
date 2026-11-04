@@ -55,20 +55,21 @@ Comma-separated: `0.00,<temp>,<temp>,<heater>,<fan>,0`, for example `0.00,180.25
 - **Same channels:** `bt` (°C, read), `heater` and `fan` (0–100, step 5), `cooling` (0 or 100), `filter` (levels 0–4) and `drum` (on/off), with the same safe-stop sequence.
 - **Same sketch behaviour:** keeps every command, 10 s watchdog switches everything off; `ESTOP` above 300 °C; reports protocol version `1`.
 - **Thermal model:** the drum's temperature, updated in 100 ms steps from the injected clock. Heater adds heat; loss to the room grows with the gap to ambient, the fan and the cooling fan.
-- **Beans:** `chargeBeans()` puts room-temperature beans in the drum and `dumpBeans()` takes them out. With beans in, the drum heats them and loses that heat, and the probe follows the beans with a lag, so BT dips at charge and turns, like a real roast (fitted to batch 2 of 2026-11-04: charge at 181 °C, turning point near 90 °C after about 1:10). Without beans the probe reads the drum.
+- **Beans:** `chargeBeans()` puts room-temperature beans in the drum and `dumpBeans()` takes them out. With beans in, the drum heats them and loses that heat, and the probe follows the beans with a lag, so BT dips at charge and turns, like a real roast. Without beans the probe reads the drum.
+- **Fitted to real roasts:** `pnpm fit:simulator <roast id>...` replays saved roasts' heater, fan and cooling through the model and finds the constants that match their BT best (least squares, read-only on the database). Rerun it on new roasts and copy the result into `DEFAULT_THERMAL_CONSTANTS`.
 
-| Constant         | Default   | Effect                                          |
-| ---------------- | --------- | ----------------------------------------------- |
-| Ambient          | 22 °C     | Start temperature and where it cools back to    |
-| Heat gain        | 1.5 °C/s  | Rise per second at heater 100, before losses    |
-| Room loss        | 0.0054 /s | Heater 100, fan 0 levels off near 300 °C        |
-| Fan loss factor  | 1.0       | Fan 100 doubles the loss                        |
-| Cool loss factor | 3.0       | Cooling 100 adds three times the loss           |
-| Bean gain        | 0.01 /s   | Beans close 1 % of the gap to the drum a second |
-| Drum to beans    | 0.002 /s  | What the drum loses to the beans                |
-| Probe lag        | 40 s      | How slowly the probe follows the beans          |
+| Constant         | Default    | Effect                                          |
+| ---------------- | ---------- | ----------------------------------------------- |
+| Ambient          | 22 °C      | Start temperature and where it cools back to    |
+| Heat gain        | 0.59 °C/s  | Rise per second at heater 100, before losses    |
+| Room loss        | 0.00043 /s | Fraction of the gap to ambient lost per second  |
+| Fan loss factor  | 1.9        | Fan 100 adds 1.9 times the loss                 |
+| Cool loss factor | 5.6        | Cooling 100 adds 5.6 times the loss             |
+| Bean gain        | 0.0097 /s  | Beans close 1 % of the gap to the drum a second |
+| Drum to beans    | 0.0056 /s  | What the drum loses to the beans                |
+| Probe lag        | 45 s       | How slowly the probe follows the beans          |
 
-Hand-picked for now; refit from the first real manual roast.
+Fitted to batches 1 and 2 of 2026-11-04 (375 g): 8.7 °C RMS overall, within about 5 °C from charge to drop. Known gaps: preheat from cold and cooling with the drum empty run slower than the real roaster (no separate drum mass), and heater 100 never levels off below the 240 °C limit, as on the real roaster.
 
 - **Faults for tests:** stall the reported temperature (like the sketch's stale readings), disconnect and reconnect, report another protocol version.
 - **Deterministic:** no noise, no randomness; same inputs and clock give the same readings.

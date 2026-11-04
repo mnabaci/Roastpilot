@@ -8,26 +8,25 @@ import {
 } from './thermal-model';
 
 const off: ThermalInputs = { heater: 0, fan: 0, cooling: 0 };
+/** Round numbers so the equations are checkable by hand; the defaults are fitted (thermal-fit). */
+const SIMPLE = { ...DEFAULT_THERMAL_CONSTANTS, heatGainCPerS: 1.5, roomLossPerS: 0.0054 };
 
 function run(start: number, inputs: ThermalInputs, seconds: number): number {
   let temp = start;
-  for (let i = 0; i < seconds * 10; i++)
-    temp = stepTemperature(temp, inputs, DEFAULT_THERMAL_CONSTANTS, 0.1);
+  for (let i = 0; i < seconds * 10; i++) temp = stepTemperature(temp, inputs, SIMPLE, 0.1);
   return temp;
 }
 
 describe('stepTemperature', () => {
   it('stays at ambient with everything off', () => {
-    expect(stepTemperature(22, off, DEFAULT_THERMAL_CONSTANTS, 1)).toBe(22);
+    expect(stepTemperature(22, off, SIMPLE, 1)).toBe(22);
   });
 
   it('heats at the heat gain from ambient', () => {
-    expect(stepTemperature(22, { ...off, heater: 100 }, DEFAULT_THERMAL_CONSTANTS, 1)).toBeCloseTo(
-      23.5,
-    );
+    expect(stepTemperature(22, { ...off, heater: 100 }, SIMPLE, 1)).toBeCloseTo(23.5);
   });
 
-  it('levels off near 300 °C at full heat with the fan off', () => {
+  it('levels off at ambient + heat gain / room loss (300 °C here) at full heat, fan off', () => {
     expect(run(22, { ...off, heater: 100 }, 3600)).toBeCloseTo(300, 0);
   });
 

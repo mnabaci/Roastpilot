@@ -1,4 +1,7 @@
-/** Hand-picked constants (docs/spec/hardware.md, Simulator). Refit from the first real roast. */
+/**
+ * Fitted to roasts 6 and 7 of 2026-11-04 (375 g) by `pnpm fit:simulator 6 7`: RMS error 8.7 °C,
+ * within about 5 °C from charge to drop (docs/spec/hardware.md, Simulator).
+ */
 export interface ThermalConstants {
   ambientC: number;
   /** °C per second at heater 100, before losses. */
@@ -17,14 +20,13 @@ export interface ThermalConstants {
 
 export const DEFAULT_THERMAL_CONSTANTS: ThermalConstants = {
   ambientC: 22,
-  heatGainCPerS: 1.5,
-  roomLossPerS: 0.0054,
-  fanLossFactor: 1,
-  coolingLossFactor: 3,
-  // Fitted to batch 2 of 2026-11-04 (375 g): charge at 181 °C, turning point near 90 °C after 1:10.
-  beanGainPerS: 0.01,
-  drumToBeansPerS: 0.002,
-  probeLagS: 40,
+  heatGainCPerS: 0.59,
+  roomLossPerS: 0.00043,
+  fanLossFactor: 1.9,
+  coolingLossFactor: 5.6,
+  beanGainPerS: 0.0097,
+  drumToBeansPerS: 0.0056,
+  probeLagS: 45,
 };
 
 export interface ThermalInputs {
