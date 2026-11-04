@@ -26,3 +26,20 @@ export function rateOfRise(
   const variance = points.reduce((sum, p) => sum + (p.t - meanT) ** 2, 0);
   return variance === 0 ? undefined : (covariance / variance) * 60_000;
 }
+
+/**
+ * The readings RoR may use: after charge, only those since charge. The beans going in drop the
+ * temperature sharply, so a window reaching back across charge gives a meaningless number
+ * (Artisan starts its RoR after charge too).
+ */
+export function rorReadings(
+  readings: readonly Reading[],
+  chargedAtMs: number | null,
+): readonly Reading[] {
+  if (chargedAtMs === null) return readings;
+  const first = readings.findIndex((r) => r.atMs >= chargedAtMs);
+  return first === -1 ? [] : readings.slice(first);
+}
+
+/** RoR is drawn only inside these limits, in °C/min (Artisan's defaults); outside is a gap. */
+export const ROR_DRAW_LIMITS = { min: -10, max: 45 } as const;
