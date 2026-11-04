@@ -82,6 +82,33 @@ describe('createAppServices', () => {
     ).toBe(true);
   });
 
+  it('a new connection mid-roast turns the drum and filter fan back on, not the heater', async () => {
+    const { clock, services, sim } = setup();
+    await services.session.connect(sim, { kind: 'simulator' });
+    await services.roast.act('preheat');
+    await services.session.connect(new SimulatedDriver({ clock }), { kind: 'simulator' });
+    await clock.runFor(2000);
+    expect(services.roast.state.phase).toBe('preheat');
+    expect(services.snapshot().readings.at(-1)?.values).toMatchObject({
+      drum: 1,
+      filter: 1,
+      heater: 0,
+    });
+  });
+
+  it('readings back after a lost connection put the roast outputs back', async () => {
+    const { clock, services, sim } = setup();
+    await services.session.connect(sim, { kind: 'simulator' });
+    await services.roast.act('start');
+    sim.unplug();
+    // Past the sketch's 10 s watchdog, which switches everything off.
+    await clock.runFor(15_000);
+    sim.plugIn();
+    await clock.runFor(3000);
+    expect(services.snapshot().connection.status).toBe('connected');
+    expect(services.snapshot().readings.at(-1)?.values).toMatchObject({ drum: 1, filter: 1 });
+  });
+
   it('saves the roast from Preheat to cool end, and tells the windows', async () => {
     const opened = openDatabase(':memory:', silentLogger);
     if (!opened.ok) throw new Error('no database');

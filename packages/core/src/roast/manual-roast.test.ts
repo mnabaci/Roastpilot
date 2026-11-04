@@ -233,6 +233,47 @@ describe('ManualRoast', () => {
     expect(roast.state.events[0]?.bt).toBeNull();
   });
 
+  it.each<[string, RoastAction[], string[]]>([
+    ['Preheat', ['preheat'], ['drum=1', 'filter=1']],
+    ['Roasting', ['start'], ['drum=1', 'filter=1']],
+    ['Development', ['start', 'first-crack'], ['drum=1', 'filter=1']],
+    ['Cooling', ['start', 'drop'], ['heater=0', 'fan=100', 'cooling=100', 'drum=1', 'filter=1']],
+  ])(
+    'after a reconnect in %s, puts the phase outputs back, never heat',
+    async (_, actions, want) => {
+      const { roast, sent, entries, act } = setup();
+      await act(...actions);
+      sent.length = 0;
+      await roast.restoreOutputs();
+      expect(sent).toEqual(want);
+      expect(entries.find((e) => e.event === 'roast.outputs-restored')?.context).toEqual({
+        phase: roast.state.phase,
+      });
+    },
+  );
+
+  it('after a reconnect in Ready or Done, sends nothing', async () => {
+    const { roast, sent, entries, act } = setup();
+    await roast.restoreOutputs();
+    await act('preheat', 'end');
+    sent.length = 0;
+    await roast.restoreOutputs();
+    await act('start', 'end');
+    expect(roast.state.phase).toBe('done');
+    sent.length = 0;
+    await roast.restoreOutputs();
+    expect(sent).toEqual([]);
+    expect(entries.some((e) => e.event === 'roast.outputs-restored')).toBe(false);
+  });
+
+  it('a failed restore is logged per output and never throws', async () => {
+    const { roast, entries, act } = setup({ failOutputs: true });
+    await act('preheat');
+    entries.length = 0;
+    await roast.restoreOutputs();
+    expect(entries.filter((e) => e.event === 'roast.output-failed')).toHaveLength(2);
+  });
+
   it('still moves on and sends every output when some fail, and logs each failure', async () => {
     const { roast, sent, entries, act } = setup({ failOutputs: true });
     await act('start', 'drop');

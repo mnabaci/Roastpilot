@@ -45,6 +45,15 @@ const DROP_OUTPUTS: Outputs = [
   ['fan', 100],
   ['cooling', 100],
 ];
+/** What each phase keeps running, put back after a reconnect; never the heater above 0. */
+const PHASE_OUTPUTS: Readonly<Record<RoastPhase, Outputs>> = {
+  ready: [],
+  preheat: ROAST_ON,
+  roasting: ROAST_ON,
+  development: ROAST_ON,
+  cooling: [...DROP_OUTPUTS, ...ROAST_ON],
+  done: [],
+};
 const ALL_OFF: Outputs = [
   ['heater', 0],
   ['fan', 0],
@@ -108,6 +117,18 @@ export class ManualRoast {
     this.#logger.info('roast.action', { action, from: phase });
     await this.#steps[action](nowMs);
     return ok(undefined);
+  }
+
+  /**
+   * A new connection (or readings back after a lost one) starts with the roaster's outputs off:
+   * put back what this phase keeps running (docs/spec/manual-mode.md, After a reconnect).
+   */
+  async restoreOutputs(): Promise<void> {
+    const { phase } = this.#state;
+    const outputs = PHASE_OUTPUTS[phase];
+    if (outputs.length === 0) return;
+    this.#logger.info('roast.outputs-restored', { phase });
+    await this.#send(outputs);
   }
 
   /** One step per action; ALLOWED_FROM has already checked the state. */

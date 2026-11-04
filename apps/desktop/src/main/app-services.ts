@@ -3,6 +3,7 @@ import {
   ReadingHistory,
   RoasterSession,
   RoastRecorder,
+  serializeError,
   type Clock,
   type Logger,
   type RoastRepository,
@@ -72,14 +73,21 @@ export function createAppServices({
     onConnection: (state) => {
       onConnectionChange(state);
       publish(IPC_CHANNELS.connection, state);
+      // A fresh connection starts with the outputs off: a running roast puts its own back.
+      if (state.status === 'connected') {
+        roast.restoreOutputs().catch((error: unknown) => {
+          roastLogger.error('roast.restore-failed', { error: serializeError(error) });
+        });
+      }
     },
     onSafetyEvent: (event) => {
       publish(IPC_CHANNELS.safetyEvent, event);
     },
   });
+  const roastLogger = logger.child('roast');
   const roast = new ManualRoast({
     clock,
-    logger: logger.child('roast'),
+    logger: roastLogger,
     setOutput: (channel, value) => session.setOutput(channel, value),
     latestBt: () => history.latest()?.values.bt,
     onChange: (state) => {
