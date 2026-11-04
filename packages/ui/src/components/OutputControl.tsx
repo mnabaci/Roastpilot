@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { cn } from '../lib/utils';
 import { Badge } from './Badge';
 import { Button } from './Button';
@@ -9,7 +9,10 @@ export interface OutputControlProps {
   /** Current value in percent; undefined shows a dash (no roaster to report it). */
   value: number | undefined;
   mode: 'auto' | 'manual';
-  /** Called with the new value when the user moves the slider (switches the output to manual). */
+  /**
+   * Called once with the value you chose: when you let go of the slider, or 300 ms after the last
+   * arrow key. The values in between only move the number (switches the output to manual).
+   */
   onChange: (value: number) => void;
   /** Called when the user hands control back to the profile. Shown only in manual mode. */
   onResumeAuto?: () => void;
@@ -22,6 +25,9 @@ export interface OutputControlProps {
   disabled?: boolean;
   className?: string;
 }
+
+/** How long the keyboard has to rest before its value is sent. */
+export const KEYBOARD_COMMIT_MS = 300;
 
 /** A slider for one roaster output with its value and an Auto/Manual badge. */
 export function OutputControl({
@@ -39,6 +45,7 @@ export function OutputControl({
 }: OutputControlProps) {
   const id = useId();
   const manual = mode === 'manual';
+  const { shown, draft, startDrag, commitNow } = useDraft(value, onChange);
   return (
     <div className={cn('flex flex-col gap-2.5', className)}>
       <div className="flex items-center justify-between gap-2">
@@ -48,7 +55,7 @@ export function OutputControl({
         <div className="flex items-center gap-2.5">
           <Badge tone={manual ? 'heat' : 'air'}>{manual ? 'Manual' : 'Auto'}</Badge>
           <output htmlFor={id} className="min-w-14 text-right text-readout-lg tabular-nums">
-            {value === undefined ? '–' : `${String(value)}%`}
+            {shown === undefined ? '–' : `${String(shown)}%`}
           </output>
         </div>
       </div>
@@ -58,11 +65,13 @@ export function OutputControl({
         min={min}
         max={max}
         step={step}
-        value={value ?? min}
+        value={shown ?? min}
         disabled={disabled || value === undefined}
+        onPointerDown={startDrag}
         onChange={(event) => {
-          onChange(Number(event.target.value));
+          draft(Number(event.target.value));
         }}
+        onBlur={commitNow}
         className={cn(
           'h-7 w-full cursor-pointer disabled:cursor-not-allowed',
           tone === 'heat' ? 'accent-heat-fill' : 'accent-air',
@@ -75,4 +84,53 @@ export function OutputControl({
       ) : null}
     </div>
   );
+}
+
+/**
+ * The value under your hand while you move the slider, sent once you are done: on letting go,
+ * 300 ms after the last key, or when focus leaves.
+ */
+function useDraft(value: number | undefined, onChange: (value: number) => void) {
+  const [pending, setPending] = useState<number>();
+  const latest = useRef<number | undefined>(undefined);
+  const dragging = useRef(false);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(
+    () => () => {
+      clearTimeout(timer.current);
+    },
+    [],
+  );
+
+  const commitNow = () => {
+    clearTimeout(timer.current);
+    const next = latest.current;
+    latest.current = undefined;
+    setPending(undefined);
+    if (next !== undefined && next !== value) onChange(next);
+  };
+  const endDrag = () => {
+    if (!dragging.current) return;
+    dragging.current = false;
+    commitNow();
+  };
+  return {
+    shown: pending ?? value,
+    draft: (next: number) => {
+      latest.current = next;
+      setPending(next);
+      clearTimeout(timer.current);
+      if (!dragging.current) timer.current = setTimeout(commitNow, KEYBOARD_COMMIT_MS);
+    },
+    // Letting go may happen outside the slider, so the window listens; it bubbles there anyway.
+    startDrag: () => {
+      dragging.current = true;
+      const release = () => {
+        window.removeEventListener('pointerup', release);
+        endDrag();
+      };
+      window.addEventListener('pointerup', release);
+    },
+    commitNow,
+  };
 }

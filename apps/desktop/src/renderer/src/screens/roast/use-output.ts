@@ -1,12 +1,9 @@
 import { serializeError } from '@roastpilot/core';
 import type { Reading } from '@roastpilot/shared';
-import { useEffect, useMemo, useState } from 'react';
-import { throttle } from '../../lib/throttle';
+import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRoast } from '../../stores/use-stores';
 
-/** Slider commands go out at most this often while dragging. */
-export const OUTPUT_THROTTLE_MS = 150;
 /** Two polls: by then the roaster has reported your value, or something else won. */
 export const PENDING_MS = 2_000;
 
@@ -41,40 +38,27 @@ export function useOutput(channel: string): { value: number; set: (value: number
     return (pending && pendingShown(pending, channel, s.readings) ? pending.value : reported) ?? 0;
   });
 
-  const sender = useMemo(
-    () =>
-      throttle((next: number) => {
-        api
-          .setOutput({ channel, value: next })
-          .then((result) => {
-            if (result.ok) return;
-            logger.warn('output.refused', { channel, value: next, error: result.error });
-            setPending(undefined);
-          })
-          .catch((error: unknown) => {
-            logger.error('output.send-failed', {
-              channel,
-              value: next,
-              error: serializeError(error),
-            });
-            setPending(undefined);
-          });
-      }, OUTPUT_THROTTLE_MS),
-    [api, logger, channel],
-  );
-  useEffect(
-    () => () => {
-      sender.cancel();
-    },
-    [sender],
-  );
+  /** One command per value you chose: the slider sends only when you let go. */
+  const send = (next: number) => {
+    api
+      .setOutput({ channel, value: next })
+      .then((result) => {
+        if (result.ok) return;
+        logger.warn('output.refused', { channel, value: next, error: result.error });
+        setPending(undefined);
+      })
+      .catch((error: unknown) => {
+        logger.error('output.send-failed', { channel, value: next, error: serializeError(error) });
+        setPending(undefined);
+      });
+  };
 
   return {
     value,
     set: (next) => {
       const latest = stores.roast.getState().readings.at(-1);
       setPending({ value: next, before: latest?.values[channel], sinceMs: latest?.atMs ?? 0 });
-      sender.push(next);
+      send(next);
     },
   };
 }
