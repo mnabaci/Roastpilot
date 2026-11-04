@@ -5,7 +5,7 @@ import { useOutput } from './use-output';
 import { useConnection, useRoast, useSafety, useSettings } from '../../stores/use-stores';
 import { OnOffButton } from './OnOffButton';
 
-/** Heater and fan sliders, the drum switch and, in Full control, the cooling switch. */
+/** Heater and fan sliders, the drum and filter fan switches and, in Full control, the cooling switch. */
 export function OutputsPanel() {
   const level = useSettings((s) => s.settings.controls);
   const phase = useRoast((s) => s.roast.phase);
@@ -15,6 +15,7 @@ export function OutputsPanel() {
   const heater = useOutput('heater');
   const fan = useOutput('fan');
   const drum = useOutput('drum');
+  const filter = useOutput('filter');
   const cooling = useOutput('cooling');
   const hint = locked
     ? 'Heater locked · acknowledge above'
@@ -45,9 +46,17 @@ export function OutputsPanel() {
         <OnOffButton
           label="Drum"
           on={drum.value > 0}
-          disabled={!access.drum}
+          disabled={!access.switches}
           onToggle={(on) => {
             drum.set(on ? 1 : 0);
+          }}
+        />
+        <OnOffButton
+          label="Filter"
+          on={filter.value > 0}
+          disabled={!access.switches}
+          onToggle={(on) => {
+            filter.set(on ? 100 : 0);
           }}
         />
         {access.showCooling ? (

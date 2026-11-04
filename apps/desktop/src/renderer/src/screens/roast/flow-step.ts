@@ -16,7 +16,7 @@ export interface FlowStep {
 const STEPS: Readonly<Record<RoastPhase, FlowStep>> = {
   ready: {
     primary: { action: 'preheat', label: 'Preheat' },
-    hint: 'Drum on. Heat up, then add beans.',
+    hint: 'Drum and filter on. Heat up, then add beans.',
   },
   preheat: {
     primary: { action: 'start', label: 'Beans in · Start' },

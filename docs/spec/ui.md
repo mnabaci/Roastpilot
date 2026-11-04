@@ -6,7 +6,7 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 ## Roast screen (main)
 
 - **Top bar:** connection status, active roaster, selected bean and profile, phase name.
-- **Milestone 2:** the manual flow from [manual-mode.md](manual-mode.md): top bar (connection status, state), phase stepper, big numbers (BT, RoR, time, development), live chart (BT and RoR, charge/FC/drop markers, heater and fan strip), heater and fan controls, drum switch, flow buttons and the red Emergency stop. Safety trips show as banners with Acknowledge. Bean, profile, ghost and coach come later.
+- **Milestone 2:** the manual flow from [manual-mode.md](manual-mode.md): top bar (connection status, state), phase stepper, big numbers (BT, RoR, time, development), live chart (BT and RoR, charge/FC/drop markers, heater and fan strip), heater and fan controls, drum and filter fan switches, flow buttons and the red Emergency stop. Safety trips show as banners with Acknowledge. Bean, profile, ghost and coach come later.
 - **Preheat:** shows the between-batch protocol (cool, climb, hold countdown), then "Add beans".
 - **Before preheat:** bean picker (search + recent), batch weight (prefilled from the bean's batch plan), then the suggested profile and ghost with a one-line reason and a Change link for each.
 - **Phase stepper:** Preheat, Roast, First crack, Drop, Cool.
