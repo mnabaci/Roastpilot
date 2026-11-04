@@ -1,5 +1,11 @@
 import { silentLogger } from '@roastpilot/core';
-import { DEFAULT_SETTINGS, ok, type ConnectionState, type RoastpilotApi } from '@roastpilot/shared';
+import {
+  DEFAULT_SETTINGS,
+  err,
+  ok,
+  type ConnectionState,
+  type RoastpilotApi,
+} from '@roastpilot/shared';
 import { render } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { vi, type Mocked } from 'vitest';
@@ -38,6 +44,10 @@ export function fakeApi(overrides: Partial<RoastpilotApi> = {}): Mocked<Roastpil
     onLogEntries: vi.fn(() => unsubscribe),
     openLogFolder: vi.fn(() => Promise.resolve()),
     onNavigate: vi.fn(() => unsubscribe),
+    listRoasts: vi.fn(() => Promise.resolve([])),
+    getRoast: vi.fn((id: number) => Promise.resolve(err({ kind: 'not-found' as const, id }))),
+    deleteRoast: vi.fn(() => Promise.resolve(ok(undefined))),
+    onRoastsChanged: vi.fn(() => unsubscribe),
     ...overrides,
   } as Mocked<RoastpilotApi>;
 }

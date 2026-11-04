@@ -4,5 +4,10 @@
     "composite": true,
     "types": ["node"]
   },
-  "include": ["src/main", "src/preload", "electron.vite.config.ts"]
+  "include": [
+    "src/main",
+    "src/preload",
+    "electron.vite.config.ts",
+    "../../packages/storage/src/sql-raw.d.ts"
+  ]
 }

@@ -24,6 +24,7 @@ const PHASE_LABEL: Readonly<Record<RoastPhase, string>> = {
 
 const SCREENS: readonly { id: Screen; label: string }[] = [
   { id: 'roast', label: 'Roast' },
+  { id: 'history', label: 'History' },
   { id: 'settings', label: 'Settings' },
   { id: 'logs', label: 'Logs' },
 ];

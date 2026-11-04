@@ -1,6 +1,7 @@
 import { createLogger, type RoasterDriver } from '@roastpilot/core';
 import {
   DEFAULT_SETTINGS,
+  err,
   IPC_CHANNELS,
   ok,
   type LogEntry,
@@ -62,6 +63,17 @@ function setup() {
         return Promise.resolve(ok(DEFAULT_SETTINGS));
       },
     },
+    history: {
+      list: () => Promise.resolve([]),
+      get: (id) => {
+        calls.push(['getRoast', id]);
+        return Promise.resolve(err({ kind: 'not-found', id }));
+      },
+      delete: (id) => {
+        calls.push(['deleteRoast', id]);
+        return Promise.resolve(ok(undefined));
+      },
+    },
     snapshot: () => SNAPSHOT,
     listPorts: () => Promise.resolve([{ path: 'COM3' }]),
     createDriver: (target) => {
@@ -111,6 +123,9 @@ describe('createIpcHandlers', () => {
         IPC_CHANNELS.listLogDays,
         IPC_CHANNELS.readLogDay,
         IPC_CHANNELS.openLogFolder,
+        IPC_CHANNELS.listRoasts,
+        IPC_CHANNELS.getRoast,
+        IPC_CHANNELS.deleteRoast,
       ].sort(),
     );
   });
@@ -238,5 +253,25 @@ describe('log viewer handlers', () => {
     await handle(handlers, IPC_CHANNELS.readLogDay, '2026-11-03');
     await handle(handlers, IPC_CHANNELS.openLogFolder);
     expect(calls).toEqual([['readDay', '2026-11-03'], ['openFolder']]);
+  });
+});
+
+describe('history handlers', () => {
+  it('lists roasts, and gets or deletes one by a valid id', async () => {
+    const { handlers, calls } = setup();
+    expect(await handle(handlers, IPC_CHANNELS.listRoasts)).toEqual([]);
+    await handle(handlers, IPC_CHANNELS.getRoast, 3);
+    await handle(handlers, IPC_CHANNELS.deleteRoast, 3);
+    expect(calls).toEqual([
+      ['getRoast', 3],
+      ['deleteRoast', 3],
+    ]);
+  });
+
+  it.each([0, -1, 1.5, '3', null])('rejects roast id %o and touches nothing', async (id) => {
+    const { handlers, calls } = setup();
+    await expect(handle(handlers, IPC_CHANNELS.deleteRoast, id)).rejects.toThrow();
+    await expect(handle(handlers, IPC_CHANNELS.getRoast, id)).rejects.toThrow();
+    expect(calls).toEqual([]);
   });
 });
