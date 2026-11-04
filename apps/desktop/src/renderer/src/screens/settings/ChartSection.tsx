@@ -1,7 +1,7 @@
 import type { ChartSmoothing } from '@roastpilot/shared';
-import { Button } from '@roastpilot/ui';
 import { useSettings } from '../../stores/use-stores';
 import { useSaveSettings } from './use-save-settings';
+import { Choice } from './Choice';
 
 const OPTIONS: readonly { id: ChartSmoothing; label: string }[] = [
   { id: 0, label: 'Off' },
@@ -19,20 +19,14 @@ export function ChartSection() {
       <h2 id="chart-heading" className="text-heading">
         Chart
       </h2>
-      <div role="group" aria-label="Temperature smoothing" className="flex gap-2">
-        {OPTIONS.map(({ id, label }) => (
-          <Button
-            key={id}
-            aria-pressed={smoothingS === id}
-            className={smoothingS === id ? 'bg-heat-tint text-heat' : undefined}
-            onClick={() => {
-              save({ chartSmoothingS: id });
-            }}
-          >
-            {label}
-          </Button>
-        ))}
-      </div>
+      <Choice
+        label="Temperature smoothing"
+        options={OPTIONS}
+        value={smoothingS}
+        onChange={(id) => {
+          save({ chartSmoothingS: id });
+        }}
+      />
       <p className="text-label text-ink-muted">
         Smooths the temperature line · the big number stays the raw reading
       </p>
