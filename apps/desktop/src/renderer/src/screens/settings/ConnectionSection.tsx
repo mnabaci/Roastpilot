@@ -7,11 +7,7 @@ import { useRun } from '../../features/use-run';
 import { useDeps } from '../../app/app-context';
 import { useConnection, useSettings } from '../../stores/use-stores';
 import { useSaveSettings } from './use-save-settings';
-
-const SIMULATOR: ConnectTarget = { kind: 'simulator' };
-
-const sameTarget = (a: ConnectTarget | null, b: ConnectTarget) =>
-  a?.kind === b.kind && (a.kind === 'simulator' || (b.kind === 'serial' && a.path === b.path));
+import { roasterRows, sameTarget } from './roaster-rows';
 
 function TargetRow({
   label,
@@ -66,6 +62,9 @@ export function ConnectionSection() {
   const [ports, setPorts] = useState<SerialPortInfo[]>([]);
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
+  // With a remembered roaster, the list stays closed until you choose another.
+  const [choosing, setChoosing] = useState(target === null);
+  const [showAll, setShowAll] = useState(false);
   const connecting = busy || status === 'connecting';
   // The roaster list and Refresh wait while connecting or connected.
   const idle = status === 'disconnected' && !connecting;
@@ -89,26 +88,17 @@ export function ConnectionSection() {
       }
     });
   };
-  const rows: readonly { target: ConnectTarget; label: string; detail?: string }[] = [
-    ...ports.map((port) => ({
-      target: { kind: 'serial', path: port.path } as const,
-      label: port.path,
-      detail: port.manufacturer,
-    })),
-    { target: SIMULATOR, label: 'Simulator', detail: 'Practice without a roaster' },
-  ];
-  // While a roaster is in use, only its row shows: the rest of the list is noise until Disconnect.
-  const shownRows = inUse
-    ? [
-        rows.find((row) => sameTarget(inUse, row.target)) ?? {
-          target: inUse,
-          label: inUse.kind === 'serial' ? inUse.path : 'Simulator',
-        },
-      ]
-    : rows;
+  const { rows, hidden, anyRoaster, savedPresent } = roasterRows(ports, {
+    inUse,
+    saved: target,
+    choosing,
+    showAll,
+  });
   const select = (to: ConnectTarget) => {
     setError(undefined);
     save({ connection: to });
+    setChoosing(false);
+    setShowAll(false);
   };
 
   return (
@@ -130,7 +120,7 @@ export function ConnectionSection() {
         )}
       </div>
       <ul aria-label="Roasters" className="flex flex-col gap-2">
-        {shownRows.map((row) => (
+        {rows.map((row) => (
           <TargetRow
             key={row.target.kind === 'serial' ? row.target.path : 'simulator'}
             label={row.label}
@@ -143,16 +133,26 @@ export function ConnectionSection() {
           />
         ))}
       </ul>
-      {ports.length === 0 && !inUse ? (
-        <p className="text-label text-ink-muted">
-          No serial ports found · plug in the roaster, then Refresh
-        </p>
+      {hidden > 0 && choosing ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="self-start"
+          onClick={() => {
+            setShowAll(true);
+          }}
+        >
+          Show all ports ({hidden} more)
+        </Button>
+      ) : null}
+      {idle && !anyRoaster && (choosing || !savedPresent) ? (
+        <p className="text-label text-ink-muted">No roaster found · plug it in, then Refresh</p>
       ) : null}
       {idle || connecting ? (
         <Button
           variant="primary"
           size="lg"
-          disabled={!target || connecting}
+          disabled={!target || !savedPresent || connecting}
           aria-busy={connecting}
           icon={
             connecting ? (
@@ -175,6 +175,18 @@ export function ConnectionSection() {
           Disconnect
         </Button>
       )}
+      {idle && !choosing && target ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="self-start"
+          onClick={() => {
+            setChoosing(true);
+          }}
+        >
+          Choose another
+        </Button>
+      ) : null}
       {error ? (
         <p role="alert" className="text-body text-critical-text">
           {error}

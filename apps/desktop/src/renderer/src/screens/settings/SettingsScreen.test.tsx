@@ -83,7 +83,7 @@ describe('SettingsScreen', () => {
   it('says when there are no ports, and Refresh looks again', async () => {
     const listPorts = vi.fn(() => Promise.resolve([]));
     renderApp(<SettingsScreen />, {}, fakeApi({ listPorts }));
-    expect(await screen.findByText(/No serial ports found/)).toBeInTheDocument();
+    expect(await screen.findByText(/No roaster found/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Refresh' }));
     expect(listPorts).toHaveBeenCalledTimes(2);
   });
@@ -115,6 +115,38 @@ describe('SettingsScreen', () => {
     await Promise.resolve();
     expect(screen.queryByRole('button', { name: /usbserial-0001/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Refresh' })).not.toBeInTheDocument();
+  });
+
+  it('shows the remembered roaster alone; Choose another opens likely roasters, then all ports', async () => {
+    const listPorts = () =>
+      Promise.resolve([
+        { path: '/dev/cu.debug-console' },
+        { path: '/dev/cu.usbserial-0001', manufacturer: 'Silicon Labs' },
+      ]);
+    const { api } = renderApp(
+      <SettingsScreen />,
+      {
+        settings: {
+          connection: { kind: 'serial', path: '/dev/cu.usbserial-0001' },
+          controls: 'guided',
+          chartSmoothingS: 5,
+        },
+      },
+      fakeApi({ listPorts }),
+    );
+    const list = screen.getByRole('list', { name: 'Roasters' });
+    expect(await within(list).findByText('Silicon Labs')).toBeInTheDocument();
+    expect(within(list).getAllByRole('button')).toHaveLength(1);
+    await userEvent.click(screen.getByRole('button', { name: 'Choose another' }));
+    expect(within(list).getAllByRole('button')).toHaveLength(2);
+    expect(within(list).queryByText(/debug-console/)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Show all ports (1 more)' }));
+    expect(within(list).getByText(/debug-console/)).toBeInTheDocument();
+    await userEvent.click(within(list).getByRole('button', { name: /Simulator/ }));
+    expect(api.setSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ connection: { kind: 'simulator' } }),
+    );
+    expect(within(list).getAllByRole('button')).toHaveLength(1);
   });
 
   it('switches between Guided and Full control', async () => {
