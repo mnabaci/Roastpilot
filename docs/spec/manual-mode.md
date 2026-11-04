@@ -12,17 +12,21 @@
 Until Auto mode exists (milestone 4), a roast is driven by hand through these states. The flow
 lives in `core` (`ManualRoast`) and runs in main, so a closed window changes nothing.
 
-| State       | Entered by                          | What the app does                                             | Next action (Guided) |
-| ----------- | ----------------------------------- | ------------------------------------------------------------- | -------------------- |
-| Ready       | Connecting                          | Nothing runs                                                  | Preheat              |
-| Preheat     | Preheat                             | Drum on                                                       | Start (beans in)     |
-| Roasting    | Start                               | Clock starts at 0; max roast time armed                       | First crack          |
-| Development | First crack                         | Records time and BT; development timer starts                 | Drop                 |
-| Cooling     | Drop (from Roasting or Development) | Heater 0, fan 100, cooling 100; "Dump beans"; 4 min countdown | –                    |
-| Done        | Cooling time ends                   | Heater 0, fan 0, cooling 0, drum off                          | Preheat (next batch) |
+| State       | Entered by                          | What the app does                                              | Next action (Guided) |
+| ----------- | ----------------------------------- | -------------------------------------------------------------- | -------------------- |
+| Ready       | Connecting                          | Nothing runs                                                   | Preheat              |
+| Preheat     | Preheat                             | Drum on; preheat clock starts                                  | Start (beans in)     |
+| Roasting    | Start                               | Clock starts at 0; max roast time armed                        | First crack          |
+| Development | First crack                         | Records time and BT; development timer starts                  | Drop                 |
+| Cooling     | Drop (from Roasting or Development) | Heater 0, fan 100, cooling 100; "Dump beans"; 4 min countdown  | –                    |
+| Done        | Cooling time ends                   | Heater 0, fan 0, cooling 0, drum off                           | Preheat (next batch) |
+| Ready       | Cancel preheat (from Preheat)       | Heater 0, fan 0, cooling 0, drum off; the preheat is forgotten | Preheat              |
 
 - **Drum:** on at Preheat, off when cooling ends. A drum switch is always on screen to override it.
-- **Numbers:** BT, RoR (°C/min, slope of the last 30 s of BT), time since charge, development time and its % of the roast.
+- **Numbers:** BT, RoR (°C/min, slope of the last 30 s of BT), time, development time and its % of the roast. Time counts the preheat ("2:30 · In preheat") until charge, then the time since charge. A value that rounds to zero shows as 0.0, never -0.0.
+- **Stage times:** each finished stage in the stepper shows how long it took: Preheat (to charge), Roast (charge to first crack), First crack (first crack to drop, with its % of the roast) and Cool.
+- **Preheat hint:** "Drum on · set the heater to warm up, then add beans." Preheat never sets the heater; you do.
+- **Cancel preheat:** a secondary button under Start while preheating. No confirm: Preheat is one press away.
 - **Not saved yet:** readings and events stay in memory for the current roast; saving arrives with Logging (milestone 3). Main keeps them, so reloading the window keeps the chart.
 - An emergency stop or safety trip doesn't change the state; you decide what to do next.
 
