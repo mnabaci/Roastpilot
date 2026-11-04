@@ -34,7 +34,9 @@ function TargetRow({
         disabled={disabled}
         onClick={onSelect}
         className={cn(
-          'flex min-h-control-sm w-full items-center justify-between gap-3 rounded-md border px-4 text-left text-body disabled:opacity-50',
+          // The marked row stays readable while the list is locked; the rest dim.
+          'flex min-h-control-sm w-full items-center justify-between gap-3 rounded-md border px-4 text-left text-body',
+          !selected && 'disabled:opacity-50',
           selected ? 'border-heat bg-heat-tint' : 'border-border bg-surface hover:bg-surface-hover',
         )}
       >
