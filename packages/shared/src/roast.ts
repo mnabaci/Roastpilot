@@ -15,6 +15,7 @@ export const RoastActionSchema = z.enum([
   'start',
   'first-crack',
   'drop',
+  'clear',
 ]);
 
 export const RoastEventSchema = z.object({

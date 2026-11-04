@@ -11,8 +11,6 @@ export function OutputsPanel() {
   const phase = useRoast((s) => s.roast.phase);
   const connected = useConnection((s) => isConnected(s.connection));
   const locked = useSafety((s) => s.locked);
-  // With the roaster gone, its last values would look live: show a dash instead.
-  const lost = useConnection((s) => s.connection.status === 'lost');
   const access = controlsAccess(level, phase, connected);
   const heater = useOutput('heater');
   const fan = useOutput('fan');
@@ -31,7 +29,8 @@ export function OutputsPanel() {
         label="Heater"
         tone="heat"
         mode="manual"
-        value={lost ? undefined : heater.value}
+        // With no roaster, its last values would look live: show a dash instead.
+        value={connected ? heater.value : undefined}
         onChange={heater.set}
         disabled={!access.outputs || locked}
       />
@@ -39,14 +38,14 @@ export function OutputsPanel() {
         label="Fan"
         tone="air"
         mode="manual"
-        value={lost ? undefined : fan.value}
+        value={connected ? fan.value : undefined}
         onChange={fan.set}
         disabled={!access.outputs}
       />
       <div className="flex flex-col gap-2">
         <OnOffButton
           label="Drum"
-          on={drum.value > 0}
+          on={connected && drum.value > 0}
           disabled={!access.drum}
           onToggle={(on) => {
             drum.set(on ? 1 : 0);
@@ -55,7 +54,7 @@ export function OutputsPanel() {
         {access.showCooling ? (
           <OnOffButton
             label="Cooling"
-            on={cooling.value > 0}
+            on={connected && cooling.value > 0}
             disabled={!connected}
             onToggle={(on) => {
               cooling.set(on ? 100 : 0);

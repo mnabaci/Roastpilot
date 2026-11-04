@@ -38,7 +38,7 @@ describe('SettingsScreen', () => {
     });
     renderApp(
       <SettingsScreen />,
-      { settings: { connection: { kind: 'simulator' }, controls: 'guided' } },
+      { settings: { connection: { kind: 'simulator' }, controls: 'guided', chartSmoothingS: 5 } },
       api,
     );
     await userEvent.click(screen.getByRole('button', { name: 'Connect' }));
@@ -55,7 +55,7 @@ describe('SettingsScreen', () => {
     });
     renderApp(
       <SettingsScreen />,
-      { settings: { connection: { kind: 'simulator' }, controls: 'guided' } },
+      { settings: { connection: { kind: 'simulator' }, controls: 'guided', chartSmoothingS: 5 } },
       api,
     );
     await userEvent.click(screen.getByRole('button', { name: 'Connect' }));
@@ -74,7 +74,7 @@ describe('SettingsScreen', () => {
   it('shows Connecting… while main reports connecting', () => {
     renderApp(<SettingsScreen />, {
       connection: { status: 'connecting' },
-      settings: { connection: { kind: 'simulator' }, controls: 'guided' },
+      settings: { connection: { kind: 'simulator' }, controls: 'guided', chartSmoothingS: 5 },
     });
     expect(screen.getByRole('button', { name: 'Connecting…' })).toBeDisabled();
     expect(screen.queryByRole('button', { name: 'Disconnect' })).not.toBeInTheDocument();
@@ -91,7 +91,7 @@ describe('SettingsScreen', () => {
   it('while connected: Disconnect, and the roaster list is locked', async () => {
     const { api } = renderApp(<SettingsScreen />, {
       connection: CONNECTED,
-      settings: { connection: { kind: 'simulator' }, controls: 'guided' },
+      settings: { connection: { kind: 'simulator' }, controls: 'guided', chartSmoothingS: 5 },
     });
     expect(screen.getByRole('button', { name: /Simulator/ })).toBeDisabled();
     await userEvent.click(screen.getByRole('button', { name: 'Disconnect' }));

@@ -141,6 +141,34 @@ describe('ManualRoast', () => {
     },
   );
 
+  it('Clear forgets the last roast from Done or Ready, and sends nothing', async () => {
+    const { clock, roast, sent, signals, act } = setup();
+    await act('start', 'drop');
+    await clock.runFor(DEFAULT_COOLING_MS);
+    sent.length = 0;
+    signals.length = 0;
+    expect(await roast.act('clear')).toEqual(ok(undefined));
+    expect(roast.state).toMatchObject({ phase: 'ready', events: [], chargedAtMs: null });
+    expect(signals).toEqual(['new-roast']);
+    expect(sent).toEqual([]);
+  });
+
+  it.each(['preheat', 'roasting', 'cooling'] as const)(
+    'Clear is refused from %s',
+    async (phase) => {
+      const { roast, act } = setup();
+      const path: Record<typeof phase, RoastAction[]> = {
+        preheat: ['preheat'],
+        roasting: ['start'],
+        cooling: ['start', 'drop'],
+      };
+      await act(...path[phase]);
+      expect(await roast.act('clear')).toEqual(
+        err({ kind: 'not-allowed', action: 'clear', phase }),
+      );
+    },
+  );
+
   it('can drop before first crack', async () => {
     const { roast, act } = setup();
     await act('start', 'drop');

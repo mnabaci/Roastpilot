@@ -33,7 +33,8 @@ export function roastNumbers(roast: RoastState, readings: readonly Reading[]): R
     ror: rateOfRise(readings),
     elapsedS: elapsedMs === undefined ? undefined : seconds(elapsedMs),
     preheatS:
-      roast.phase === 'preheat' && roast.preheatAtMs !== null && nowMs !== undefined
+      // typeof, not !== null: a main process from before preheatAtMs existed leaves it out.
+      roast.phase === 'preheat' && typeof roast.preheatAtMs === 'number' && nowMs !== undefined
         ? seconds(nowMs - roast.preheatAtMs)
         : undefined,
     developmentS: developmentMs === undefined ? undefined : seconds(developmentMs),

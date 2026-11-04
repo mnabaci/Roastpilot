@@ -66,4 +66,9 @@ describe('roastNumbers', () => {
     );
     expect(n.coolingLeftS).toBe(0);
   });
+
+  it('never gives NaN for a preheat time it cannot know', () => {
+    const n = roastNumbers(roast({ phase: 'preheat', preheatAtMs: undefined }), readings(5));
+    expect(n.preheatS).toBeUndefined();
+  });
 });

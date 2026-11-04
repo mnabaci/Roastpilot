@@ -1,7 +1,9 @@
 import { formatClock, formatNumber, StatCard } from '@roastpilot/ui';
 import type { RoastNumbers } from './roast-numbers';
 
-const clock = (s: number | undefined) => (s === undefined ? undefined : formatClock(s));
+// A time that isn't a finite number shows a dash, never NaN:NaN.
+const clock = (s: number | undefined) =>
+  s === undefined || !Number.isFinite(s) ? undefined : formatClock(s);
 
 /** BT, RoR, time (in preheat, then since charge) and development: numbers first (docs/spec/manual-mode.md). */
 export function RoastNumbersRow({ numbers }: { numbers: RoastNumbers }) {

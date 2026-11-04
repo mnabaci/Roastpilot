@@ -24,6 +24,8 @@ const ALLOWED_FROM: Readonly<Record<RoastAction, readonly RoastPhase[]>> = {
   start: ['ready', 'preheat'],
   'first-crack': ['roasting'],
   drop: ['roasting', 'development'],
+  // Only with no roast running, so a roast in progress can't be wiped by accident.
+  clear: ['ready', 'done'],
 };
 
 type Outputs = readonly (readonly [channel: string, value: number])[];
@@ -127,6 +129,12 @@ export class ManualRoast {
         firstCrackAtMs: nowMs,
         events: [...this.#state.events, this.#event('first-crack', nowMs)],
       });
+      return Promise.resolve();
+    },
+    // Forgets the last roast's readings and events; sends nothing to the roaster.
+    clear: () => {
+      this.#deps.onNewRoast();
+      this.#set(READY);
       return Promise.resolve();
     },
     drop: async (nowMs) => {

@@ -32,14 +32,18 @@ describe('SettingsService', () => {
 
   it('saves, then serves what was saved', async () => {
     const service = new SettingsService(memoryStore().store);
-    const next = { connection: { kind: 'simulator' as const }, controls: 'full' as const };
+    const next = {
+      ...DEFAULT_SETTINGS,
+      connection: { kind: 'simulator' as const },
+      controls: 'full' as const,
+    };
     expect(await service.set(next)).toEqual(ok(next));
     expect(await service.get()).toEqual(next);
   });
 
   it('keeps the old settings when the save fails', async () => {
     const service = new SettingsService(memoryStore(DEFAULT_SETTINGS, true).store);
-    expect(await service.set({ connection: null, controls: 'full' })).toEqual(
+    expect(await service.set({ ...DEFAULT_SETTINGS, controls: 'full' })).toEqual(
       err({ kind: 'write-failed', message: 'disk full' }),
     );
     expect(await service.get()).toEqual(DEFAULT_SETTINGS);

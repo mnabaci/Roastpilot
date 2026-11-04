@@ -112,12 +112,41 @@ describe('RoastScreen', () => {
   it('Full control: everything is live, cooling switch included', async () => {
     const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
       ...connected,
-      settings: { connection: null, controls: 'full' },
+      settings: { connection: null, controls: 'full', chartSmoothingS: 5 },
       readings: [reading({ cooling: 0 })],
     });
     expect(screen.getByRole('slider', { name: 'Heater' })).toBeEnabled();
     await userEvent.click(screen.getByRole('button', { name: /Cooling/ }));
     expect(api.setOutput).toHaveBeenCalledWith({ channel: 'cooling', value: 100 });
+  });
+
+  it('Clear forgets the last roast, only when none is running', async () => {
+    const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
+      ...connected,
+      roast: roast('done'),
+      readings: [reading({ bt: 40 })],
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
+    expect(api.roastAction).toHaveBeenCalledWith('clear');
+  });
+
+  it.each(['preheat', 'roasting', 'cooling'] as const)('no Clear while %s', (phase) => {
+    renderApp(<RoastScreen onConnect={onConnect} />, {
+      ...connected,
+      roast: roast(phase),
+      readings: [reading({ bt: 40 })],
+    });
+    expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument();
+  });
+
+  it('with no roaster, the last readings show as dashes, not live values', () => {
+    renderApp(<RoastScreen onConnect={onConnect} />, {
+      roast: roast('preheat'),
+      readings: [reading({ bt: 42.7, heater: 0, fan: 100, drum: 1 })],
+    });
+    expect(screen.queryByText('42.7')).not.toBeInTheDocument();
+    expect(screen.queryByText('100%')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Drum/ })).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('preheat can be cancelled from a second button', async () => {
