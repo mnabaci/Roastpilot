@@ -1,4 +1,4 @@
-import { rateOfRise, ROR_WINDOW_MS } from '@roastpilot/core';
+import { rateOfRise, ROR_DRAW_LIMITS, ROR_WINDOW_MS, rorReadings } from '@roastpilot/core';
 import type { Reading, RoastEvent, RoastState } from '@roastpilot/shared';
 import type { ChartLayer, ChartMarker, ChartPoint } from '@roastpilot/ui';
 
@@ -39,29 +39,29 @@ function withBreaks(points: ChartPoint[], breaks: readonly number[]): ChartPoint
 }
 
 /**
- * The drawn temperature: a moving average over the last `windowS` seconds, restarting after a
- * break. 0 draws the raw readings (docs/spec/ui.md, Temperature axis).
+ * The drawn temperature: a weighted average of the readings in the last `windowS` seconds, newest
+ * counting most (weights 1, 2, 3, …), restarting after a break. Like Artisan's curve filter, it
+ * smooths jitter with about half the lag of a plain average. 0 draws the raw readings
+ * (docs/spec/ui.md, Temperature axis).
  */
 function smoothed(points: readonly ChartPoint[], windowS: number): ChartPoint[] {
   if (windowS <= 0) return [...points];
-  const out: ChartPoint[] = [];
   let start = 0;
-  let sum = 0;
-  points.forEach((point, i) => {
+  return points.map((point, i) => {
     if (point.v === null) {
-      out.push(point);
       start = i + 1;
-      sum = 0;
-      return;
+      return point;
     }
-    sum += point.v;
-    while (start < i && (points[start]?.t ?? Infinity) <= point.t - windowS) {
-      sum -= points[start]?.v ?? 0;
-      start++;
+    while (start < i && (points[start]?.t ?? Infinity) <= point.t - windowS) start++;
+    let sum = 0;
+    let weights = 0;
+    for (let k = start; k <= i; k++) {
+      const weight = k - start + 1;
+      sum += (points[k]?.v ?? 0) * weight;
+      weights += weight;
     }
-    out.push({ t: point.t, v: sum / (i - start + 1) });
+    return { t: point.t, v: sum / weights };
   });
-  return out;
 }
 
 /** RoR at each reading, from only the readings in its window, so the series stays O(n). */
@@ -71,9 +71,22 @@ function rorPoints(readings: readonly Reading[], toT: (atMs: number) => number):
   readings.forEach((reading, i) => {
     while ((readings[start]?.atMs ?? Infinity) < reading.atMs - ROR_WINDOW_MS) start++;
     const ror = rateOfRise(readings.slice(start, i + 1));
-    if (ror !== undefined) points.push({ t: toT(reading.atMs), v: ror });
+    if (ror === undefined) return;
+    // Outside the limits is a gap, not a spike that stretches the axis.
+    const shown = ror >= ROR_DRAW_LIMITS.min && ror <= ROR_DRAW_LIMITS.max;
+    points.push({ t: toT(reading.atMs), v: shown ? ror : null });
   });
   return points;
+}
+
+/**
+ * The readings the RoR line is drawn from: charge to drop (or End roast), as Artisan does. There
+ * is no RoR line in preheat or cooling.
+ */
+function roastingReadings(roast: RoastState, readings: readonly Reading[]): readonly Reading[] {
+  if (roast.chargedAtMs === null) return [];
+  const endMs = roast.droppedAtMs ?? roast.events.find((e) => e.kind === 'end')?.atMs ?? Infinity;
+  return rorReadings(readings, roast.chargedAtMs).filter((r) => r.atMs <= endMs);
 }
 
 /**
@@ -102,7 +115,7 @@ export function roastChartData(
     axis: 'ror',
     tone: 'air',
     width: 2,
-    points: withBreaks(rorPoints(readings, toT), breaks),
+    points: withBreaks(rorPoints(roastingReadings(roast, readings), toT), breaks),
   };
   // The outputs strip (docs/spec/ui.md): what you set, as steps under the curve.
   const output = (id: string, label: string, tone: 'heat' | 'air'): ChartLayer => ({

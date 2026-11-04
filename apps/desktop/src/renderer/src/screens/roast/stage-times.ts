@@ -13,7 +13,9 @@ const clock = (fromMs: number | null, toMs: number | null | undefined) =>
 export function stageTimes(roast: RoastState): (string | undefined)[] {
   const { preheatAtMs, chargedAtMs, firstCrackAtMs, droppedAtMs } = roast;
   const coolEndMs = roast.events.find((e) => e.kind === 'cool-end')?.atMs;
-  const roastEndMs = firstCrackAtMs ?? droppedAtMs;
+  const endMs = roast.events.find((e) => e.kind === 'end')?.atMs;
+  // An ended roast's Roast stage runs to End roast.
+  const roastEndMs = firstCrackAtMs ?? droppedAtMs ?? endMs;
   const development = clock(firstCrackAtMs, droppedAtMs);
   const share =
     firstCrackAtMs !== null && droppedAtMs !== null && chargedAtMs !== null
@@ -28,5 +30,19 @@ export function stageTimes(roast: RoastState): (string | undefined)[] {
     development && share ? `${development} · ${share}%` : development,
     undefined,
     clock(droppedAtMs, coolEndMs),
+  ];
+}
+
+/**
+ * Stepper steps the roast went past without them happening: First crack when dropped without one;
+ * Drop and Cool when ended with End roast before them (docs/spec/manual-mode.md, Stage times).
+ */
+export function skippedSteps(roast: RoastState): number[] {
+  if (roast.chargedAtMs === null) return [];
+  const ended = roast.events.some((e) => e.kind === 'end');
+  const pastFirstCrack = roast.droppedAtMs !== null || ended;
+  return [
+    ...(pastFirstCrack && roast.firstCrackAtMs === null ? [2] : []),
+    ...(ended ? [3, 4] : []),
   ];
 }

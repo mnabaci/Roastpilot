@@ -19,6 +19,13 @@ export function FlowPanel({
   const connected = useConnection((s) => isConnected(s.connection));
   const lost = useConnection((s) => s.connection.status === 'lost');
   const phase = useRoast((s) => s.roast.phase);
+  const step = flowStep(phase);
+  const act = (action: RoastAction) => {
+    run('roast.action-failed', async () => {
+      const result = await api.roastAction(action);
+      if (!result.ok) logger.info('roast.action-refused', { ...result.error });
+    });
+  };
   if (lost) {
     // Main is already reopening the port; there is nothing to press until readings are back.
     return (
@@ -37,13 +44,6 @@ export function FlowPanel({
       </div>
     );
   }
-  const step = flowStep(phase);
-  const act = (action: RoastAction) => {
-    run('roast.action-failed', async () => {
-      const result = await api.roastAction(action);
-      if (!result.ok) logger.info('roast.action-refused', { ...result.error });
-    });
-  };
   const hint =
     phase === 'cooling' && coolingLeftS !== undefined
       ? `${step.hint} ${formatClock(coolingLeftS)} left.`

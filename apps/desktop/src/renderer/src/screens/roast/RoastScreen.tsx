@@ -3,14 +3,14 @@ import type { RoastPhase } from '@roastpilot/shared';
 import { useMemo } from 'react';
 import { roastChartData } from './roast-chart-data';
 import { roastNumbers } from './roast-numbers';
-import { stageTimes } from './stage-times';
+import { skippedSteps, stageTimes } from './stage-times';
 import { FlowPanel } from './FlowPanel';
 import { OutputsPanel } from './OutputsPanel';
 import { RoastNumbersRow } from './RoastNumbersRow';
 import { useConnection, useRoast, useSettings } from '../../stores/use-stores';
+import { isConnected } from './flow-step';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
-import { isConnected } from './flow-step';
 
 const STEPS = ['Preheat', 'Roast', 'First crack', 'Drop', 'Cool'] as const;
 
@@ -31,10 +31,11 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
   const { api } = useDeps();
   const run = useRun();
   const connected = useConnection((s) => isConnected(s.connection));
+  // Clear resets the whole view (stepper, numbers, chart), so it sits above them. Needs no roaster.
+  const canClear = (roast.phase === 'ready' || roast.phase === 'done') && readings.length > 0;
   const numbers = useMemo(() => roastNumbers(roast, readings), [roast, readings]);
   // With no roaster, the last temperature would look live: show dashes instead.
   const shown = connected ? numbers : { ...numbers, bt: undefined, ror: undefined };
-  const canClear = (roast.phase === 'ready' || roast.phase === 'done') && readings.length > 0;
   const smoothingS = useSettings((s) => s.settings.chartSmoothingS);
   const chart = useMemo(
     () => roastChartData(roast, readings, { smoothingS }),
@@ -43,30 +44,29 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
   return (
     <main className="grid min-h-0 flex-1 grid-cols-[1fr_auto] content-start gap-6 overflow-y-auto p-6">
       <div className="flex min-w-0 flex-col gap-5">
-        <PhaseStepper
-          steps={STEPS}
-          current={CURRENT_STEP[roast.phase]}
-          details={stageTimes(roast)}
-        />
+        <div className="flex items-start justify-between gap-4">
+          <PhaseStepper
+            steps={STEPS}
+            current={CURRENT_STEP[roast.phase]}
+            details={stageTimes(roast)}
+            skipped={skippedSteps(roast)}
+          />
+          {canClear ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              // Its text on the step names' line, keeping the 44 px target without a taller row.
+              className="-my-3 shrink-0"
+              onClick={() => {
+                run('roast.clear-failed', () => api.roastAction('clear'));
+              }}
+            >
+              Clear
+            </Button>
+          ) : null}
+        </div>
         <RoastNumbersRow numbers={shown} />
-        <RoastChart
-          title="Roast curve"
-          layers={chart.layers}
-          markers={chart.markers}
-          action={
-            canClear ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  run('roast.clear-failed', () => api.roastAction('clear'));
-                }}
-              >
-                Clear
-              </Button>
-            ) : undefined
-          }
-        />
+        <RoastChart title="Roast curve" layers={chart.layers} markers={chart.markers} />
       </div>
       <aside aria-label="Controls" className="flex w-80 flex-col gap-5">
         <FlowPanel coolingLeftS={numbers.coolingLeftS} onConnect={onConnect} />

@@ -25,8 +25,8 @@ describe('roastChartData', () => {
     const [bt, ror] = layers;
     expect(bt?.points[0]).toEqual({ t: -10, v: 100 });
     expect(bt?.points).toHaveLength(61);
-    // RoR waits for a full 30 s window.
-    expect(ror?.points[0]?.t).toBeGreaterThanOrEqual(17);
+    // RoR starts at charge and waits for a full 30 s window of readings since charge.
+    expect(ror?.points[0]?.t).toBeGreaterThanOrEqual(27);
     expect(ror?.points.at(-1)?.v).toBeCloseTo(10);
     expect(markers).toEqual([{ id: 'charge', label: 'Charge', t: 0, tone: 'ink' }]);
   });
@@ -101,6 +101,51 @@ describe('roastChartData', () => {
     expect(byId.ror?.points).toContainEqual({ t: 13.5, v: null });
   });
 
+  it('draws RoR from charge to drop only, and leaves out values beyond the limits', () => {
+    // 2 °C/min before charge, a 40 °C fall at charge, then 15 °C/min (the window still recovering),
+    // and cooling after drop.
+    const series: Reading[] = Array.from({ length: 181 }, (_, s) => ({
+      atMs: s * 1000,
+      values: { bt: s < 60 ? 150 + s / 30 : s < 150 ? 110 + (s - 60) / 4 : 132 - (s - 150) },
+    }));
+    const { layers } = roastChartData(
+      {
+        ...READY_ROAST,
+        phase: 'cooling',
+        preheatAtMs: 0,
+        chargedAtMs: 60_000,
+        droppedAtMs: 150_000,
+        events: [
+          { kind: 'charge', atMs: 60_000, bt: 150 },
+          { kind: 'drop', atMs: 150_000, bt: 132 },
+        ],
+      },
+      series,
+      RAW,
+    );
+    const ror = layers.find((l) => l.id === 'ror')?.points ?? [];
+    const drawn = ror.filter((p) => p.v !== null);
+    expect(Math.min(...ror.map((p) => p.t))).toBeGreaterThanOrEqual(27);
+    expect(Math.max(...ror.map((p) => p.t))).toBeLessThanOrEqual(90);
+    expect(drawn.at(-1)?.v).toBeCloseTo(15, 0);
+  });
+
+  it('a RoR spike beyond the limits is a gap, not a point', () => {
+    const series: Reading[] = Array.from({ length: 40 }, (_, s) => ({
+      atMs: s * 1000,
+      values: { bt: 100 + s * 2 },
+    }));
+    const { layers } = roastChartData(
+      { ...READY_ROAST, phase: 'roasting', chargedAtMs: 0, events: [] },
+      series,
+      RAW,
+    );
+    const ror = layers.find((l) => l.id === 'ror')?.points ?? [];
+    // 120 °C/min is far above 45: every point is left out.
+    expect(ror.length).toBeGreaterThan(0);
+    expect(ror.every((p) => p.v === null)).toBe(true);
+  });
+
   it('smooths the drawn temperature over the window, restarting after a break', () => {
     const jitter = [20, 20.3, 20, 20.3, 20, 20.3, 20, 20.3, 20, 20.3];
     const { layers } = roastChartData(
@@ -116,6 +161,18 @@ describe('roastChartData', () => {
     for (const p of points.slice(5, 10)) expect(p.v).toBeCloseTo(20.15, 1);
     // After the break the line starts again from the raw reading.
     expect(points.at(-1)).toEqual({ t: 20, v: 30 });
+  });
+
+  it('weights newer readings more, so a rise lags less than a plain average', () => {
+    const step = [20, 20, 20, 20, 20, 30];
+    const { layers } = roastChartData(
+      READY_ROAST,
+      step.map((bt, s) => ({ atMs: s * 1000, values: { bt } })),
+      { smoothingS: 5 },
+    );
+    // Weights 1–5 over the last five readings: (20·(1+2+3+4) + 30·5) / 15 = 23.3; a plain
+    // average would show 22.
+    expect(layers[0]?.points.at(-1)?.v).toBeCloseTo(23.33, 1);
   });
 
   it('draws the raw readings with smoothing off', () => {
