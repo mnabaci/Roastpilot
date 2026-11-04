@@ -88,17 +88,18 @@ describe('SettingsScreen', () => {
     expect(listPorts).toHaveBeenCalledTimes(2);
   });
 
-  it('while connected: Disconnect, and the roaster list is locked', async () => {
+  it('while connected: the port in use, locked, and Disconnect', async () => {
     const { api } = renderApp(<SettingsScreen />, {
       connection: CONNECTED,
       settings: { connection: { kind: 'simulator' }, controls: 'guided', chartSmoothingS: 5 },
     });
-    expect(screen.getByRole('button', { name: /Simulator/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /usbserial-0001/ })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /Simulator/ })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
     expect(api.disconnect).toHaveBeenCalledOnce();
   });
 
-  it('marks the roaster in use as Connected, even if another one was picked', async () => {
+  it('while connected, shows only the roaster in use, marked Connected', async () => {
     renderApp(
       <SettingsScreen />,
       {
@@ -110,10 +111,10 @@ describe('SettingsScreen', () => {
     const simulator = screen.getByRole('button', { name: /Simulator/ });
     expect(simulator).toHaveAttribute('aria-pressed', 'true');
     expect(simulator).toHaveTextContent('Connected');
-    expect(await screen.findByRole('button', { name: /usbserial-0001/ })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
+    // Only the roaster in use shows, and there is nothing to refresh.
+    await Promise.resolve();
+    expect(screen.queryByRole('button', { name: /usbserial-0001/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Refresh' })).not.toBeInTheDocument();
   });
 
   it('switches between Guided and Full control', async () => {

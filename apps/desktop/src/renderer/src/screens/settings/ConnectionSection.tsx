@@ -89,6 +89,23 @@ export function ConnectionSection() {
       }
     });
   };
+  const rows: readonly { target: ConnectTarget; label: string; detail?: string }[] = [
+    ...ports.map((port) => ({
+      target: { kind: 'serial', path: port.path } as const,
+      label: port.path,
+      detail: port.manufacturer,
+    })),
+    { target: SIMULATOR, label: 'Simulator', detail: 'Practice without a roaster' },
+  ];
+  // While a roaster is in use, only its row shows: the rest of the list is noise until Disconnect.
+  const shownRows = inUse
+    ? [
+        rows.find((row) => sameTarget(inUse, row.target)) ?? {
+          target: inUse,
+          label: inUse.kind === 'serial' ? inUse.path : 'Simulator',
+        },
+      ]
+    : rows;
   const select = (to: ConnectTarget) => {
     setError(undefined);
     save({ connection: to });
@@ -100,40 +117,33 @@ export function ConnectionSection() {
         <h2 id="connection-heading" className="text-heading">
           Roaster
         </h2>
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={<RefreshCw aria-hidden="true" />}
-          onClick={refresh}
-          disabled={!idle}
-        >
-          Refresh
-        </Button>
+        {inUse ? null : (
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<RefreshCw aria-hidden="true" />}
+            onClick={refresh}
+            disabled={!idle}
+          >
+            Refresh
+          </Button>
+        )}
       </div>
       <ul aria-label="Roasters" className="flex flex-col gap-2">
-        {ports.map((port) => (
+        {shownRows.map((row) => (
           <TargetRow
-            key={port.path}
-            label={port.path}
-            detail={detailFor({ kind: 'serial', path: port.path }, port.manufacturer)}
-            selected={sameTarget(marked, { kind: 'serial', path: port.path })}
+            key={row.target.kind === 'serial' ? row.target.path : 'simulator'}
+            label={row.label}
+            detail={detailFor(row.target, row.detail)}
+            selected={sameTarget(marked, row.target)}
             onSelect={() => {
-              select({ kind: 'serial', path: port.path });
+              select(row.target);
             }}
             disabled={!idle}
           />
         ))}
-        <TargetRow
-          label="Simulator"
-          detail={detailFor(SIMULATOR, 'Practice without a roaster')}
-          selected={sameTarget(marked, SIMULATOR)}
-          onSelect={() => {
-            select(SIMULATOR);
-          }}
-          disabled={!idle}
-        />
       </ul>
-      {ports.length === 0 ? (
+      {ports.length === 0 && !inUse ? (
         <p className="text-label text-ink-muted">
           No serial ports found · plug in the roaster, then Refresh
         </p>
