@@ -1,6 +1,7 @@
 // Composition root: wires core, drivers, logging and IPC (docs/spec/architecture.md).
 import { serializeError } from '@roastpilot/core';
 import { listSerialPorts } from '@roastpilot/drivers';
+import { drizzleOn, openDatabase, SqliteRoastRepository } from '@roastpilot/storage';
 import { IPC_CHANNELS } from '@roastpilot/shared';
 import { app, BrowserWindow, Menu, shell } from 'electron';
 import { join } from 'node:path';
@@ -8,6 +9,7 @@ import { buildAppMenu } from './app-menu';
 import { createAppServices } from './app-services';
 import { installCrashHandlers } from './crash-handlers';
 import { createDriver } from './driver-factory';
+import { unavailableRepository } from './history/unavailable-repository';
 import { broadcast, registerIpcHandlers, registerIpcListener } from './ipc';
 import { createIpcHandlers, handleRendererLog, withErrorLogging } from './ipc-handlers';
 import { createAppLogger } from './logging/app-logger';
@@ -40,12 +42,23 @@ async function openLogFolder(): Promise<void> {
   if (failure) throw new Error(`Couldn't open the log folder: ${failure}`);
 }
 
-const { session, roast, settings, snapshot } = createAppServices({
+// Saved roasts (docs/spec/data-model.md). Without a database the app still roasts; History says why.
+const storageLogger = logger.child('storage');
+const database = openDatabase(join(app.getPath('userData'), 'roastpilot.db'), storageLogger);
+const roasts = database.ok
+  ? new SqliteRoastRepository(drizzleOn(database.value), storageLogger)
+  : unavailableRepository(
+      database.error.kind === 'storage-failed' ? database.error.message : 'unavailable',
+    );
+
+const { session, roast, settings, history, recorder, snapshot } = createAppServices({
   clock: systemClock,
   logger,
   settingsStore: new JsonSettingsStore(join(app.getPath('userData'), 'settings.json'), {
     logger: logger.child('settings'),
   }),
+  roasts,
+  nowIso: () => new Date().toISOString(),
   publish: broadcast,
 });
 
@@ -69,6 +82,8 @@ app.on(
     logger,
     stop: async () => {
       await session.disconnect();
+      await recorder.flush();
+      if (database.ok) database.value.close();
       await logs.flush();
     },
     quit: () => {
@@ -125,6 +140,7 @@ app
           session,
           roast,
           settings,
+          history,
           snapshot,
           listPorts: () => listSerialPorts(),
           createDriver: (target) => createDriver(target, systemClock, logger.child('driver')),

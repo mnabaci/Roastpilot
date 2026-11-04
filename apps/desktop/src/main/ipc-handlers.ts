@@ -11,6 +11,7 @@ import {
   LogDaySchema,
   RendererLogEntrySchema,
   RoastActionSchema,
+  RoastIdSchema,
   SetOutputRequestSchema,
   SettingsSchema,
   type ConnectTarget,
@@ -19,6 +20,7 @@ import {
   type SerialPortInfo,
   type Snapshot,
 } from '@roastpilot/shared';
+import type { HistoryService } from './history/history-service';
 import type { SettingsService } from './settings/settings-service';
 
 export interface IpcDeps {
@@ -28,6 +30,7 @@ export interface IpcDeps {
   >;
   roast: Pick<ManualRoast, 'act'>;
   settings: Pick<SettingsService, 'get' | 'set'>;
+  history: Pick<HistoryService, 'list' | 'get' | 'delete'>;
   snapshot: () => Snapshot;
   listPorts: () => Promise<SerialPortInfo[]>;
   createDriver: (target: ConnectTarget) => RoasterDriver;
@@ -53,6 +56,7 @@ export function createIpcHandlers({
   session,
   roast,
   settings,
+  history,
   snapshot,
   listPorts,
   createDriver,
@@ -80,6 +84,9 @@ export function createIpcHandlers({
     [IPC_CHANNELS.listLogDays]: handler(() => logs.listDays()),
     [IPC_CHANNELS.readLogDay]: handler((payload) => logs.readDay(LogDaySchema.parse(payload))),
     [IPC_CHANNELS.openLogFolder]: handler(() => logs.openFolder()),
+    [IPC_CHANNELS.listRoasts]: handler(() => history.list()),
+    [IPC_CHANNELS.getRoast]: handler((payload) => history.get(RoastIdSchema.parse(payload))),
+    [IPC_CHANNELS.deleteRoast]: handler((payload) => history.delete(RoastIdSchema.parse(payload))),
   };
 }
 

@@ -16,6 +16,7 @@ import {
   type RoastActionError,
   type RoastState,
 } from './roast';
+import type { RoastDetail, RoastId, RoastSummary, StorageError } from './saved-roast';
 import type { Screen } from './screen';
 import type { Settings, SettingsWriteError } from './settings';
 import type { AcknowledgeError, SafetyEvent } from './safety-event';
@@ -42,6 +43,10 @@ export const IPC_CHANNELS = {
   logEntries: 'logs:entries',
   openLogFolder: 'logs:open-folder',
   navigate: 'app:navigate',
+  listRoasts: 'history:list',
+  getRoast: 'history:get',
+  deleteRoast: 'history:delete',
+  roastsChanged: 'history:changed',
 } as const;
 
 /** Everything a window needs when it opens or reloads mid-roast. */
@@ -62,6 +67,7 @@ export interface IpcEventPayloads {
   [IPC_CHANNELS.roast]: RoastState;
   [IPC_CHANNELS.logEntries]: LogRecord[];
   [IPC_CHANNELS.navigate]: Screen;
+  [IPC_CHANNELS.roastsChanged]: { id: RoastId };
 }
 export type IpcEventChannel = keyof IpcEventPayloads;
 
@@ -118,6 +124,16 @@ export interface LogsApi {
   openLogFolder(): Promise<void>;
 }
 
+/** Saved roasts (docs/spec/ui.md, History screen). */
+export interface HistoryApi {
+  /** Newest first; an empty list when storage can't be read (logged in main). */
+  listRoasts(): Promise<RoastSummary[]>;
+  getRoast(id: RoastId): Promise<Result<RoastDetail, StorageError>>;
+  deleteRoast(id: RoastId): Promise<Result<void, StorageError>>;
+  /** A roast was saved, finished or deleted. */
+  onRoastsChanged(listener: (change: { id: RoastId }) => void): Unsubscribe;
+}
+
 /** The window itself: what it needs when it opens, and where the app menu sends it. */
 export interface AppApi {
   getSnapshot(): Promise<Snapshot>;
@@ -127,4 +143,4 @@ export interface AppApi {
 
 /** The typed API the preload script exposes to the renderer as `window.roastpilot`. */
 export interface RoastpilotApi
-  extends RoasterApi, SafetyApi, RoastApi, SettingsApi, LogsApi, AppApi {}
+  extends RoasterApi, SafetyApi, RoastApi, SettingsApi, LogsApi, HistoryApi, AppApi {}

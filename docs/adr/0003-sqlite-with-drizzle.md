@@ -1,6 +1,6 @@
 # 0003: Local SQLite with Drizzle
 
-Status: accepted
+Status: accepted (driver superseded by [0010](0010-node-sqlite.md))
 Date: 2026-11-02
 
 ## Context

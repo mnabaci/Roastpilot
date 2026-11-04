@@ -211,16 +211,13 @@ importers:
       '@roastpilot/shared':
         specifier: workspace:*
         version: link:../shared
-      better-sqlite3:
-        specifier: ^13.0.3
-        version: 13.0.3
       drizzle-orm:
         specifier: ^0.45.4
         version: 0.45.4(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
     devDependencies:
-      '@types/better-sqlite3':
-        specifier: ^9.6.0
-        version: 9.6.0
       '@types/node':
         specifier: ^26.6.6
         version: 26.6.6
@@ -5998,6 +5995,7 @@ snapshots:
   '@types/better-sqlite3@9.6.0':
     dependencies:
       '@types/node': 26.6.6
+    optional: true
 
   '@types/cacheable-request@6.0.3':
     dependencies:
@@ -6458,6 +6456,7 @@ snapshots:
   better-sqlite3@13.0.3:
     dependencies:
       node-addon-api: 8.3.0
+    optional: true
 
   bidi-js@1.1.0:
     dependencies:

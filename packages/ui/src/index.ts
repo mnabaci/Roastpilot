@@ -10,3 +10,5 @@ export { RoastChart, type RoastChartProps } from './components/RoastChart';
 export type { ChartLayer, ChartMarker, ChartPoint } from './components/roast-chart/chart-layer';
 export { formatClock, formatNumber } from './lib/format';
 export { TextField, type TextFieldProps } from './components/TextField';
+export { RoastList, type RoastListItem, type RoastListProps } from './components/RoastList';
+export { SelectField, type SelectFieldProps } from './components/SelectField';

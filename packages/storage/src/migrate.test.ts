@@ -1,0 +1,58 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
+import { describe, expect, it } from 'vitest';
+import { migrate, MIGRATIONS } from './migrate';
+
+const tables = (db: DatabaseSync) =>
+  (
+    db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name").all() as {
+      name: string;
+    }[]
+  ).map((row) => row.name);
+const version = (db: DatabaseSync) =>
+  (db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version;
+
+describe('migrate', () => {
+  it('lists every migration drizzle-kit generated, in journal order', () => {
+    const journal = JSON.parse(
+      readFileSync(join(import.meta.dirname, 'migrations/meta/_journal.json'), 'utf8'),
+    ) as { entries: { tag: string }[] };
+    expect(MIGRATIONS.map((m) => m.tag)).toEqual(journal.entries.map((e) => e.tag));
+  });
+
+  it('builds an empty database, and does nothing the second time', () => {
+    const db = new DatabaseSync(':memory:');
+    expect(migrate(db)).toEqual({ ok: true, value: { applied: ['0000_roasts'] } });
+    expect(tables(db)).toEqual(expect.arrayContaining(['roast_events', 'roast_samples', 'roasts']));
+    expect(version(db)).toBe(MIGRATIONS.length);
+    expect(migrate(db)).toEqual({ ok: true, value: { applied: [] } });
+  });
+
+  it('applies only the migrations a database is missing, keeping its data', () => {
+    const db = new DatabaseSync(':memory:');
+    const first = [{ tag: 'a', sql: 'CREATE TABLE a (x INTEGER);' }];
+    migrate(db, first);
+    db.exec('INSERT INTO a VALUES (1)');
+    const result = migrate(db, [...first, { tag: 'b', sql: 'ALTER TABLE a ADD COLUMN y TEXT;' }]);
+    expect(result).toEqual({ ok: true, value: { applied: ['b'] } });
+    expect(db.prepare('SELECT x, y FROM a').all()).toEqual([{ x: 1, y: null }]);
+  });
+
+  it('a failing migration rolls back and says which one', () => {
+    const db = new DatabaseSync(':memory:');
+    const result = migrate(db, [{ tag: 'bad', sql: 'CREATE TABLE ok (x); NOT SQL;' }]);
+    expect(result).toMatchObject({ ok: false, error: { kind: 'storage-failed' } });
+    expect(!result.ok && result.error.kind === 'storage-failed' && result.error.message).toMatch(
+      /^Migration bad:/,
+    );
+    expect(tables(db)).not.toContain('ok');
+    expect(version(db)).toBe(0);
+  });
+
+  it('refuses a database from a newer app', () => {
+    const db = new DatabaseSync(':memory:');
+    db.exec('PRAGMA user_version = 99');
+    expect(migrate(db)).toMatchObject({ ok: false, error: { kind: 'storage-failed' } });
+  });
+});

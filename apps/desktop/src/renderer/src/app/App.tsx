@@ -1,5 +1,6 @@
 import type { Screen } from '@roastpilot/shared';
 import { useEffect, useState, type ReactNode } from 'react';
+import { HistoryScreen } from '../screens/history/HistoryScreen';
 import { LogsScreen } from '../screens/logs/LogsScreen';
 import { RoastScreen } from '../screens/roast/RoastScreen';
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
@@ -29,6 +30,7 @@ export function App() {
         }}
       />
     ),
+    history: () => <HistoryScreen />,
     settings: () => <SettingsScreen />,
     logs: () => <LogsScreen />,
   };

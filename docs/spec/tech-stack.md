@@ -14,15 +14,15 @@ the `package.json` files and `pnpm-lock.yaml`.
 | UI state           | Zustand                                                             | Small stores fed by IPC events, little boilerplate                            |
 | IPC                | Typed contract in `packages/shared` + zod                           | One source of truth for channels; payloads validated at the boundary          |
 | Serial             | serialport                                                          | Used only inside `SerialTransport`                                            |
-| Database           | better-sqlite3 + Drizzle                                            | Typed schema and generated migrations behind the repositories                 |
+| Database           | `node:sqlite` + Drizzle (ADR 0010)                                  | Typed schema and generated migrations behind the repositories                 |
 | Tests              | Vitest + Testing Library (jsdom)                                    | Logic tested in Node, React components in jsdom; v8 coverage                  |
 | Language           | TypeScript 6, strict                                                | TypeScript 7 waits until typescript-eslint supports it                        |
 | Code quality       | ESLint 9 (type-aware, boundaries, React hooks, jsx-a11y) + Prettier | Boundaries, hook rules, accessibility and token-only colours enforced by lint |
 | Commits            | commitlint + husky + lint-staged                                    | Conventional commits, checks before every commit                              |
 | Dependencies       | Dependabot, weekly, grouped                                         | Small regular updates instead of big upgrades                                 |
 
-`serialport` and `better-sqlite3` are native modules. `pnpm dev` runs electron-builder's
-`install-app-deps` first, which rebuilds them for Electron.
+`serialport` is a native module. `pnpm dev` runs electron-builder's `install-app-deps` first,
+which rebuilds it for Electron. Storage uses the built-in `node:sqlite`, so it needs no build.
 
 ## TypeScript setup
 

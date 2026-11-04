@@ -1,10 +1,18 @@
-import { ManualClock, silentLogger, type SettingsStore } from '@roastpilot/core';
+import {
+  DEFAULT_COOLING_MS,
+  ManualClock,
+  silentLogger,
+  type RoastRepository,
+  type SettingsStore,
+} from '@roastpilot/core';
 import { SimulatedDriver } from '@roastpilot/drivers';
+import { drizzleOn, openDatabase, SqliteRoastRepository } from '@roastpilot/storage';
 import { DEFAULT_SETTINGS, IPC_CHANNELS, ok } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { createAppServices } from './app-services';
+import { unavailableRepository } from './history/unavailable-repository';
 
-function setup() {
+function setup(roasts: RoastRepository = unavailableRepository('not in this test')) {
   const clock = new ManualClock();
   const published: [string, unknown][] = [];
   const settingsStore: SettingsStore = {
@@ -15,6 +23,8 @@ function setup() {
     clock,
     logger: silentLogger,
     settingsStore,
+    roasts,
+    nowIso: () => '2026-11-04T10:00:00.000Z',
     publish: (channel, payload) => {
       published.push([channel, payload]);
     },
@@ -69,5 +79,34 @@ describe('createAppServices', () => {
           c === IPC_CHANNELS.safetyEvent && (p as { rule?: string }).rule === 'max-roast-time',
       ),
     ).toBe(true);
+  });
+
+  it('saves the roast from Preheat to cool end, and tells the windows', async () => {
+    const opened = openDatabase(':memory:', silentLogger);
+    if (!opened.ok) throw new Error('no database');
+    const roasts = new SqliteRoastRepository(drizzleOn(opened.value), silentLogger);
+    const { clock, services, published, sim } = setup(roasts);
+    await services.session.connect(sim, { kind: 'simulator' });
+    await services.roast.act('preheat');
+    await clock.runFor(5000);
+    await services.roast.act('start');
+    await clock.runFor(10_000);
+    await services.roast.act('drop');
+    await clock.runFor(DEFAULT_COOLING_MS + 2000);
+    await services.recorder.flush();
+
+    const [saved] = await services.history.list();
+    expect(saved).toMatchObject({ id: 1, endedAt: '2026-11-04T10:00:00.000Z', dropTimeS: 10 });
+    const detail = await services.history.get(1);
+    expect(detail.ok && detail.value.events.map((e) => e.kind)).toEqual([
+      'charge',
+      'drop',
+      'cool-end',
+    ]);
+    expect(detail.ok && detail.value.samples[0]?.tS).toBeLessThan(0);
+    expect(published.filter(([c]) => c === IPC_CHANNELS.roastsChanged)).toEqual([
+      [IPC_CHANNELS.roastsChanged, { id: 1 }],
+      [IPC_CHANNELS.roastsChanged, { id: 1 }],
+    ]);
   });
 });

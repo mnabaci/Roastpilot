@@ -13,11 +13,10 @@
   "dependencies": {
     "@roastpilot/core": "workspace:*",
     "@roastpilot/shared": "workspace:*",
-    "better-sqlite3": "^13.0.3",
-    "drizzle-orm": "^0.45.4"
+    "drizzle-orm": "^0.45.4",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^26.6.6",
     "drizzle-kit": "^0.31.11"
   }
