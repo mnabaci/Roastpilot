@@ -128,13 +128,27 @@ describe('Tc4SkywalkerDriver', () => {
       ['heater', 43, 'OT1;45'],
       ['fan', 150, 'OT2;100'],
       ['cooling', 100, 'COOL;100'],
-      ['filter', 50, 'FILTER;50'],
+      ['filter', 2, 'FILTER;2'],
       ['drum', 1, 'DRUM;1'],
       ['drum', 0, 'DRUM;0'],
     ])('sends %s %d as %s', async (channel, value, line) => {
       const { transport, driver, run } = await connected();
       expect((await run(driver.setOutput(channel, value))).ok).toBe(true);
       expect(transport.sentLines()).toEqual([line]);
+    });
+
+    it('keeps the filter to levels 0–4 and cooling to 0 or 100, the only values the roaster takes', async () => {
+      const { transport, driver, run } = await connected();
+      await run(driver.setOutput('filter', 100));
+      await run(driver.setOutput('filter', 1));
+      await run(driver.setOutput('cooling', 60));
+      await run(driver.setOutput('cooling', 30));
+      expect(transport.sent.map((s) => s.line)).toEqual([
+        'FILTER;4',
+        'FILTER;1',
+        'COOL;100',
+        'COOL;0',
+      ]);
     });
 
     it('rejects unknown channels and the sensor without sending anything', async () => {

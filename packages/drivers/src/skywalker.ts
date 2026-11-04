@@ -5,12 +5,17 @@ export const SKYWALKER_PROTOCOL_VERSION = 1;
 
 const percent = { kind: 'output', unit: 'percent', min: 0, max: 100, step: 5 } as const;
 
+/**
+ * Values the roaster accepts (SkywalkerRoaster README, Controller message): heater and fan 0–100
+ * in steps of 5, cooling 0 or 100, filter levels 0–4. Anything else can stop it acting on the fans
+ * until the original controller is reconnected (seen with FILTER;100 on 2026-11-04).
+ */
 export const SKYWALKER_CHANNELS: readonly Channel[] = [
   { id: 'bt', kind: 'sensor', unit: 'celsius' },
   { id: 'heater', ...percent },
   { id: 'fan', ...percent },
-  { id: 'cooling', ...percent },
-  { id: 'filter', ...percent },
+  { id: 'cooling', ...percent, step: 100 },
+  { id: 'filter', kind: 'output', unit: 'level', min: 0, max: 4, step: 1 },
   { id: 'drum', kind: 'output', unit: 'on-off', min: 0, max: 1, step: 1 },
 ];
 

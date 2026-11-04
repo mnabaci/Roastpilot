@@ -192,6 +192,18 @@ describe('RoastScreen', () => {
     expect(api.setOutput).toHaveBeenCalledWith({ channel: 'drum', value: 0 });
   });
 
+  it('the filter fan switch shows the reading and overrides it', async () => {
+    const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
+      ...connected,
+      roast: roast('preheat'),
+      readings: [reading({ filter: 1 })],
+    });
+    const filter = screen.getByRole('button', { name: /Filter/ });
+    expect(filter).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(filter);
+    expect(api.setOutput).toHaveBeenCalledWith({ channel: 'filter', value: 0 });
+  });
+
   it('heater on with the drum off says so, without blocking', () => {
     renderApp(<RoastScreen onConnect={onConnect} />, {
       ...connected,

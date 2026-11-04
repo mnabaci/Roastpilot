@@ -54,12 +54,12 @@ describe('ManualRoast', () => {
     });
   });
 
-  it('Preheat turns the drum on and starts a new roast', async () => {
+  it('Preheat turns the drum and filter fan on and starts a new roast', async () => {
     const { clock, roast, sent, signals, act } = setup();
     clock.advance(5_000);
     await act('preheat');
     expect(roast.state).toMatchObject({ phase: 'preheat', preheatAtMs: 5_000 });
-    expect(sent).toEqual(['drum=1']);
+    expect(sent).toEqual(['drum=1', 'filter=1']);
     expect(signals).toEqual(['new-roast']);
   });
 
@@ -88,7 +88,15 @@ describe('ManualRoast', () => {
       { kind: 'first-crack', atMs: 660_000, bt: 196 },
       { kind: 'drop', atMs: 730_000, bt: 204 },
     ]);
-    expect(sent).toEqual(['drum=1', 'drum=1', 'heater=0', 'fan=100', 'cooling=100']);
+    expect(sent).toEqual([
+      'drum=1',
+      'filter=1',
+      'drum=1',
+      'filter=1',
+      'heater=0',
+      'fan=100',
+      'cooling=100',
+    ]);
     expect(signals).toEqual(['new-roast', 'roast-started', 'roast-ended']);
   });
 
@@ -99,16 +107,16 @@ describe('ManualRoast', () => {
     await clock.runFor(DEFAULT_COOLING_MS);
     expect(roast.state.phase).toBe('done');
     expect(roast.state.events.at(-1)?.kind).toBe('cool-end');
-    expect(sent).toEqual(['heater=0', 'fan=0', 'cooling=0', 'drum=0']);
+    expect(sent).toEqual(['heater=0', 'fan=0', 'cooling=0', 'drum=0', 'filter=0']);
     await act('preheat');
     expect(roast.state).toMatchObject({ phase: 'preheat', events: [], chargedAtMs: null });
   });
 
-  it('lets Full control start without Preheat, drum still on', async () => {
+  it('lets Full control start without Preheat, drum and filter fan still on', async () => {
     const { roast, sent, act } = setup();
     await act('start');
     expect(roast.state.phase).toBe('roasting');
-    expect(sent).toEqual(['drum=1']);
+    expect(sent).toEqual(['drum=1', 'filter=1']);
   });
 
   it('Cancel preheat turns everything off and goes back to Ready', async () => {
@@ -117,7 +125,7 @@ describe('ManualRoast', () => {
     sent.length = 0;
     expect(await roast.act('cancel-preheat')).toEqual(ok(undefined));
     expect(roast.state).toMatchObject({ phase: 'ready', preheatAtMs: null, events: [] });
-    expect(sent).toEqual(['heater=0', 'fan=0', 'cooling=0', 'drum=0']);
+    expect(sent).toEqual(['heater=0', 'fan=0', 'cooling=0', 'drum=0', 'filter=0']);
     expect(signals).toEqual(['new-roast']);
     await act('preheat');
     expect(roast.state.phase).toBe('preheat');
@@ -209,8 +217,8 @@ describe('ManualRoast', () => {
     const { roast, sent, entries, act } = setup({ failOutputs: true });
     await act('start', 'drop');
     expect(roast.state.phase).toBe('cooling');
-    expect(sent).toEqual(['drum=1', 'heater=0', 'fan=100', 'cooling=100']);
-    expect(entries.filter((e) => e.event === 'roast.output-failed')).toHaveLength(4);
+    expect(sent).toEqual(['drum=1', 'filter=1', 'heater=0', 'fan=100', 'cooling=100']);
+    expect(entries.filter((e) => e.event === 'roast.output-failed')).toHaveLength(5);
   });
 
   it('a cooling timer from an earlier roast never ends a later one', async () => {

@@ -50,6 +50,7 @@ export const CONNECTED: ConnectionState = {
     { id: 'heater', ...percent },
     { id: 'fan', ...percent },
     { id: 'cooling', ...percent },
+    { id: 'filter', ...percent },
     { id: 'drum', kind: 'output', unit: 'on-off', min: 0, max: 1, step: 1 },
   ],
 };

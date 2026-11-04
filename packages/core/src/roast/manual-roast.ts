@@ -20,7 +20,7 @@ export const DEFAULT_COOLING_MS = 4 * 60_000;
 const ALLOWED_FROM: Readonly<Record<RoastAction, readonly RoastPhase[]>> = {
   preheat: ['ready', 'done'],
   'cancel-preheat': ['preheat'],
-  // Full control may skip Preheat; the drum still comes on.
+  // Full control may skip Preheat; the drum and filter fan still come on.
   start: ['ready', 'preheat'],
   'first-crack': ['roasting'],
   drop: ['roasting', 'development'],
@@ -30,7 +30,15 @@ const ALLOWED_FROM: Readonly<Record<RoastAction, readonly RoastPhase[]>> = {
 
 type Outputs = readonly (readonly [channel: string, value: number])[];
 
-const DRUM_ON: Outputs = [['drum', 1]];
+/**
+ * Drum turning and smoke filter fan running from Preheat (or Start) until cooling ends. The filter
+ * takes levels 0–4; 1 is what the Artisan configs for this sketch send.
+ */
+export const FILTER_ON = 1;
+const ROAST_ON: Outputs = [
+  ['drum', 1],
+  ['filter', FILTER_ON],
+];
 const DROP_OUTPUTS: Outputs = [
   ['heater', 0],
   ['fan', 100],
@@ -41,6 +49,7 @@ const ALL_OFF: Outputs = [
   ['fan', 0],
   ['cooling', 0],
   ['drum', 0],
+  ['filter', 0],
 ];
 
 export interface ManualRoastDeps {
@@ -105,7 +114,7 @@ export class ManualRoast {
     preheat: async (nowMs) => {
       this.#deps.onNewRoast();
       this.#set({ ...READY, phase: 'preheat', preheatAtMs: nowMs });
-      await this.#send(DRUM_ON);
+      await this.#send(ROAST_ON);
     },
     // Back to Ready with everything off; the readings stay on the chart.
     'cancel-preheat': async () => {
@@ -120,7 +129,7 @@ export class ManualRoast {
         events: [this.#event('charge', nowMs)],
       });
       this.#deps.onRoastStarted();
-      await this.#send(DRUM_ON);
+      await this.#send(ROAST_ON);
     },
     'first-crack': (nowMs) => {
       this.#set({
