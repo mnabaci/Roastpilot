@@ -1,10 +1,12 @@
-import { useState, type ReactNode } from 'react';
+import type { Screen } from '@roastpilot/shared';
+import { useEffect, useState, type ReactNode } from 'react';
 import { LogsScreen } from '../screens/logs/LogsScreen';
 import { RoastScreen } from '../screens/roast/RoastScreen';
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { useConnection, useSync } from '../stores/use-stores';
 import { SafetyBanners } from './SafetyBanners';
-import { TopBar, type Screen } from './TopBar';
+import { useDeps } from './app-context';
+import { TopBar } from './TopBar';
 
 /** The app shell: top bar, safety banners, and the current screen. */
 export function App() {
@@ -15,6 +17,9 @@ export function App() {
     (s) => s.connection.status === 'connected' || s.connection.status === 'lost',
   );
   const [screen, setScreen] = useState<Screen | undefined>();
+  const { api } = useDeps();
+  // The app menu (Settings… ⌘,) opens screens too.
+  useEffect(() => api.onNavigate(setScreen), [api]);
   const shown = screen ?? (connected ? 'roast' : 'settings');
   const screens: Readonly<Record<Screen, () => ReactNode>> = {
     roast: () => (

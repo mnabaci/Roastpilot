@@ -16,6 +16,7 @@ import {
   type RoastActionError,
   type RoastState,
 } from './roast';
+import type { Screen } from './screen';
 import type { Settings, SettingsWriteError } from './settings';
 import type { AcknowledgeError, SafetyEvent } from './safety-event';
 
@@ -40,6 +41,7 @@ export const IPC_CHANNELS = {
   readLogDay: 'logs:read-day',
   logEntries: 'logs:entries',
   openLogFolder: 'logs:open-folder',
+  navigate: 'app:navigate',
 } as const;
 
 /** Everything a window needs when it opens or reloads mid-roast. */
@@ -59,6 +61,7 @@ export interface IpcEventPayloads {
   [IPC_CHANNELS.safetyEvent]: SafetyEvent;
   [IPC_CHANNELS.roast]: RoastState;
   [IPC_CHANNELS.logEntries]: LogRecord[];
+  [IPC_CHANNELS.navigate]: Screen;
 }
 export type IpcEventChannel = keyof IpcEventPayloads;
 
@@ -115,9 +118,11 @@ export interface LogsApi {
   openLogFolder(): Promise<void>;
 }
 
-/** Everything a window needs when it opens. */
+/** The window itself: what it needs when it opens, and where the app menu sends it. */
 export interface AppApi {
   getSnapshot(): Promise<Snapshot>;
+  /** The app menu asked for a screen (Settings… ⌘,). */
+  onNavigate(listener: (screen: Screen) => void): Unsubscribe;
 }
 
 /** The typed API the preload script exposes to the renderer as `window.roastpilot`. */
