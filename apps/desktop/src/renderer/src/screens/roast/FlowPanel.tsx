@@ -60,8 +60,11 @@ export function FlowPanel({
           {step.primary.label}
         </Button>
       ) : null}
+      {/* The hint explains the primary action, so it sits right under it. */}
+      <p className="text-label text-ink-muted">{hint}</p>
       {step.secondary ? (
         <Button
+          variant={step.secondary.quiet ? 'ghost' : 'secondary'}
           onClick={() => {
             if (step.secondary) act(step.secondary.action);
           }}
@@ -69,7 +72,6 @@ export function FlowPanel({
           {step.secondary.label}
         </Button>
       ) : null}
-      <p className="text-label text-ink-muted">{hint}</p>
     </div>
   );
 }
