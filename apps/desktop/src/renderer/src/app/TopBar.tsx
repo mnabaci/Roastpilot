@@ -1,25 +1,17 @@
-import type { ConnectionState, RoastPhase, Screen } from '@roastpilot/shared';
-import { Badge, Button } from '@roastpilot/ui';
+import type { ConnectionState, Screen } from '@roastpilot/shared';
+import { Badge, Button, Mark } from '@roastpilot/ui';
 import { OctagonX } from 'lucide-react';
 import { useConnection, useRoast } from '../stores/use-stores';
 import { useDeps } from './app-context';
 import { useRun } from '../features/use-run';
 import { targetLabel } from './connection-label';
+import { PHASE_LABEL } from './phase-label';
 
 const CONNECTION_LABEL: Readonly<Record<ConnectionState['status'], string>> = {
   disconnected: 'Not connected',
   connecting: 'Connecting…',
   connected: 'Connected',
   lost: 'Connection lost',
-};
-
-const PHASE_LABEL: Readonly<Record<RoastPhase, string>> = {
-  ready: 'Ready',
-  preheat: 'Preheat',
-  roasting: 'Roasting',
-  development: 'Development',
-  cooling: 'Cooling',
-  done: 'Done',
 };
 
 const SCREENS: readonly { id: Screen; label: string }[] = [
@@ -47,6 +39,7 @@ export function TopBar({
   const phase = useRoast((s) => s.roast.phase);
   return (
     <header className="flex items-center gap-4 border-b border-border px-6 py-3">
+      <Mark withName />
       <nav aria-label="Screens" className="flex gap-1">
         {SCREENS.map(({ id, label }) => (
           <Button

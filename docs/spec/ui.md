@@ -56,7 +56,7 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 ## History screen
 
 - List of roasts, newest first: date and time, total time (charge to drop), first crack time, drop temp; Unfinished when cooling never ended.
-- Open a roast to see its chart, stage times and events; under the stats, a small events table (secondary text): Event · Time · BT · RoR · Heater · Fan for Charge, Turning point, First crack, Drop and Cool end (or End), with the values read from the saved samples at each event, so older roasts get it too. A dash where there is no value; Compare overlays one other roast, faded, aligned at charge.
+- Open a roast to see its chart, stage times and events; under the chart, a small events table (secondary text): Event · Time · BT · RoR · Heater · Fan for Charge, Turning point, First crack, Drop and Cool end (or End), with the values read from the saved samples at each event, so older roasts get it too. A dash where there is no value; Compare overlays one other roast, faded, aligned at charge.
 - Delete asks once ("Delete this roast? · can't be undone"), then the list moves to the next roast.
 - Later milestones: bean, profile, rating and star columns; filter by bean, profile or favourites; Make profile from this; Export CSV.
 
