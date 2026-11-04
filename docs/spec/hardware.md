@@ -54,15 +54,19 @@ Comma-separated: `0.00,<temp>,<temp>,<heater>,<fan>,0`, for example `0.00,180.25
 
 - **Same channels:** `bt` (°C, read), `heater` and `fan` (0–100, step 5), `cooling` (0 or 100), `filter` (levels 0–4) and `drum` (on/off), with the same safe-stop sequence.
 - **Same sketch behaviour:** keeps every command, 10 s watchdog switches everything off; `ESTOP` above 300 °C; reports protocol version `1`.
-- **Thermal model:** one temperature, updated in 100 ms steps from the injected clock. Heater adds heat; loss to the room grows with the gap to ambient, the fan and the cooling fan.
+- **Thermal model:** the drum's temperature, updated in 100 ms steps from the injected clock. Heater adds heat; loss to the room grows with the gap to ambient, the fan and the cooling fan.
+- **Beans:** `chargeBeans()` puts room-temperature beans in the drum and `dumpBeans()` takes them out. With beans in, the drum heats them and loses that heat, and the probe follows the beans with a lag, so BT dips at charge and turns, like a real roast (fitted to batch 2 of 2026-11-04: charge at 181 °C, turning point near 90 °C after about 1:10). Without beans the probe reads the drum.
 
-| Constant         | Default   | Effect                                       |
-| ---------------- | --------- | -------------------------------------------- |
-| Ambient          | 22 °C     | Start temperature and where it cools back to |
-| Heat gain        | 1.5 °C/s  | Rise per second at heater 100, before losses |
-| Room loss        | 0.0054 /s | Heater 100, fan 0 levels off near 300 °C     |
-| Fan loss factor  | 1.0       | Fan 100 doubles the loss                     |
-| Cool loss factor | 3.0       | Cooling 100 adds three times the loss        |
+| Constant         | Default   | Effect                                          |
+| ---------------- | --------- | ----------------------------------------------- |
+| Ambient          | 22 °C     | Start temperature and where it cools back to    |
+| Heat gain        | 1.5 °C/s  | Rise per second at heater 100, before losses    |
+| Room loss        | 0.0054 /s | Heater 100, fan 0 levels off near 300 °C        |
+| Fan loss factor  | 1.0       | Fan 100 doubles the loss                        |
+| Cool loss factor | 3.0       | Cooling 100 adds three times the loss           |
+| Bean gain        | 0.01 /s   | Beans close 1 % of the gap to the drum a second |
+| Drum to beans    | 0.002 /s  | What the drum loses to the beans                |
+| Probe lag        | 40 s      | How slowly the probe follows the beans          |
 
 Hand-picked for now; refit from the first real manual roast.
 
