@@ -12,6 +12,7 @@ import {
 import {
   IPC_CHANNELS,
   type ConnectionState,
+  type RoastState,
   type IpcEventChannel,
   type IpcEventPayloads,
   type Snapshot,
@@ -28,6 +29,8 @@ export interface AppServicesDeps {
   nowIso: () => string;
   /** Every connection change, besides the windows (the power guard). */
   onConnectionChange: (state: ConnectionState) => void;
+  /** Every roast change, besides the windows (the power guard). */
+  onRoastChange?: (state: RoastState) => void;
   /** Sends an event to every window. */
   publish: <C extends IpcEventChannel>(channel: C, payload: IpcEventPayloads[C]) => void;
 }
@@ -49,6 +52,7 @@ export function createAppServices({
   roasts,
   nowIso,
   onConnectionChange,
+  onRoastChange = () => undefined,
   publish,
 }: AppServicesDeps): AppServices {
   const history = new ReadingHistory();
@@ -107,6 +111,7 @@ export function createAppServices({
     },
     onChange: (state) => {
       recorder.onRoastChange(state);
+      onRoastChange(state);
       publish(IPC_CHANNELS.roast, state);
     },
     onNewRoast: () => {

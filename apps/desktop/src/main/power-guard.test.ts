@@ -1,5 +1,5 @@
 import { createLogger } from '@roastpilot/core';
-import type { LogEntry } from '@roastpilot/shared';
+import { READY_ROAST, type LogEntry } from '@roastpilot/shared';
 import { describe, expect, it, vi } from 'vitest';
 import { createPowerGuard } from './power-guard';
 
@@ -48,6 +48,30 @@ describe('createPowerGuard', () => {
       'power.suspend',
       'power.resume',
     ]);
+  });
+
+  it('keeps the screen on from Preheat until cooling ends, and through the roaster cool-down', () => {
+    const { guard, blocker, entries } = setup();
+    guard.onRoast({ ...READY_ROAST });
+    expect(blocker.start).not.toHaveBeenCalled();
+    guard.onRoast({ ...READY_ROAST, phase: 'preheat' });
+    guard.onRoast({ ...READY_ROAST, phase: 'roasting' });
+    guard.onRoast({ ...READY_ROAST, phase: 'cooling' });
+    expect(blocker.start).toHaveBeenCalledExactlyOnceWith('prevent-display-sleep');
+    guard.onRoast({ ...READY_ROAST, phase: 'done', roasterCoolingSinceMs: 1 });
+    expect(blocker.stop).not.toHaveBeenCalled();
+    guard.onRoast({ ...READY_ROAST, phase: 'done' });
+    expect(blocker.stop).toHaveBeenCalledExactlyOnceWith(7);
+    expect(entries.map((e) => e.event)).toEqual(['power.screen-on-on', 'power.screen-on-off']);
+  });
+
+  it('the screen and the computer are held apart: disconnecting keeps the screen on mid-roast', () => {
+    const { guard, blocker } = setup();
+    blocker.start.mockReturnValueOnce(1).mockReturnValueOnce(2);
+    guard.onConnection({ status: 'connected', target: SIM, channels: [] });
+    guard.onRoast({ ...READY_ROAST, phase: 'roasting' });
+    guard.onConnection({ status: 'disconnected' });
+    expect(blocker.stop).toHaveBeenCalledExactlyOnceWith(1);
   });
 
   it('a sleep with no roaster only logs', () => {

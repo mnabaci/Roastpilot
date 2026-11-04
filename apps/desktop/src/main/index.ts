@@ -52,7 +52,8 @@ const roasts = database.ok
       database.error.kind === 'storage-failed' ? database.error.message : 'unavailable',
     );
 
-// Asleep, nothing watches the roaster: stay awake while one is connected (docs/spec/safety.md).
+// Asleep, nothing watches the roaster: stay awake while one is connected, and keep the screen on
+// during a roast (docs/spec/safety.md).
 const power = createPowerGuard({
   blocker: powerSaveBlocker,
   emergencyStop: (rule) => {
@@ -71,6 +72,9 @@ const { session, roast, settings, history, recorder, snapshot } = createAppServi
   nowIso: () => new Date().toISOString(),
   onConnectionChange: (state) => {
     power.onConnection(state);
+  },
+  onRoastChange: (state) => {
+    power.onRoast(state);
   },
   publish: broadcast,
 });
