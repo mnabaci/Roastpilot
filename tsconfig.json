@@ -10,6 +10,7 @@
     "vitest.setup.dom.ts",
     ".claude/hooks/**/*.ts",
     "packages/ui/scripts/**/*.ts",
+    "apps/desktop/scripts/**/*.ts",
     "scripts/**/*.ts",
     "types/**/*.d.ts"
   ]

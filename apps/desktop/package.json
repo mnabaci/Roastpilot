@@ -12,7 +12,8 @@
     "preview": "electron-vite preview",
     "dist:mac": "electron-vite build && electron-builder --mac",
     "typecheck": "tsc --noEmit --composite false -p tsconfig.node.json && tsc --noEmit --composite false -p tsconfig.web.json",
-    "dist:win": "electron-vite build && electron-builder --win"
+    "dist:win": "electron-vite build && electron-builder --win",
+    "icon": "electron scripts/make-icon.ts"
   },
   "dependencies": {
     "lucide-react": "^1.66.0",

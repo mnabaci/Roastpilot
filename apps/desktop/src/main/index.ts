@@ -109,6 +109,12 @@ app.on(
   }),
 );
 
+/**
+ * The app icon (docs/spec/ui.md, Brand). Packaged builds get it from electron-builder; in
+ * development the Dock and the Windows taskbar would show Electron's, so set it here.
+ */
+const DEV_ICON = app.isPackaged ? undefined : join(app.getAppPath(), 'build', 'icon.png');
+
 function createWindow(): void {
   const win = new BrowserWindow({
     width: 1280,
@@ -116,6 +122,7 @@ function createWindow(): void {
     minWidth: 960,
     minHeight: 640,
     title: 'Roastpilot',
+    icon: DEV_ICON,
     backgroundColor: WINDOW_BACKGROUND,
     webPreferences: {
       preload: join(import.meta.dirname, '../preload/index.cjs'),
@@ -197,6 +204,7 @@ app
     powerMonitor.on('resume', () => {
       power.onResume();
     });
+    if (DEV_ICON) app.dock?.setIcon(DEV_ICON);
     createWindow();
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

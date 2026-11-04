@@ -8,7 +8,7 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 - The top bar and safety banners are fixed: they never scroll away, so Emergency stop is always on screen.
 - Each screen scrolls inside its own area; on Logs only the list of entries scrolls.
 - Nothing scrolls sideways or gets clipped from the minimum window (960 × 640) up to full screen: long text truncates, numbers fit their cards, rows wrap.
-- **Brand:** the Roastpilot mark (the design system's drum arcs on the heat slab) is the app icon in the Dock, the taskbar and the installers, and sits at the left of the top bar. The window title is "Roastpilot". In development the Dock shows the mark too; its name there stays "Electron", which macOS takes from the Electron bundle.
+- **Brand:** the Roastpilot mark (a dark coffee bean on an ember tile, its cut running end to end) is the app icon in the Dock, the taskbar and the installers, and sits at the left of the top bar. The window title is "Roastpilot". In development the Dock shows the mark too; its name there stays "Electron", which macOS takes from the Electron bundle.
 - **Roast strip:** on any screen but Roast, while a roast runs (Preheat to Cooling, or the roaster cool-down), a slim fixed row under the top bar shows what needs you first, then the numbers. When an action is due it leads, highlighted, as the flow panel names it ("Dump beans · Cooling 3:58 left"); only real prompts, never a guess. Otherwise it is quiet numbers: `Roasting · 7:42   BT 182.4 °C   RoR 8.1   Heater 60 %   Fan 40 %`. Clicking it opens Roast. Safety stays in the banners, never in the strip. It fits 960 × 640: numbers only, no hints.
 
 ## App menu
