@@ -8,66 +8,25 @@ import {
   type RoastAction,
   type RoastActionError,
   type RoastEvent,
-  type RoastPhase,
   type RoastState,
 } from '@roastpilot/shared';
 import type { Clock } from '../clock';
 import { silentLogger, type Logger } from '../logging/logger';
 import { serializeError } from '../logging/serialize-error';
-import { BEAN_TEMP } from '../safety/safety-rule';
-import { findChargePoint } from './charge-point';
 import { ALL_OFF, DROP_OUTPUTS, ROAST_ON, ROASTER_COOLING, type Outputs } from './roast-outputs';
-import { ROASTER_COOL_C, roasterCooldownCheck } from './roaster-cooldown';
-import { findTurningPoint } from './turning-point';
+import {
+  ALLOWED_FROM,
+  DEFAULT_OPTIONS,
+  EXTEND_COOLING_MS,
+  PHASE_OUTPUTS,
+  type RoastOptions,
+} from './roast-rules';
+import { ROASTER_COOL_C } from './roaster-cooldown';
+import { RoasterCooling } from './roaster-cooling';
+import { chargeFor, turningPointEvent } from './roast-detections';
 
 export { FILTER_ON } from './roast-outputs';
-
-/** Default cooling time; the Cooling time setting overrides it. */
-export const DEFAULT_COOLING_MS = 4 * 60_000;
-/** What +1 min adds to the cooling countdown. */
-export const EXTEND_COOLING_MS = 60_000;
-
-/** Which states each action may start from (docs/spec/manual-mode.md, Manual roast flow). */
-const ALLOWED_FROM: Readonly<Record<RoastAction, readonly RoastPhase[]>> = {
-  preheat: ['ready', 'done'],
-  // Full control may skip Preheat; the drum and filter fan still come on.
-  start: ['ready', 'preheat'],
-  'first-crack': ['roasting'],
-  drop: ['roasting', 'development'],
-  // Only with no roast running, so a roast in progress can't be wiped by accident.
-  clear: ['ready', 'done'],
-  // End roast / Finish cooling now: a normal stop, no heater lock (docs/spec/manual-mode.md).
-  end: ['preheat', 'roasting', 'development', 'cooling'],
-  'extend-cooling': ['cooling'],
-  'cool-roaster': ['ready', 'done'],
-  'stop-cooling-roaster': ['ready', 'done'],
-};
-
-/** What each phase keeps running, put back after a reconnect; never the heater above 0. */
-const PHASE_OUTPUTS: Readonly<Record<RoastPhase, Outputs>> = {
-  ready: [],
-  preheat: ROAST_ON,
-  roasting: ROAST_ON,
-  development: ROAST_ON,
-  cooling: [...DROP_OUTPUTS, ...ROAST_ON],
-  done: [],
-};
-
-/** The roast settings ManualRoast follows, read at the moment they matter. */
-export interface RoastOptions {
-  findChargePoint: boolean;
-  coolingMs: number;
-  coolRoasterAfter: boolean;
-}
-
-const DEFAULT_OPTIONS: RoastOptions = {
-  findChargePoint: true,
-  coolingMs: DEFAULT_COOLING_MS,
-  coolRoasterAfter: true,
-};
-
-/** Why the roaster cool-down ended, for the log. */
-type CooldownEnd = 'cooled' | 'gave-up' | 'stopped' | 'preheat' | 'safety-stop' | 'disconnected';
+export { DEFAULT_COOLING_MS, EXTEND_COOLING_MS, type RoastOptions } from './roast-rules';
 
 export interface ManualRoastDeps {
   clock: Clock;
@@ -96,6 +55,7 @@ export class ManualRoast {
   readonly #readings: () => readonly Reading[];
   readonly #logger: Logger;
   #state: RoastState = READY;
+  readonly #cooling: RoasterCooling;
   /** Bumped when cooling restarts or ends, so an old cooling timer can't end it later. */
   #coolingRun = 0;
 
@@ -104,6 +64,17 @@ export class ManualRoast {
     this.#options = deps.options ?? (() => DEFAULT_OPTIONS);
     this.#readings = deps.readings ?? (() => []);
     this.#logger = deps.logger ?? silentLogger;
+    this.#cooling = new RoasterCooling(
+      {
+        state: () => this.#state,
+        set: (state) => {
+          this.#set(state);
+        },
+        send: (outputs) => this.#send(outputs),
+        latestBt: () => deps.latestBt(),
+      },
+      this.#logger,
+    );
   }
 
   get state(): RoastState {
@@ -128,10 +99,7 @@ export class ManualRoast {
    */
   async onReading(reading: Reading): Promise<void> {
     this.#markTurningPoint();
-    const since = this.#state.roasterCoolingSinceMs;
-    if (since === null) return;
-    const check = roasterCooldownCheck(since, reading.atMs, reading.values[BEAN_TEMP]);
-    if (check !== 'running') await this.#endRoasterCooling(check, ALL_OFF);
+    await this.#cooling.onReading(reading);
   }
 
   /**
@@ -139,8 +107,8 @@ export class ManualRoast {
    * put back what this phase keeps running (docs/spec/manual-mode.md, After a reconnect).
    */
   async restoreOutputs(): Promise<void> {
-    const { phase, roasterCoolingSinceMs } = this.#state;
-    const outputs = roasterCoolingSinceMs === null ? PHASE_OUTPUTS[phase] : ROASTER_COOLING;
+    const { phase } = this.#state;
+    const outputs = this.#cooling.running ? ROASTER_COOLING : PHASE_OUTPUTS[phase];
     if (outputs.length === 0) return;
     this.#logger.info('roast.outputs-restored', { phase });
     await this.#send(outputs);
@@ -151,40 +119,33 @@ export class ManualRoast {
    * set the outputs, and without a roaster there is nothing to send to.
    */
   stopRoasterCooling(reason: 'safety-stop' | 'disconnected'): void {
-    if (this.#state.roasterCoolingSinceMs === null) return;
-    this.#logger.info('roast.roaster-cooling-ended', { reason });
-    this.#set({ ...this.#state, roasterCoolingSinceMs: null });
+    this.#cooling.stopWithoutOutputs(reason);
   }
 
   /** One step per action; ALLOWED_FROM has already checked the state. */
   readonly #steps: Readonly<Record<RoastAction, (nowMs: number) => Promise<void>>> = {
     preheat: async (nowMs) => {
       // A cool-down's fan at 100 would fight the preheat: back to 0, you set it.
-      const fanOff: Outputs = this.#state.roasterCoolingSinceMs === null ? [] : [['fan', 0]];
-      if (fanOff.length > 0)
-        this.#logger.info('roast.roaster-cooling-ended', { reason: 'preheat' });
+      const fanOff: Outputs = this.#cooling.stopWithoutOutputs('preheat') ? [['fan', 0]] : [];
       this.#deps.onNewRoast();
       this.#set({ ...READY, phase: 'preheat', preheatAtMs: nowMs });
       await this.#send([...fanOff, ...ROAST_ON]);
     },
     start: async (nowMs) => {
-      const found = this.#chargePoint(nowMs);
-      const chargedAtMs = found?.atMs ?? nowMs;
-      if (found) this.#logger.info('roast.charge-found', { earlierMs: nowMs - chargedAtMs });
+      const charge = chargeFor(this.#state, this.#readings(), nowMs, {
+        findPoint: this.#options().findChargePoint,
+        latestBt: this.#deps.latestBt(),
+      });
+      if (charge.earlierMs > 0)
+        this.#logger.info('roast.charge-found', { earlierMs: charge.earlierMs });
       this.#set({
         ...this.#state,
         phase: 'roasting',
-        chargedAtMs,
+        chargedAtMs: charge.atMs,
         startPressedAtMs: nowMs,
-        events: [
-          {
-            kind: 'charge',
-            atMs: chargedAtMs,
-            bt: found?.values[BEAN_TEMP] ?? this.#deps.latestBt() ?? null,
-          },
-        ],
+        events: [{ kind: 'charge', atMs: charge.atMs, bt: charge.bt }],
       });
-      this.#deps.onRoastStarted(chargedAtMs);
+      this.#deps.onRoastStarted(charge.atMs);
       await this.#send(ROAST_ON);
     },
     'first-crack': (nowMs) => {
@@ -234,35 +195,19 @@ export class ManualRoast {
       return Promise.resolve();
     },
     'cool-roaster': async (nowMs) => {
-      await this.#startRoasterCooling(nowMs, 'asked');
+      await this.#cooling.start(nowMs, 'asked');
     },
     'stop-cooling-roaster': async () => {
-      await this.#endRoasterCooling('stopped', ALL_OFF);
+      await this.#cooling.end('stopped');
     },
   };
 
-  /** The reading before the charge drop, looked for since Preheat; none when the setting is off. */
-  #chargePoint(nowMs: number): Reading | undefined {
-    if (!this.#options().findChargePoint) return undefined;
-    const since = this.#state.preheatAtMs ?? Number.NEGATIVE_INFINITY;
-    return findChargePoint(
-      this.#readings().filter((r) => r.atMs >= since),
-      nowMs,
-    );
-  }
-
   #markTurningPoint(): void {
-    const { phase, chargedAtMs, events } = this.#state;
-    if (phase !== 'roasting' || chargedAtMs === null) return;
-    if (events.some((e) => e.kind === 'turning-point')) return;
-    const found = findTurningPoint(this.#readings(), chargedAtMs);
-    if (!found) return;
-    const bt = found.values[BEAN_TEMP] ?? null;
-    this.#logger.info('roast.turning-point', { afterChargeMs: found.atMs - chargedAtMs, bt });
-    this.#set({
-      ...this.#state,
-      events: [...events, { kind: 'turning-point', atMs: found.atMs, bt }],
-    });
+    const tp = turningPointEvent(this.#state, this.#readings());
+    if (!tp) return;
+    const afterChargeMs = tp.atMs - (this.#state.chargedAtMs ?? tp.atMs);
+    this.#logger.info('roast.turning-point', { afterChargeMs, bt: tp.bt });
+    this.#set({ ...this.#state, events: [...this.#state.events, tp] });
   }
 
   #drop(nowMs: number): void {
@@ -304,25 +249,10 @@ export class ManualRoast {
     });
     const bt = this.#deps.latestBt();
     if (this.#options().coolRoasterAfter && bt !== undefined && bt >= ROASTER_COOL_C) {
-      await this.#startRoasterCooling(nowMs, 'after-roast');
+      await this.#cooling.start(nowMs, 'after-roast');
       return;
     }
     await this.#send(ALL_OFF);
-  }
-
-  async #startRoasterCooling(nowMs: number, reason: 'asked' | 'after-roast'): Promise<void> {
-    this.#logger.info('roast.roaster-cooling-started', { reason, bt: this.#deps.latestBt() });
-    this.#set({ ...this.#state, roasterCoolingSinceMs: nowMs });
-    await this.#send(ROASTER_COOLING);
-  }
-
-  async #endRoasterCooling(reason: CooldownEnd, outputs: Outputs): Promise<void> {
-    if (this.#state.roasterCoolingSinceMs === null) return;
-    const context = { reason, bt: this.#deps.latestBt() };
-    if (reason === 'gave-up') this.#logger.warn('roast.roaster-cooling-ended', context);
-    else this.#logger.info('roast.roaster-cooling-ended', context);
-    this.#set({ ...this.#state, roasterCoolingSinceMs: null });
-    await this.#send(outputs);
   }
 
   /** Sends outputs in order. A failure is logged and the rest still go out; safety covers the roaster. */

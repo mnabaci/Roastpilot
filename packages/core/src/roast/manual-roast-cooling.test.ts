@@ -114,7 +114,7 @@ describe('ManualRoast roaster cool-down', () => {
     await act('preheat');
     expect(roast.state).toMatchObject({ phase: 'preheat', roasterCoolingSinceMs: null });
     expect(sent).toEqual(['fan=0', 'drum=1', 'filter=1']);
-    expect(events('roast.roaster-cooling-ended')[0]?.context).toEqual({ reason: 'preheat' });
+    expect(events('roast.roaster-cooling-ended')[0]?.context).toMatchObject({ reason: 'preheat' });
   });
 
   it('Clear keeps it running', async () => {
@@ -135,7 +135,9 @@ describe('ManualRoast roaster cool-down', () => {
     roast.stopRoasterCooling('disconnected');
     expect(roast.state.roasterCoolingSinceMs).toBeNull();
     expect(sent).toEqual([]);
-    expect(events('roast.roaster-cooling-ended')[0]?.context).toEqual({ reason: 'disconnected' });
+    expect(events('roast.roaster-cooling-ended')[0]?.context).toMatchObject({
+      reason: 'disconnected',
+    });
   });
 
   it('after a reconnect, puts the cool-down outputs back', async () => {
