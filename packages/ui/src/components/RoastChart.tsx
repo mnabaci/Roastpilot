@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import uPlot from 'uplot';
 import 'uplot/dist/uPlot.min.css';
+import { formatClock } from '../lib/format';
 import { cn } from '../lib/utils';
 import { alignLayers } from './roast-chart/align-layers';
 import { readChartColors } from './roast-chart/chart-colors';
 import type { ChartLayer, ChartMarker } from './roast-chart/chart-layer';
 import { buildChartOptions, buildStripOptions } from './roast-chart/uplot-options';
 import { useUplot } from './roast-chart/use-uplot';
+import { formatLayerValue, valueAt } from './roast-chart/value-at';
 
 export interface RoastChartProps {
   title: string;
@@ -41,6 +43,8 @@ export function RoastChart({
   const plotRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
+  // The time under the pointer: the legends show the values there (docs/spec/ui.md, Hover).
+  const [hoverT, setHoverT] = useState<number>();
 
   const { main, strip, mainData, stripData } = useMemo(() => {
     const main = layers.filter((l) => l.axis !== 'output');
@@ -84,6 +88,7 @@ export function RoastChart({
         // Element is mounted whenever a build runs.
         colors: readChartColors(plotRef.current ?? document.documentElement),
         rightAxis,
+        onHover: setHoverT,
       }),
   });
   useUplot({
@@ -101,6 +106,7 @@ export function RoastChart({
         colors: readChartColors(stripRef.current ?? document.documentElement),
         rightAxis,
         stepped: uPlot.paths.stepped?.({ align: 1 }),
+        onHover: setHoverT,
       }),
   });
 
@@ -112,14 +118,19 @@ export function RoastChart({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-heading text-ink">{title}</h2>
         <div className="flex items-center gap-4">
-          <Legend label="Legend" layers={main} />
+          {hoverT === undefined ? null : (
+            <span className="text-label font-semibold text-ink tabular-nums">
+              {formatClock(hoverT)}
+            </span>
+          )}
+          <Legend label="Legend" layers={main} at={hoverT} />
           {action}
         </div>
       </div>
       <div ref={plotRef} role="img" aria-label={describe(main)} className="w-full" />
       {strip.length > 0 ? (
         <>
-          <Legend label="Outputs legend" layers={strip} className="mt-1 self-end" />
+          <Legend label="Outputs legend" layers={strip} at={hoverT} className="mt-1 self-end" />
           <div ref={stripRef} role="img" aria-label={describe(strip)} className="w-full" />
         </>
       ) : null}
@@ -127,20 +138,25 @@ export function RoastChart({
   );
 }
 
-/** Each layer's line sample and name; the outputs strip has its own, under the chart. */
+/**
+ * Each layer's line sample and name; the outputs strip has its own, under the chart. With `at`
+ * (hovering), each name is followed by its value at that time.
+ */
 function Legend({
   label,
   layers,
+  at,
   className,
 }: {
   label: string;
   layers: readonly ChartLayer[];
+  at: number | undefined;
   className?: string;
 }) {
   return (
     <ul
       aria-label={label}
-      className={cn('flex flex-wrap gap-4 text-label text-ink-muted', className)}
+      className={cn('flex flex-wrap gap-4 text-label text-ink-muted tabular-nums', className)}
     >
       {layers.map((layer) => (
         <li key={layer.id} className="flex items-center gap-1.5">
@@ -158,9 +174,19 @@ function Legend({
             )}
           />
           {layer.label}
+          {at === undefined ? null : <LegendValue layer={layer} at={at} />}
         </li>
       ))}
     </ul>
+  );
+}
+
+function LegendValue({ layer, at }: { layer: ChartLayer; at: number }) {
+  const v = valueAt(layer, at);
+  return (
+    <span className="font-semibold text-ink">
+      {v === undefined ? '–' : formatLayerValue(layer.axis, v)}
+    </span>
   );
 }
 
@@ -169,11 +195,7 @@ function describe(layers: readonly ChartLayer[]): string {
   const parts = layers.flatMap((layer) => {
     const v = layer.points.findLast((p) => p.v !== null)?.v ?? undefined;
     if (v === undefined) return [];
-    const text = {
-      temperature: `${v.toFixed(1)} °C`,
-      ror: `${v.toFixed(1)} °C/min`,
-      output: `${String(Math.round(v))}%`,
-    }[layer.axis];
+    const text = formatLayerValue(layer.axis, v);
     return [`${layer.label} ${text}`];
   });
   return parts.length > 0 ? parts.join(', ') : 'No readings yet';

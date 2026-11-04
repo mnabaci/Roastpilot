@@ -59,6 +59,31 @@ interface CommonInput {
   colors: ChartColors;
   /** Whether the chart has a RoR axis on the right; the strip keeps the same gutter. */
   rightAxis: boolean;
+  /** The time under the pointer, or undefined when it leaves the plot. */
+  onHover: (t: number | undefined) => void;
+}
+
+/** One vertical hover line across the chart and the strip, reporting the time under it. */
+function hoverCursor(onHover: (t: number | undefined) => void): Pick<uPlot.Options, 'cursor'> & {
+  hooks: { setCursor: uPlot.Hooks.Defs['setCursor'][] };
+} {
+  return {
+    cursor: {
+      x: true,
+      y: false,
+      points: { show: false },
+      drag: { x: false, y: false, setScale: false },
+      sync: { key: 'roast-chart' },
+    },
+    hooks: {
+      setCursor: [
+        (u) => {
+          const left = u.cursor.left ?? -1;
+          onHover(left >= 0 ? u.posToVal(left, 'x') : undefined);
+        },
+      ],
+    },
+  };
 }
 
 export interface ChartOptionsInput extends CommonInput {
@@ -120,13 +145,15 @@ export function buildChartOptions({
   latestDotLayer,
   colors,
   rightAxis,
+  onHover,
 }: ChartOptionsInput): uPlot.Options {
   const axis = axisFactory(colors);
+  const hover = hoverCursor(onHover);
   return {
     width,
     height,
     legend: { show: false },
-    cursor: { show: false },
+    cursor: hover.cursor,
     scales: { x: xScale, temperature: { range: TEMPERATURE_RANGE }, ror: { range: ROR_RANGE } },
     axes: [
       {
@@ -148,6 +175,7 @@ export function buildChartOptions({
     ],
     series: series(layers, colors),
     hooks: {
+      ...hover.hooks,
       draw: [
         (u) => {
           drawMarkers(u, markers(), colors, { labels: true });
@@ -168,13 +196,15 @@ export function buildStripOptions({
   colors,
   rightAxis,
   stepped,
+  onHover,
 }: StripOptionsInput): uPlot.Options {
   const axis = axisFactory(colors);
+  const hover = hoverCursor(onHover);
   return {
     width,
     height,
     legend: { show: false },
-    cursor: { show: false },
+    cursor: hover.cursor,
     scales: { x: xScale, output: { range: OUTPUT_RANGE } },
     axes: [
       // Same time scale as the chart above; its labels are the chart's.
@@ -190,6 +220,7 @@ export function buildStripOptions({
     ],
     series: series(layers, colors, stepped),
     hooks: {
+      ...hover.hooks,
       draw: [
         (u) => {
           drawMarkers(u, markers(), colors, { labels: false });
