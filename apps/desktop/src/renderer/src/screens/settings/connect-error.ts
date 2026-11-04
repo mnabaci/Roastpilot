@@ -8,7 +8,10 @@ export function connectErrorText(error: DriverError): string {
     case 'no-reply':
       return 'No reply · is SkyCommand flashed and the roaster on?';
     case 'version-mismatch':
-      return `Sketch version ${error.actual ?? 'unknown'} · flash the SkyCommand sketch from firmware/`;
+      // No version at all means the board didn't answer, not that it runs another sketch.
+      return error.actual === null
+        ? 'No reply from the roaster · check the cables and ground, then reflash SkyCommand'
+        : `Sketch version ${String(error.actual)} · flash the SkyCommand sketch from firmware/`;
     case 'bad-reply':
       return 'Unexpected reply · is this the roaster port?';
     case 'unknown-channel':

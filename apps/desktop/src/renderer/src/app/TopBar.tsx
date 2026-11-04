@@ -29,7 +29,10 @@ const SCREENS: readonly { id: Screen; label: string }[] = [
   { id: 'logs', label: 'Logs' },
 ];
 
-/** Status, navigation and an Emergency stop that is on every screen, connected or not. */
+/**
+ * Status, navigation and an Emergency stop on every screen. It is disabled only while no roaster
+ * is connected, as there is nothing to stop; connecting and lost keep it live.
+ */
 export function TopBar({
   screen,
   onNavigate,
@@ -69,6 +72,7 @@ export function TopBar({
         variant="danger"
         className="ml-auto"
         icon={<OctagonX aria-hidden="true" />}
+        disabled={status === 'disconnected'}
         onClick={() => {
           run('emergency-stop.failed', () => api.emergencyStop());
         }}

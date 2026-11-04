@@ -9,8 +9,11 @@ import { TopBar, type Screen } from './TopBar';
 /** The app shell: top bar, safety banners, and the current screen. */
 export function App() {
   const ready = useSync((s) => s.ready);
-  const connected = useConnection((s) => s.connection.status !== 'disconnected');
-  // Start where the next action is: Settings until a roaster is connected.
+  // Start where the next action is: Settings until a roaster is connected. Connecting stays on
+  // Settings, so a failed connect is explained where it was started.
+  const connected = useConnection(
+    (s) => s.connection.status === 'connected' || s.connection.status === 'lost',
+  );
   const [screen, setScreen] = useState<Screen | undefined>();
   const shown = screen ?? (connected ? 'roast' : 'settings');
   const screens: Readonly<Record<Screen, () => ReactNode>> = {
