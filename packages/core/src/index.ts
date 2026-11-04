@@ -5,6 +5,7 @@ export type { Transport, TransportError } from './transport';
 export { SafetyGuardedDriver } from './safety/safety-guarded-driver';
 export { DEFAULT_SAFETY_LIMITS, type SafetyLimits } from './safety/safety-limits';
 export {
+  COMPUTER_SLEEP,
   EMERGENCY_STOP,
   SafetyMonitor,
   type SafetyEvent,

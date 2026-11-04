@@ -11,6 +11,10 @@ const COPY: Readonly<Record<string, SafetyCopy>> = {
     kind: 'critical',
     text: 'Emergency stop · heater off, fan and cooling on',
   },
+  'computer-sleep': {
+    kind: 'critical',
+    text: 'Computer went to sleep · heater off, fan and cooling on',
+  },
   'max-temperature': { kind: 'critical', text: 'Too hot · heater off, fan and cooling on' },
   'max-roast-time': {
     kind: 'critical',

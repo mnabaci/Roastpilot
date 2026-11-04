@@ -16,7 +16,13 @@ import {
   type RoastActionError,
   type RoastState,
 } from './roast';
-import type { RoastDetail, RoastId, RoastSummary, StorageError } from './saved-roast';
+import type {
+  DeleteRoastError,
+  RoastDetail,
+  RoastId,
+  RoastSummary,
+  StorageError,
+} from './saved-roast';
 import type { Screen } from './screen';
 import type { Settings, SettingsWriteError } from './settings';
 import type { AcknowledgeError, SafetyEvent } from './safety-event';
@@ -129,7 +135,8 @@ export interface HistoryApi {
   /** Newest first; an empty list when storage can't be read (logged in main). */
   listRoasts(): Promise<RoastSummary[]>;
   getRoast(id: RoastId): Promise<Result<RoastDetail, StorageError>>;
-  deleteRoast(id: RoastId): Promise<Result<void, StorageError>>;
+  /** Refuses the roast being saved right now (`in-progress`). */
+  deleteRoast(id: RoastId): Promise<Result<void, DeleteRoastError>>;
   /** A roast was saved, finished or deleted. */
   onRoastsChanged(listener: (change: { id: RoastId }) => void): Unsubscribe;
 }

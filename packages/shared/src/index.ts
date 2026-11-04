@@ -67,12 +67,14 @@ export {
   type RoastState,
 } from './roast';
 export {
+  DeleteRoastErrorSchema,
   RoastDetailSchema,
   RoastIdSchema,
   RoastSummarySchema,
   SavedEventSchema,
   SavedSampleSchema,
   StorageErrorSchema,
+  type DeleteRoastError,
   type RoastDetail,
   type RoastId,
   type RoastSummary,

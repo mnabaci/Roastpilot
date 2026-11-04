@@ -10,6 +10,7 @@ import {
 } from '@roastpilot/core';
 import {
   IPC_CHANNELS,
+  type ConnectionState,
   type IpcEventChannel,
   type IpcEventPayloads,
   type Snapshot,
@@ -24,6 +25,8 @@ export interface AppServicesDeps {
   roasts: RoastRepository;
   /** Wall-clock time as ISO 8601, for saved roasts. */
   nowIso: () => string;
+  /** Every connection change, besides the windows (the power guard). */
+  onConnectionChange: (state: ConnectionState) => void;
   /** Sends an event to every window. */
   publish: <C extends IpcEventChannel>(channel: C, payload: IpcEventPayloads[C]) => void;
 }
@@ -44,6 +47,7 @@ export function createAppServices({
   settingsStore,
   roasts,
   nowIso,
+  onConnectionChange,
   publish,
 }: AppServicesDeps): AppServices {
   const history = new ReadingHistory();
@@ -66,6 +70,7 @@ export function createAppServices({
       publish(IPC_CHANNELS.reading, reading);
     },
     onConnection: (state) => {
+      onConnectionChange(state);
       publish(IPC_CHANNELS.connection, state);
     },
     onSafetyEvent: (event) => {
@@ -103,6 +108,7 @@ export function createAppServices({
     settings: new SettingsService(settingsStore),
     history: new HistoryService({
       repository: roasts,
+      isRecording: (id) => recorder.isRecording(id),
       onDeleted: (id) => {
         publish(IPC_CHANNELS.roastsChanged, { id });
       },

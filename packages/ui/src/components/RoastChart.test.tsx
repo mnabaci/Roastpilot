@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChartLayer } from './roast-chart/chart-layer';
 
@@ -7,6 +7,7 @@ interface Created {
     height: number;
     scales: { x: { range: unknown } };
     series: { stroke?: string; width?: number; paths?: unknown; scale?: string }[];
+    hooks: { setCursor?: ((u: unknown) => void)[] };
   };
   data: unknown[][];
 }
@@ -89,6 +90,36 @@ describe('RoastChart', () => {
     expect(
       screen.getByRole('img', { name: 'Temperature 171.3 °C, RoR 9.4 °C/min' }),
     ).toBeInTheDocument();
+  });
+
+  it('hovering shows the time and each value there, and leaving brings the names back', () => {
+    render(
+      <RoastChart
+        title="Roast curve"
+        layers={[
+          bt([
+            [0, 180],
+            [30, 171.25],
+          ]),
+          ror,
+        ]}
+      />,
+    );
+    const hover = (left: number, t: number) => {
+      act(() => {
+        for (const hook of created[0]?.opts.hooks.setCursor ?? [])
+          hook({ cursor: { left }, posToVal: () => t });
+      });
+    };
+    const legend = screen.getByRole('list', { name: 'Legend' });
+    hover(120, 12);
+    expect(screen.getByText('0:12')).toBeInTheDocument();
+    expect(legend).toHaveTextContent('Temperature180.0 °C');
+    // RoR has no value yet at 0:12: a dash, never a stale or made-up number.
+    expect(legend).toHaveTextContent('RoR–');
+    hover(-10, 0);
+    expect(screen.queryByText('0:12')).not.toBeInTheDocument();
+    expect(legend).toHaveTextContent('TemperatureRoR');
   });
 
   it('says so when there are no readings', () => {

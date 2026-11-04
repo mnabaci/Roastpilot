@@ -1,8 +1,16 @@
-import { err, ok, type RoastDetail, type RoastId, type RoastSummary } from '@roastpilot/shared';
+import {
+  err,
+  ok,
+  type RoastDetail,
+  type RoastId,
+  type RoastPhase,
+  type RoastSummary,
+} from '@roastpilot/shared';
 import type * as Ui from '@roastpilot/ui';
 import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { READY_ROAST } from '../../stores/roast-store';
 import { fakeApi, renderApp } from '../../test/render-app';
 import { HistoryScreen } from './HistoryScreen';
 
@@ -27,6 +35,11 @@ const detail = (s: RoastSummary): RoastDetail => ({
   samples: [{ tS: 0, values: { bt: 180 } }],
   events: [{ kind: 'charge', tS: 0, bt: 180 }],
 });
+
+function renderWithPhase(roasts: RoastSummary[], phase: RoastPhase) {
+  const api = fakeApi({ listRoasts: vi.fn(() => Promise.resolve(roasts)) });
+  renderApp(<HistoryScreen />, { roast: { ...READY_ROAST, phase } }, api);
+}
 
 function setup(roasts: RoastSummary[] = [NEWER, OLDER]) {
   const listeners = new Set<(change: { id: RoastId }) => void>();
@@ -103,7 +116,7 @@ describe('HistoryScreen', () => {
     const { api } = setup();
     await screen.findByRole('region', { name: 'Roast curve' });
     await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
-    const confirm = screen.getByRole('group', { name: 'Delete this roast?' });
+    const confirm = screen.getByRole('group', { name: /Delete this roast\?/ });
     expect(confirm).toHaveTextContent("can't be undone");
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(api.deleteRoast).not.toHaveBeenCalled();
@@ -138,5 +151,12 @@ describe('HistoryScreen', () => {
     await vi.waitFor(() => {
       expect(screen.getAllByRole('button', { name: /Nov/ })).toHaveLength(3);
     });
+  });
+
+  it('the roast being roasted has no Delete, only a note that it is saving', async () => {
+    const live = summary(3, '2026-11-05T08:00:00.000Z', { endedAt: null });
+    renderWithPhase([live, NEWER], 'roasting');
+    expect(await screen.findByText('Saving as it roasts')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
   });
 });

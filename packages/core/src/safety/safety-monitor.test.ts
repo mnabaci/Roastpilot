@@ -2,7 +2,7 @@ import { err, ok, type LogEntry, type Reading } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { ManualClock } from '../clock';
 import { createLogger } from '../logging/logger';
-import { SafetyMonitor, type SafetyEvent } from './safety-monitor';
+import { COMPUTER_SLEEP, SafetyMonitor, type SafetyEvent } from './safety-monitor';
 
 function setup() {
   const clock = new ManualClock();
@@ -169,6 +169,14 @@ describe('SafetyMonitor emergency stop and disconnect', () => {
     expect(monitor.locked).toBe(true);
     expect(monitor.acknowledge()).toEqual(ok(undefined));
     expect(monitor.locked).toBe(false);
+  });
+
+  it('a stop for computer sleep trips under its own rule, and locks the same way', () => {
+    const { monitor, events, safeStops } = setup();
+    monitor.emergencyStop(COMPUTER_SLEEP);
+    expect(kinds(events)).toEqual(['tripped:computer-sleep']);
+    expect(safeStops()).toBe(1);
+    expect(monitor.locked).toBe(true);
   });
 
   it('a deliberate disconnect disarms lost connection until the next connect', () => {

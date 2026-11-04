@@ -9,6 +9,7 @@ const MARKER_LABELS: Partial<Record<RoastEvent['kind'], string>> = {
   charge: 'Charge',
   'first-crack': 'First crack',
   drop: 'Drop',
+  end: 'End',
 };
 
 /** A channel's value at each reading that has it. */

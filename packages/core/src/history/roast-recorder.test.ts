@@ -253,4 +253,37 @@ describe('RoastRecorder', () => {
     expect(entries.some((e) => e.event === 'history.write-threw')).toBe(true);
     expect(repository.roasts.get(1)?.samples.map((s) => s.tS)).toEqual([2]);
   });
+
+  it('End roast finishes the saved roast where it stopped', async () => {
+    const { recorder, repository, saved, setNow } = setup();
+    recorder.onRoastChange(CHARGED);
+    setNow('2026-11-04T10:05:00.000Z');
+    recorder.onRoastChange({
+      ...CHARGED,
+      phase: 'done',
+      events: [...CHARGED.events, { kind: 'end', atMs: 420_000, bt: 190 }],
+    });
+    recorder.onReading(reading(421_000, 189));
+    await recorder.flush();
+    expect(repository.roasts.get(1)).toMatchObject({
+      endedAt: '2026-11-04T10:05:00.000Z',
+      dropTimeS: null,
+      events: [
+        { kind: 'charge', tS: 0, bt: 180 },
+        { kind: 'end', tS: 300, bt: 190 },
+      ],
+      samples: [],
+    });
+    expect(saved).toEqual([1, 1]);
+  });
+
+  it('knows which roast it is saving, until the roast is done', async () => {
+    const { recorder } = setup();
+    recorder.onRoastChange(CHARGED);
+    await recorder.flush();
+    expect(recorder.isRecording(1)).toBe(true);
+    expect(recorder.isRecording(2)).toBe(false);
+    recorder.onRoastChange(DONE);
+    expect(recorder.isRecording(1)).toBe(false);
+  });
 });

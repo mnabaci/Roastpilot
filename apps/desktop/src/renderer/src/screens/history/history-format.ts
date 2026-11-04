@@ -40,21 +40,27 @@ export function roastNumbers(roast: RoastSummary): string {
 
 const LIVE_PHASES: readonly RoastPhase[] = ['roasting', 'development', 'cooling'];
 
-/**
- * List rows. A roast that never reached cool end is Unfinished, except the newest one while a
- * roast is running: that one is being saved right now.
- */
+/** The roast being saved right now: the newest, unended one while a roast runs. */
+export function inProgressId(
+  roasts: readonly RoastSummary[],
+  livePhase: RoastPhase,
+): number | undefined {
+  const newest = roasts[0];
+  return newest?.endedAt === null && LIVE_PHASES.includes(livePhase) ? newest.id : undefined;
+}
+
+/** List rows. A roast that never reached its end is Unfinished, unless it is in progress. */
 export function roastRows(
   roasts: readonly RoastSummary[],
   livePhase: RoastPhase,
   options: DateOptions = {},
 ): RoastListItem[] {
-  const roasting = LIVE_PHASES.includes(livePhase);
-  return roasts.map((roast, i) => ({
+  const live = inProgressId(roasts, livePhase);
+  return roasts.map((roast) => ({
     id: roast.id,
     title: roastTitle(roast.startedAt, options),
     numbers: roastNumbers(roast),
-    badge: roast.endedAt !== null ? undefined : roasting && i === 0 ? 'In progress' : 'Unfinished',
+    badge: roast.endedAt !== null ? undefined : roast.id === live ? 'In progress' : 'Unfinished',
   }));
 }
 

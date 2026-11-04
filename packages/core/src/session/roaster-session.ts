@@ -15,7 +15,7 @@ import { serializeError } from '../logging/serialize-error';
 import type { RoasterDriver } from '../roaster-driver';
 import { SafetyGuardedDriver } from '../safety/safety-guarded-driver';
 import type { SafetyLimits } from '../safety/safety-limits';
-import { SafetyMonitor } from '../safety/safety-monitor';
+import { EMERGENCY_STOP, SafetyMonitor, type COMPUTER_SLEEP } from '../safety/safety-monitor';
 import { lostConnectionRule } from '../safety/rules/lost-connection';
 
 export const POLL_MS = 1_000;
@@ -131,10 +131,10 @@ export class RoasterSession {
     return result;
   }
 
-  /** Safe stop and heater lock, connected or not. */
-  emergencyStop(): void {
-    this.#logger.warn('session.emergency-stop');
-    this.#monitor.emergencyStop();
+  /** Safe stop and heater lock, connected or not; `rule` says why when it isn't the red button. */
+  emergencyStop(rule: typeof EMERGENCY_STOP | typeof COMPUTER_SLEEP = EMERGENCY_STOP): void {
+    this.#logger.warn('session.emergency-stop', { rule });
+    this.#monitor.emergencyStop(rule);
   }
 
   /** The latest connection state, for a window that opens mid-roast. */

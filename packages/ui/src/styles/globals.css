@@ -63,3 +63,8 @@
     outline-offset: 2px;
   }
 }
+
+/* RoastChart hover line (uPlot's cursor), in token colours. */
+.u-cursor-x {
+  border-right: 1px dashed var(--ink-muted) !important;
+}

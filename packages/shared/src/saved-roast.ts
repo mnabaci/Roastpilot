@@ -37,9 +37,16 @@ export const StorageErrorSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('storage-failed'), message: z.string() }),
 ]);
 
+/** Delete also refuses the roast being saved right now. */
+export const DeleteRoastErrorSchema = z.union([
+  StorageErrorSchema,
+  z.object({ kind: z.literal('in-progress'), id: RoastIdSchema }),
+]);
+
 export type RoastId = z.infer<typeof RoastIdSchema>;
 export type RoastSummary = z.infer<typeof RoastSummarySchema>;
 export type SavedSample = z.infer<typeof SavedSampleSchema>;
 export type SavedEvent = z.infer<typeof SavedEventSchema>;
 export type RoastDetail = z.infer<typeof RoastDetailSchema>;
 export type StorageError = z.infer<typeof StorageErrorSchema>;
+export type DeleteRoastError = z.infer<typeof DeleteRoastErrorSchema>;

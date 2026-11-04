@@ -18,6 +18,7 @@ function setup(repository = unavailableRepository('disk gone')) {
   const onDeleted = vi.fn();
   const service = new HistoryService({
     repository,
+    isRecording: (id) => id === 9,
     onDeleted,
     logger: createLogger({ write: (e) => entries.push(e) }, 'history'),
   });
@@ -58,5 +59,12 @@ describe('HistoryService', () => {
     expect(onDeleted).not.toHaveBeenCalled();
     expect(await service.delete(1)).toEqual(ok(undefined));
     expect(onDeleted).toHaveBeenCalledWith(1);
+  });
+
+  it('refuses to delete the roast being saved, and logs it', async () => {
+    const { service, entries, onDeleted } = setup();
+    expect(await service.delete(9)).toEqual(err({ kind: 'in-progress', id: 9 }));
+    expect(onDeleted).not.toHaveBeenCalled();
+    expect(entries.at(-1)?.event).toBe('history.delete-refused');
   });
 });
