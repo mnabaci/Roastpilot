@@ -13,7 +13,7 @@ describe('controlsAccess', () => {
     expect(controlsAccess('guided', phase, true)).toEqual({
       outputs,
       showCooling: false,
-      drum: true,
+      switches: true,
     });
   });
 
@@ -21,14 +21,14 @@ describe('controlsAccess', () => {
     expect(controlsAccess('full', 'ready', true)).toEqual({
       outputs: true,
       showCooling: true,
-      drum: true,
+      switches: true,
     });
   });
 
   it('nothing takes input while disconnected', () => {
     expect(controlsAccess('full', 'roasting', false)).toMatchObject({
       outputs: false,
-      drum: false,
+      switches: false,
     });
   });
 });

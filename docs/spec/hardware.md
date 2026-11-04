@@ -15,9 +15,9 @@ It also still works with Artisan.
 | ---------- | --------------------------------------------------- | --------------------------- |
 | `READ`     | Replies with a status line (below)                  | –                           |
 | `OT1;n`    | Heater                                              | 0–100                       |
-| `OT2;n`    | Fan (vent)                                          | 0–100                       |
-| `COOL;n`   | Bean cooling fan                                    | 0–100                       |
-| `FILTER;n` | Filter fan                                          | 0–100                       |
+| `OT2;n`    | Fan (vent)                                          | 0–100, steps of 5           |
+| `COOL;n`   | Bean cooling fan                                    | 0 or 100                    |
+| `FILTER;n` | Filter fan                                          | levels 0–4 (on is 1)        |
 | `DRUM;n`   | Drum                                                | 0 = off, anything else = on |
 | `OFF`      | Everything off                                      | –                           |
 | `ESTOP`    | Heater 0, fan 100 (drum, cooling, filter unchanged) | –                           |
@@ -51,7 +51,7 @@ Comma-separated: `0.00,<temp>,<temp>,<heater>,<fan>,0`, for example `0.00,180.25
 
 `SimulatedDriver` is a twin of this setup, so whatever runs on it runs on the real roaster.
 
-- **Same channels:** `bt` (°C, read), `heater`, `fan`, `cooling`, `filter` (0–100, step 5) and `drum` (on/off), with the same safe-stop sequence.
+- **Same channels:** `bt` (°C, read), `heater` and `fan` (0–100, step 5), `cooling` (0 or 100), `filter` (levels 0–4) and `drum` (on/off), with the same safe-stop sequence.
 - **Same sketch behaviour:** keeps every command, 10 s watchdog switches everything off; `ESTOP` above 300 °C; reports protocol version `1`.
 - **Thermal model:** one temperature, updated in 100 ms steps from the injected clock. Heater adds heat; loss to the room grows with the gap to ambient, the fan and the cooling fan.
 

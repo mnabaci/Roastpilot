@@ -15,13 +15,13 @@ lives in `core` (`ManualRoast`) and runs in main, so a closed window changes not
 | State       | Entered by                          | What the app does                                             | Next action (Guided) |
 | ----------- | ----------------------------------- | ------------------------------------------------------------- | -------------------- |
 | Ready       | Connecting                          | Nothing runs                                                  | Preheat              |
-| Preheat     | Preheat                             | Drum on                                                       | Start (beans in)     |
+| Preheat     | Preheat                             | Drum and filter fan on                                        | Start (beans in)     |
 | Roasting    | Start                               | Clock starts at 0; max roast time armed                       | First crack          |
 | Development | First crack                         | Records time and BT; development timer starts                 | Drop                 |
 | Cooling     | Drop (from Roasting or Development) | Heater 0, fan 100, cooling 100; "Dump beans"; 4 min countdown | –                    |
-| Done        | Cooling time ends                   | Heater 0, fan 0, cooling 0, drum off                          | Preheat (next batch) |
+| Done        | Cooling time ends                   | Heater 0, fan 0, cooling 0, drum and filter fan off           | Preheat (next batch) |
 
-- **Drum:** on at Preheat, off when cooling ends. A drum switch is always on screen to override it.
+- **Drum and filter fan:** on at Preheat (or Start), off when cooling ends. Their switches are always on screen to override them; the filter fan runs at level 1, as Artisan sends it (it takes levels 0–4; 100 stops the roaster's fans responding).
 - **Numbers:** BT, RoR (°C/min, slope of the last 30 s of BT), time since charge, development time and its % of the roast.
 - **Not saved yet:** readings and events stay in memory for the current roast; saving arrives with Logging (milestone 3). Main keeps them, so reloading the window keeps the chart.
 - An emergency stop or safety trip doesn't change the state; you decide what to do next.
@@ -30,10 +30,10 @@ lives in `core` (`ManualRoast`) and runs in main, so a closed window changes not
 
 A setting, not a mode: it only changes how much of the screen is live.
 
-| Level            | Heater and fan           | Cooling switch | Drum switch |
-| ---------------- | ------------------------ | -------------- | ----------- |
-| Guided (default) | From Preheat until Drop  | Hidden         | Shown       |
-| Full control     | Any time while connected | Shown          | Shown       |
+| Level            | Heater and fan           | Cooling switch | Drum and filter switches |
+| ---------------- | ------------------------ | -------------- | ------------------------ |
+| Guided (default) | From Preheat until Drop  | Hidden         | Shown                    |
+| Full control     | Any time while connected | Shown          | Shown                    |
 
 - Guided keeps one obvious next action: Connect → Preheat → Start → First crack → Drop.
 - Full control still has the flow buttons for timing; it just doesn't wait for them.

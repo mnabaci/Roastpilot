@@ -7,8 +7,8 @@ export interface ControlsAccess {
   outputs: boolean;
   /** The cooling switch is on screen. */
   showCooling: boolean;
-  /** The drum switch takes input. */
-  drum: boolean;
+  /** The drum and filter fan switches take input. */
+  switches: boolean;
 }
 
 /** Guided and Full control (docs/spec/manual-mode.md): how much of the screen is live. */
@@ -21,6 +21,6 @@ export function controlsAccess(
   return {
     outputs: connected && (full || GUIDED_LIVE.includes(phase)),
     showCooling: full,
-    drum: connected,
+    switches: connected,
   };
 }
