@@ -28,7 +28,7 @@ export interface IpcDeps {
     RoasterSession,
     'connect' | 'disconnect' | 'setOutput' | 'emergencyStop' | 'acknowledgeSafety'
   >;
-  roast: Pick<ManualRoast, 'act'>;
+  roast: Pick<ManualRoast, 'act' | 'outputRequested'>;
   settings: Pick<SettingsService, 'get' | 'set'>;
   history: Pick<HistoryService, 'list' | 'get' | 'delete'>;
   snapshot: () => Snapshot;
@@ -71,6 +71,7 @@ export function createIpcHandlers({
     [IPC_CHANNELS.disconnect]: handler(() => session.disconnect()),
     [IPC_CHANNELS.setOutput]: handler((payload) => {
       const { channel, value } = SetOutputRequestSchema.parse(payload);
+      roast.outputRequested(channel, value);
       return session.setOutput(channel, value);
     }),
     [IPC_CHANNELS.emergencyStop]: handler(() => {

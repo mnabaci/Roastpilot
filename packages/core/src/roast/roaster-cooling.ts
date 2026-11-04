@@ -14,7 +14,7 @@ export interface CoolingHost {
 
 /** Ends that turn everything off, and ends where something else already set the outputs. */
 type EndWithOutputs = 'cooled' | 'gave-up' | 'stopped';
-type EndWithout = 'preheat' | 'safety-stop' | 'disconnected';
+type EndWithout = 'preheat' | 'roast-started' | 'heater-on' | 'safety-stop' | 'disconnected';
 
 /**
  * Roaster cool-down (docs/spec/manual-mode.md): fan and drum run after the roast until the empty
@@ -53,7 +53,7 @@ export class RoasterCooling {
     await this.#host.send(ALL_OFF);
   }
 
-  /** Ends it without sending: Preheat, a safety stop or a disconnect sets the outputs itself. */
+  /** Ends it without sending: a new roast, the heater, a safety stop or a disconnect owns the outputs. */
   stopWithoutOutputs(reason: EndWithout): boolean {
     return this.#forget(reason);
   }

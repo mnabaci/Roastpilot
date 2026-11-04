@@ -105,6 +105,7 @@ export function createAppServices({
     setOutput: (channel, value) => session.setOutput(channel, value),
     latestBt: () => history.latest()?.values.bt,
     readings: () => history.all(),
+    canCoolRoaster: () => session.connection.status === 'connected' && !session.safetyStatus.locked,
     options: () => {
       const { findChargePoint, coolingTimeMin, coolRoasterAfter } = settings.latest;
       return { findChargePoint, coolingMs: coolingTimeMin * 60_000, coolRoasterAfter };

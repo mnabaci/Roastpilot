@@ -57,7 +57,7 @@ export function findChargePoint(
     if (bt(i) <= MIN_BT) continue;
     const tight = [i - 5, i - 4, i - 3, i - 2, i - 1, i].map(bt);
     if (breaksAfter(tight, MIN_FALL_PER_STEP)) return window[i - 2];
-    if (i < 10) continue;
+    if (i <= 10) continue; // as Artisan: the loose test only from the 12th reading
     const loose = [i - 10, i - 8, i - 6, i - 4, i - 2, i].map(bt);
     if (breaksAfter(loose, MIN_FALL_PER_STEP * LOOSE_FACTOR)) return window[i - 4];
   }

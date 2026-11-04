@@ -48,6 +48,7 @@ function setup() {
         calls.push(['roast', action]);
         return Promise.resolve(ok(undefined));
       },
+      outputRequested: (channel, value) => calls.push(['outputRequested', channel, value]),
     },
     settings: {
       get: () => Promise.resolve(DEFAULT_SETTINGS),
@@ -150,10 +151,13 @@ describe('createIpcHandlers', () => {
     expect(calls).toEqual([]);
   });
 
-  it('passes a valid output through', async () => {
+  it('passes a valid output through, telling the roast first (the heater ends a cool-down)', async () => {
     const { handlers, calls } = setup();
     await handle(handlers, IPC_CHANNELS.setOutput, { channel: 'fan', value: 40 });
-    expect(calls).toEqual([['setOutput', 'fan', 40]]);
+    expect(calls).toEqual([
+      ['outputRequested', 'fan', 40],
+      ['setOutput', 'fan', 40],
+    ]);
   });
 });
 

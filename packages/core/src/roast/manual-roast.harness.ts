@@ -13,13 +13,19 @@ import { DEFAULT_COOLING_MS, ManualRoast, type RoastOptions } from './manual-roa
 export interface HarnessOptions {
   failOutputs?: boolean;
   options?: Partial<RoastOptions>;
+  /** Whether the roaster can take a cool-down (connected, no safety stop); true by default. */
+  canCoolRoaster?: boolean;
 }
 
 /**
  * A ManualRoast on a fake clock for tests: records what it sends, signals and logs, and feeds
  * readings the way main does (kept first, then handed to the roast).
  */
-export function manualRoastHarness({ failOutputs = false, options = {} }: HarnessOptions = {}) {
+export function manualRoastHarness({
+  failOutputs = false,
+  options = {},
+  canCoolRoaster = true,
+}: HarnessOptions = {}) {
   const clock = new ManualClock();
   const sent: string[] = [];
   const signals: string[] = [];
@@ -48,6 +54,7 @@ export function manualRoastHarness({ failOutputs = false, options = {} }: Harnes
       coolRoasterAfter: true,
       ...options,
     }),
+    canCoolRoaster: () => canCoolRoaster,
     logger: createLogger({ write: (e) => entries.push(e) }, 'roast'),
   });
   const act = (...actions: RoastAction[]) =>

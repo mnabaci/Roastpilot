@@ -121,15 +121,33 @@ describe('createAppServices', () => {
     expect(services.roast.state.coolingEndsAtMs).toBe(clock.now() + 2 * 60_000);
   });
 
-  it('a safety stop or a disconnect ends the roaster cool-down', async () => {
+  it('a safety stop ends the roaster cool-down, and none starts while locked', async () => {
     const { services, sim } = setup();
     await services.session.connect(sim, { kind: 'simulator' });
     await services.roast.act('cool-roaster');
     services.session.emergencyStop();
     expect(services.roast.state.roasterCoolingSinceMs).toBeNull();
+    expect(await services.roast.act('cool-roaster')).toMatchObject({ ok: false });
+  });
+
+  it('a disconnect ends the roaster cool-down', async () => {
+    const { services, sim } = setup();
+    await services.session.connect(sim, { kind: 'simulator' });
     await services.roast.act('cool-roaster');
     await services.session.disconnect();
     expect(services.roast.state.roasterCoolingSinceMs).toBeNull();
+  });
+
+  it('disconnected during bean cooling: cool end starts no roaster cool-down', async () => {
+    const { clock, services, sim } = setup();
+    await services.session.connect(sim, { kind: 'simulator' });
+    await services.session.setOutput('heater', 100);
+    await clock.runFor(4 * 60_000);
+    await services.roast.act('start');
+    await services.roast.act('drop');
+    await services.session.disconnect();
+    await clock.runFor(DEFAULT_COOLING_MS);
+    expect(services.roast.state).toMatchObject({ phase: 'done', roasterCoolingSinceMs: null });
   });
 
   it('finds the charge point and the turning point from the roaster readings', async () => {

@@ -35,6 +35,17 @@ describe('findChargePoint', () => {
     expect(findChargePoint(readings, 60_000)?.values.bt).toBeCloseTo(183.8 + 0.6 * 2, 5);
   });
 
+  it('runs the every-other-reading test from the 12th reading on, as Artisan does', () => {
+    // The same slow fall: with 12 readings it would first match at the 11th, which is too early.
+    const fall = (n: number) => {
+      const pre = preheat(n);
+      const top = pre.at(-1) ?? 0;
+      return [...pre, ...Array.from({ length: 8 }, (_, i) => top - 0.6 * (i + 1))];
+    };
+    expect(findChargePoint(series(fall(4), 60_000), 60_000)).toBeUndefined();
+    expect(findChargePoint(series(fall(5), 60_000), 60_000)).toBeDefined();
+  });
+
   it('gives nothing while BT is still climbing or holding', () => {
     expect(findChargePoint(series(preheat(40), 60_000), 60_000)).toBeUndefined();
     const holding = series(
