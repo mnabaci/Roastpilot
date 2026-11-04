@@ -10,7 +10,7 @@ import {
   type RoastState,
 } from '@roastpilot/shared';
 import { silentLogger, type Logger } from '../logging/logger';
-import { serializeError } from '../logging/serialize-error';
+import { guardListener } from '../logging/guard-listener';
 import { CoolingTimer } from './cooling-timer';
 import type { ManualRoastDeps } from './manual-roast-deps';
 import { ALL_OFF, DROP_OUTPUTS, ROAST_ON, ROASTER_COOLING, type Outputs } from './roast-outputs';
@@ -49,6 +49,7 @@ export class ManualRoast {
   #state: RoastState = READY_ROAST;
   readonly #cooling: RoasterCooling;
   readonly #coolingTimer: CoolingTimer;
+  readonly #notify: (state: RoastState) => void;
 
   constructor(deps: ManualRoastDeps) {
     this.#deps = deps;
@@ -57,6 +58,7 @@ export class ManualRoast {
     this.#canCoolRoaster = deps.canCoolRoaster ?? (() => true);
     this.#logger = deps.logger ?? silentLogger;
     this.#coolingTimer = new CoolingTimer(deps.clock, this.#logger);
+    this.#notify = guardListener(this.#logger, 'roast.listener-failed', deps.onChange);
     this.#cooling = new RoasterCooling(
       {
         state: () => this.#state,
@@ -242,10 +244,6 @@ export class ManualRoast {
 
   #set(state: RoastState): void {
     this.#state = state;
-    try {
-      this.#deps.onChange(state);
-    } catch (error) {
-      this.#logger.error('roast.listener-failed', { error: serializeError(error) });
-    }
+    this.#notify(state);
   }
 }
