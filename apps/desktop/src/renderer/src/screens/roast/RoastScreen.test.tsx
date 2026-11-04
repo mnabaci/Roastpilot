@@ -136,7 +136,7 @@ describe('RoastScreen', () => {
     const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
       ...connected,
       roast: roast('preheat'),
-      readings: [reading({ filter: 100 })],
+      readings: [reading({ filter: 1 })],
     });
     const filter = screen.getByRole('button', { name: /Filter/ });
     expect(filter).toHaveAttribute('aria-pressed', 'true');

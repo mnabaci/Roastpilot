@@ -7,11 +7,14 @@ export const SensorChannelSchema = z.object({
   unit: z.literal('celsius'),
 });
 
-/** Something a driver controls. Values are clamped to [min, max] and rounded to `step`. */
+/**
+ * Something a driver controls. Values are clamped to [min, max] and rounded to `step`. `level` is
+ * a small whole-number setting, such as the Skywalker filter fan (0–4).
+ */
 export const OutputChannelSchema = z.object({
   id: z.string(),
   kind: z.literal('output'),
-  unit: z.enum(['percent', 'on-off']),
+  unit: z.enum(['percent', 'on-off', 'level']),
   min: z.number(),
   max: z.number(),
   step: z.number().positive(),

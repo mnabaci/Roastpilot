@@ -1,3 +1,4 @@
+import { FILTER_ON } from '@roastpilot/core';
 import { OutputControl } from '@roastpilot/ui';
 import { controlsAccess } from './controls-access';
 import { isConnected } from './flow-step';
@@ -56,7 +57,7 @@ export function OutputsPanel() {
           on={filter.value > 0}
           disabled={!access.switches}
           onToggle={(on) => {
-            filter.set(on ? 100 : 0);
+            filter.set(on ? FILTER_ON : 0);
           }}
         />
         {access.showCooling ? (

@@ -21,7 +21,7 @@ lives in `core` (`ManualRoast`) and runs in main, so a closed window changes not
 | Cooling     | Drop (from Roasting or Development) | Heater 0, fan 100, cooling 100; "Dump beans"; 4 min countdown | –                    |
 | Done        | Cooling time ends                   | Heater 0, fan 0, cooling 0, drum and filter fan off           | Preheat (next batch) |
 
-- **Drum and filter fan:** on at Preheat (or Start), off when cooling ends. Their switches are always on screen to override them; the filter fan runs at 100 %.
+- **Drum and filter fan:** on at Preheat (or Start), off when cooling ends. Their switches are always on screen to override them; the filter fan runs at level 1, as Artisan sends it (it takes levels 0–4; 100 stops the roaster's fans responding).
 - **Numbers:** BT, RoR (°C/min, slope of the last 30 s of BT), time since charge, development time and its % of the roast.
 - **Not saved yet:** readings and events stay in memory for the current roast; saving arrives with Logging (milestone 3). Main keeps them, so reloading the window keeps the chart.
 - An emergency stop or safety trip doesn't change the state; you decide what to do next.

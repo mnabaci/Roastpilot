@@ -27,10 +27,14 @@ const ALLOWED_FROM: Readonly<Record<RoastAction, readonly RoastPhase[]>> = {
 
 type Outputs = readonly (readonly [channel: string, value: number])[];
 
-/** Drum turning and smoke filter fan running from Preheat (or Start) until cooling ends. */
+/**
+ * Drum turning and smoke filter fan running from Preheat (or Start) until cooling ends. The filter
+ * takes levels 0–4; 1 is what the Artisan configs for this sketch send.
+ */
+export const FILTER_ON = 1;
 const ROAST_ON: Outputs = [
   ['drum', 1],
-  ['filter', 100],
+  ['filter', FILTER_ON],
 ];
 const DROP_OUTPUTS: Outputs = [
   ['heater', 0],

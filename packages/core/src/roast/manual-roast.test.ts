@@ -57,7 +57,7 @@ describe('ManualRoast', () => {
     const { roast, sent, signals, act } = setup();
     await act('preheat');
     expect(roast.state.phase).toBe('preheat');
-    expect(sent).toEqual(['drum=1', 'filter=100']);
+    expect(sent).toEqual(['drum=1', 'filter=1']);
     expect(signals).toEqual(['new-roast']);
   });
 
@@ -88,9 +88,9 @@ describe('ManualRoast', () => {
     ]);
     expect(sent).toEqual([
       'drum=1',
-      'filter=100',
+      'filter=1',
       'drum=1',
-      'filter=100',
+      'filter=1',
       'heater=0',
       'fan=100',
       'cooling=100',
@@ -114,7 +114,7 @@ describe('ManualRoast', () => {
     const { roast, sent, act } = setup();
     await act('start');
     expect(roast.state.phase).toBe('roasting');
-    expect(sent).toEqual(['drum=1', 'filter=100']);
+    expect(sent).toEqual(['drum=1', 'filter=1']);
   });
 
   it('can drop before first crack', async () => {
@@ -157,7 +157,7 @@ describe('ManualRoast', () => {
     const { roast, sent, entries, act } = setup({ failOutputs: true });
     await act('start', 'drop');
     expect(roast.state.phase).toBe('cooling');
-    expect(sent).toEqual(['drum=1', 'filter=100', 'heater=0', 'fan=100', 'cooling=100']);
+    expect(sent).toEqual(['drum=1', 'filter=1', 'heater=0', 'fan=100', 'cooling=100']);
     expect(entries.filter((e) => e.event === 'roast.output-failed')).toHaveLength(5);
   });
 
