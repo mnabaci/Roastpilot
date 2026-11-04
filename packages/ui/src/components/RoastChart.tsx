@@ -108,44 +108,65 @@ export function RoastChart({
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-heading text-ink">{title}</h2>
-        <ul aria-label="Legend" className="flex flex-wrap gap-4 text-label text-ink-muted">
-          {layers.map((layer) => (
-            <li key={layer.id} className="flex items-center gap-1.5">
-              <span
-                aria-hidden="true"
-                className={cn(
-                  'w-4.5',
-                  layer.dash ? 'border-t-2 border-dashed' : layer.width > 3 ? 'h-0.75' : 'h-0.5',
-                  {
-                    heat: layer.dash ? 'border-heat' : 'bg-heat',
-                    air: layer.dash ? 'border-air' : 'bg-air',
-                    target: layer.dash ? 'border-target' : 'bg-target',
-                    ghost: layer.dash ? 'border-ghost' : 'bg-ghost',
-                  }[layer.tone],
-                )}
-              />
-              {layer.label}
-            </li>
-          ))}
-        </ul>
+        <Legend label="Legend" layers={main} />
       </div>
       <div ref={plotRef} role="img" aria-label={describe(main)} className="w-full" />
       {strip.length > 0 ? (
-        <div ref={stripRef} role="img" aria-label={describe(strip)} className="mt-0.5 w-full" />
+        <>
+          <Legend label="Outputs legend" layers={strip} className="mt-1 self-end" />
+          <div ref={stripRef} role="img" aria-label={describe(strip)} className="w-full" />
+        </>
       ) : null}
     </section>
+  );
+}
+
+/** Each layer's line sample and name; the outputs strip has its own, under the chart. */
+function Legend({
+  label,
+  layers,
+  className,
+}: {
+  label: string;
+  layers: readonly ChartLayer[];
+  className?: string;
+}) {
+  return (
+    <ul
+      aria-label={label}
+      className={cn('flex flex-wrap gap-4 text-label text-ink-muted', className)}
+    >
+      {layers.map((layer) => (
+        <li key={layer.id} className="flex items-center gap-1.5">
+          <span
+            aria-hidden="true"
+            className={cn(
+              'w-4.5',
+              layer.dash ? 'border-t-2 border-dashed' : layer.width > 3 ? 'h-0.75' : 'h-0.5',
+              {
+                heat: layer.dash ? 'border-heat' : 'bg-heat',
+                air: layer.dash ? 'border-air' : 'bg-air',
+                target: layer.dash ? 'border-target' : 'bg-target',
+                ghost: layer.dash ? 'border-ghost' : 'bg-ghost',
+              }[layer.tone],
+            )}
+          />
+          {layer.label}
+        </li>
+      ))}
+    </ul>
   );
 }
 
 /** A one-line text alternative: the latest value of each layer. */
 function describe(layers: readonly ChartLayer[]): string {
   const parts = layers.flatMap((layer) => {
-    const latest = layer.points.at(-1);
-    if (!latest) return [];
+    const v = layer.points.findLast((p) => p.v !== null)?.v ?? undefined;
+    if (v === undefined) return [];
     const text = {
-      temperature: `${latest.v.toFixed(1)} °C`,
-      ror: `${latest.v.toFixed(1)} °C/min`,
-      output: `${String(Math.round(latest.v))}%`,
+      temperature: `${v.toFixed(1)} °C`,
+      ror: `${v.toFixed(1)} °C/min`,
+      output: `${String(Math.round(v))}%`,
     }[layer.axis];
     return [`${layer.label} ${text}`];
   });

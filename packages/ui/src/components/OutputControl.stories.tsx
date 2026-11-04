@@ -53,3 +53,4 @@ export const HeaterAuto: Story = {};
 export const HeaterManual: Story = { args: { mode: 'manual', value: 75 } };
 export const Fan: Story = { args: { label: 'Fan', tone: 'air', value: 30 } };
 export const Locked: Story = { args: { disabled: true, value: 0 } };
+export const NoReading: Story = { args: { mode: 'manual', value: undefined } };

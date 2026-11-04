@@ -11,6 +11,12 @@ describe('OutputControl', () => {
     expect(screen.getByText('Auto')).toBeInTheDocument();
   });
 
+  it('shows a dash and locks the slider when there is no value', () => {
+    render(<OutputControl label="Heater" value={undefined} mode="manual" onChange={vi.fn()} />);
+    expect(screen.getByText('–')).toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: 'Heater' })).toBeDisabled();
+  });
+
   it('reports the new value as a number', () => {
     const onChange = vi.fn();
     render(<OutputControl label="Fan" value={30} mode="auto" onChange={onChange} />);

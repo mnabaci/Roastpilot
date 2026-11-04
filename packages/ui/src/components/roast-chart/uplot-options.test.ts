@@ -1,6 +1,6 @@
 import type uPlot from 'uplot';
 import { describe, expect, it } from 'vitest';
-import { MIN_TIME_SPAN_S, TIME_RANGE } from './uplot-options';
+import { MIN_TIME_SPAN_S, TEMPERATURE_RANGE, TIME_RANGE } from './uplot-options';
 
 const range = (min: number, max: number) => TIME_RANGE({} as uPlot, min, max, 'x');
 
@@ -15,5 +15,23 @@ describe('time axis', () => {
 
   it('copes with no data yet', () => {
     expect(range(Number.NaN, Number.NaN)).toEqual([0, MIN_TIME_SPAN_S]);
+  });
+});
+
+const temperature = (min: number, max: number) =>
+  TEMPERATURE_RANGE({} as uPlot, min, max, 'temperature');
+
+describe('temperature axis', () => {
+  it('stays at 0–250 °C, so sensor jitter is invisible', () => {
+    expect(temperature(37.5, 38.1)).toEqual([0, 250]);
+    expect(temperature(180, 250)).toEqual([0, 250]);
+  });
+
+  it('grows in 50 °C steps past 250 °C', () => {
+    expect(temperature(200, 251)).toEqual([0, 300]);
+  });
+
+  it('copes with no data yet', () => {
+    expect(temperature(Number.NaN, Number.NaN)).toEqual([0, 250]);
   });
 });

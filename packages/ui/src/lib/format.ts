@@ -13,5 +13,6 @@ export function formatNumber(
 ): string | undefined {
   return value === null || value === undefined || !Number.isFinite(value)
     ? undefined
-    : value.toFixed(decimals);
+    : // A value that rounds to zero is 0, never -0.0.
+      (Object.is(Number(value.toFixed(decimals)), -0) ? 0 : value).toFixed(decimals);
 }

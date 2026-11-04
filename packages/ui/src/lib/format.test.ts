@@ -17,6 +17,14 @@ describe('formatNumber', () => {
     expect(formatNumber(8.64, 1)).toBe('8.6');
   });
 
+  it.each([
+    [-0.04, 1, '0.0'],
+    [-0.3, 1, '-0.3'],
+    [-0.4, 0, '0'],
+  ])('%d to %d decimals is %s, never -0', (value, decimals, text) => {
+    expect(formatNumber(value, decimals)).toBe(text);
+  });
+
   it.each([null, undefined, Number.NaN, Number.POSITIVE_INFINITY])(
     'gives nothing for %s',
     (value) => {

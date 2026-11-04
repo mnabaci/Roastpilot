@@ -185,12 +185,13 @@ describe('RoastChart', () => {
       const [chart, strip] = created;
       expect(chart?.data[0]).toEqual([0, 60, 90, 120]);
       expect(strip?.data[0]).toEqual(chart?.data[0]);
-      expect(strip?.data[1]).toEqual([100, 70, null, null]);
+      expect(strip?.data[1]).toEqual([100, 70, undefined, undefined]);
     });
 
-    it('lists the outputs in the legend and describes their latest values', () => {
+    it('lists the outputs in their own legend and describes their latest values', () => {
       render(<RoastChart title="Roast curve" layers={[bt([[0, 180]]), heater, fan]} />);
-      expect(screen.getByRole('list', { name: 'Legend' })).toHaveTextContent('Heater');
+      expect(screen.getByRole('list', { name: 'Outputs legend' })).toHaveTextContent('Heater');
+      expect(screen.getByRole('list', { name: 'Legend' })).not.toHaveTextContent('Heater');
       expect(screen.getByRole('img', { name: 'Heater 70%, Fan 50%' })).toBeInTheDocument();
     });
 

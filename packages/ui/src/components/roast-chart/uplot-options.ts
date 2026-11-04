@@ -35,6 +35,16 @@ const ROR_RANGE: uPlot.Range.Function = (_u, min, max) => [
   Math.max(30, Math.ceil(max)),
 ];
 
+/** The temperature axis is fixed at 0–250 °C (Artisan's default) and grows in 50 °C steps. */
+export const TEMPERATURE_MAX_C = 250;
+const TEMPERATURE_STEP_C = 50;
+export const TEMPERATURE_RANGE: uPlot.Range.Function = (_u, _min, max) => [
+  0,
+  Number.isFinite(max) && max > TEMPERATURE_MAX_C
+    ? Math.ceil(max / TEMPERATURE_STEP_C) * TEMPERATURE_STEP_C
+    : TEMPERATURE_MAX_C,
+];
+
 /** Outputs run 0–100 %; a little headroom keeps a line at 100 % from being cut in half. */
 const OUTPUT_RANGE: uPlot.Range.MinMax = [-4, 104];
 const OUTPUT_TICKS = [0, 50, 100];
@@ -92,7 +102,8 @@ function series(
       width: layer.width,
       dash: layer.dash ? [...layer.dash] : undefined,
       points: { show: false },
-      spanGaps: true,
+      // Joins across undefined (another layer's time), breaks at null (missing readings).
+      spanGaps: false,
       ...(layer.step && stepped ? { paths: stepped } : {}),
     })),
   ];
@@ -116,7 +127,7 @@ export function buildChartOptions({
     height,
     legend: { show: false },
     cursor: { show: false },
-    scales: { x: xScale, temperature: { auto: true }, ror: { range: ROR_RANGE } },
+    scales: { x: xScale, temperature: { range: TEMPERATURE_RANGE }, ror: { range: ROR_RANGE } },
     axes: [
       {
         ...axis('x', SIDE.bottom, (_u, ticks) => ticks.map(formatClock), true),
