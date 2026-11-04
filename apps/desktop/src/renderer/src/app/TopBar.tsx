@@ -54,7 +54,10 @@ export function TopBar({
             variant="ghost"
             size="sm"
             aria-current={screen === id ? 'page' : undefined}
-            className={screen === id ? 'bg-surface-raised text-ink' : undefined}
+            // Tabs, not actions: the other screens stay muted so the current one stands out.
+            className={
+              screen === id ? 'bg-surface-raised text-ink' : 'text-ink-muted hover:text-ink'
+            }
             onClick={() => {
               onNavigate(id);
             }}
