@@ -127,6 +127,9 @@ export function createAppServices({
     onRoastStarted: (chargedAtMs) => {
       session.roastStarted(chargedAtMs);
     },
+    onTurningPoint: (atMs) => {
+      session.turningPoint(atMs);
+    },
     onRoastEnded: () => {
       session.roastEnded();
     },

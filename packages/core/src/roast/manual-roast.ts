@@ -186,6 +186,7 @@ export class ManualRoast {
     const afterChargeMs = tp.atMs - (this.#state.chargedAtMs ?? tp.atMs);
     this.#logger.info('roast.turning-point', { afterChargeMs, bt: tp.bt });
     this.#set({ ...this.#state, events: [...this.#state.events, tp] });
+    this.#deps.onTurningPoint?.(tp.atMs);
   }
 
   /** A roast begins: a running cool-down ends, and its fan at 100 goes back to 0 (you set it). */

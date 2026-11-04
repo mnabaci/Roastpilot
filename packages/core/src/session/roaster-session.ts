@@ -155,6 +155,11 @@ export class RoasterSession {
     this.#monitor.roastStarted(atMs);
   }
 
+  /** The turning point: the stall alarm watches from here. */
+  turningPoint(atMs?: number): void {
+    this.#monitor.turningPoint(atMs);
+  }
+
   /** Drop: the max-roast-time rule stands down. */
   roastEnded(): void {
     this.#monitor.roastEnded();

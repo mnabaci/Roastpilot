@@ -158,6 +158,23 @@ describe('SafetyMonitor', () => {
       expect(monitor.locked).toBe(false);
     });
 
+    it('watches for a stall from the turning point, not through the charge dip', () => {
+      const { clock, events, read, monitor } = setup();
+      monitor.roastStarted();
+      for (let i = 0; i <= 60; i++) {
+        read(180 - i, 70);
+        clock.advance(1000);
+      }
+      expect(kinds(events)).not.toContain('tripped:slow-rise');
+      // Turned, then flat for a minute at heater 70 %: that is a stall.
+      monitor.turningPoint();
+      for (let i = 0; i <= 61; i++) {
+        read(120, 70);
+        clock.advance(1000);
+      }
+      expect(kinds(events)).toContain('tripped:slow-rise');
+    });
+
     it('keeps enough history for a 60 s window after hours of readings', () => {
       const { clock, events, read } = setup();
       for (let i = 0; i < 3600; i++) {

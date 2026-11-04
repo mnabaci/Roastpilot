@@ -48,6 +48,7 @@ export function manualRoastHarness({
       signals.push('new-roast');
     },
     onRoastStarted: (atMs) => signals.push(`roast-started@${String(atMs)}`),
+    onTurningPoint: (atMs) => signals.push(`turning-point@${String(atMs)}`),
     onRoastEnded: () => signals.push('roast-ended'),
     options: () => ({ ...DEFAULT_OPTIONS, ...options }),
     canCoolRoaster: () => canCoolRoaster,

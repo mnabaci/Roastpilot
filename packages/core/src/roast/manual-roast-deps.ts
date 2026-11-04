@@ -16,6 +16,8 @@ export interface ManualRoastDeps {
   onNewRoast: () => void;
   /** Charge (at the charge point): arms the max-roast-time rule. */
   onRoastStarted: (chargedAtMs: number) => void;
+  /** The turning point was found: the stall alarm watches from here. */
+  onTurningPoint?: (atMs: number) => void;
   /** Drop: the roast is over for the max-roast-time rule. */
   onRoastEnded: () => void;
   options?: () => RoastOptions;

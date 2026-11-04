@@ -15,6 +15,7 @@ function state(overrides: Partial<SafetyState> = {}): SafetyState {
     lastValidReadingMs: 0,
     history: [],
     roastStartedMs: undefined,
+    turningPointMs: undefined,
     ...overrides,
   };
 }
@@ -89,6 +90,41 @@ describe('slowRiseRule', () => {
     expect(
       slowRiseRule.isTripped(state({ history: readings(temps(0).slice(0, 60), 80) }), limits),
     ).toBe(false);
+  });
+
+  describe('the charge dip', () => {
+    // BT falling for a minute after charge at 70 % heater, as when the beans go in.
+    const dip = readings(
+      Array.from({ length: 61 }, (_, i) => 180 - i),
+      70,
+    );
+    const flat = readings(temps(0), 70);
+
+    it('does not trip while BT falls after charge', () => {
+      const s = state({ nowMs: 60_000, history: dip, roastStartedMs: 0 });
+      expect(slowRiseRule.isTripped(s, limits)).toBe(false);
+    });
+
+    it('counts a full window from the turning point', () => {
+      const from = (turningPointMs: number) =>
+        slowRiseRule.isTripped(
+          state({ nowMs: 60_000, history: flat, roastStartedMs: -60_000, turningPointMs }),
+          limits,
+        );
+      expect(from(1000)).toBe(false);
+      expect(from(0)).toBe(true);
+    });
+
+    it('with no turning point, counts from 3 min after charge', () => {
+      const charged = (roastStartedMs: number) =>
+        slowRiseRule.isTripped(state({ nowMs: 60_000, history: flat, roastStartedMs }), limits);
+      expect(charged(-179_000)).toBe(false);
+      expect(charged(-180_000)).toBe(true);
+    });
+
+    it('outside a roast, a fall at heater 70 % still trips', () => {
+      expect(slowRiseRule.isTripped(state({ nowMs: 60_000, history: dip }), limits)).toBe(true);
+    });
   });
 
   it('needs the heater at 50% for the whole window', () => {

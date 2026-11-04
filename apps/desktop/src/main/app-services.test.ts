@@ -8,7 +8,7 @@ import {
 import { SimulatedDriver } from '@roastpilot/drivers';
 import { drizzleOn, openDatabase, SqliteRoastRepository } from '@roastpilot/storage';
 import { DEFAULT_SETTINGS, IPC_CHANNELS, ok, type Settings } from '@roastpilot/shared';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createAppServices } from './app-services';
 import { unavailableRepository } from './history/unavailable-repository';
 
@@ -151,7 +151,8 @@ describe('createAppServices', () => {
   });
 
   it('finds the charge point and the turning point from the roaster readings', async () => {
-    const { clock, services, sim } = setup();
+    const { clock, services, sim, published } = setup();
+    const turningPoint = vi.spyOn(services.session, 'turningPoint');
     await services.session.connect(sim, { kind: 'simulator' });
     await services.roast.act('preheat');
     await services.session.setOutput('heater', 100);
@@ -169,6 +170,13 @@ describe('createAppServices', () => {
     const tp = services.roast.state.events.find((e) => e.kind === 'turning-point');
     expect(tp?.bt).toBeGreaterThan(50);
     expect(tp?.bt).toBeLessThan(150);
+    expect(turningPoint).toHaveBeenCalledExactlyOnceWith(tp?.atMs);
+    // Heater 70 % through the charge dip: no stalled-temperature alarm.
+    const stalls = published.filter(
+      ([channel, event]) =>
+        channel === IPC_CHANNELS.safetyEvent && (event as { rule?: string }).rule === 'slow-rise',
+    );
+    expect(stalls).toEqual([]);
   });
 
   it('saves the roast from Preheat to cool end, and tells the windows', async () => {

@@ -65,12 +65,16 @@ describe('ManualRoast turning point', () => {
   ];
 
   it('is recorded once while roasting, with its time and BT', async () => {
-    const { roast, states, entries, act, feed } = manualRoastHarness();
+    const { roast, states, entries, signals, act, feed } = manualRoastHarness();
     await act('start');
     const chargedAtMs = roast.state.chargedAtMs ?? 0;
     await feed(DIP);
     const tp = roast.state.events.filter((e) => e.kind === 'turning-point');
     expect(tp).toEqual([{ kind: 'turning-point', atMs: chargedAtMs + 60_000, bt: 92 }]);
+    // Tells the safety monitor, so the stall alarm watches from here.
+    expect(signals.filter((s) => s.startsWith('turning-point@'))).toEqual([
+      `turning-point@${String(chargedAtMs + 60_000)}`,
+    ]);
     expect(entries.find((e) => e.event === 'roast.turning-point')?.context).toEqual({
       afterChargeMs: 60_000,
       bt: 92,
