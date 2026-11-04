@@ -160,6 +160,20 @@ describe('RoastScreen', () => {
     expect(api.roastAction).toHaveBeenCalledWith('clear');
   });
 
+  it('Clear works with no roaster too, and hides when there is nothing to clear', async () => {
+    const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
+      roast: roast('done'),
+      readings: [reading({ bt: 40 })],
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
+    expect(api.roastAction).toHaveBeenCalledWith('clear');
+  });
+
+  it('no Clear with an empty chart', () => {
+    renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast('ready') });
+    expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument();
+  });
+
   it.each(['preheat', 'roasting', 'cooling'] as const)('no Clear while %s', (phase) => {
     renderApp(<RoastScreen onConnect={onConnect} />, {
       ...connected,

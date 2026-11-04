@@ -27,7 +27,7 @@ export {
   ManualRoast,
   type ManualRoastDeps,
 } from './roast/manual-roast';
-export { rateOfRise, ROR_WINDOW_MS } from './roast/rate-of-rise';
+export { rateOfRise, ROR_DRAW_LIMITS, ROR_WINDOW_MS, rorReadings } from './roast/rate-of-rise';
 export { MAX_HISTORY_READINGS, ReadingHistory } from './roast/reading-history';
 export type { SettingsStore } from './settings/settings-store';
 export type { RoastRepository, RoastSummaryPatch } from './history/roast-repository';

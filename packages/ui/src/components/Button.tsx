@@ -9,7 +9,7 @@ const buttonVariants = cva(
       variant: {
         primary: 'bg-heat-fill text-on-heat hover:bg-heat-fill-hover',
         secondary: 'bg-surface-raised text-ink hover:bg-surface-hover',
-        ghost: 'bg-transparent text-ink-muted hover:bg-surface-hover hover:text-ink',
+        ghost: 'bg-transparent text-ink hover:bg-surface-hover',
         danger: 'bg-critical text-on-critical hover:brightness-110',
       },
       size: {

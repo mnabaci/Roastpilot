@@ -185,7 +185,7 @@ describe('roast, snapshot and settings handlers', () => {
       connection: { kind: 'wifi' },
     });
     expect(calls).toEqual([
-      ['settings', { controls: 'full', connection: null, chartSmoothingS: 5 }],
+      ['settings', { controls: 'full', connection: null, chartSmoothingS: 3 }],
     ]);
   });
 });

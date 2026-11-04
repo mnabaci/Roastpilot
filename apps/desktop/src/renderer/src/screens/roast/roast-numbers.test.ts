@@ -71,4 +71,13 @@ describe('roastNumbers', () => {
     const n = roastNumbers(roast({ phase: 'preheat', preheatAtMs: undefined }), readings(5));
     expect(n.preheatS).toBeUndefined();
   });
+
+  it('RoR never reaches back before charge: a dash for the first 30 s after it', () => {
+    expect(roastNumbers(roast({ phase: 'roasting', chargedAtMs: 50_000 }), readings(60)).ror).toBe(
+      undefined,
+    );
+    expect(
+      roastNumbers(roast({ phase: 'roasting', chargedAtMs: 20_000 }), readings(60)).ror,
+    ).toBeCloseTo(10);
+  });
 });

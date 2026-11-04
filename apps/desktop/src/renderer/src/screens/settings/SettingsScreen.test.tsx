@@ -22,7 +22,7 @@ describe('SettingsScreen', () => {
     expect(api.setSettings).toHaveBeenCalledWith({
       connection: { kind: 'serial', path: '/dev/cu.usbserial-0001' },
       controls: 'guided',
-      chartSmoothingS: 5,
+      chartSmoothingS: 3,
     });
     expect(screen.getByRole('button', { name: /usbserial-0001/ })).toHaveAttribute(
       'aria-pressed',
@@ -157,14 +157,14 @@ describe('SettingsScreen', () => {
     expect(api.setSettings).toHaveBeenCalledWith({
       connection: null,
       controls: 'full',
-      chartSmoothingS: 5,
+      chartSmoothingS: 3,
     });
   });
 
   it('picks how much the temperature line is smoothed', async () => {
     const { api, stores } = renderApp(<SettingsScreen />);
     const group = screen.getByRole('group', { name: 'Temperature smoothing' });
-    expect(within(group).getByRole('button', { name: '5 s' })).toHaveAttribute(
+    expect(within(group).getByRole('button', { name: '3 s' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );

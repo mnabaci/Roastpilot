@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import uPlot from 'uplot';
 import 'uplot/dist/uPlot.min.css';
 import { formatClock } from '../lib/format';
@@ -16,8 +16,6 @@ export interface RoastChartProps {
   layers: readonly ChartLayer[];
   markers?: readonly ChartMarker[];
   height?: number;
-  /** A small action next to the legend, e.g. Clear. */
-  action?: ReactNode;
   className?: string;
 }
 
@@ -37,7 +35,6 @@ export function RoastChart({
   layers,
   markers = [],
   height = DEFAULT_HEIGHT,
-  action,
   className,
 }: RoastChartProps) {
   const plotRef = useRef<HTMLDivElement>(null);
@@ -124,7 +121,6 @@ export function RoastChart({
             </span>
           )}
           <Legend label="Legend" layers={main} at={hoverT} />
-          {action}
         </div>
       </div>
       <div ref={plotRef} role="img" aria-label={describe(main)} className="w-full" />

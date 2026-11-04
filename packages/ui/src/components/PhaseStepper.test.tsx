@@ -18,4 +18,12 @@ describe('PhaseStepper', () => {
     render(<PhaseStepper steps={steps} current={1} details={['4:10']} />);
     expect(screen.getAllByRole('listitem')[0]).toHaveTextContent('Preheat (done)4:10');
   });
+
+  it('a skipped step says Skipped, not done, even with a detail', () => {
+    render(<PhaseStepper steps={steps} current={4} details={['4:10', '8:00']} skipped={[2]} />);
+    const items = screen.getAllByRole('listitem');
+    expect(items[2]).toHaveTextContent('First crackSkipped');
+    expect(items[2]).not.toHaveTextContent('(done)');
+    expect(items[3]).toHaveTextContent('Drop (done)');
+  });
 });

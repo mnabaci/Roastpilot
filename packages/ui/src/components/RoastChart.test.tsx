@@ -63,17 +63,6 @@ describe('RoastChart', () => {
     expect(legend).toHaveTextContent('RoR');
   });
 
-  it('shows an action next to the legend', () => {
-    render(
-      <RoastChart
-        title="Roast curve"
-        layers={[ror]}
-        action={<button type="button">Clear</button>}
-      />,
-    );
-    expect(screen.getByRole('button', { name: 'Clear' })).toBeInTheDocument();
-  });
-
   it('describes the latest values for screen readers', () => {
     render(
       <RoastChart

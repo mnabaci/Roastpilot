@@ -19,3 +19,6 @@ export const Finished: Story = { args: { current: steps.length } };
 export const WithStageTimes: Story = {
   args: { current: 2, details: ['4:10', '6:20'] },
 };
+export const DroppedWithoutFirstCrack: Story = {
+  args: { current: 4, details: ['4:10', '9:40'], skipped: [2] },
+};
