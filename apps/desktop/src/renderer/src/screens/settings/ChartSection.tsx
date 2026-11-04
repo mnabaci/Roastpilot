@@ -5,6 +5,7 @@ import { useSaveSettings } from './use-save-settings';
 
 const OPTIONS: readonly { id: ChartSmoothing; label: string }[] = [
   { id: 0, label: 'Off' },
+  { id: 3, label: '3 s' },
   { id: 5, label: '5 s' },
   { id: 10, label: '10 s' },
 ];

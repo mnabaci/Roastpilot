@@ -64,7 +64,7 @@ describe('JsonSettingsStore', () => {
     expect(await store().load()).toEqual({
       connection: { kind: 'simulator' },
       controls: 'guided',
-      chartSmoothingS: 5,
+      chartSmoothingS: 3,
     });
   });
 
