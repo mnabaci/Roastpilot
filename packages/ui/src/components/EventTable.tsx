@@ -10,16 +10,28 @@ export interface EventRow {
   fan: string | undefined;
 }
 
-const COLUMNS = [
-  ['time', 'Time'],
-  ['bt', 'BT'],
-  ['ror', 'RoR'],
-  ['heater', 'Heater'],
-  ['fan', 'Fan'],
-] as const;
+const KEYS = ['time', 'bt', 'ror', 'heater', 'fan'] as const;
 
-/** A saved roast's events with the values at each (design system, EventTable). */
-export function EventTable({ rows, className }: { rows: readonly EventRow[]; className?: string }) {
+/**
+ * A saved roast's events with the values at each (design system, EventTable). `tempLabel` is the
+ * roaster's short name for its temperature (`Temp`, or `BT` on a roaster with a bean probe).
+ */
+export function EventTable({
+  rows,
+  tempLabel = 'Temp',
+  className,
+}: {
+  rows: readonly EventRow[];
+  tempLabel?: string;
+  className?: string;
+}) {
+  const titles: Record<(typeof KEYS)[number], string> = {
+    time: 'Time',
+    bt: tempLabel,
+    ror: 'RoR',
+    heater: 'Heater',
+    fan: 'Fan',
+  };
   return (
     <div className={cn('rounded-xl bg-surface p-4', className)}>
       <table aria-label="Events" className="w-full border-collapse text-label tabular-nums">
@@ -28,9 +40,9 @@ export function EventTable({ rows, className }: { rows: readonly EventRow[]; cla
             <th scope="col" className="pb-2 text-left font-medium">
               Event
             </th>
-            {COLUMNS.map(([key, title]) => (
+            {KEYS.map((key) => (
               <th key={key} scope="col" className="pb-2 text-right font-medium">
-                {title}
+                {titles[key]}
               </th>
             ))}
           </tr>
@@ -41,7 +53,7 @@ export function EventTable({ rows, className }: { rows: readonly EventRow[]; cla
               <th scope="row" className="py-2 text-left font-normal">
                 {row.event}
               </th>
-              {COLUMNS.map(([key]) => (
+              {KEYS.map((key) => (
                 <td key={key} className="py-2 text-right">
                   {row[key] ?? '–'}
                 </td>

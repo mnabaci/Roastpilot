@@ -1,4 +1,9 @@
-import type { Reading, RoastPhase, RoastState } from '@roastpilot/shared';
+import {
+  DEFAULT_TEMP_NAMES,
+  type Reading,
+  type RoastPhase,
+  type RoastState,
+} from '@roastpilot/shared';
 import { formatClock, formatNumber, type RoastStripProps } from '@roastpilot/ui';
 import { roastNumbers } from '../screens/roast/roast-numbers';
 import { PHASE_LABEL } from './phase-label';
@@ -18,22 +23,25 @@ const percent = (v: number | undefined) => (v === undefined ? undefined : `${Str
 export function roastStripData(
   roast: RoastState,
   readings: readonly Reading[],
+  tempShort: string = DEFAULT_TEMP_NAMES.short,
 ): Omit<RoastStripProps, 'onOpen' | 'className'> | undefined {
   const coolingRoaster = roast.roasterCoolToC !== null;
   if (!RUNNING.includes(roast.phase) && !coolingRoaster) return undefined;
   const n = roastNumbers(roast, readings);
   const latest = readings.at(-1)?.values;
   const bt = formatNumber(n.bt, 1);
+  const temp = { label: tempShort, value: bt === undefined ? undefined : `${bt} °C` };
+  const fan = { label: 'Fan', value: percent(latest?.fan) };
   const numbers = [
-    { label: 'BT', value: bt === undefined ? undefined : `${bt} °C` },
+    temp,
     { label: 'RoR', value: formatNumber(n.ror, 1) },
     { label: 'Heater', value: percent(latest?.heater) },
-    { label: 'Fan', value: percent(latest?.fan) },
+    fan,
   ];
   if (coolingRoaster)
     return {
       lead: `Cooling the roaster · ${formatNumber(n.bt, 0) ?? '–'} °C → ${String(roast.roasterCoolToC)} °C`,
-      numbers: numbers.filter((x) => x.label === 'BT' || x.label === 'Fan'),
+      numbers: [temp, fan],
     };
   if (roast.phase === 'cooling') {
     const left =
@@ -48,7 +56,7 @@ export function roastStripData(
     return {
       lead: left,
       prompt: justDropped ? `Dump beans · ${left}` : undefined,
-      numbers: numbers.filter((x) => x.label === 'BT'),
+      numbers: [temp],
     };
   }
   const time = roast.phase === 'preheat' ? n.preheatS : n.elapsedS;

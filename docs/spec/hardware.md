@@ -52,7 +52,7 @@ Comma-separated: `0.00,<temp>,<temp>,<heater>,<fan>,0`, for example `0.00,180.25
 
 `SimulatedDriver` is a twin of this setup, so whatever runs on it runs on the real roaster.
 
-- **Same channels:** `bt` (°C, read), `heater` and `fan` (0–100, step 5), `cooling` (0 or 100), `filter` (levels 0–4) and `drum` (on/off), with the same safe-stop sequence.
+- **Same channels:** `bt` (°C, read; named "Temperature" / "Temp": the probe is the drum where it touches the beans, not a probe in the bean mass), `heater` and `fan` (0–100, step 5), `cooling` (0 or 100), `filter` (levels 0–4) and `drum` (on/off), with the same safe-stop sequence.
 - **Same sketch behaviour:** keeps every command, 10 s watchdog switches everything off; `ESTOP` above 300 °C; reports protocol version `1`.
 - **Thermal model:** the drum's temperature, updated in 100 ms steps from the injected clock. Heater adds heat; loss to the room grows with the gap to ambient, the fan and the cooling fan.
 - **Beans:** `chargeBeans()` puts room-temperature beans in the drum and `dumpBeans()` takes them out. With beans in, the drum heats them and loses that heat, and the probe follows the beans with a lag, so BT dips at charge and turns, like a real roast. Without beans the probe reads the drum. In the app, Start puts beans in and Drop or End takes them out.

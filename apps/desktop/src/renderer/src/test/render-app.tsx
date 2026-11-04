@@ -57,7 +57,7 @@ export const CONNECTED: ConnectionState = {
   status: 'connected',
   target: { kind: 'serial', path: '/dev/cu.usbserial-0001' },
   channels: [
-    { id: 'bt', kind: 'sensor', unit: 'celsius' },
+    { id: 'bt', kind: 'sensor', unit: 'celsius', name: 'Temperature', short: 'Temp' },
     { id: 'heater', ...percent },
     { id: 'fan', ...percent },
     { id: 'cooling', ...percent },

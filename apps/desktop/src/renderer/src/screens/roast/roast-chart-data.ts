@@ -1,5 +1,10 @@
 import { rateOfRise, ROR_DRAW_LIMITS, ROR_WINDOW_MS, rorReadings } from '@roastpilot/core';
-import type { Reading, RoastEvent, RoastState } from '@roastpilot/shared';
+import {
+  DEFAULT_TEMP_NAMES,
+  type Reading,
+  type RoastEvent,
+  type RoastState,
+} from '@roastpilot/shared';
 import type { ChartLayer, ChartMarker, ChartPoint } from '@roastpilot/ui';
 
 /** Readings further apart than this are a break in every line (the lost-connection limit). */
@@ -100,13 +105,13 @@ function untilRoastEnd(roast: RoastState, readings: readonly Reading[]): readonl
 }
 
 /**
- * Bean temperature, RoR, heater and fan layers plus event markers, in seconds since charge (or
+ * Temperature (as the roaster names it), RoR, heater and fan layers plus event markers, in seconds since charge (or
  * since the first reading). Missing readings are breaks; the temperature line is smoothed.
  */
 export function roastChartData(
   roast: RoastState,
   allReadings: readonly Reading[],
-  { smoothingS }: { smoothingS: number },
+  { smoothingS, tempName = DEFAULT_TEMP_NAMES.name }: { smoothingS: number; tempName?: string },
 ): { layers: ChartLayer[]; markers: ChartMarker[] } {
   const readings = untilRoastEnd(roast, allReadings);
   const zeroMs = roast.chargedAtMs ?? readings[0]?.atMs ?? 0;
@@ -114,7 +119,7 @@ export function roastChartData(
   const breaks = breakTimes(readings).map(toT);
   const temperature: ChartLayer = {
     id: 'bt',
-    label: 'Temperature',
+    label: tempName,
     axis: 'temperature',
     tone: 'heat',
     width: 3.5,

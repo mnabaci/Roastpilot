@@ -9,7 +9,7 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 - Each screen scrolls inside its own area; on Logs only the list of entries scrolls.
 - Nothing scrolls sideways or gets clipped from the minimum window (960 × 640) up to full screen: long text truncates, numbers fit their cards, rows wrap.
 - **Brand:** the Roastpilot mark (a dark coffee bean on an ember tile, its cut running end to end) is the app icon in the Dock, the taskbar and the installers, and sits at the left of the top bar. The window title is "Roastpilot". In development the Dock shows the mark too; its name there stays "Electron", which macOS takes from the Electron bundle.
-- **Roast strip:** on any screen but Roast, while a roast runs (Preheat to Cooling, or the roaster cool-down), a slim fixed row under the top bar shows what needs you first, then the numbers. When an action is due it leads, highlighted, as the flow panel names it ("Dump beans · Cooling 3:58 left"); only real prompts, never a guess. Otherwise it is quiet numbers: `Roasting · 7:42   BT 182.4 °C   RoR 8.1   Heater 60 %   Fan 40 %`. Clicking it opens Roast. Safety stays in the banners, never in the strip. It fits 960 × 640: numbers only, no hints.
+- **Roast strip:** on any screen but Roast, while a roast runs (Preheat to Cooling, or the roaster cool-down), a slim fixed row under the top bar shows what needs you first, then the numbers. When an action is due it leads, highlighted, as the flow panel names it ("Dump beans · Cooling 3:58 left"); only real prompts, never a guess. Otherwise it is quiet numbers: `Roasting · 7:42   Temp 182.4 °C   RoR 8.1   Heater 60 %   Fan 40 %` (the temperature under the connected roaster's short name, [extensibility.md](extensibility.md)). Clicking it opens Roast. Safety stays in the banners, never in the strip. It fits 960 × 640: numbers only, no hints.
 
 ## App menu
 
@@ -56,7 +56,7 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 ## History screen
 
 - List of roasts, newest first: date and time, total time (charge to drop), first crack time, drop temp; Unfinished when cooling never ended.
-- Open a roast to see its chart, stage times and events; under the chart, a small events table (secondary text): Event · Time · BT · RoR · Heater · Fan for Charge, Turning point, First crack, Drop and Cool end (or End), with the values read from the saved samples at each event, so older roasts get it too. A dash where there is no value; Compare overlays one other roast, faded, aligned at charge.
+- Open a roast to see its chart, stage times and events; under the chart, a small events table (secondary text): Event · Time · Temp · RoR · Heater · Fan for Charge, Turning point, First crack, Drop and Cool end (or End), with the values read from the saved samples at each event, so older roasts get it too. A dash where there is no value; Compare overlays one other roast, faded, aligned at charge.
 - Delete asks once ("Delete this roast? · can't be undone"), then the list moves to the next roast.
 - Later milestones: bean, profile, rating and star columns; filter by bean, profile or favourites; Make profile from this; Export CSV.
 

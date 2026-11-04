@@ -8,7 +8,7 @@ const meta = {
     lead: 'Roasting · 7:42',
     onOpen: () => undefined,
     numbers: [
-      { label: 'BT', value: '182.4 °C' },
+      { label: 'Temp', value: '182.4 °C' },
       { label: 'RoR', value: '8.1' },
       { label: 'Heater', value: '60 %' },
       { label: 'Fan', value: '40 %' },
@@ -24,13 +24,13 @@ export const NeedsYou: Story = {
   args: {
     lead: 'Cooling · 0:02',
     prompt: 'Dump beans · Cooling 3:58 left',
-    numbers: [{ label: 'BT', value: '196.2 °C' }],
+    numbers: [{ label: 'Temp', value: '196.2 °C' }],
   },
 };
 export const MissingValues: Story = {
   args: {
     numbers: [
-      { label: 'BT', value: undefined },
+      { label: 'Temp', value: undefined },
       { label: 'RoR', value: undefined },
     ],
   },

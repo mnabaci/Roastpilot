@@ -31,12 +31,17 @@ describe('EventTable', () => {
       within(table)
         .getAllByRole('columnheader')
         .map((h) => h.textContent),
-    ).toEqual(['Event', 'Time', 'BT', 'RoR', 'Heater', 'Fan']);
+    ).toEqual(['Event', 'Time', 'Temp', 'RoR', 'Heater', 'Fan']);
     const charge = within(table).getByRole('row', { name: /Charge/ });
     expect(
       within(charge)
         .getAllByRole('cell')
         .map((c) => c.textContent),
     ).toEqual(['0:00', '181.0 °C', '–', '0 %', '30 %']);
+  });
+
+  it("heads the temperature column with the roaster's short name", () => {
+    render(<EventTable rows={[]} tempLabel="BT" />);
+    expect(screen.getByRole('columnheader', { name: 'BT' })).toBeInTheDocument();
   });
 });

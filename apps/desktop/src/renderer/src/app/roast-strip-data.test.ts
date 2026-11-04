@@ -19,7 +19,7 @@ describe('roastStripData', () => {
     expect(data?.lead).toBe('Roasting · 7:42');
     expect(data?.prompt).toBeUndefined();
     expect(data?.numbers).toEqual([
-      { label: 'BT', value: '183.0 °C' },
+      { label: 'Temp', value: '183.0 °C' },
       { label: 'RoR', value: '6.0' },
       { label: 'Heater', value: '60 %' },
       { label: 'Fan', value: '40 %' },
@@ -43,7 +43,7 @@ describe('roastStripData', () => {
     });
     const early = roastStripData(cooling, [reading(602_000, { bt: 196.2 })]);
     expect(early?.prompt).toBe('Dump beans · Cooling 3:58 left');
-    expect(early?.numbers).toEqual([{ label: 'BT', value: '196.2 °C' }]);
+    expect(early?.numbers).toEqual([{ label: 'Temp', value: '196.2 °C' }]);
     const later = roastStripData(cooling, [reading(600_000 + DUMP_PROMPT_MS, { bt: 120 })]);
     expect(later?.prompt).toBeUndefined();
     expect(later?.lead).toBe('Cooling 3:00 left');
@@ -56,7 +56,7 @@ describe('roastStripData', () => {
     );
     expect(data?.lead).toBe('Cooling the roaster · 92 °C → 50 °C');
     expect(data?.numbers).toEqual([
-      { label: 'BT', value: '92.4 °C' },
+      { label: 'Temp', value: '92.4 °C' },
       { label: 'Fan', value: '100 %' },
     ]);
   });
@@ -68,5 +68,14 @@ describe('roastStripData', () => {
     );
     expect(data?.lead).toBe('Cooling · 112 °C → 90 °C');
     expect(data?.prompt).toBeUndefined();
+  });
+
+  it('names the temperature as the connected roaster does', () => {
+    const data = roastStripData(
+      roast({ phase: 'roasting', chargedAtMs: 0 }),
+      [reading(60_000, { bt: 150 })],
+      'BT',
+    );
+    expect(data?.numbers[0]).toEqual({ label: 'BT', value: '150.0 °C' });
   });
 });

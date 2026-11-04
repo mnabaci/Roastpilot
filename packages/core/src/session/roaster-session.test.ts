@@ -17,7 +17,9 @@ import { RoasterSession, SAFE_STOP_TIMEOUT_MS } from './roaster-session';
 
 const TARGET = { kind: 'serial', path: '/dev/cu.test' } as const;
 
-const CHANNELS: Channel[] = [{ id: 'bt', kind: 'sensor', unit: 'celsius' }];
+const CHANNELS: Channel[] = [
+  { id: 'bt', kind: 'sensor', unit: 'celsius', name: 'Temperature', short: 'Temp' },
+];
 
 /** A roaster whose cable you can pull, and whose reads or safe stop you can make hang. */
 class FakeRoaster implements RoasterDriver {

@@ -157,6 +157,31 @@ describe('RoastScreen', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('names the temperature as the connected roaster does', () => {
+    const beanProbe = {
+      ...CONNECTED,
+      channels:
+        CONNECTED.status === 'connected'
+          ? [
+              {
+                id: 'bt',
+                kind: 'sensor',
+                unit: 'celsius',
+                name: 'Bean temperature',
+                short: 'BT',
+              } as const,
+              ...CONNECTED.channels.slice(1),
+            ]
+          : [],
+    };
+    renderApp(<RoastScreen onConnect={onConnect} />, {
+      connection: beanProbe,
+      roast: roast('roasting'),
+      readings: [reading({ bt: 150 }, 60_000)],
+    });
+    expect(screen.getByRole('region', { name: 'Bean temperature' })).toHaveTextContent('150.0°C');
+  });
+
   it('marks where the roast is', () => {
     renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast('development') });
     expect(screen.getByText('First crack', { selector: 'li span' }).closest('li')).toHaveAttribute(

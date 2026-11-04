@@ -7,6 +7,7 @@ import { skippedSteps, stageTimes } from './stage-times';
 import { FlowPanel } from './FlowPanel';
 import { OutputsPanel } from './OutputsPanel';
 import { RoastNumbersRow } from './RoastNumbersRow';
+import { useSensorNames } from '../../features/use-sensor-names';
 import { clearReadings } from '../../stores/roast-store';
 import { useConnection, useRoast, useSettings } from '../../stores/use-stores';
 import { isConnected } from './flow-step';
@@ -40,9 +41,10 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
   // With no roaster, the last temperature would look live: show dashes instead.
   const shown = connected ? numbers : { ...numbers, bt: undefined, ror: undefined };
   const smoothingS = useSettings((s) => s.settings.chartSmoothingS);
+  const temp = useSensorNames();
   const chart = useMemo(
-    () => roastChartData(roast, readings, { smoothingS }),
-    [roast, readings, smoothingS],
+    () => roastChartData(roast, readings, { smoothingS, tempName: temp.name }),
+    [roast, readings, smoothingS, temp.name],
   );
   return (
     <main className="grid min-h-0 flex-1 grid-cols-[1fr_auto] content-start gap-6 overflow-y-auto p-6">
@@ -71,7 +73,7 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
             </Button>
           ) : null}
         </div>
-        <RoastNumbersRow numbers={shown} />
+        <RoastNumbersRow numbers={shown} tempName={temp.name} />
         <RoastChart title="Roast curve" layers={chart.layers} markers={chart.markers} />
       </div>
       <aside aria-label="Controls" className="flex w-80 flex-col gap-5">

@@ -3,10 +3,13 @@ export {
   OutputChannelSchema,
   ReadingSchema,
   SensorChannelSchema,
+  DEFAULT_TEMP_NAMES,
+  sensorNames,
   type Channel,
   type OutputChannel,
   type Reading,
   type SensorChannel,
+  type SensorNames,
 } from './channels';
 export {
   ConnectionStateSchema,
