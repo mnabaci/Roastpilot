@@ -8,18 +8,21 @@ import type { Logger } from './logger';
 export class FailureStreak {
   readonly #logger: Logger;
   readonly #event: string;
+  readonly #context: Readonly<Record<string, unknown>>;
   #kind: string | undefined;
   #count = 0;
 
-  constructor(logger: Logger, event: string) {
+  /** `context` goes on both entries, e.g. which port. */
+  constructor(logger: Logger, event: string, context: Readonly<Record<string, unknown>> = {}) {
     this.#logger = logger;
     this.#event = event;
+    this.#context = context;
   }
 
   record(result: Result<unknown, { kind: string }>): void {
     if (result.ok) {
       if (this.#kind !== undefined)
-        this.#logger.info(`${this.#event}-recovered`, { failures: this.#count });
+        this.#logger.info(`${this.#event}-recovered`, { ...this.#context, failures: this.#count });
       this.#kind = undefined;
       this.#count = 0;
       return;
@@ -27,7 +30,7 @@ export class FailureStreak {
     this.#count++;
     if (result.error.kind !== this.#kind) {
       this.#kind = result.error.kind;
-      this.#logger.warn(`${this.#event}-failed`, { error: result.error });
+      this.#logger.warn(`${this.#event}-failed`, { ...this.#context, error: result.error });
     }
   }
 }
