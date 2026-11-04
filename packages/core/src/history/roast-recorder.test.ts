@@ -222,6 +222,27 @@ describe('RoastRecorder', () => {
     expect(repository.roasts.get(1)?.samples).toEqual([{ tS: 0, values: { bt: 180, heater: 50 } }]);
   });
 
+  it('a roaster cool-down after Done is not a new roast', async () => {
+    const { recorder, repository, saved } = setup();
+    recorder.onRoastChange(CHARGED);
+    recorder.onRoastChange(DONE);
+    recorder.onRoastChange({ ...DONE, roasterCoolingSinceMs: 950_000, roasterCoolToC: 50 });
+    recorder.onRoastChange({ ...DONE, roasterCoolingSinceMs: null, roasterCoolToC: null });
+    recorder.onReading(reading(960_000, 49));
+    await recorder.flush();
+    expect([...repository.roasts.keys()]).toEqual([1]);
+    expect(saved).toEqual([1, 1]);
+  });
+
+  it('a new charge after Done (Full control, no Preheat) still gets its own row', async () => {
+    const { recorder, repository } = setup();
+    recorder.onRoastChange(CHARGED);
+    recorder.onRoastChange(DONE);
+    recorder.onRoastChange({ ...CHARGED, chargedAtMs: 2_000_000 });
+    await recorder.flush();
+    expect([...repository.roasts.keys()]).toEqual([1, 2]);
+  });
+
   it('the next roast gets its own row', async () => {
     const { recorder, repository } = setup();
     recorder.onRoastChange(CHARGED);

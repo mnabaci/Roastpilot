@@ -56,6 +56,8 @@ export class RoastRecorder {
   readonly #logger: Logger;
   readonly #writes: FailureStreak;
   #recording: Recording | undefined;
+  /** The charge of the roast last finished: Done keeps it, and later changes aren't a new roast. */
+  #finishedChargedAtMs: number | undefined;
   #queue: Promise<void> = Promise.resolve();
 
   constructor(deps: RoastRecorderDeps) {
@@ -69,11 +71,17 @@ export class RoastRecorder {
     const { chargedAtMs } = state;
     if (chargedAtMs === null) {
       this.#recording = undefined;
+      this.#finishedChargedAtMs = undefined;
       return;
     }
+    // Done keeps the charge on screen; a roaster cool-down after it changes the state again.
+    if (chargedAtMs === this.#finishedChargedAtMs) return;
     if (this.#recording?.chargedAtMs !== chargedAtMs) this.#start(state, chargedAtMs);
     this.#saveNewEvents(state);
-    if (state.phase === 'done') this.#recording = undefined;
+    if (state.phase === 'done') {
+      this.#recording = undefined;
+      this.#finishedChargedAtMs = chargedAtMs;
+    }
   }
 
   /** Every reading from the roaster; saved while a roast is recording. */
