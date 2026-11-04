@@ -6,8 +6,8 @@ import { Button } from './Button';
 export interface OutputControlProps {
   /** Output name, e.g. "Heater" or "Fan". */
   label: string;
-  /** Current value in percent. */
-  value: number;
+  /** Current value in percent; undefined shows a dash (no roaster to report it). */
+  value: number | undefined;
   mode: 'auto' | 'manual';
   /** Called with the new value when the user moves the slider (switches the output to manual). */
   onChange: (value: number) => void;
@@ -48,7 +48,7 @@ export function OutputControl({
         <div className="flex items-center gap-2.5">
           <Badge tone={manual ? 'heat' : 'air'}>{manual ? 'Manual' : 'Auto'}</Badge>
           <output htmlFor={id} className="min-w-14 text-right text-readout-lg tabular-nums">
-            {value}%
+            {value === undefined ? '–' : `${String(value)}%`}
           </output>
         </div>
       </div>
@@ -58,8 +58,8 @@ export function OutputControl({
         min={min}
         max={max}
         step={step}
-        value={value}
-        disabled={disabled}
+        value={value ?? min}
+        disabled={disabled || value === undefined}
         onChange={(event) => {
           onChange(Number(event.target.value));
         }}

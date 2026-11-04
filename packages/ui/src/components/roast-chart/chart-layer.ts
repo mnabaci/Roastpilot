@@ -1,7 +1,10 @@
-/** A point on the chart: seconds since charge (negative during preheat) and a value. */
+/**
+ * A point on the chart: seconds since charge (negative during preheat) and a value. A null value
+ * is a break: the line stops there instead of joining across missing readings.
+ */
 export interface ChartPoint {
   t: number;
-  v: number;
+  v: number | null;
 }
 
 /**

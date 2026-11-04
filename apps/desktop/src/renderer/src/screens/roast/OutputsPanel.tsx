@@ -31,7 +31,8 @@ export function OutputsPanel() {
         label="Heater"
         tone="heat"
         mode="manual"
-        value={heater.value}
+        // With no roaster, its last values would look live: show a dash instead.
+        value={connected ? heater.value : undefined}
         onChange={heater.set}
         disabled={!access.outputs || locked}
       />
@@ -39,14 +40,14 @@ export function OutputsPanel() {
         label="Fan"
         tone="air"
         mode="manual"
-        value={fan.value}
+        value={connected ? fan.value : undefined}
         onChange={fan.set}
         disabled={!access.outputs}
       />
       <div className="flex flex-col gap-2">
         <OnOffButton
           label="Drum"
-          on={drum.value > 0}
+          on={connected && drum.value > 0}
           disabled={!access.switches}
           onToggle={(on) => {
             drum.set(on ? 1 : 0);
@@ -54,7 +55,7 @@ export function OutputsPanel() {
         />
         <OnOffButton
           label="Filter"
-          on={filter.value > 0}
+          on={connected && filter.value > 0}
           disabled={!access.switches}
           onToggle={(on) => {
             filter.set(on ? FILTER_ON : 0);
@@ -63,7 +64,7 @@ export function OutputsPanel() {
         {access.showCooling ? (
           <OnOffButton
             label="Cooling"
-            on={cooling.value > 0}
+            on={connected && cooling.value > 0}
             disabled={!connected}
             onToggle={(on) => {
               cooling.set(on ? 100 : 0);

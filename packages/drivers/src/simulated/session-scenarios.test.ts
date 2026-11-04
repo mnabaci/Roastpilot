@@ -25,7 +25,7 @@ function setup() {
 describe('RoasterSession on the simulated Skywalker', () => {
   it('heats under manual control and publishes rising readings', async () => {
     const { clock, sim, session, readings } = setup();
-    await session.connect(sim);
+    await session.connect(sim, { kind: 'simulator' });
     await session.setOutput('heater', 100);
     await clock.runFor(60_000);
     expect(readings.length).toBeGreaterThanOrEqual(60);
@@ -34,7 +34,7 @@ describe('RoasterSession on the simulated Skywalker', () => {
 
   it('a pulled cable goes lost, reconnects by itself and sends the second safe stop', async () => {
     const { clock, sim, session, states, events, heater } = setup();
-    await session.connect(sim);
+    await session.connect(sim, { kind: 'simulator' });
     await session.setOutput('heater', 60);
     await clock.runFor(10_000);
     sim.unplug();
@@ -54,7 +54,7 @@ describe('RoasterSession on the simulated Skywalker', () => {
 
   it('disconnect leaves the roaster safe-stopped and raises no alarm', async () => {
     const { clock, sim, session, events } = setup();
-    await session.connect(sim);
+    await session.connect(sim, { kind: 'simulator' });
     await session.setOutput('heater', 80);
     await clock.runFor(5_000);
     await session.disconnect();

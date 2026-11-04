@@ -7,6 +7,8 @@ export interface RoastNumbers {
   ror: number | undefined;
   /** Seconds since charge, frozen at drop. */
   elapsedS: number | undefined;
+  /** Seconds since Preheat, while preheating. */
+  preheatS: number | undefined;
   /** Seconds since first crack, frozen at drop. */
   developmentS: number | undefined;
   /** Development as a share of the roast, 0–100. */
@@ -30,6 +32,11 @@ export function roastNumbers(roast: RoastState, readings: readonly Reading[]): R
     bt: latest?.values.bt,
     ror: rateOfRise(readings),
     elapsedS: elapsedMs === undefined ? undefined : seconds(elapsedMs),
+    preheatS:
+      // typeof, not !== null: a main process from before preheatAtMs existed leaves it out.
+      roast.phase === 'preheat' && typeof roast.preheatAtMs === 'number' && nowMs !== undefined
+        ? seconds(nowMs - roast.preheatAtMs)
+        : undefined,
     developmentS: developmentMs === undefined ? undefined : seconds(developmentMs),
     developmentPct:
       developmentMs !== undefined && elapsedMs !== undefined && elapsedMs > 0

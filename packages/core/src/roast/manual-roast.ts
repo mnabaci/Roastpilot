@@ -19,10 +19,13 @@ export const DEFAULT_COOLING_MS = 4 * 60_000;
 /** Which states each action may start from (docs/spec/manual-mode.md, Manual roast flow). */
 const ALLOWED_FROM: Readonly<Record<RoastAction, readonly RoastPhase[]>> = {
   preheat: ['ready', 'done'],
+  'cancel-preheat': ['preheat'],
   // Full control may skip Preheat; the drum and filter fan still come on.
   start: ['ready', 'preheat'],
   'first-crack': ['roasting'],
   drop: ['roasting', 'development'],
+  // Only with no roast running, so a roast in progress can't be wiped by accident.
+  clear: ['ready', 'done'],
 };
 
 type Outputs = readonly (readonly [channel: string, value: number])[];
@@ -67,6 +70,7 @@ export interface ManualRoastDeps {
 
 const READY: RoastState = {
   phase: 'ready',
+  preheatAtMs: null,
   chargedAtMs: null,
   firstCrackAtMs: null,
   droppedAtMs: null,
@@ -107,10 +111,15 @@ export class ManualRoast {
 
   /** One step per action; ALLOWED_FROM has already checked the state. */
   readonly #steps: Readonly<Record<RoastAction, (nowMs: number) => Promise<void>>> = {
-    preheat: async () => {
+    preheat: async (nowMs) => {
       this.#deps.onNewRoast();
-      this.#set({ ...READY, phase: 'preheat' });
+      this.#set({ ...READY, phase: 'preheat', preheatAtMs: nowMs });
       await this.#send(ROAST_ON);
+    },
+    // Back to Ready with everything off; the readings stay on the chart.
+    'cancel-preheat': async () => {
+      this.#set(READY);
+      await this.#send(ALL_OFF);
     },
     start: async (nowMs) => {
       this.#set({
@@ -129,6 +138,12 @@ export class ManualRoast {
         firstCrackAtMs: nowMs,
         events: [...this.#state.events, this.#event('first-crack', nowMs)],
       });
+      return Promise.resolve();
+    },
+    // Forgets the last roast's readings and events; sends nothing to the roaster.
+    clear: () => {
+      this.#deps.onNewRoast();
+      this.#set(READY);
       return Promise.resolve();
     },
     drop: async (nowMs) => {

@@ -4,6 +4,7 @@ import { OctagonX } from 'lucide-react';
 import { useConnection, useRoast } from '../stores/use-stores';
 import { useDeps } from './app-context';
 import { useRun } from '../features/use-run';
+import { targetLabel } from './connection-label';
 
 export type Screen = 'roast' | 'settings' | 'logs';
 
@@ -42,7 +43,8 @@ export function TopBar({
 }) {
   const { api } = useDeps();
   const run = useRun();
-  const status = useConnection((s) => s.connection.status);
+  const connection = useConnection((s) => s.connection);
+  const { status } = connection;
   const phase = useRoast((s) => s.roast.phase);
   return (
     <header className="flex items-center gap-4 border-b border-border px-6 py-3">
@@ -66,7 +68,10 @@ export function TopBar({
         <Badge tone={status === 'connected' ? 'air' : status === 'lost' ? 'heat' : 'neutral'}>
           {CONNECTION_LABEL[status]}
         </Badge>
-        {status === 'connected' ? <span>{PHASE_LABEL[phase]}</span> : null}
+        {connection.status !== 'disconnected' ? (
+          <span className="text-ink">{targetLabel(connection.target)}</span>
+        ) : null}
+        {status === 'connected' ? <span>· {PHASE_LABEL[phase]}</span> : null}
       </p>
       <Button
         variant="danger"

@@ -16,7 +16,12 @@ describe('syncWithMain', () => {
         onReading = listener;
         return () => undefined;
       },
-      getSettings: () => Promise.resolve({ connection: { kind: 'simulator' }, controls: 'full' }),
+      getSettings: () =>
+        Promise.resolve({
+          connection: { kind: 'simulator' },
+          controls: 'full',
+          chartSmoothingS: 5,
+        }),
     });
     const stores = createStores();
     syncWithMain(api, stores, logger());

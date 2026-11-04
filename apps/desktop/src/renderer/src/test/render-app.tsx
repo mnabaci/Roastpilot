@@ -44,6 +44,7 @@ export function fakeApi(overrides: Partial<RoastpilotApi> = {}): Mocked<Roastpil
 const percent = { kind: 'output', unit: 'percent', min: 0, max: 100, step: 5 } as const;
 export const CONNECTED: ConnectionState = {
   status: 'connected',
+  target: { kind: 'serial', path: '/dev/cu.usbserial-0001' },
   channels: [
     { id: 'bt', kind: 'sensor', unit: 'celsius' },
     { id: 'heater', ...percent },

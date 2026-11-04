@@ -25,7 +25,7 @@ function setup() {
 describe('createAppServices', () => {
   it('publishes connection, readings and roast changes to the windows', async () => {
     const { clock, services, published, sim } = setup();
-    await services.session.connect(sim);
+    await services.session.connect(sim, { kind: 'simulator' });
     await clock.runFor(2000);
     await services.roast.act('preheat');
     const channels = new Set(published.map(([c]) => c));
@@ -36,7 +36,7 @@ describe('createAppServices', () => {
 
   it('gives a reloading window everything it needs', async () => {
     const { clock, services, sim } = setup();
-    await services.session.connect(sim);
+    await services.session.connect(sim, { kind: 'simulator' });
     await services.roast.act('start');
     await clock.runFor(5000);
     services.session.emergencyStop();
@@ -49,7 +49,7 @@ describe('createAppServices', () => {
 
   it('starts a fresh chart at Preheat, and stamps events with the latest temperature', async () => {
     const { clock, services, sim } = setup();
-    await services.session.connect(sim);
+    await services.session.connect(sim, { kind: 'simulator' });
     await clock.runFor(10_000);
     await services.roast.act('preheat');
     expect(services.snapshot().readings).toEqual([]);
@@ -60,7 +60,7 @@ describe('createAppServices', () => {
 
   it('arms max roast time at Start through the session', async () => {
     const { clock, services, published, sim } = setup();
-    await services.session.connect(sim);
+    await services.session.connect(sim, { kind: 'simulator' });
     await services.roast.act('start');
     await clock.runFor(20 * 60_000 + 2000);
     expect(

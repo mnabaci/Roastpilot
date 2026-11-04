@@ -1,5 +1,5 @@
 import { err, type RoastpilotApi } from '@roastpilot/shared';
-import { act, screen } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { CONNECTED, fakeApi, renderApp } from '../../test/render-app';
@@ -22,6 +22,7 @@ describe('SettingsScreen', () => {
     expect(api.setSettings).toHaveBeenCalledWith({
       connection: { kind: 'serial', path: '/dev/cu.usbserial-0001' },
       controls: 'guided',
+      chartSmoothingS: 5,
     });
     expect(screen.getByRole('button', { name: /usbserial-0001/ })).toHaveAttribute(
       'aria-pressed',
@@ -37,7 +38,7 @@ describe('SettingsScreen', () => {
     });
     renderApp(
       <SettingsScreen />,
-      { settings: { connection: { kind: 'simulator' }, controls: 'guided' } },
+      { settings: { connection: { kind: 'simulator' }, controls: 'guided', chartSmoothingS: 5 } },
       api,
     );
     await userEvent.click(screen.getByRole('button', { name: 'Connect' }));
@@ -54,7 +55,7 @@ describe('SettingsScreen', () => {
     });
     renderApp(
       <SettingsScreen />,
-      { settings: { connection: { kind: 'simulator' }, controls: 'guided' } },
+      { settings: { connection: { kind: 'simulator' }, controls: 'guided', chartSmoothingS: 5 } },
       api,
     );
     await userEvent.click(screen.getByRole('button', { name: 'Connect' }));
@@ -72,8 +73,8 @@ describe('SettingsScreen', () => {
 
   it('shows Connecting… while main reports connecting', () => {
     renderApp(<SettingsScreen />, {
-      connection: { status: 'connecting' },
-      settings: { connection: { kind: 'simulator' }, controls: 'guided' },
+      connection: { status: 'connecting', target: { kind: 'simulator' } },
+      settings: { connection: { kind: 'simulator' }, controls: 'guided', chartSmoothingS: 5 },
     });
     expect(screen.getByRole('button', { name: 'Connecting…' })).toBeDisabled();
     expect(screen.queryByRole('button', { name: 'Disconnect' })).not.toBeInTheDocument();
@@ -82,19 +83,70 @@ describe('SettingsScreen', () => {
   it('says when there are no ports, and Refresh looks again', async () => {
     const listPorts = vi.fn(() => Promise.resolve([]));
     renderApp(<SettingsScreen />, {}, fakeApi({ listPorts }));
-    expect(await screen.findByText(/No serial ports found/)).toBeInTheDocument();
+    expect(await screen.findByText(/No roaster found/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Refresh' }));
     expect(listPorts).toHaveBeenCalledTimes(2);
   });
 
-  it('while connected: Disconnect, and the roaster list is locked', async () => {
+  it('while connected: the port in use, locked, and Disconnect', async () => {
     const { api } = renderApp(<SettingsScreen />, {
       connection: CONNECTED,
-      settings: { connection: { kind: 'simulator' }, controls: 'guided' },
+      settings: { connection: { kind: 'simulator' }, controls: 'guided', chartSmoothingS: 5 },
     });
-    expect(screen.getByRole('button', { name: /Simulator/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /usbserial-0001/ })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /Simulator/ })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
     expect(api.disconnect).toHaveBeenCalledOnce();
+  });
+
+  it('while connected, shows only the roaster in use, marked Connected', async () => {
+    renderApp(
+      <SettingsScreen />,
+      {
+        connection: { status: 'connected', target: { kind: 'simulator' }, channels: [] },
+        settings: { connection: null, controls: 'guided', chartSmoothingS: 5 },
+      },
+      fakeApi({ listPorts: ports }),
+    );
+    const simulator = screen.getByRole('button', { name: /Simulator/ });
+    expect(simulator).toHaveAttribute('aria-pressed', 'true');
+    expect(simulator).toHaveTextContent('Connected');
+    // Only the roaster in use shows, and there is nothing to refresh.
+    await Promise.resolve();
+    expect(screen.queryByRole('button', { name: /usbserial-0001/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Refresh' })).not.toBeInTheDocument();
+  });
+
+  it('shows the remembered roaster alone; Choose another opens likely roasters, then all ports', async () => {
+    const listPorts = () =>
+      Promise.resolve([
+        { path: '/dev/cu.debug-console' },
+        { path: '/dev/cu.usbserial-0001', manufacturer: 'Silicon Labs' },
+      ]);
+    const { api } = renderApp(
+      <SettingsScreen />,
+      {
+        settings: {
+          connection: { kind: 'serial', path: '/dev/cu.usbserial-0001' },
+          controls: 'guided',
+          chartSmoothingS: 5,
+        },
+      },
+      fakeApi({ listPorts }),
+    );
+    const list = screen.getByRole('list', { name: 'Roasters' });
+    expect(await within(list).findByText('Silicon Labs')).toBeInTheDocument();
+    expect(within(list).getAllByRole('button')).toHaveLength(1);
+    await userEvent.click(screen.getByRole('button', { name: 'Choose another' }));
+    expect(within(list).getAllByRole('button')).toHaveLength(2);
+    expect(within(list).queryByText(/debug-console/)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Show all ports (1 more)' }));
+    expect(within(list).getByText(/debug-console/)).toBeInTheDocument();
+    await userEvent.click(within(list).getByRole('button', { name: /Simulator/ }));
+    expect(api.setSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ connection: { kind: 'simulator' } }),
+    );
+    expect(within(list).getAllByRole('button')).toHaveLength(1);
   });
 
   it('switches between Guided and Full control', async () => {
@@ -102,7 +154,23 @@ describe('SettingsScreen', () => {
     expect(screen.getByRole('button', { name: 'Guided' })).toHaveAttribute('aria-pressed', 'true');
     await userEvent.click(screen.getByRole('button', { name: 'Full control' }));
     expect(stores.settings.getState().settings.controls).toBe('full');
-    expect(api.setSettings).toHaveBeenCalledWith({ connection: null, controls: 'full' });
+    expect(api.setSettings).toHaveBeenCalledWith({
+      connection: null,
+      controls: 'full',
+      chartSmoothingS: 5,
+    });
+  });
+
+  it('picks how much the temperature line is smoothed', async () => {
+    const { api, stores } = renderApp(<SettingsScreen />);
+    const group = screen.getByRole('group', { name: 'Temperature smoothing' });
+    expect(within(group).getByRole('button', { name: '5 s' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await userEvent.click(within(group).getByRole('button', { name: 'Off' }));
+    expect(stores.settings.getState().settings.chartSmoothingS).toBe(0);
+    expect(api.setSettings).toHaveBeenCalledWith(expect.objectContaining({ chartSmoothingS: 0 }));
   });
 
   it('keeps the change for this session when saving fails', async () => {

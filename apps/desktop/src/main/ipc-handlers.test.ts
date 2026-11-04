@@ -18,6 +18,7 @@ const SNAPSHOT: Snapshot = {
   connection: { status: 'disconnected' },
   roast: {
     phase: 'ready',
+    preheatAtMs: null,
     chargedAtMs: null,
     firstCrackAtMs: null,
     droppedAtMs: null,
@@ -33,8 +34,8 @@ function setup() {
   const driver = {} as RoasterDriver;
   const deps: IpcDeps = {
     session: {
-      connect: (d) => {
-        calls.push(['connect', d]);
+      connect: (d, target) => {
+        calls.push(['connect', d, target]);
         return Promise.resolve(ok(undefined));
       },
       disconnect: () => {
@@ -121,7 +122,7 @@ describe('createIpcHandlers', () => {
     );
     expect(calls).toEqual([
       ['createDriver', { kind: 'simulator' }],
-      ['connect', driver],
+      ['connect', driver, { kind: 'simulator' }],
     ]);
   });
 
@@ -168,7 +169,9 @@ describe('roast, snapshot and settings handlers', () => {
       extra: 1,
       connection: { kind: 'wifi' },
     });
-    expect(calls).toEqual([['settings', { controls: 'full', connection: null }]]);
+    expect(calls).toEqual([
+      ['settings', { controls: 'full', connection: null, chartSmoothingS: 5 }],
+    ]);
   });
 });
 

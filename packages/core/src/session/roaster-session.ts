@@ -6,6 +6,7 @@ import {
   type Reading,
   type Result,
   type SafetyEvent,
+  type ConnectTarget,
 } from '@roastpilot/shared';
 import type { Clock } from '../clock';
 import { FailureStreak } from '../logging/failure-streak';
@@ -44,6 +45,8 @@ export class RoasterSession {
   readonly #logger: Logger;
   readonly #reads: FailureStreak;
   #inner: RoasterDriver | undefined;
+  /** What the current roaster is, for the connection state; set with the driver. */
+  #target: ConnectTarget | undefined;
   #driver: SafetyGuardedDriver | undefined;
   /** Bumped on every connect and disconnect, so loops from an older connection stop. */
   #generation = 0;
@@ -73,13 +76,14 @@ export class RoasterSession {
     });
   }
 
-  /** Disconnects any current roaster, then connects to this one and starts polling. */
-  async connect(driver: RoasterDriver): Promise<Result<void, DriverError>> {
+  /** Disconnects any current roaster, then connects to this one (`target` names it) and starts polling. */
+  async connect(driver: RoasterDriver, target: ConnectTarget): Promise<Result<void, DriverError>> {
     await this.disconnect();
     const generation = ++this.#generation;
     this.#inner = driver;
     this.#driver = new SafetyGuardedDriver(driver, this.#monitor);
-    this.#publish.onConnection({ status: 'connecting' });
+    this.#target = target;
+    this.#publish.onConnection({ status: 'connecting', target });
     this.#logger.info('session.connecting');
 
     const connected = await this.#driver.connect();
@@ -88,11 +92,12 @@ export class RoasterSession {
       this.#logger.warn('session.connect-failed', { error: connected.error });
       this.#inner = undefined;
       this.#driver = undefined;
+      this.#target = undefined;
       this.#publish.onConnection({ status: 'disconnected' });
       return connected;
     }
     this.#logger.info('session.connected', { channels: driver.channels.map((c) => c.id) });
-    this.#publish.onConnection({ status: 'connected', channels: [...driver.channels] });
+    this.#publish.onConnection({ status: 'connected', target, channels: [...driver.channels] });
     this.#pollLoop(generation).catch((error: unknown) => {
       // No more readings: the safety loop's lost-connection rule safe-stops within 3 s.
       this.#logger.error('session.poll-loop-crashed', { error: serializeError(error) });
@@ -113,6 +118,7 @@ export class RoasterSession {
     // Forget the driver first, so the lost-connection clear this causes isn't reported as "connected".
     this.#inner = undefined;
     this.#driver = undefined;
+    this.#target = undefined;
     await driver.disconnect();
     this.#logger.info('session.disconnected');
     this.#publish.onConnection({ status: 'disconnected' });
@@ -212,7 +218,15 @@ export class RoasterSession {
 
   #followLostConnection(event: SafetyEvent): void {
     if (event.kind === 'unlocked' || event.rule !== lostConnectionRule.id || !this.#driver) return;
-    if (event.kind === 'tripped') this.#publish.onConnection({ status: 'lost' });
-    else this.#publish.onConnection({ status: 'connected', channels: [...this.#driver.channels] });
+    const target = this.#target;
+    if (!target) return;
+    if (event.kind === 'tripped') this.#publish.onConnection({ status: 'lost', target });
+    else {
+      this.#publish.onConnection({
+        status: 'connected',
+        target,
+        channels: [...this.#driver.channels],
+      });
+    }
   }
 }

@@ -11,14 +11,23 @@ describe('SafetyBanners', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('a banner per tripped rule, and the lock with Acknowledge', async () => {
+  it('one banner per trip; the critical one carries Acknowledge', async () => {
     const { api } = renderApp(<SafetyBanners />, {
       safety: { locked: true, tripped: ['max-temperature', 'slow-rise'] },
     });
-    expect(screen.getByText('Too hot · heater off, cooling on')).toBeInTheDocument();
+    const alerts = screen.getAllByRole('alert');
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]).toHaveTextContent('Too hot · heater off, fan and cooling on');
     expect(screen.getByRole('status')).toHaveTextContent('Temperature barely rising');
+    expect(screen.queryByText(/Heater locked/)).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Acknowledge' }));
     expect(api.acknowledgeSafety).toHaveBeenCalledOnce();
+  });
+
+  it('a separate Heater locked banner when the lock outlives every trip', () => {
+    renderApp(<SafetyBanners />, { safety: { locked: true, tripped: [] } });
+    expect(screen.getByRole('alert')).toHaveTextContent('Heater locked');
+    expect(screen.getByRole('button', { name: 'Acknowledge' })).toBeInTheDocument();
   });
 
   it('says what is still tripped when Acknowledge is refused', async () => {

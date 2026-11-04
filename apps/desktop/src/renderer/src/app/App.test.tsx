@@ -10,6 +10,8 @@ vi.mock('@roastpilot/ui', async (importOriginal) => ({
   RoastChart: (await import('../test/fake-ui')).FakeRoastChart,
 }));
 
+const SIM = { kind: 'simulator' } as const;
+
 describe('App', () => {
   it('opens on Settings until a roaster is connected', () => {
     renderApp(<App />);
@@ -37,18 +39,18 @@ describe('App', () => {
     expect(api.emergencyStop).toHaveBeenCalledOnce();
   });
 
-  it.each([{ status: 'connecting' } as const, { status: 'lost' } as const])(
-    'Emergency stop stays live while %o',
-    (connection) => {
-      renderApp(<App />, { connection });
-      expect(screen.getByRole('button', { name: 'Emergency stop' })).toBeEnabled();
-    },
-  );
+  it.each([
+    { status: 'connecting', target: SIM } as const,
+    { status: 'lost', target: SIM } as const,
+  ])('Emergency stop stays live while %o', (connection) => {
+    renderApp(<App />, { connection });
+    expect(screen.getByRole('button', { name: 'Emergency stop' })).toBeEnabled();
+  });
 
   it('stays on Settings while connecting, then opens Roast once connected', () => {
     const { stores } = renderApp(<App />);
     act(() => {
-      stores.connection.setState({ connection: { status: 'connecting' } });
+      stores.connection.setState({ connection: { status: 'connecting', target: SIM } });
     });
     expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument();
     act(() => {
@@ -57,8 +59,13 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Preheat' })).toBeInTheDocument();
   });
 
+  it('names the roaster it is connected to', () => {
+    renderApp(<App />, { connection: CONNECTED });
+    expect(screen.getByText('usbserial-0001')).toBeInTheDocument();
+  });
+
   it('shows the connection status', () => {
-    renderApp(<App />, { connection: { status: 'lost' } });
+    renderApp(<App />, { connection: { status: 'lost', target: SIM } });
     expect(screen.getByText('Connection lost')).toBeInTheDocument();
   });
 

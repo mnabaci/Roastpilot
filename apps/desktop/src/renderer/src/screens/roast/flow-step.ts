@@ -3,6 +3,8 @@ import type { ConnectionState, RoastAction, RoastPhase } from '@roastpilot/share
 export interface FlowButton {
   action: RoastAction;
   label: string;
+  /** A way back rather than forward (Cancel preheat): drawn as a quiet ghost button. */
+  quiet?: boolean;
 }
 
 /** The one obvious next action for a state, an optional second one, and a one-line hint. */
@@ -16,10 +18,11 @@ export interface FlowStep {
 const STEPS: Readonly<Record<RoastPhase, FlowStep>> = {
   ready: {
     primary: { action: 'preheat', label: 'Preheat' },
-    hint: 'Drum and filter on. Heat up, then add beans.',
+    hint: 'Drum and filter on · set the heater to warm up, then add beans.',
   },
   preheat: {
     primary: { action: 'start', label: 'Beans in · Start' },
+    secondary: { action: 'cancel-preheat', label: 'Cancel preheat', quiet: true },
     hint: 'Press as the beans go in.',
   },
   roasting: {

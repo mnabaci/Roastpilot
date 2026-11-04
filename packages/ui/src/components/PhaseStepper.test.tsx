@@ -13,4 +13,9 @@ describe('PhaseStepper', () => {
     expect(items[0]).toHaveTextContent('Preheat (done)');
     expect(items[3]).not.toHaveTextContent('(done)');
   });
+
+  it('shows a detail under a step, such as how long it took', () => {
+    render(<PhaseStepper steps={steps} current={1} details={['4:10']} />);
+    expect(screen.getAllByRole('listitem')[0]).toHaveTextContent('Preheat (done)4:10');
+  });
 });

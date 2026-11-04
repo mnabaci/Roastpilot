@@ -49,7 +49,7 @@ export function LogsScreen() {
   };
 
   return (
-    <main className="flex w-full flex-col gap-5 p-6">
+    <main className="flex min-h-0 flex-1 flex-col gap-5 p-6">
       <div className="flex items-center gap-3">
         <h1 className="text-title">Logs</h1>
         {day === today ? <Badge tone="air">Live</Badge> : null}
@@ -119,7 +119,7 @@ export function LogsScreen() {
           {records.length === 0 ? 'Nothing logged this day' : 'No entries match · try more levels'}
         </p>
       ) : (
-        <ul aria-label="Log entries" className="rounded-xl bg-surface">
+        <ul aria-label="Log entries" className="min-h-0 overflow-y-auto rounded-xl bg-surface">
           {shown.map((record, i) => (
             // Counted from the oldest, so a live entry arriving on top keeps the others' keys (and open rows).
             <LogRow key={shown.length - i} record={record} onCopy={copy} />

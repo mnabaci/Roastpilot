@@ -41,7 +41,7 @@ flowchart TB
 | `emergencyStop`               | invoke | – → safe stop and heater lock                                                                                              |
 | `acknowledgeSafety`           | invoke | – → result (`still-tripped` while a rule holds)                                                                            |
 | `onReading`                   | event  | reading every 1 s                                                                                                          |
-| `onConnection`                | event  | `disconnected`, `connecting`, `connected` (with channels) or `lost`                                                        |
+| `onConnection`                | event  | `disconnected`, `connecting`, `connected` (with channels) or `lost`; all but `disconnected` carry the target               |
 | `onSafetyEvent`               | event  | `tripped`, `cleared`, `unlocked`                                                                                           |
 | `getSnapshot`                 | invoke | – → connection, roast state, readings so far, safety lock and tripped rules (for a window that opens or reloads mid-roast) |
 | `roastAction`                 | invoke | `preheat`, `start`, `first-crack`, `drop` → result (`not-allowed` in the wrong state)                                      |
