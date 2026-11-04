@@ -20,14 +20,17 @@ lives in `core` (`ManualRoast`) and runs in main, so a closed window changes not
 | Development | First crack                         | Records time and BT; development timer starts                                 | Drop                 |
 | Cooling     | Drop (from Roasting or Development) | Heater 0, fan 100, cooling 100; "Dump beans"; 4 min countdown                 | –                    |
 | Done        | Cooling time ends                   | Heater 0, fan 0, cooling 0, drum and filter fan off                           | Preheat (next batch) |
-| Ready       | Cancel preheat (from Preheat)       | Heater 0, fan 0, cooling 0, drum and filter fan off; the preheat is forgotten | Preheat              |
+| Ready       | End roast (from Preheat)            | Heater 0, fan 0, cooling 0, drum and filter fan off; the preheat is forgotten | Preheat              |
+| Done        | End roast (Roasting or Development) | Heater 0, fan 0, cooling 0, drum and filter fan off; records an `end` event   | Preheat (next batch) |
+| Done        | Finish cooling now (Cooling)        | As when cooling time ends, now                                                | Preheat (next batch) |
 
 - **Drum and filter fan:** on at Preheat (or Start), off when cooling ends. Their switches are always on screen to override them; the filter fan runs at level 1, as Artisan sends it (it takes levels 0–4; 100 stops the roaster's fans responding).
 - **Numbers:** BT, RoR (°C/min, slope of the last 30 s of BT), time, development time and its % of the roast. Time counts the preheat ("2:30 · In preheat") until charge, then the time since charge. A value that rounds to zero shows as 0.0, never -0.0.
 - **Stage times:** each finished stage in the stepper shows how long it took: Preheat (to charge), Roast (charge to first crack), First crack (first crack to drop, with its % of the roast) and Cool.
 - **Preheat hint:** "Drum and filter on · set the heater to warm up, then add beans." Preheat never sets the heater; you do.
-- **Cancel preheat:** a secondary button under Start while preheating. No confirm: Preheat is one press away.
-- **Not saved yet:** readings and events stay in memory for the current roast; saving arrives with Logging (milestone 3). Main keeps them, so reloading the window keeps the chart.
+- **End roast:** the one normal stop, a quiet button at the bottom of the flow panel in Preheat, Roasting and Development ("End roast") and Cooling ("Finish cooling now"). In Preheat it goes back to Ready (nothing roasted yet); later it goes to Done. It asks once inline ("End the roast? · everything turns off"), then stops normally: no heater lock and no banner, unlike Emergency stop. The roast is saved up to that moment and counts as finished.
+- **Saved:** every roast saves itself (docs/spec/data-model.md, Saving a roast). Main also keeps the current roast in memory, so reloading the window keeps the chart.
+- **Outputs hint (Guided):** while the heater and fan sliders are locked, one line says why: "Heater and fan wait for Preheat" in Ready and Done, "Cooling · heater off, fan at 100%" in Cooling.
 - An emergency stop or safety trip doesn't change the state; you decide what to do next.
 
 ## Guided and Full control

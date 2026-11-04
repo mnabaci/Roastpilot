@@ -33,6 +33,7 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 - **Chart:** live temperature vs the profile's reference points (dashed), the current phase's RoR band, RoR on a second axis, ghost faded behind, markers for charge, dry end, FC and drop.
 - **Outputs strip:** a slim band under the chart with heater and fan as step lines (0–100 %), on the chart's time axis and markers, so every change lines up with the curve it caused. It has its own legend; heater and fan keep the colours of their sliders.
 - **Temperature axis:** fixed from 0 to 250 °C, growing in 50 °C steps if the roast goes hotter, so sensor jitter stays invisible. The temperature line is drawn as a moving average (a setting: Off, 5 s or 10 s; default 5 s); the big number is always the raw reading.
+- **Hover:** pointing at the chart or the strip draws one dashed line through both and puts the values there in the legends: the time first, then each line's value (`7:42 · Temperature 198.4 °C · RoR 9.1 °C/min`, heater and fan in the strip's legend); a dash where a line has no value. Leaving the chart brings the names back. Same on History, the compared roast included.
 - **Gaps:** readings more than 3 s apart are drawn as a break in every line, never joined.
 - **Connection lost:** sliders show a dash instead of their last values, and the flow panel shows "Reconnecting… · check the cable" with no button until readings are back.
 - **Mode switch:** Auto / Manual. In Manual, the coach card sits above the outputs.
