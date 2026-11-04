@@ -206,12 +206,12 @@ export class ManualRoast {
       this.#drop(nowMs);
       await this.#send(DROP_OUTPUTS);
     },
-    // In Preheat nothing has roasted: back to Ready, the readings stay on the chart. In Cooling it
-    // finishes cooling now. In between it ends the roast where it is.
+    // In Preheat nothing has roasted: back to Ready, the preheat stays on the chart until Clear. In
+    // Cooling it finishes cooling now. In between it ends the roast where it is.
     end: async (nowMs) => {
       this.#coolingRun++;
       if (this.#state.phase === 'preheat') {
-        this.#set(READY);
+        this.#set({ ...READY, preheatAtMs: this.#state.preheatAtMs });
         await this.#send(ALL_OFF);
         return;
       }

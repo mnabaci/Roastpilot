@@ -7,6 +7,7 @@ import { skippedSteps, stageTimes } from './stage-times';
 import { FlowPanel } from './FlowPanel';
 import { OutputsPanel } from './OutputsPanel';
 import { RoastNumbersRow } from './RoastNumbersRow';
+import { clearReadings } from '../../stores/roast-store';
 import { useConnection, useRoast, useSettings } from '../../stores/use-stores';
 import { isConnected } from './flow-step';
 import { useDeps } from '../../app/app-context';
@@ -28,11 +29,13 @@ const CURRENT_STEP: Readonly<Record<RoastPhase, number>> = {
 export function RoastScreen({ onConnect }: { onConnect: () => void }) {
   const roast = useRoast((s) => s.roast);
   const readings = useRoast((s) => s.readings);
-  const { api } = useDeps();
+  const { api, stores } = useDeps();
   const run = useRun();
   const connected = useConnection((s) => isConnected(s.connection));
   // Clear resets the whole view (stepper, numbers, chart), so it sits above them. Needs no roaster.
-  const canClear = (roast.phase === 'ready' || roast.phase === 'done') && readings.length > 0;
+  // Only with a roast (or a preheat) on screen: idle readings keep coming while connected.
+  const roastOnScreen = roast.preheatAtMs !== null || roast.chargedAtMs !== null;
+  const canClear = (roast.phase === 'ready' || roast.phase === 'done') && roastOnScreen;
   const numbers = useMemo(() => roastNumbers(roast, readings), [roast, readings]);
   // With no roaster, the last temperature would look live: show dashes instead.
   const shown = connected ? numbers : { ...numbers, bt: undefined, ror: undefined };
@@ -58,7 +61,10 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
               // Its text on the step names' line, keeping the 44 px target without a taller row.
               className="-my-3 shrink-0"
               onClick={() => {
-                run('roast.clear-failed', () => api.roastAction('clear'));
+                run('roast.clear-failed', async () => {
+                  const cleared = await api.roastAction('clear');
+                  if (cleared.ok) stores.roast.setState(clearReadings);
+                });
               }}
             >
               Clear

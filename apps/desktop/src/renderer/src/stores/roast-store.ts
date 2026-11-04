@@ -26,3 +26,8 @@ export function setRoast(data: RoastData, roast: RoastState): RoastData {
   const newRoast = roast.phase === 'preheat' && data.roast.phase !== 'preheat';
   return { roast, readings: newRoast ? [] : data.readings };
 }
+
+/** Clear: main has dropped its readings, so the chart starts over here too. */
+export function clearReadings(data: RoastData): RoastData {
+  return { ...data, readings: [] };
+}

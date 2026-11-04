@@ -78,14 +78,18 @@ describe('ManualRoast', () => {
     expect(sent).toEqual(['drum=1', 'filter=1']);
   });
 
-  it('End roast in Preheat turns everything off and goes back to Ready', async () => {
-    const { roast, sent, signals, act } = setup();
+  it('End roast in Preheat turns everything off and goes back to Ready, the preheat still shown', async () => {
+    const { clock, roast, sent, signals, act } = setup();
+    clock.advance(5_000);
     await act('preheat');
     sent.length = 0;
     expect(await roast.act('end')).toEqual(ok(undefined));
-    expect(roast.state).toMatchObject({ phase: 'ready', preheatAtMs: null, events: [] });
+    // Kept so the chart and Clear know a preheat is on screen; Clear forgets it.
+    expect(roast.state).toMatchObject({ phase: 'ready', preheatAtMs: 5_000, events: [] });
     expect(sent).toEqual(['heater=0', 'fan=0', 'cooling=0', 'drum=0', 'filter=0']);
     expect(signals).toEqual(['new-roast']);
+    await act('clear');
+    expect(roast.state.preheatAtMs).toBeNull();
     await act('preheat');
     expect(roast.state.phase).toBe('preheat');
   });

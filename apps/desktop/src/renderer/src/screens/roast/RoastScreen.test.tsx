@@ -213,27 +213,50 @@ describe('RoastScreen', () => {
     expect(api.setOutput).toHaveBeenCalledWith({ channel: 'cooling', value: 100 });
   });
 
-  it('Clear forgets the last roast, only when none is running', async () => {
-    const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
+  it('Clear empties the chart and the numbers, and hides until the next roast', async () => {
+    const { api, stores } = renderApp(<RoastScreen onConnect={onConnect} />, {
       ...connected,
-      roast: roast('done'),
+      roast: { ...roast('done'), chargedAtMs: 0 },
       readings: [reading({ bt: 40 })],
     });
     await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
     expect(api.roastAction).toHaveBeenCalledWith('clear');
+    expect(stores.roast.getState().readings).toEqual([]);
+    // Main answers with Ready; idle readings keep coming, and they are not a roast to clear.
+    act(() => {
+      stores.roast.setState((s) => addReading({ ...s, roast: READY_ROAST }, reading({ bt: 39 })));
+    });
+    expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument();
   });
 
-  it('Clear works with no roaster too, and hides when there is nothing to clear', async () => {
+  it('Clear works with no roaster too, and offers itself after a preheat ended early', async () => {
     const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
-      roast: roast('done'),
+      roast: { ...roast('ready'), preheatAtMs: 0 },
       readings: [reading({ bt: 40 })],
     });
     await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
     expect(api.roastAction).toHaveBeenCalledWith('clear');
   });
 
-  it('no Clear with an empty chart', () => {
-    renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast('ready') });
+  it('a refused Clear keeps the chart', async () => {
+    const { stores } = renderApp(
+      <RoastScreen onConnect={onConnect} />,
+      { roast: { ...roast('done'), chargedAtMs: 0 }, readings: [reading({ bt: 40 })] },
+      fakeApi({
+        roastAction: () =>
+          Promise.resolve(err({ kind: 'not-allowed', action: 'clear', phase: 'roasting' })),
+      }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
+    expect(stores.roast.getState().readings).toHaveLength(1);
+  });
+
+  it('no Clear without a roast on screen, even with idle readings', () => {
+    renderApp(<RoastScreen onConnect={onConnect} />, {
+      ...connected,
+      roast: roast('ready'),
+      readings: [reading({ bt: 22 })],
+    });
     expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument();
   });
 
