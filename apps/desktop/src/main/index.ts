@@ -9,6 +9,7 @@ import { buildAppMenu } from './app-menu';
 import { createAppServices } from './app-services';
 import { installCrashHandlers } from './crash-handlers';
 import { createDriver } from './driver-factory';
+import { SimulatorBeans } from './simulator-beans';
 import { unavailableRepository } from './history/unavailable-repository';
 import { broadcast, registerIpcHandlers, registerIpcListener } from './ipc';
 import { createIpcHandlers, handleRendererLog, withErrorLogging } from './ipc-handlers';
@@ -62,6 +63,8 @@ const power = createPowerGuard({
   logger: logger.child('power'),
 });
 
+const simulatorBeans = new SimulatorBeans();
+
 const { session, roast, settings, history, recorder, snapshot } = createAppServices({
   clock: systemClock,
   logger,
@@ -75,6 +78,7 @@ const { session, roast, settings, history, recorder, snapshot } = createAppServi
   },
   onRoastChange: (state) => {
     power.onRoast(state);
+    simulatorBeans.onRoast(state);
   },
   publish: broadcast,
 });
@@ -167,7 +171,8 @@ app
           history,
           snapshot,
           listPorts: () => listSerialPorts(),
-          createDriver: (target) => createDriver(target, systemClock, logger.child('driver')),
+          createDriver: (target) =>
+            simulatorBeans.attach(createDriver(target, systemClock, logger.child('driver'))),
           logs: {
             listDays: () => listLogDays(logDir),
             readDay: (day) => readLogDay(logDir, day),
