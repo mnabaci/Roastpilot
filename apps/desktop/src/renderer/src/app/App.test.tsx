@@ -2,7 +2,8 @@ import { act, screen } from '@testing-library/react';
 import type * as Ui from '@roastpilot/ui';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { CONNECTED, renderApp } from '../test/render-app';
+import type { Screen } from '@roastpilot/shared';
+import { CONNECTED, fakeApi, renderApp } from '../test/render-app';
 import { App } from './App';
 
 vi.mock('@roastpilot/ui', async (importOriginal) => ({
@@ -79,5 +80,21 @@ describe('App', () => {
     renderApp(<App />);
     await userEvent.click(screen.getByRole('button', { name: 'Logs' }));
     expect(screen.getByRole('heading', { name: 'Logs' })).toBeInTheDocument();
+  });
+
+  it('the app menu opens a screen (Settings… ⌘,)', () => {
+    let navigate: (screen: Screen) => void = () => undefined;
+    const api = fakeApi({
+      onNavigate: vi.fn((listener: (screen: Screen) => void) => {
+        navigate = listener;
+        return () => undefined;
+      }),
+    });
+    renderApp(<App />, { connection: CONNECTED }, api);
+    expect(screen.getByRole('button', { name: 'Preheat' })).toBeInTheDocument();
+    act(() => {
+      navigate('settings');
+    });
+    expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument();
   });
 });

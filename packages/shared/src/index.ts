@@ -65,6 +65,7 @@ export {
   type RoastPhase,
   type RoastState,
 } from './roast';
+export { ScreenSchema, type Screen } from './screen';
 export {
   ChartSmoothingSchema,
   ControlsLevelSchema,

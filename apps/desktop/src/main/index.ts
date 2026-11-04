@@ -2,8 +2,9 @@
 import { serializeError } from '@roastpilot/core';
 import { listSerialPorts } from '@roastpilot/drivers';
 import { IPC_CHANNELS } from '@roastpilot/shared';
-import { app, BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow, Menu, shell } from 'electron';
 import { join } from 'node:path';
+import { buildAppMenu } from './app-menu';
 import { createAppServices } from './app-services';
 import { installCrashHandlers } from './crash-handlers';
 import { createDriver } from './driver-factory';
@@ -32,6 +33,12 @@ logger.info('app.started', {
   arch: process.arch,
 });
 pruneOldLogsLater(logDir, logger);
+
+async function openLogFolder(): Promise<void> {
+  // openPath resolves with an error message, or '' when it worked.
+  const failure = await shell.openPath(logDir);
+  if (failure) throw new Error(`Couldn't open the log folder: ${failure}`);
+}
 
 const { session, roast, settings, snapshot } = createAppServices({
   clock: systemClock,
@@ -124,11 +131,7 @@ app
           logs: {
             listDays: () => listLogDays(logDir),
             readDay: (day) => readLogDay(logDir, day),
-            openFolder: async () => {
-              // openPath resolves with an error message, or '' when it worked.
-              const failure = await shell.openPath(logDir);
-              if (failure) throw new Error(`Couldn't open the log folder: ${failure}`);
-            },
+            openFolder: openLogFolder,
           },
         }),
         ipcLogger,
@@ -138,6 +141,23 @@ app
     registerIpcListener(IPC_CHANNELS.log, (payload) => {
       handleRendererLog(payload, rendererLogger);
     });
+    Menu.setApplicationMenu(
+      Menu.buildFromTemplate(
+        buildAppMenu({
+          appName: app.name,
+          platform: process.platform,
+          dev: !app.isPackaged,
+          navigate: (screen) => {
+            broadcast(IPC_CHANNELS.navigate, screen);
+          },
+          openLogFolder: () => {
+            openLogFolder().catch((error: unknown) => {
+              logger.error('menu.open-log-folder-failed', { error: serializeError(error) });
+            });
+          },
+        }),
+      ),
+    );
     createWindow();
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

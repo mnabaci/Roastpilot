@@ -9,6 +9,19 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 - Each screen scrolls inside its own area; on Logs only the list of entries scrolls.
 - Nothing scrolls sideways or gets clipped from the minimum window (960 × 640) up to full screen: long text truncates, numbers fit their cards, rows wrap.
 
+## App menu
+
+| Menu                    | Items                                                                    |
+| ----------------------- | ------------------------------------------------------------------------ |
+| Roastpilot (macOS only) | About, Settings… (⌘,), Services, Hide, Quit (⌘Q)                         |
+| File                    | macOS: Close window. Windows: Settings… (Ctrl+,), Quit                   |
+| Edit                    | Undo, Redo, Cut, Copy, Paste, Select all                                 |
+| View                    | Zoom, Full screen. Reload and developer tools only in development builds |
+| Window, Help            | Standard window items; Help → Open log folder                            |
+
+- Quit always goes through the safe stop first (docs/spec/safety.md), whichever way it is chosen.
+- Settings… opens the Settings screen, even mid-roast; the roast keeps running in main.
+
 ## Roast screen (main)
 
 - **Top bar:** connection status, active roaster, selected bean and profile, phase name.

@@ -37,6 +37,7 @@ export function fakeApi(overrides: Partial<RoastpilotApi> = {}): Mocked<Roastpil
     readLogDay: vi.fn(() => Promise.resolve({ records: [], unreadable: 0, truncated: false })),
     onLogEntries: vi.fn(() => unsubscribe),
     openLogFolder: vi.fn(() => Promise.resolve()),
+    onNavigate: vi.fn(() => unsubscribe),
     ...overrides,
   } as Mocked<RoastpilotApi>;
 }

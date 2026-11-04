@@ -51,6 +51,7 @@ flowchart TB
 | `readLogDay`                  | invoke | `YYYY-MM-DD` → the day's last 2,000 entries and how many lines were unreadable                                             |
 | `onLogEntries`                | event  | new log entries as they are written, batched                                                                               |
 | `openLogFolder`               | invoke | – → opens the log folder in Finder or Explorer                                                                             |
+| `onNavigate`                  | event  | the app menu asks for a screen (`settings` from Settings…)                                                                 |
 
 - **Quit and crash:** before the app quits, and on an uncaught error in main, the session sends the safe stop (given up to 2 s) before anything else.
 - **Clock:** main uses a monotonic clock (`performance.now()`), so a system clock change can't fool the lost-connection rule.

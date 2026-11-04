@@ -1,12 +1,10 @@
-import type { ConnectionState, RoastPhase } from '@roastpilot/shared';
+import type { ConnectionState, RoastPhase, Screen } from '@roastpilot/shared';
 import { Badge, Button } from '@roastpilot/ui';
 import { OctagonX } from 'lucide-react';
 import { useConnection, useRoast } from '../stores/use-stores';
 import { useDeps } from './app-context';
 import { useRun } from '../features/use-run';
 import { targetLabel } from './connection-label';
-
-export type Screen = 'roast' | 'settings' | 'logs';
 
 const CONNECTION_LABEL: Readonly<Record<ConnectionState['status'], string>> = {
   disconnected: 'Not connected',
