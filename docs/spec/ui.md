@@ -15,7 +15,7 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 - **Outputs strip:** a slim band under the chart with heater and fan as step lines (0–100 %), on the chart's time axis and markers, so every change lines up with the curve it caused.
 - **Mode switch:** Auto / Manual. In Manual, the coach card sits above the outputs.
 - **Outputs:** heater % and fan %, each with a slider and an Auto/Manual badge.
-- **Buttons:** Preheat, Start (charge), First crack, Drop now, and a red Emergency stop that is always visible.
+- **Buttons:** Preheat, Start (charge), First crack, Drop now, and a red Emergency stop that is always visible (disabled only while no roaster is connected).
 - **After cooling:** roasted weight prompt, rating, star, and the phase split.
 
 ## Profiles screen
@@ -52,4 +52,4 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 
 - Roasters: list, add, edit, set active. Safety limits and tuning live in each roaster.
 - Simulator: always available as a roaster, for practice and demos. It never runs unless you pick it.
-- **Milestone 2 (minimal):** Connection (serial port list with Refresh, or Simulator; Connect / Disconnect) and Controls (Guided / Full control, see [manual-mode.md](manual-mode.md)). Saved in `settings.json` in the app's user-data folder behind a `SettingsStore` interface; roaster records replace the connection part at milestone 5.
+- **Milestone 2 (minimal):** Connection (serial port list with Refresh, or Simulator; Connect / Disconnect; while connecting, the app stays on Settings with a busy Connect button and a locked list, and a failure is one line under it) and Controls (Guided / Full control, see [manual-mode.md](manual-mode.md)). Saved in `settings.json` in the app's user-data folder behind a `SettingsStore` interface; roaster records replace the connection part at milestone 5.

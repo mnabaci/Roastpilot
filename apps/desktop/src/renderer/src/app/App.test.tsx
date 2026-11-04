@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { act, screen } from '@testing-library/react';
 import type * as Ui from '@roastpilot/ui';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -27,10 +27,34 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument();
   });
 
-  it('Emergency stop is on every screen, even disconnected', async () => {
-    const { api } = renderApp(<App />);
+  it('Emergency stop is on every screen, and disabled with no roaster', async () => {
+    const { api, stores } = renderApp(<App />);
+    expect(screen.getByRole('button', { name: 'Emergency stop' })).toBeDisabled();
+    act(() => {
+      stores.connection.setState({ connection: CONNECTED });
+    });
     await userEvent.click(screen.getByRole('button', { name: 'Emergency stop' }));
     expect(api.emergencyStop).toHaveBeenCalledOnce();
+  });
+
+  it.each([{ status: 'connecting' } as const, { status: 'lost' } as const])(
+    'Emergency stop stays live while %o',
+    (connection) => {
+      renderApp(<App />, { connection });
+      expect(screen.getByRole('button', { name: 'Emergency stop' })).toBeEnabled();
+    },
+  );
+
+  it('stays on Settings while connecting, then opens Roast once connected', () => {
+    const { stores } = renderApp(<App />);
+    act(() => {
+      stores.connection.setState({ connection: { status: 'connecting' } });
+    });
+    expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument();
+    act(() => {
+      stores.connection.setState({ connection: CONNECTED });
+    });
+    expect(screen.getByRole('button', { name: 'Preheat' })).toBeInTheDocument();
   });
 
   it('shows the connection status', () => {

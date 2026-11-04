@@ -5,7 +5,8 @@ describe('connectErrorText', () => {
   it.each([
     [{ kind: 'disconnected' } as const, 'check the cable'],
     [{ kind: 'no-reply', command: 'VERSION' } as const, 'SkyCommand'],
-    [{ kind: 'version-mismatch', expected: 1, actual: null } as const, 'Sketch version unknown'],
+    [{ kind: 'version-mismatch', expected: 1, actual: null } as const, 'No reply from the roaster'],
+    [{ kind: 'version-mismatch', expected: 1, actual: 2 } as const, 'Sketch version 2'],
     [{ kind: 'bad-reply', line: '???' } as const, 'roaster port'],
   ])('%o says what to try', (error, text) => {
     expect(connectErrorText(error)).toContain(text);

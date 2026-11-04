@@ -4,7 +4,7 @@ import { z } from 'zod';
 export const DriverErrorSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('disconnected') }),
   z.object({ kind: z.literal('no-reply'), command: z.string() }),
-  /** `actual` is null when the sketch is too old to answer VERSION. */
+  /** `actual` is null when nothing answered VERSION: an old sketch, or a bad cable or ground. */
   z.object({
     kind: z.literal('version-mismatch'),
     expected: z.number(),

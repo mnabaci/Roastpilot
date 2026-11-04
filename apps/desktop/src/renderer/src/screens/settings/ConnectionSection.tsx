@@ -1,6 +1,6 @@
 import type { ConnectTarget, SerialPortInfo } from '@roastpilot/shared';
 import { Button, cn } from '@roastpilot/ui';
-import { RefreshCw } from 'lucide-react';
+import { LoaderCircle, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { connectErrorText } from './connect-error';
 import { useRun } from '../../features/use-run';
@@ -55,7 +55,9 @@ export function ConnectionSection() {
   const [ports, setPorts] = useState<SerialPortInfo[]>([]);
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
-  const idle = status === 'disconnected';
+  const connecting = busy || status === 'connecting';
+  // The roaster list and Refresh wait while connecting or connected.
+  const idle = status === 'disconnected' && !connecting;
 
   const refresh = useCallback(() => {
     run('ports.list-failed', async () => {
@@ -125,16 +127,22 @@ export function ConnectionSection() {
           No serial ports found · plug in the roaster, then Refresh
         </p>
       ) : null}
-      {idle ? (
+      {idle || connecting ? (
         <Button
           variant="primary"
           size="lg"
-          disabled={!target || busy}
+          disabled={!target || connecting}
+          aria-busy={connecting}
+          icon={
+            connecting ? (
+              <LoaderCircle aria-hidden="true" className="motion-safe:animate-spin" />
+            ) : undefined
+          }
           onClick={() => {
             if (target) connect(target);
           }}
         >
-          {busy ? 'Connecting…' : 'Connect'}
+          {connecting ? 'Connecting…' : 'Connect'}
         </Button>
       ) : (
         <Button

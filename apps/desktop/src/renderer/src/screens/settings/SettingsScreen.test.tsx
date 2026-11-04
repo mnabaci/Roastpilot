@@ -1,5 +1,5 @@
-import { err } from '@roastpilot/shared';
-import { screen } from '@testing-library/react';
+import { err, type RoastpilotApi } from '@roastpilot/shared';
+import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { CONNECTED, fakeApi, renderApp } from '../../test/render-app';
@@ -42,6 +42,41 @@ describe('SettingsScreen', () => {
     );
     await userEvent.click(screen.getByRole('button', { name: 'Connect' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('No reply');
+  });
+
+  it('while connecting: a busy Connect button and a locked list, then the reason it failed', async () => {
+    let finish: (value: Awaited<ReturnType<RoastpilotApi['connect']>>) => void = () => undefined;
+    const api = fakeApi({
+      connect: () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    });
+    renderApp(
+      <SettingsScreen />,
+      { settings: { connection: { kind: 'simulator' }, controls: 'guided' } },
+      api,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Connect' }));
+    const busy = screen.getByRole('button', { name: 'Connecting…' });
+    expect(busy).toBeDisabled();
+    expect(busy).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('button', { name: /Simulator/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeDisabled();
+    act(() => {
+      finish(err({ kind: 'version-mismatch', expected: 1, actual: null }));
+    });
+    expect(await screen.findByRole('alert')).toHaveTextContent('No reply from the roaster');
+    expect(screen.getByRole('button', { name: 'Connect' })).toBeEnabled();
+  });
+
+  it('shows Connecting… while main reports connecting', () => {
+    renderApp(<SettingsScreen />, {
+      connection: { status: 'connecting' },
+      settings: { connection: { kind: 'simulator' }, controls: 'guided' },
+    });
+    expect(screen.getByRole('button', { name: 'Connecting…' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Disconnect' })).not.toBeInTheDocument();
   });
 
   it('says when there are no ports, and Refresh looks again', async () => {
