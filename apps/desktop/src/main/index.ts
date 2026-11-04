@@ -13,6 +13,7 @@ import { SimulatorBeans } from './simulator-beans';
 import { unavailableRepository } from './history/unavailable-repository';
 import { broadcast, registerIpcHandlers, registerIpcListener } from './ipc';
 import { createIpcHandlers, handleRendererLog, withErrorLogging } from './ipc-handlers';
+import { createMainWindow, devIcon } from './main-window';
 import { createAppLogger } from './logging/app-logger';
 import { listLogDays, readLogDay } from './logging/log-reader';
 import { pruneOldLogsLater } from './logging/prune';
@@ -20,7 +21,6 @@ import { createPowerGuard } from './power-guard';
 import { createQuitGuard } from './quit-guard';
 import { JsonSettingsStore } from './settings/json-settings-store';
 import { systemClock } from './system-clock';
-import { WINDOW_BACKGROUND } from './window-background';
 
 const logDir = app.getPath('logs');
 const logs = createAppLogger({
@@ -113,50 +113,10 @@ app.on(
   }),
 );
 
-/**
- * The app icon (docs/spec/ui.md, Brand). Packaged builds get it from electron-builder; in
- * development the Dock and the Windows taskbar would show Electron's, so set it here.
- */
-const DEV_ICON = app.isPackaged ? undefined : join(app.getAppPath(), 'build', 'icon.png');
-
-function createWindow(): void {
-  const win = new BrowserWindow({
-    width: 1280,
-    height: 860,
-    minWidth: 960,
-    minHeight: 640,
-    title: 'Roastpilot',
-    icon: DEV_ICON,
-    backgroundColor: WINDOW_BACKGROUND,
-    webPreferences: {
-      preload: join(import.meta.dirname, '../preload/index.cjs'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
-  });
-
-  const devUrl = process.env.ELECTRON_RENDERER_URL;
-
-  // Never open new windows or navigate away from the app's own pages.
-  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-  win.webContents.on('will-navigate', (event, url) => {
-    if (!devUrl || !url.startsWith(devUrl)) {
-      logger.warn('window.navigation-blocked', { url });
-      event.preventDefault();
-    }
-  });
-  win.webContents.on('render-process-gone', (_event, details) => {
-    logger.error('window.renderer-gone', { reason: details.reason, exitCode: details.exitCode });
-  });
-
-  const loaded = devUrl
-    ? win.loadURL(devUrl)
-    : win.loadFile(join(import.meta.dirname, '../renderer/index.html'));
-  loaded.catch((error: unknown) => {
-    logger.error('window.load-failed', { error: serializeError(error) });
-  });
-}
+const DEV_ICON = devIcon();
+const createWindow = () => {
+  createMainWindow({ icon: DEV_ICON, logger });
+};
 
 app
   .whenReady()
