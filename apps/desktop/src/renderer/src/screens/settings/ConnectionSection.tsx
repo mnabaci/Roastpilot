@@ -51,7 +51,16 @@ export function ConnectionSection() {
   const run = useRun();
   const save = useSaveSettings();
   const target = useSettings((s) => s.settings.connection);
-  const status = useConnection((s) => s.connection.status);
+  const connection = useConnection((s) => s.connection);
+  const { status } = connection;
+  // While a roaster is in use, its row is the one marked, whatever was picked before.
+  const inUse = connection.status === 'disconnected' ? undefined : connection.target;
+  const marked = inUse ?? target;
+  const STATE_DETAIL = { connecting: 'Connecting…', connected: 'Connected', lost: 'Reconnecting…' };
+  const detailFor = (row: ConnectTarget, fallback?: string) =>
+    connection.status !== 'disconnected' && sameTarget(inUse ?? null, row)
+      ? STATE_DETAIL[connection.status]
+      : fallback;
   const [ports, setPorts] = useState<SerialPortInfo[]>([]);
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
@@ -104,8 +113,8 @@ export function ConnectionSection() {
           <TargetRow
             key={port.path}
             label={port.path}
-            detail={port.manufacturer}
-            selected={sameTarget(target, { kind: 'serial', path: port.path })}
+            detail={detailFor({ kind: 'serial', path: port.path }, port.manufacturer)}
+            selected={sameTarget(marked, { kind: 'serial', path: port.path })}
             onSelect={() => {
               select({ kind: 'serial', path: port.path });
             }}
@@ -114,8 +123,8 @@ export function ConnectionSection() {
         ))}
         <TargetRow
           label="Simulator"
-          detail="Practice without a roaster"
-          selected={sameTarget(target, SIMULATOR)}
+          detail={detailFor(SIMULATOR, 'Practice without a roaster')}
+          selected={sameTarget(marked, SIMULATOR)}
           onSelect={() => {
             select(SIMULATOR);
           }}

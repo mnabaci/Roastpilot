@@ -160,7 +160,7 @@ describe('RoastScreen', () => {
 
   it('connection lost: Reconnecting with nothing to press, and dashes instead of old values', () => {
     renderApp(<RoastScreen onConnect={onConnect} />, {
-      connection: { status: 'lost' },
+      connection: { status: 'lost', target: { kind: 'simulator' } },
       roast: roast('roasting'),
       readings: [reading({ heater: 30, fan: 60, bt: 48 })],
     });

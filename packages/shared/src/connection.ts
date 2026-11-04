@@ -7,12 +7,17 @@ export const ConnectTargetSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('simulator') }),
 ]);
 
+/** Every state but disconnected says which roaster, so the UI can name it. */
 export const ConnectionStateSchema = z.discriminatedUnion('status', [
   z.object({ status: z.literal('disconnected') }),
-  z.object({ status: z.literal('connecting') }),
-  z.object({ status: z.literal('connected'), channels: z.array(ChannelSchema) }),
+  z.object({ status: z.literal('connecting'), target: ConnectTargetSchema }),
+  z.object({
+    status: z.literal('connected'),
+    target: ConnectTargetSchema,
+    channels: z.array(ChannelSchema),
+  }),
   /** Was connected, no valid reading now; the session keeps trying to reconnect. */
-  z.object({ status: z.literal('lost') }),
+  z.object({ status: z.literal('lost'), target: ConnectTargetSchema }),
 ]);
 
 export const SerialPortInfoSchema = z.object({

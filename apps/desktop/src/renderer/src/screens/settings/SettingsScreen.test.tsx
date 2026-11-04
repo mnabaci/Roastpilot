@@ -73,7 +73,7 @@ describe('SettingsScreen', () => {
 
   it('shows Connecting… while main reports connecting', () => {
     renderApp(<SettingsScreen />, {
-      connection: { status: 'connecting' },
+      connection: { status: 'connecting', target: { kind: 'simulator' } },
       settings: { connection: { kind: 'simulator' }, controls: 'guided', chartSmoothingS: 5 },
     });
     expect(screen.getByRole('button', { name: 'Connecting…' })).toBeDisabled();
@@ -96,6 +96,24 @@ describe('SettingsScreen', () => {
     expect(screen.getByRole('button', { name: /Simulator/ })).toBeDisabled();
     await userEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
     expect(api.disconnect).toHaveBeenCalledOnce();
+  });
+
+  it('marks the roaster in use as Connected, even if another one was picked', async () => {
+    renderApp(
+      <SettingsScreen />,
+      {
+        connection: { status: 'connected', target: { kind: 'simulator' }, channels: [] },
+        settings: { connection: null, controls: 'guided', chartSmoothingS: 5 },
+      },
+      fakeApi({ listPorts: ports }),
+    );
+    const simulator = screen.getByRole('button', { name: /Simulator/ });
+    expect(simulator).toHaveAttribute('aria-pressed', 'true');
+    expect(simulator).toHaveTextContent('Connected');
+    expect(await screen.findByRole('button', { name: /usbserial-0001/ })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
   });
 
   it('switches between Guided and Full control', async () => {

@@ -50,7 +50,7 @@ function roaster() {
 describe('a manual roast on the simulated Skywalker', () => {
   it('preheats, roasts, cracks, drops, cools and switches off, with no safety trips', async () => {
     const { clock, sim, session, roast, history, safety, outputs, bt } = roaster();
-    await session.connect(sim);
+    await session.connect(sim, { kind: 'simulator' });
 
     await roast.act('preheat');
     // Heater 100 with fan 30 levels off near 236 °C on the simulator: past first crack, under the 240 °C limit.
@@ -83,7 +83,7 @@ describe('a manual roast on the simulated Skywalker', () => {
 
   it('drop stands down max roast time, so a long cooling never trips it', async () => {
     const { clock, sim, session, roast, safety } = roaster();
-    await session.connect(sim);
+    await session.connect(sim, { kind: 'simulator' });
     await roast.act('start');
     await clock.runFor(19 * 60_000);
     await roast.act('drop');

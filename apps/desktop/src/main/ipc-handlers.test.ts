@@ -34,8 +34,8 @@ function setup() {
   const driver = {} as RoasterDriver;
   const deps: IpcDeps = {
     session: {
-      connect: (d) => {
-        calls.push(['connect', d]);
+      connect: (d, target) => {
+        calls.push(['connect', d, target]);
         return Promise.resolve(ok(undefined));
       },
       disconnect: () => {
@@ -122,7 +122,7 @@ describe('createIpcHandlers', () => {
     );
     expect(calls).toEqual([
       ['createDriver', { kind: 'simulator' }],
-      ['connect', driver],
+      ['connect', driver, { kind: 'simulator' }],
     ]);
   });
 

@@ -15,6 +15,8 @@ import { DEFAULT_SAFETY_LIMITS } from '../safety/safety-limits';
 import type { DriverError, RoasterDriver } from '../roaster-driver';
 import { RoasterSession, SAFE_STOP_TIMEOUT_MS } from './roaster-session';
 
+const TARGET = { kind: 'serial', path: '/dev/cu.test' } as const;
+
 const CHANNELS: Channel[] = [{ id: 'bt', kind: 'sensor', unit: 'celsius' }];
 
 /** A roaster whose cable you can pull, and whose reads or safe stop you can make hang. */
@@ -90,7 +92,7 @@ function setup() {
 describe('RoasterSession', () => {
   it('connects, then polls READ every second and publishes readings', async () => {
     const { clock, roaster, session, readings, states } = setup();
-    expect(await session.connect(roaster)).toEqual(ok(undefined));
+    expect(await session.connect(roaster, TARGET)).toEqual(ok(undefined));
     expect(states).toEqual(['connecting', 'connected']);
     await clock.runFor(3500);
     expect(readings.map((r) => r.atMs)).toEqual([0, 1000, 2000, 3000]);
@@ -105,21 +107,21 @@ describe('RoasterSession', () => {
       onConnection: (s) => seen.push(s),
       onSafetyEvent: () => undefined,
     });
-    await session.connect(roaster);
-    expect(seen.at(-1)).toEqual({ status: 'connected', channels: CHANNELS });
+    await session.connect(roaster, TARGET);
+    expect(seen.at(-1)).toEqual({ status: 'connected', target: TARGET, channels: CHANNELS });
   });
 
   it('reports a failed connect and stays disconnected', async () => {
     const { roaster, session, states } = setup();
     roaster.plugged = false;
-    expect(await session.connect(roaster)).toEqual(err({ kind: 'disconnected' }));
+    expect(await session.connect(roaster, TARGET)).toEqual(err({ kind: 'disconnected' }));
     expect(states).toEqual(['connecting', 'disconnected']);
     expect(await session.setOutput('heater', 50)).toEqual(err({ kind: 'disconnected' }));
   });
 
   it('disconnects with a safe stop first, stops polling and never alarms afterwards', async () => {
     const { clock, roaster, session, states, events } = setup();
-    await session.connect(roaster);
+    await session.connect(roaster, TARGET);
     await clock.runFor(2000);
     await session.disconnect();
     expect(roaster.log.slice(-2)).toEqual(['safeStop', 'disconnect']);
@@ -132,7 +134,7 @@ describe('RoasterSession', () => {
 
   it('gives the safe stop 2 s on disconnect, then closes anyway', async () => {
     const { clock, roaster, session } = setup();
-    await session.connect(roaster);
+    await session.connect(roaster, TARGET);
     roaster.hangSafeStop = true;
     const done = session.disconnect();
     await clock.runFor(SAFE_STOP_TIMEOUT_MS);
@@ -143,7 +145,7 @@ describe('RoasterSession', () => {
   describe('lost connection', () => {
     it('goes lost after 3 s, keeps reconnecting, and safe-stops again with the first reading back', async () => {
       const { clock, roaster, session, states, tripped } = setup();
-      await session.connect(roaster);
+      await session.connect(roaster, TARGET);
       await clock.runFor(1000);
       roaster.unplug();
       await clock.runFor(4000);
@@ -161,7 +163,7 @@ describe('RoasterSession', () => {
 
     it('still trips when a read hangs forever', async () => {
       const { clock, roaster, session, tripped } = setup();
-      await session.connect(roaster);
+      await session.connect(roaster, TARGET);
       await clock.runFor(1000);
       roaster.hangReads = true;
       await clock.runFor(5000);
@@ -171,7 +173,7 @@ describe('RoasterSession', () => {
 
   it('locks the heater on emergency stop until acknowledged', async () => {
     const { roaster, session, tripped } = setup();
-    await session.connect(roaster);
+    await session.connect(roaster, TARGET);
     session.emergencyStop();
     expect(tripped()).toEqual(['emergency-stop']);
     expect(roaster.count('safeStop')).toBe(1);
@@ -184,9 +186,9 @@ describe('RoasterSession', () => {
 
   it('keeps the heater lock across a reconnect to another roaster', async () => {
     const { clock, roaster, session } = setup();
-    await session.connect(roaster);
+    await session.connect(roaster, TARGET);
     session.emergencyStop();
-    await session.connect(new FakeRoaster(clock));
+    await session.connect(new FakeRoaster(clock), TARGET);
     expect(await session.setOutput('heater', 40)).toEqual(
       err({ kind: 'safety-locked', channel: 'heater' }),
     );
@@ -194,10 +196,10 @@ describe('RoasterSession', () => {
 
   it('stops polling the old roaster when connecting to a new one', async () => {
     const { clock, roaster, session } = setup();
-    await session.connect(roaster);
+    await session.connect(roaster, TARGET);
     await clock.runFor(2000);
     const second = new FakeRoaster(clock);
-    await session.connect(second);
+    await session.connect(second, TARGET);
     const oldReads = roaster.count('read');
     await clock.runFor(5000);
     expect(roaster.count('read')).toBe(oldReads);
@@ -226,7 +228,7 @@ describe('RoasterSession error handling and logging', () => {
   it('logs a failed connect with the error', async () => {
     const { roaster, session, entries } = logged();
     roaster.plugged = false;
-    await session.connect(roaster);
+    await session.connect(roaster, TARGET);
     expect(entries.at(-1)).toMatchObject({
       level: 'warn',
       event: 'session.connect-failed',
@@ -236,7 +238,7 @@ describe('RoasterSession error handling and logging', () => {
 
   it('logs a lost connection once, not every second, and the recovery', async () => {
     const { clock, roaster, session, events } = logged();
-    await session.connect(roaster);
+    await session.connect(roaster, TARGET);
     roaster.unplug();
     await clock.runFor(30_000);
     roaster.plugged = true;
@@ -251,7 +253,7 @@ describe('RoasterSession error handling and logging', () => {
 
   it('logs a crashed poll loop, and lost connection still safe-stops', async () => {
     const { clock, roaster, session, events } = logged();
-    await session.connect(roaster);
+    await session.connect(roaster, TARGET);
     roaster.read = () => Promise.reject(new Error('driver bug'));
     await clock.runFor(5_000);
     expect(events()).toContain('error:session.poll-loop-crashed');
@@ -267,7 +269,7 @@ describe('RoasterSession error handling and logging', () => {
       },
     };
     const { clock, roaster, session, events } = logged({ limits });
-    expect((await session.connect(roaster)).ok).toBe(true);
+    expect((await session.connect(roaster, TARGET)).ok).toBe(true);
     await clock.runFor(2_000);
     expect(events()).toContain('error:safety.rule-failed');
     expect(events()).toContain('error:safety.tripped');
@@ -283,7 +285,7 @@ describe('RoasterSession error handling and logging', () => {
         throw new Error('window gone');
       },
     });
-    await session.connect(roaster);
+    await session.connect(roaster, TARGET);
     await clock.runFor(3_000);
     expect(events()).toContain('error:session.listener-failed');
     expect(roaster.count('read')).toBeGreaterThanOrEqual(3);
@@ -291,7 +293,7 @@ describe('RoasterSession error handling and logging', () => {
 
   it('logs refused outputs and acknowledgements', async () => {
     const { roaster, session, events } = logged();
-    await session.connect(roaster);
+    await session.connect(roaster, TARGET);
     roaster.bt = 250;
     session.emergencyStop();
     await session.setOutput('heater', 40);
@@ -303,20 +305,20 @@ describe('RoasterSession state for a window that opens mid-roast', () => {
   it('remembers the latest connection state', async () => {
     const { roaster, session } = setup();
     expect(session.connection).toEqual({ status: 'disconnected' });
-    await session.connect(roaster);
-    expect(session.connection).toEqual({ status: 'connected', channels: CHANNELS });
+    await session.connect(roaster, TARGET);
+    expect(session.connection).toEqual({ status: 'connected', target: TARGET, channels: CHANNELS });
   });
 
   it('reports the safety lock and tripped rules', async () => {
     const { roaster, session } = setup();
-    await session.connect(roaster);
+    await session.connect(roaster, TARGET);
     session.emergencyStop();
     expect(session.safetyStatus).toEqual({ locked: true, tripped: [] });
   });
 
   it('arms max roast time on roastStarted and stands it down on roastEnded', async () => {
     const { clock, roaster, session, tripped } = setup();
-    await session.connect(roaster);
+    await session.connect(roaster, TARGET);
     session.roastStarted();
     await clock.runFor(19 * 60_000);
     session.roastEnded();

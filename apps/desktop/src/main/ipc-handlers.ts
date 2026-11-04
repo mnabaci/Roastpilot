@@ -60,9 +60,10 @@ export function createIpcHandlers({
 }: IpcDeps): Record<string, IpcHandler> {
   return {
     [IPC_CHANNELS.listPorts]: handler(() => listPorts()),
-    [IPC_CHANNELS.connect]: handler((payload) =>
-      session.connect(createDriver(ConnectTargetSchema.parse(payload))),
-    ),
+    [IPC_CHANNELS.connect]: handler((payload) => {
+      const target = ConnectTargetSchema.parse(payload);
+      return session.connect(createDriver(target), target);
+    }),
     [IPC_CHANNELS.disconnect]: handler(() => session.disconnect()),
     [IPC_CHANNELS.setOutput]: handler((payload) => {
       const { channel, value } = SetOutputRequestSchema.parse(payload);
