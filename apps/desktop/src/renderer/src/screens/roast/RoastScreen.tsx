@@ -3,10 +3,11 @@ import type { RoastPhase } from '@roastpilot/shared';
 import { useMemo } from 'react';
 import { roastChartData } from './roast-chart-data';
 import { roastNumbers } from './roast-numbers';
+import { stageTimes } from './stage-times';
 import { FlowPanel } from './FlowPanel';
 import { OutputsPanel } from './OutputsPanel';
 import { RoastNumbersRow } from './RoastNumbersRow';
-import { useRoast } from '../../stores/use-stores';
+import { useRoast, useSettings } from '../../stores/use-stores';
 
 const STEPS = ['Preheat', 'Roast', 'First crack', 'Drop', 'Cool'] as const;
 
@@ -25,11 +26,19 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
   const roast = useRoast((s) => s.roast);
   const readings = useRoast((s) => s.readings);
   const numbers = useMemo(() => roastNumbers(roast, readings), [roast, readings]);
-  const chart = useMemo(() => roastChartData(roast, readings), [roast, readings]);
+  const smoothingS = useSettings((s) => s.settings.chartSmoothingS);
+  const chart = useMemo(
+    () => roastChartData(roast, readings, { smoothingS }),
+    [roast, readings, smoothingS],
+  );
   return (
-    <main className="grid flex-1 grid-cols-[1fr_auto] gap-6 p-6">
+    <main className="grid min-h-0 flex-1 grid-cols-[1fr_auto] content-start gap-6 overflow-y-auto p-6">
       <div className="flex min-w-0 flex-col gap-5">
-        <PhaseStepper steps={STEPS} current={CURRENT_STEP[roast.phase]} />
+        <PhaseStepper
+          steps={STEPS}
+          current={CURRENT_STEP[roast.phase]}
+          details={stageTimes(roast)}
+        />
         <RoastNumbersRow numbers={numbers} />
         <RoastChart title="Roast curve" layers={chart.layers} markers={chart.markers} />
       </div>

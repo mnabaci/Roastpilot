@@ -3,6 +3,12 @@
 Five screens plus Settings. The roasting screen is readable from a step back from the laptop.
 Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9N2dqd7ULbqovZktYe). Its components are built in `packages/ui` (`Button`, `Badge`, `StatCard`, `OutputControl`, `CoachCard`, `PhaseStepper`, `AlertBanner`) and shown in Storybook (`pnpm storybook`).
 
+## App frame
+
+- The top bar and safety banners are fixed: they never scroll away, so Emergency stop is always on screen.
+- Each screen scrolls inside its own area; on Logs only the list of entries scrolls.
+- Nothing scrolls sideways or gets clipped from the minimum window (960 × 640) up to full screen: long text truncates, numbers fit their cards, rows wrap.
+
 ## Roast screen (main)
 
 - **Top bar:** connection status, active roaster, selected bean and profile, phase name.

@@ -34,6 +34,7 @@ describe('JsonSettingsStore', () => {
     const settings = {
       connection: { kind: 'serial' as const, path: '/dev/cu.usbserial-0001' },
       controls: 'full' as const,
+      chartSmoothingS: 10 as const,
     };
     expect(await store().save(settings)).toEqual({ ok: true, value: undefined });
     expect(await store().load()).toEqual(settings);
@@ -60,7 +61,11 @@ describe('JsonSettingsStore', () => {
       path,
       JSON.stringify({ connection: { kind: 'simulator' }, controls: 'expert' }),
     );
-    expect(await store().load()).toEqual({ connection: { kind: 'simulator' }, controls: 'guided' });
+    expect(await store().load()).toEqual({
+      connection: { kind: 'simulator' },
+      controls: 'guided',
+      chartSmoothingS: 5,
+    });
   });
 
   it('returns a typed error and logs when the folder is gone', async () => {

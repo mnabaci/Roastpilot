@@ -7,9 +7,15 @@ interface SafetyCopy {
 
 /** One line per safety rule (docs/spec/safety.md): what happened, then what the app did. */
 const COPY: Readonly<Record<string, SafetyCopy>> = {
-  'emergency-stop': { kind: 'critical', text: 'Emergency stop · heater off, cooling on' },
-  'max-temperature': { kind: 'critical', text: 'Too hot · heater off, cooling on' },
-  'max-roast-time': { kind: 'critical', text: 'Roast too long · heater off, cooling on' },
+  'emergency-stop': {
+    kind: 'critical',
+    text: 'Emergency stop · heater off, fan and cooling on',
+  },
+  'max-temperature': { kind: 'critical', text: 'Too hot · heater off, fan and cooling on' },
+  'max-roast-time': {
+    kind: 'critical',
+    text: 'Roast too long · heater off, fan and cooling on',
+  },
   'lost-connection': {
     kind: 'critical',
     text: 'No readings · heater off. Check the roaster and cable',

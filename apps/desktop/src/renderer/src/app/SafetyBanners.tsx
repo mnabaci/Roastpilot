@@ -9,7 +9,10 @@ import { useRun } from '../features/use-run';
 const refusedText = (error: AcknowledgeError) =>
   `Still tripped: ${error.rules.map((rule) => safetyCopy(rule).text.split(' · ')[0]).join(', ')}`;
 
-/** One banner per tripped rule, then the heater lock with its Acknowledge (docs/spec/safety.md). */
+/**
+ * One banner per tripped rule; the first critical one carries Acknowledge for the heater lock. A
+ * separate Heater locked banner shows only when the lock outlives every trip (docs/spec/ui.md).
+ */
 export function SafetyBanners() {
   const { api } = useDeps();
   const run = useRun();
@@ -23,17 +26,22 @@ export function SafetyBanners() {
       setRefused(result.ok ? undefined : refusedText(result.error));
     });
   };
+  const acknowledgeOn = locked ? tripped.findIndex((r) => safetyCopy(r).kind === 'critical') : -1;
   return (
-    <div className="flex flex-col gap-2 px-6 pt-4">
-      {tripped.map((rule) => {
+    <div className="flex shrink-0 flex-col gap-2 px-6 pt-4">
+      {tripped.map((rule, i) => {
         const { kind, text } = safetyCopy(rule);
-        return (
+        return i === acknowledgeOn ? (
+          <AlertBanner key={rule} kind={kind} onDismiss={acknowledge} dismissLabel="Acknowledge">
+            {refused ?? text}
+          </AlertBanner>
+        ) : (
           <AlertBanner key={rule} kind={kind}>
             {text}
           </AlertBanner>
         );
       })}
-      {locked ? (
+      {locked && acknowledgeOn === -1 ? (
         <AlertBanner kind="critical" onDismiss={acknowledge} dismissLabel="Acknowledge">
           {refused ?? 'Heater locked · acknowledge when the roaster is safe'}
         </AlertBanner>

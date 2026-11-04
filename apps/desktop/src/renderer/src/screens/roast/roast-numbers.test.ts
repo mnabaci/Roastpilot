@@ -13,6 +13,7 @@ describe('roastNumbers', () => {
       bt: undefined,
       ror: undefined,
       elapsedS: undefined,
+      preheatS: undefined,
       developmentS: undefined,
       developmentPct: undefined,
       coolingLeftS: undefined,
@@ -24,6 +25,16 @@ describe('roastNumbers', () => {
     expect(n.bt).toBeCloseTo(110);
     expect(n.ror).toBeCloseTo(10);
     expect(n.elapsedS).toBeUndefined();
+  });
+
+  it('counts the preheat until charge', () => {
+    const n = roastNumbers(roast({ phase: 'preheat', preheatAtMs: 10_000 }), readings(60));
+    expect(n).toMatchObject({ preheatS: 50, elapsedS: undefined });
+    const charged = roastNumbers(
+      roast({ phase: 'roasting', preheatAtMs: 10_000, chargedAtMs: 40_000 }),
+      readings(60),
+    );
+    expect(charged).toMatchObject({ preheatS: undefined, elapsedS: 20 });
   });
 
   it('time since charge and development with its share of the roast', () => {

@@ -120,6 +120,37 @@ describe('RoastScreen', () => {
     expect(api.setOutput).toHaveBeenCalledWith({ channel: 'cooling', value: 100 });
   });
 
+  it('preheat can be cancelled from a second button', async () => {
+    const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
+      ...connected,
+      roast: roast('preheat'),
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel preheat' }));
+    expect(api.roastAction).toHaveBeenCalledWith('cancel-preheat');
+  });
+
+  it('connection lost: Reconnecting with nothing to press, and dashes instead of old values', () => {
+    renderApp(<RoastScreen onConnect={onConnect} />, {
+      connection: { status: 'lost' },
+      roast: roast('roasting'),
+      readings: [reading({ heater: 30, fan: 60, bt: 48 })],
+    });
+    expect(screen.getByText('Reconnecting… · check the cable')).toHaveAttribute('role', 'status');
+    expect(screen.queryByRole('button', { name: 'Connect a roaster' })).not.toBeInTheDocument();
+    expect(screen.queryByText('30%')).not.toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: 'Heater' })).toBeDisabled();
+  });
+
+  it('the stepper shows how long finished stages took, and Time counts the preheat', () => {
+    renderApp(<RoastScreen onConnect={onConnect} />, {
+      ...connected,
+      roast: { ...roast('roasting'), preheatAtMs: 0, chargedAtMs: 250_000 },
+      readings: [reading({ bt: 150 }, 310_000)],
+    });
+    expect(screen.getAllByRole('listitem')[0]).toHaveTextContent('4:10');
+    expect(screen.getByText('1:00')).toBeInTheDocument();
+  });
+
   it('the drum switch shows the reading and overrides it', async () => {
     const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
       ...connected,

@@ -28,10 +28,11 @@ export function App() {
     logs: () => <LogsScreen />,
   };
   return (
-    <div className="flex min-h-screen flex-col bg-bg font-sans text-ink">
+    // A fixed frame: the top bar and safety banners never scroll away; each screen scrolls inside.
+    <div className="flex h-screen flex-col overflow-hidden bg-bg font-sans text-ink">
       <TopBar screen={shown} onNavigate={setScreen} />
       <SafetyBanners />
-      {ready ? screens[shown]() : null}
+      <div className="flex min-h-0 flex-1 flex-col">{ready ? screens[shown]() : null}</div>
     </div>
   );
 }

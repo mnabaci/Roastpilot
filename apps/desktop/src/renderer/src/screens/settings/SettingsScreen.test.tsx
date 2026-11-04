@@ -1,5 +1,5 @@
 import { err, type RoastpilotApi } from '@roastpilot/shared';
-import { act, screen } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { CONNECTED, fakeApi, renderApp } from '../../test/render-app';
@@ -22,6 +22,7 @@ describe('SettingsScreen', () => {
     expect(api.setSettings).toHaveBeenCalledWith({
       connection: { kind: 'serial', path: '/dev/cu.usbserial-0001' },
       controls: 'guided',
+      chartSmoothingS: 5,
     });
     expect(screen.getByRole('button', { name: /usbserial-0001/ })).toHaveAttribute(
       'aria-pressed',
@@ -102,7 +103,23 @@ describe('SettingsScreen', () => {
     expect(screen.getByRole('button', { name: 'Guided' })).toHaveAttribute('aria-pressed', 'true');
     await userEvent.click(screen.getByRole('button', { name: 'Full control' }));
     expect(stores.settings.getState().settings.controls).toBe('full');
-    expect(api.setSettings).toHaveBeenCalledWith({ connection: null, controls: 'full' });
+    expect(api.setSettings).toHaveBeenCalledWith({
+      connection: null,
+      controls: 'full',
+      chartSmoothingS: 5,
+    });
+  });
+
+  it('picks how much the temperature line is smoothed', async () => {
+    const { api, stores } = renderApp(<SettingsScreen />);
+    const group = screen.getByRole('group', { name: 'Temperature smoothing' });
+    expect(within(group).getByRole('button', { name: '5 s' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await userEvent.click(within(group).getByRole('button', { name: 'Off' }));
+    expect(stores.settings.getState().settings.chartSmoothingS).toBe(0);
+    expect(api.setSettings).toHaveBeenCalledWith(expect.objectContaining({ chartSmoothingS: 0 }));
   });
 
   it('keeps the change for this session when saving fails', async () => {

@@ -16,7 +16,16 @@ export function FlowPanel({
   const { api, logger } = useDeps();
   const run = useRun();
   const connected = useConnection((s) => isConnected(s.connection));
+  const lost = useConnection((s) => s.connection.status === 'lost');
   const phase = useRoast((s) => s.roast.phase);
+  if (lost) {
+    // Main is already reopening the port; there is nothing to press until readings are back.
+    return (
+      <p role="status" className="text-body text-ink-muted">
+        Reconnecting… · check the cable
+      </p>
+    );
+  }
   if (!connected) {
     return (
       <div className="flex flex-col gap-2">

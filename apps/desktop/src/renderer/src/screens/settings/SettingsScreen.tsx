@@ -1,12 +1,16 @@
 import { ConnectionSection } from './ConnectionSection';
+import { ChartSection } from './ChartSection';
 import { ControlsSection } from './ControlsSection';
 
 export function SettingsScreen() {
   return (
-    <main className="flex w-full max-w-xl flex-col gap-8 p-6">
-      <h1 className="text-title">Settings</h1>
-      <ConnectionSection />
-      <ControlsSection />
+    <main className="min-h-0 flex-1 overflow-y-auto p-6">
+      <div className="flex max-w-xl flex-col gap-8">
+        <h1 className="text-title">Settings</h1>
+        <ConnectionSection />
+        <ControlsSection />
+        <ChartSection />
+      </div>
     </main>
   );
 }

@@ -11,6 +11,8 @@ export function OutputsPanel() {
   const phase = useRoast((s) => s.roast.phase);
   const connected = useConnection((s) => isConnected(s.connection));
   const locked = useSafety((s) => s.locked);
+  // With the roaster gone, its last values would look live: show a dash instead.
+  const lost = useConnection((s) => s.connection.status === 'lost');
   const access = controlsAccess(level, phase, connected);
   const heater = useOutput('heater');
   const fan = useOutput('fan');
@@ -29,7 +31,7 @@ export function OutputsPanel() {
         label="Heater"
         tone="heat"
         mode="manual"
-        value={heater.value}
+        value={lost ? undefined : heater.value}
         onChange={heater.set}
         disabled={!access.outputs || locked}
       />
@@ -37,7 +39,7 @@ export function OutputsPanel() {
         label="Fan"
         tone="air"
         mode="manual"
-        value={fan.value}
+        value={lost ? undefined : fan.value}
         onChange={fan.set}
         disabled={!access.outputs}
       />
