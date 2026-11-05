@@ -60,18 +60,22 @@ export function TopBar({
           </Button>
         ))}
       </nav>
-      <p className="flex items-center gap-2 text-label text-ink-muted" aria-live="polite">
+      <p
+        className="flex items-center gap-2 text-label whitespace-nowrap text-ink-muted"
+        aria-live="polite"
+      >
         <Badge tone={status === 'connected' ? 'air' : status === 'lost' ? 'heat' : 'neutral'}>
           {CONNECTION_LABEL[status]}
         </Badge>
         {connection.status !== 'disconnected' ? (
-          <span className="text-ink">{targetLabel(connection.target)}</span>
+          // The badge says enough on a small window; six tabs leave no room for the name.
+          <span className="hidden text-ink lg:inline">{targetLabel(connection.target)}</span>
         ) : null}
         {status === 'connected' ? <span>· {PHASE_LABEL[phase]}</span> : null}
       </p>
       <Button
         variant="danger"
-        className="ml-auto"
+        className="ml-auto whitespace-nowrap"
         icon={<OctagonX aria-hidden="true" />}
         disabled={status === 'disconnected'}
         onClick={() => {

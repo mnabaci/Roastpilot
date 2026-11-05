@@ -25,7 +25,7 @@ export function AutoSection() {
             save({ soakTimeS: soak });
           }}
         />
-        <p className="text-label text-ink-muted">Heater at 0 after charge · both Light profiles.</p>
+        <p className="text-label text-ink-muted">Heater at 0 after charge · for every profile</p>
       </div>
     </section>
   );

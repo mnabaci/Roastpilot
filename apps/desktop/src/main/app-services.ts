@@ -1,14 +1,10 @@
 import {
-  AutoPilot,
   ManualRoast,
   ReadingHistory,
   RoasterSession,
-  quantize,
   RoastRecorder,
   serializeError,
-  withSoakTime,
   type Clock,
-  type AutoEvent,
   type Logger,
   type ProfileRepository,
   type RoastRepository,
@@ -22,7 +18,7 @@ import {
   type IpcEventPayloads,
   type Snapshot,
 } from '@roastpilot/shared';
-import { SKYWALKER_TUNING } from '@roastpilot/drivers';
+import { createAutoPilot, roastPlan } from './auto-wiring';
 import { HistoryService } from './history/history-service';
 import { ProfileService } from './profiles/profile-service';
 import { SettingsService } from './settings/settings-service';
@@ -51,25 +47,9 @@ export interface AppServices {
   settings: SettingsService;
   history: HistoryService;
   recorder: RoastRecorder;
-  pilot: AutoPilot;
+  pilot: ReturnType<typeof createAutoPilot>;
   profiles: ProfileService;
   snapshot: () => Snapshot;
-}
-
-function noteAutoEvent(roast: ManualRoast, event: AutoEvent): void {
-  switch (event.kind) {
-    case 'phase':
-      roast.note('phase', event.name);
-      return;
-    case 'dry-end':
-      roast.note('dry-end');
-      return;
-    case 'stall-guard':
-      roast.note('stall-guard', event.tripped ? 'tripped' : 'cleared');
-      return;
-    case 'override':
-      roast.note('override', `${event.channel} ${String(event.value)}`);
-  }
 }
 
 /** Everything main runs, wired together without Electron, so it can be tested on fake time. */
@@ -91,10 +71,7 @@ export function createAppServices({
     repository: roasts,
     nowIso,
     readingsSoFar: () => history.all(),
-    plan: () =>
-      settings.latest.roastMode === 'auto'
-        ? { mode: 'auto', profile: withSoakTime(profiles.active(), settings.latest.soakTimeS) }
-        : { mode: 'manual', profile: null },
+    plan: () => roastPlan(settings, profiles),
     onSaved: (id) => {
       publish(IPC_CHANNELS.roastsChanged, { id });
     },
@@ -186,37 +163,14 @@ export function createAppServices({
       session.roastEnded();
     },
   });
-  const pilot = new AutoPilot({
-    roast: () => roast.state,
+  const pilot = createAutoPilot({
+    session,
+    roast,
+    settings,
+    profiles,
     readings: () => history.all(),
-    setOutput: (channel, value) => session.setOutput(channel, value),
-    round: (channel, value) => {
-      const { connection } = session;
-      const output =
-        connection.status === 'connected'
-          ? connection.channels.find((c) => c.id === channel)
-          : undefined;
-      return output?.kind === 'output' ? quantize(output, value) : value;
-    },
-    heaterLocked: () => session.connection.status !== 'connected' || session.safetyStatus.locked,
-    drop: async () => {
-      const dropped = await roast.act('drop');
-      if (dropped.ok) return;
-      roastLogger.warn('auto.drop-refused', { error: dropped.error });
-      // Never keep driving past the end of a roast: the outputs are yours from here.
-      pilot.stop('drop-refused');
-    },
-    profile: () => profiles.active(),
-    tuning: () => SKYWALKER_TUNING,
-    soakS: () => settings.latest.soakTimeS,
-    onEvent: (event) => {
-      // Only a roast has a timeline to put it on: preheat overrides stay in the log.
-      if (roast.state.chargedAtMs !== null) noteAutoEvent(roast, event);
-    },
-    onChange: (status) => {
-      publish(IPC_CHANNELS.autoStatus, status);
-    },
-    logger: logger.child('auto'),
+    publish,
+    logger,
   });
   const snapshot = (): Snapshot => ({
     connection: session.connection,

@@ -1,6 +1,7 @@
 import { Button, formatClock, NumberField } from '@roastpilot/ui';
 import { X } from 'lucide-react';
-import { addPoint, removePoint, type DraftErrors, type ProfileDraft } from './profile-draft';
+import { addPoint, removePoint } from './draft-edits';
+import type { DraftErrors, ProfileDraft } from './profile-draft';
 
 /** The points a curve profile follows; the first is always charge temp at 0:00. */
 export function CurvePointsTable({

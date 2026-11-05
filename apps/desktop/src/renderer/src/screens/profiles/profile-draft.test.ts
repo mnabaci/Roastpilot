@@ -1,14 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CURVE, STEPS } from '../../test/profiles';
-import {
-  addPoint,
-  addStep,
-  fromDraft,
-  removePoint,
-  removeStep,
-  toDraft,
-  type ProfileDraft,
-} from './profile-draft';
+import { addPoint, addStep, removePoint, removeStep } from './draft-edits';
+import { fromDraft, toDraft, type ProfileDraft } from './profile-draft';
 
 const steps = () => toDraft(STEPS);
 const withStep = (draft: ProfileDraft, index: number, change: object): ProfileDraft => ({

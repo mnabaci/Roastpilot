@@ -1,6 +1,6 @@
 import { Button, formatClock, NumberField } from '@roastpilot/ui';
 import type { ProfileDraft, StepDraft, DraftErrors } from './profile-draft';
-import { addStep, removeStep } from './profile-draft';
+import { addStep, removeStep } from './draft-edits';
 import { StepRow } from './StepRow';
 
 const HEAD = 'px-1 pb-1 text-left text-label font-normal text-ink-muted';

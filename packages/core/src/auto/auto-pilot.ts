@@ -7,7 +7,6 @@ import {
   type AutoStatus,
   type AutoTuning,
   type DriverError,
-  type OutputOwner,
   type Reading,
   type Result,
   type RoastState,
@@ -17,6 +16,7 @@ import { silentLogger, type Logger } from '../logging/logger';
 import { serializeError } from '../logging/serialize-error';
 import { rateOfRise, rorReadings } from '../roast/rate-of-rise';
 import { BEAN_TEMP } from '../safety/safety-rule';
+import { AutoOutputs, isDriven } from './auto-outputs';
 import { withSoakTime } from './phase-plan';
 import { PreheatProtocol } from './preheat-protocol';
 import { RoastRun, type AutoEvent } from './roast-run';
@@ -40,10 +40,6 @@ export interface AutoPilotDeps {
   logger?: Logger;
 }
 
-type DrivenOutput = 'heater' | 'fan';
-const isDriven = (channel: string): channel is DrivenOutput =>
-  channel === 'heater' || channel === 'fan';
-
 /**
  * Drives heater and fan beside the roast flow, from Preheat until Drop. It never turns the heater
  * back on by itself after a stop (docs/spec/safety.md, Auto mode).
@@ -55,8 +51,7 @@ export class AutoPilot {
   readonly #event: (event: AutoEvent) => void;
   #enabled = false;
   #stopped = false;
-  #owners: Record<DrivenOutput, OutputOwner> = { heater: 'auto', fan: 'auto' };
-  #sent: Partial<Record<DrivenOutput, number>> = {};
+  readonly #outputs: AutoOutputs;
   #preheat: PreheatProtocol | undefined;
   #run: RoastRun | undefined;
   #dropping = false;
@@ -66,6 +61,7 @@ export class AutoPilot {
   constructor(deps: AutoPilotDeps) {
     this.#deps = deps;
     this.#logger = deps.logger ?? silentLogger;
+    this.#outputs = new AutoOutputs(deps.setOutput, deps.round, this.#logger);
     this.#notify = guardListener(this.#logger, 'auto.listener-failed', deps.onChange);
     this.#event = guardListener(this.#logger, 'auto.listener-failed', deps.onEvent);
   }
@@ -75,8 +71,8 @@ export class AutoPilot {
       enabled: this.#enabled,
       profileId: this.#deps.profile().id,
       stopped: this.#stopped,
-      heater: this.#owners.heater,
-      fan: this.#owners.fan,
+      heater: this.#outputs.owner('heater'),
+      fan: this.#outputs.owner('fan'),
       preheatStep: this.#preheat?.step ?? null,
       preheatLeftS: this.#preheat?.leftS ?? null,
       phaseName: this.#run?.phaseName ?? null,
@@ -93,10 +89,10 @@ export class AutoPilot {
     }
     this.#enabled = enabled;
     this.#logger.info('auto.mode-changed', { enabled });
-    this.#sent = {};
+    this.#outputs.forgetSent();
     if (enabled) {
       this.#stopped = false;
-      this.#owners = { heater: 'auto', fan: 'auto' };
+      this.#outputs.handBack();
     }
     this.#publish();
   }
@@ -104,8 +100,8 @@ export class AutoPilot {
   /** You set an output by hand: it stays yours until Resume auto. */
   outputRequested(channel: string, value: number): void {
     if (!this.#enabled || !isDriven(channel) || !this.#isDriving()) return;
-    if (this.#owners[channel] === 'manual') return;
-    this.#owners[channel] = 'manual';
+    if (this.#outputs.owner(channel) === 'manual') return;
+    this.#outputs.takeOver(channel);
     this.#logger.info('auto.override', { channel, value });
     this.#event({ kind: 'override', channel, value });
     this.#publish();
@@ -115,7 +111,8 @@ export class AutoPilot {
   stop(reason: string): void {
     if (!this.#enabled || this.#stopped) return;
     this.#stopped = true;
-    this.#owners = { heater: 'manual', fan: 'manual' };
+    this.#outputs.takeOver('heater');
+    this.#outputs.takeOver('fan');
     this.#logger.warn('auto.stopped', { reason });
     this.#publish();
   }
@@ -127,8 +124,7 @@ export class AutoPilot {
       return err({ kind: 'safety-locked' });
     }
     this.#stopped = false;
-    this.#owners = { heater: 'auto', fan: 'auto' };
-    this.#sent = {};
+    this.#outputs.handBack();
     this.#run?.restartControl();
     this.#logger.info('auto.resumed');
     this.#publish();
@@ -193,10 +189,9 @@ export class AutoPilot {
     if (state.phase !== 'roasting' && state.phase !== 'development') {
       this.#run = undefined;
       this.#dropping = false;
-      this.#sent = {};
       // The roast is over: a stop or an override doesn't carry into the next one.
       this.#stopped = false;
-      this.#owners = { heater: 'auto', fan: 'auto' };
+      this.#outputs.handBack();
       return;
     }
     const chargedAtMs = state.chargedAtMs;
@@ -210,8 +205,8 @@ export class AutoPilot {
   async #tickPreheat(nowMs: number, btC: number | undefined): Promise<void> {
     if (!this.#preheat || this.#stopped) return;
     const outputs = this.#preheat.next(nowMs, btC);
-    await this.#send('heater', outputs.heaterPct);
-    await this.#send('fan', outputs.fanPct);
+    await this.#outputs.send('heater', outputs.heaterPct);
+    await this.#outputs.send('fan', outputs.fanPct);
     if (outputs.gaveUp) this.stop('preheat-limit');
   }
 
@@ -234,18 +229,8 @@ export class AutoPilot {
       await this.#deps.drop();
       return;
     }
-    await this.#send('heater', tick.heaterPct);
-    await this.#send('fan', tick.fanPct);
-  }
-
-  /** Sends only your-roaster-sized changes; a failed command is tried again on the next tick. */
-  async #send(channel: DrivenOutput, value: number): Promise<void> {
-    if (this.#owners[channel] !== 'auto') return;
-    const rounded = this.#deps.round(channel, value);
-    if (this.#sent[channel] === rounded) return;
-    const result = await this.#deps.setOutput(channel, rounded);
-    if (result.ok) this.#sent[channel] = rounded;
-    else this.#logger.warn('auto.output-failed', { channel, value: rounded, error: result.error });
+    await this.#outputs.send('heater', tick.heaterPct);
+    await this.#outputs.send('fan', tick.fanPct);
   }
 
   #publish(): void {

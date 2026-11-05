@@ -47,7 +47,7 @@ function roastHint(status: AutoStatus, profile: AutoProfile, developing: boolean
 
 /**
  * The flow panel while Auto drives (docs/spec/roast-control.md, Auto mode); undefined when the
- * normal step applies: Auto off or stopped, or the states Auto leaves alone.
+ * normal step applies: Auto off or stopped, or cooling, which Auto leaves alone.
  */
 export function autoFlowStep(
   roast: RoastState,
@@ -55,6 +55,12 @@ export function autoFlowStep(
   profile: AutoProfile | undefined,
 ): FlowStep | undefined {
   if (!status.enabled || status.stopped || !profile) return undefined;
+  if (roast.phase === 'ready' || roast.phase === 'done') {
+    return {
+      primary: { action: 'preheat', label: 'Preheat' },
+      hint: `Auto heats to ${String(profile.chargeC)} °C and holds · then add beans.`,
+    };
+  }
   if (roast.phase === 'preheat') {
     return status.preheatStep === null
       ? { secondary: START, stop: END_ROAST, hint: 'Starting the preheat…' }

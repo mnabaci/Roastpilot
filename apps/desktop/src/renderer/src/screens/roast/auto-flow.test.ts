@@ -12,8 +12,15 @@ describe('autoFlowStep', () => {
   it('leaves the normal flow alone when Auto is off or stopped, or nothing is driven', () => {
     expect(autoFlowStep(ROASTING, AUTO_OFF, PROFILE)).toBeUndefined();
     expect(autoFlowStep(ROASTING, { ...ON, stopped: true }, PROFILE)).toBeUndefined();
-    expect(autoFlowStep(READY_ROAST, ON, PROFILE)).toBeUndefined();
+    expect(autoFlowStep({ ...READY_ROAST, phase: 'cooling' }, ON, PROFILE)).toBeUndefined();
     expect(autoFlowStep(ROASTING, ON, undefined)).toBeUndefined();
+  });
+
+  it('before Preheat says Auto does the warming up', () => {
+    expect(autoFlowStep(READY_ROAST, ON, PROFILE)).toMatchObject({
+      primary: { action: 'preheat' },
+      hint: 'Auto heats to 180 °C and holds · then add beans.',
+    });
   });
 
   it.each([
