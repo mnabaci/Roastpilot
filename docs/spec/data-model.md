@@ -43,3 +43,12 @@ before charge (preheat) have negative times.
 One migration: `roasts.profile`, a JSON copy of the profile the roast ran (with its `schemaVersion`), empty for manual roasts; `mode` is `auto` when Auto was on at charge. New `roast_events` types: `dry-end`, `phase` (detail: its name), `override` (detail: output and value) and `stall-guard` (detail: tripped or cleared).
 
 The same migration adds `profiles` (`id`, `doc`, `updated_at`), your own profiles, each one JSON document checked against the profile format on the way in and out. Built-ins stay data in code ([ADR 0011](../adr/0011-built-in-profile-as-data.md)). A row that no longer parses is skipped and logged.
+
+## Roasters and beans (milestones 5 and 6)
+
+One migration per milestone.
+
+- **Roasters:** `roasters` as in the table above, with Skywalker and Simulator inserted. `profiles.roaster_id` and `roasts.roaster_id` point at it; existing rows get Skywalker. The migration can't read `settings.json`, so the app moves the saved connection into its record on first start.
+- **Beans:** `beans` and `bean_purchases` as above, plus on `roasts`: `bean_id`, `ghost_roast_id`, `batch_g`, `roasted_g`, `rating` (1–5), `is_favourite`, `notes`; `profile_id` keeps which profile it ran, and the JSON copy stays what counts. All empty on older roasts.
+- **Stock:** `green_g` and `roasted_g` on the bean are running totals. Start takes the batch off `green_g` in one transaction with the roast's `batch_g`; the roasted weight adds to `roasted_g`, and changing it later adds only the difference. Deleting a roast gives neither back, as those beans are gone; Adjust stock corrects any count.
+- **Deleting a bean:** there's no delete, only Archive, so its roasts keep their name. A deleted roast used as a ghost leaves `ghost_roast_id` empty (`ON DELETE SET NULL`).

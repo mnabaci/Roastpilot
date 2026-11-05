@@ -1,6 +1,6 @@
 # UI
 
-Five screens plus Settings. The roasting screen is readable from a step back from the laptop.
+Six screens: Roast, History, Beans, Profiles, Logs and Settings. The roasting screen is readable from a step back from the laptop.
 Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9N2dqd7ULbqovZktYe). Its components are built in `packages/ui` (`Button`, `Badge`, `StatCard`, `OutputControl`, `CoachCard`, `PhaseStepper`, `AlertBanner`) and shown in Storybook (`pnpm storybook`).
 
 ## App frame
@@ -43,7 +43,7 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 - **Mode switch:** Auto / Manual. In Manual, the coach card sits above the outputs.
 - **Outputs:** heater % and fan %, each with a slider and an Auto/Manual badge.
 - **Buttons:** Preheat, Start (charge), First crack, Drop now, and a red Emergency stop that is always visible (disabled only while no roaster is connected).
-- **After cooling:** roasted weight prompt, rating, star, and the phase split.
+- **After cooling:** roasted weight, rating, star and notes inline in the flow panel, never a dialog, and all skippable; saved as you enter them. They stay until the next Preheat or Clear, and can be changed later in History.
 
 ## Profiles screen
 
@@ -53,6 +53,8 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 - A preview chart shows the planned curve and the heater and fan steps, and updates as you type. Problems show next to the cell, one line each, and Save waits until there are none.
 - With Auto on, the profile stays put from Preheat until Drop: no other choice on the Roast screen or with Use for Auto, and the one running can't be saved or deleted. Unsaved edits wait, and other profiles can still be edited. The Auto / Manual switch stays live.
 - The list stays still and only the editor scrolls.
+- **Milestone 5:** the list shows the active roaster's profiles; Copy to another roaster when there's another one.
+- **Milestone 6:** Make step profile and Make curve profile on a History roast open the new copy here.
 - **Later:** drag points on the chart, and the milestone builder to draw a curve from a few milestones (milestone 8).
 - New profile from a roast: "Make step profile" (phases from its heat/fan changes) or "Make curve profile" (its BT curve).
 - Import an Artisan `.alog` as a curve profile.
@@ -63,13 +65,15 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 - List of roasts, newest first: date and time, total time (charge to drop), first crack time, drop temp; Unfinished when cooling never ended.
 - Open a roast to see its chart, stage times and events; under the chart, a small events table (secondary text): Event · Time · Temp · RoR · Heater · Fan for Charge, Turning point, First crack, Drop and Cool end (or End), with the values read from the saved samples at each event, so older roasts get it too. A dash where there is no value; Compare overlays one other roast, faded, aligned at charge.
 - Delete asks once ("Delete this roast? · can't be undone"), then the list moves to the next roast.
-- Later milestones: bean, profile, rating and star columns; filter by bean, profile or favourites; Make profile from this; Export CSV.
+- **Milestone 6:** bean, profile, rating and star on each row; filter by bean, profile or favourites; edit weight, rating, star and notes on the open roast; Make step profile and Make curve profile.
+- Later: Export CSV.
 
 ## Beans screen
 
 - Bean list: name, origin, process, stock left, low-stock badge.
 - Bean detail: its info, all its roasts with stars, and its best favourite.
-- Actions: Add bean, Adjust stock, Archive, Roast this bean.
+- Actions: Add bean, Edit, Add stock (with the batch calculator), Adjust stock, Archive, Roast this bean.
+- List on the left, detail on the right, and only the right side scrolls, as on Profiles.
 
 ## Batch calculator
 
@@ -81,6 +85,6 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 
 ## Settings
 
-- Roasters: list, add, edit, set active. Safety limits and tuning live in each roaster.
+- Roasters: list, add, edit, set active. Safety limits and tuning live in each roaster. The Connection section connects the active one.
 - Simulator: always available as a roaster, for practice and demos. It never runs unless you pick it.
 - **Milestone 2 (minimal):** Connection (the roaster used last with Connect and "Choose another", which lists likely roasters (USB serial adapters) and the Simulator, with other ports behind "Show all ports"; Refresh; Connect / Disconnect; while a roaster is in use, only its row shows, marked Connected (or Connecting…, Reconnecting…), and the top bar names it; while connecting, the app stays on Settings with a busy Connect button and a locked list, and a failure is one line under it) Controls (Guided / Full control, see [manual-mode.md](manual-mode.md)), Roast (Find the charge point, on; Cooling ends, by time 2–6 min (default 4) or below 70–100 °C (default 90 °C); Cool the roaster after each roast, on; Cool the roaster to, 40–70 °C, default 50 °C) and Chart (temperature smoothing: Off, 3 s, 5 s or 10 s). Saved in `settings.json` in the app's user-data folder behind a `SettingsStore` interface; roaster records replace the connection part at milestone 5.

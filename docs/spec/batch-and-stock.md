@@ -18,3 +18,6 @@ side by side. You pick one, and it's saved with the bean purchase.
 - Green stock per bean drops by the batch weight at Start.
 - After cooling, the app asks for the roasted weight and logs weight loss % and roasted stock.
 - Low-stock badge below a threshold (default 500 g). Adjust by hand any time.
+- Skipping the roasted weight is fine: the roast shows no weight loss and roasted stock doesn't change.
+- A bean's average weight loss comes from its roasts with a roasted weight; 15% until it has one.
+- A batch bigger than the green stock left is allowed, with a one-line warning, as your count may be off; stock stops at 0.
