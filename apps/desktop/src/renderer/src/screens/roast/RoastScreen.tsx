@@ -1,6 +1,6 @@
 import { Button, PhaseStepper, RoastChart } from '@roastpilot/ui';
 import type { RoastPhase } from '@roastpilot/shared';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { roastChartData } from './roast-chart-data';
 import { roastNumbers } from './roast-numbers';
 import { skippedSteps, stageTimes } from './stage-times';
@@ -52,6 +52,31 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
     () => roastChartData(roast, readings, { smoothingS, tempName: temp.name, plan }),
     [roast, readings, smoothingS, temp.name, plan],
   );
+  const setup = useBeans((s) => s.setup);
+  const beans = useBeans((s) => s.beans);
+  // Stock was deducted at charge; ask whether to return it when clearing a completed roast.
+  const deductedBeanId = roast.phase === 'done' ? setup.beanId : null;
+  const deductedBatchG = roast.phase === 'done' ? setup.batchG : null;
+  const hasDeductedStock = deductedBeanId !== null && deductedBatchG !== null;
+  const deductedBeanName =
+    deductedBeanId !== null
+      ? (beans.find((b) => b.id === deductedBeanId)?.name ?? 'beans')
+      : 'beans';
+  const [awaitingStockReturn, setAwaitingStockReturn] = useState(false);
+
+  const clearRoast = (returnStock: boolean) => {
+    run('roast.clear-failed', async () => {
+      if (returnStock && deductedBeanId !== null && deductedBatchG !== null) {
+        await api.adjustStock({ beanId: deductedBeanId, greenG: deductedBatchG, roastedG: 0 });
+      }
+      const cleared = await api.roastAction('clear');
+      if (cleared.ok) {
+        setAwaitingStockReturn(false);
+        stores.roast.setState(clearReadings);
+      }
+    });
+  };
+
   // The ghost starts at charge: before it, the chart's clock is the preheat's.
   const ghostId = useBeans((s) => s.setup.ghostRoastId);
   const ghost = useSavedRoast(ghostId ?? undefined);
@@ -76,23 +101,52 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
             details={stageTimes(roast)}
             skipped={skippedSteps(roast)}
           />
-          {canClear ? (
+          {canClear && !awaitingStockReturn ? (
             <Button
               variant="ghost"
               size="sm"
               // Its text on the step names' line, keeping the 44 px target without a taller row.
               className="-my-3 shrink-0"
               onClick={() => {
-                run('roast.clear-failed', async () => {
-                  const cleared = await api.roastAction('clear');
-                  if (cleared.ok) stores.roast.setState(clearReadings);
-                });
+                if (hasDeductedStock) {
+                  setAwaitingStockReturn(true);
+                } else {
+                  run('roast.clear-failed', async () => {
+                    const cleared = await api.roastAction('clear');
+                    if (cleared.ok) stores.roast.setState(clearReadings);
+                  });
+                }
               }}
             >
               Clear
             </Button>
           ) : null}
         </div>
+        {canClear && awaitingStockReturn ? (
+          <div className="flex items-center gap-3 text-sm">
+            <span className="text-ink-muted shrink-0">
+              Return {deductedBatchG} g of {deductedBeanName} to stock?
+            </span>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                clearRoast(true);
+              }}
+            >
+              Return to stock
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                clearRoast(false);
+              }}
+            >
+              Keep deducted
+            </Button>
+          </div>
+        ) : null}
         <RoastNumbersRow
           numbers={shown}
           tempName={temp.name}
