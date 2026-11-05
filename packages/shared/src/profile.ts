@@ -112,6 +112,9 @@ export const AutoProfileSchema = z
       lastTriggerC = phase.next.c;
       lastBackupS = phase.next.backupS;
     });
+    profile.curve.slice(1).forEach((point, index) => {
+      if (point.c > capC) issue(['curve', index + 1, 'c'], 'Must not be above the BT cap');
+    });
     const lastIndex = profile.phases.length - 1;
     profile.phases.forEach((phase, index) => {
       if (

@@ -125,6 +125,19 @@ describe('AutoPilot', () => {
     expect(onChange.mock.calls.length).toBe(before);
   });
 
+  it('still drops the next roast after going Manual right after a drop', async () => {
+    const { pilot, feed, setState, drop } = setup(ROASTING);
+    pilot.setEnabled(true);
+    await feed(1_000, PROFILE.capC + 1);
+    expect(drop).toHaveBeenCalledOnce();
+    pilot.setEnabled(false);
+    await feed(2_000, 100);
+    pilot.setEnabled(true);
+    setState({ phase: 'roasting', chargedAtMs: 5_000 });
+    await feed(6_000, PROFILE.capC + 1);
+    expect(drop).toHaveBeenCalledTimes(2);
+  });
+
   it('records nothing for a manual roast', async () => {
     const { feed, events } = setup(ROASTING);
     await feed(1_000, 170);

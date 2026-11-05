@@ -147,6 +147,10 @@ export function createAppServices({
   settings.get().catch((error: unknown) => {
     logger.error('settings.load-failed', { error: serializeError(error) });
   });
+  // Before the first roast, so a chosen profile of your own is there without opening a window.
+  profiles.list().catch((error: unknown) => {
+    logger.error('profiles.load-failed', { error: serializeError(error) });
+  });
   const roast = new ManualRoast({
     clock,
     logger: roastLogger,
@@ -197,7 +201,10 @@ export function createAppServices({
     heaterLocked: () => session.connection.status !== 'connected' || session.safetyStatus.locked,
     drop: async () => {
       const dropped = await roast.act('drop');
-      if (!dropped.ok) roastLogger.warn('auto.drop-refused', { error: dropped.error });
+      if (dropped.ok) return;
+      roastLogger.warn('auto.drop-refused', { error: dropped.error });
+      // Never keep driving past the end of a roast: the outputs are yours from here.
+      pilot.stop('drop-refused');
     },
     profile: () => profiles.active(),
     tuning: () => SKYWALKER_TUNING,

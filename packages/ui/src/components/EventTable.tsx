@@ -49,7 +49,7 @@ export function EventTable({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.event} className="border-t border-border text-ink">
+            <tr key={`${row.event}-${row.time}`} className="border-t border-border text-ink">
               <th scope="row" className="py-2 text-left font-normal">
                 {row.event}
               </th>

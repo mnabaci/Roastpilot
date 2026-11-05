@@ -490,6 +490,14 @@ describe('RoastScreen', () => {
       );
     });
 
+    it('keeps the profile choice still during a roast', () => {
+      renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...auto('roasting'),
+        roast: { ...roast('roasting'), chargedAtMs: 1000 },
+      });
+      expect(screen.getByLabelText('Profile')).toBeDisabled();
+    });
+
     it('Charge soon asks main once the hold is over', async () => {
       const { api } = renderApp(
         <RoastScreen onConnect={onConnect} />,

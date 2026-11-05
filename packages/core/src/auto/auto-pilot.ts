@@ -169,6 +169,7 @@ export class AutoPilot {
     if (!this.#enabled) {
       this.#preheat = undefined;
       this.#run = undefined;
+      this.#dropping = false;
       this.#publish();
       return;
     }
