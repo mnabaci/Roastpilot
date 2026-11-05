@@ -6,17 +6,20 @@ import {
   type CurvePoint,
   type ProfilePhase,
   type RoastDetail,
-  type SavedSample,
 } from '@roastpilot/shared';
-import { BEAN_TEMP, HEATER } from '../safety/safety-rule';
+import {
+  lengthS,
+  mergedSteps,
+  roundedC,
+  runPoints,
+  stretches,
+  type Point,
+  type Stretch,
+} from './run-stretches';
 import { simplifyCurve } from './simplify-curve';
 
-const FAN = 'fan';
 /** A roast with fewer readings than this has too little to go on. */
 const MIN_SAMPLES = 30;
-/** Soak, then at most this many steps, then Development: six running steps in all. */
-const MAX_STEPS = 5;
-const SHORTEST_STEP_S = 20;
 const ROR_MARGIN = 1;
 const BACKUP_MARGIN_S = 60;
 const CAP_MARGIN_C = 3;
@@ -24,91 +27,6 @@ const FALLBACK_DRY_END_C = 150;
 const CURVE_POINTS = 10;
 
 export type ProfileStyle = 'steps' | 'curve';
-
-interface Point {
-  tS: number;
-  bt: number;
-  heater: number;
-  fan: number;
-}
-
-/** A stretch of the roast with the same outputs. */
-interface Stretch {
-  from: Point;
-  to: Point;
-  /** Heater % × seconds, for the average over merged stretches. */
-  heatArea: number;
-  /** The fan it ends on. */
-  fan: number;
-}
-
-/** The run from charge to drop, with each output carried forward where a reading lacks it. */
-function runPoints(samples: readonly SavedSample[], dropS: number): Point[] {
-  let heater = 0;
-  let fan = 0;
-  return samples.flatMap(({ tS, values }) => {
-    heater = values[HEATER] ?? heater;
-    fan = values[FAN] ?? fan;
-    const bt = values[BEAN_TEMP];
-    return tS >= 0 && tS <= dropS && bt !== undefined ? [{ tS, bt, heater, fan }] : [];
-  });
-}
-
-function stretches(points: readonly Point[], same: (a: Point, b: Point) => boolean): Stretch[] {
-  const all: Stretch[] = [];
-  points.forEach((point, index) => {
-    const previous = points[index - 1];
-    const last = all.at(-1);
-    if (!previous || !last) {
-      all.push({ from: point, to: point, heatArea: 0, fan: point.fan });
-      return;
-    }
-    last.heatArea += previous.heater * (point.tS - previous.tS);
-    last.to = point;
-    if (!same(previous, point)) all.push({ from: point, to: point, heatArea: 0, fan: point.fan });
-  });
-  return all;
-}
-
-const lengthS = (s: Stretch) => s.to.tS - s.from.tS;
-
-/** Joins a stretch to the one after it, or before it when it's the last. */
-function mergeAt(all: readonly Stretch[], index: number): Stretch[] {
-  const at = index < all.length - 1 ? index : index - 1;
-  const first = all[at];
-  const second = all[at + 1];
-  if (!first || !second) return [...all];
-  const merged = {
-    from: first.from,
-    to: second.to,
-    heatArea: first.heatArea + second.heatArea,
-    fan: second.fan,
-  };
-  return [...all.slice(0, at), merged, ...all.slice(at + 2)];
-}
-
-const roundedC = (s: Stretch) => Math.round(s.to.bt);
-
-/** Steps must end hotter than the one before, be long enough to run, and number at most five. */
-function mergedSteps(all: readonly Stretch[]): Stretch[] {
-  let steps = [...all];
-  for (;;) {
-    const flat = steps.findIndex((s, i) => {
-      const before = steps[i - 1];
-      return before !== undefined && roundedC(s) <= roundedC(before);
-    });
-    const shortest = steps.reduce(
-      (best, s, i) => (lengthS(s) < lengthS(steps[best] ?? s) ? i : best),
-      0,
-    );
-    const shortestStep = steps[shortest];
-    if (steps.length <= 1 || !shortestStep) return steps;
-    if (flat >= 0) steps = mergeAt(steps, flat - 1);
-    else if (steps.length > MAX_STEPS || lengthS(shortestStep) < SHORTEST_STEP_S) {
-      steps = mergeAt(steps, shortest);
-    } else return steps;
-  }
-}
 
 const averageHeat = (s: Stretch) => {
   const length = lengthS(s);
@@ -121,7 +39,10 @@ function phaseFrom(
   style: ProfileStyle,
   next: ProfilePhase['next'],
 ): ProfilePhase {
-  const durationS = Math.min(Math.max(lengthS(stretch), 1), PROFILE_LIMITS.durationS.max);
+  const durationS = Math.min(
+    Math.max(Math.round(lengthS(stretch)), 1),
+    PROFILE_LIMITS.durationS.max,
+  );
   const ror = ((stretch.to.bt - stretch.from.bt) / Math.max(lengthS(stretch), 1)) * 60;
   const pct = averageHeat(stretch);
   return {

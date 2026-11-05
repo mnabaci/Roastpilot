@@ -32,37 +32,45 @@ flowchart TB
 - **Renderer:** React built from `@roastpilot/ui`, with uPlot for the live chart. It talks only through the typed `window.roastpilot` API: `startRoast`, `markFirstCrack`, `setOutput`, `onReading`, and so on.
 - **IPC contract:** channel names and zod schemas live in `@roastpilot/shared`. Main validates every payload from the renderer before acting on it.
 
-| Call                          | Kind   | Payload → result                                                                                                           |
-| ----------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `listPorts`                   | invoke | – → serial ports                                                                                                           |
-| `connect`                     | invoke | `{ kind: 'serial', path }` or `{ kind: 'simulator' }` → result                                                             |
-| `disconnect`                  | invoke | – → safe stop, then closed                                                                                                 |
-| `setOutput`                   | invoke | `{ channel, value }` → result (`safety-locked` while locked)                                                               |
-| `emergencyStop`               | invoke | – → safe stop and heater lock                                                                                              |
-| `acknowledgeSafety`           | invoke | – → result (`still-tripped` while a rule holds)                                                                            |
-| `onReading`                   | event  | reading every 1 s                                                                                                          |
-| `onConnection`                | event  | `disconnected`, `connecting`, `connected` (with channels) or `lost`; all but `disconnected` carry the target               |
-| `onSafetyEvent`               | event  | `tripped`, `cleared`, `unlocked`                                                                                           |
-| `getSnapshot`                 | invoke | – → connection, roast state, readings so far, safety lock and tripped rules (for a window that opens or reloads mid-roast) |
-| `roastAction`                 | invoke | `preheat`, `start`, `first-crack`, `drop` → result (`not-allowed` in the wrong state)                                      |
-| `onRoast`                     | event  | roast state, events (charge, first crack, drop) and timings                                                                |
-| `getSettings` / `setSettings` | invoke | – / settings → settings (validated)                                                                                        |
-| `listLogDays`                 | invoke | – → days with a log file, newest first                                                                                     |
-| `readLogDay`                  | invoke | `YYYY-MM-DD` → the day's last 2,000 entries and how many lines were unreadable                                             |
-| `onLogEntries`                | event  | new log entries as they are written, batched                                                                               |
-| `openLogFolder`               | invoke | – → opens the log folder in Finder or Explorer                                                                             |
-| `listRoasts`                  | invoke | – → saved roasts, newest first (summary only)                                                                              |
-| `getRoast`                    | invoke | roast id → the roast with its samples and events, or `not-found`                                                           |
-| `deleteRoast`                 | invoke | roast id → result                                                                                                          |
-| `onRoastsChanged`             | event  | a roast was saved, finished or deleted, and which (History refreshes)                                                      |
-| `autoChargeSoon`              | invoke | – → heater 0 and the countdown before the beans go in, or `not-now`                                                        |
-| `autoResume`                  | invoke | – → heater and fan back to Auto, or `safety-locked`                                                                        |
-| `onAutoStatus`                | event  | what Auto is doing: on or off, who owns each output, preheat step, running step                                            |
-| `listProfiles`                | invoke | – → built-ins, then your own                                                                                               |
-| `duplicateProfile`            | invoke | profile id → the new copy, or an error                                                                                     |
-| `saveProfile`                 | invoke | profile → the saved entry; refuses a built-in                                                                              |
-| `deleteProfile`               | invoke | profile id → result; refuses a built-in                                                                                    |
-| `onNavigate`                  | event  | the app menu asks for a screen (`settings` from Settings…)                                                                 |
+| Call                                                                                                 | Kind   | Payload → result                                                                                                           |
+| ---------------------------------------------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `listPorts`                                                                                          | invoke | – → serial ports                                                                                                           |
+| `connect`                                                                                            | invoke | `{ kind: 'serial', path }` or `{ kind: 'simulator' }` → result                                                             |
+| `disconnect`                                                                                         | invoke | – → safe stop, then closed                                                                                                 |
+| `setOutput`                                                                                          | invoke | `{ channel, value }` → result (`safety-locked` while locked)                                                               |
+| `emergencyStop`                                                                                      | invoke | – → safe stop and heater lock                                                                                              |
+| `acknowledgeSafety`                                                                                  | invoke | – → result (`still-tripped` while a rule holds)                                                                            |
+| `onReading`                                                                                          | event  | reading every 1 s                                                                                                          |
+| `onConnection`                                                                                       | event  | `disconnected`, `connecting`, `connected` (with channels) or `lost`; all but `disconnected` carry the target               |
+| `onSafetyEvent`                                                                                      | event  | `tripped`, `cleared`, `unlocked`                                                                                           |
+| `getSnapshot`                                                                                        | invoke | – → connection, roast state, readings so far, safety lock and tripped rules (for a window that opens or reloads mid-roast) |
+| `roastAction`                                                                                        | invoke | `preheat`, `start`, `first-crack`, `drop` → result (`not-allowed` in the wrong state)                                      |
+| `onRoast`                                                                                            | event  | roast state, events (charge, first crack, drop) and timings                                                                |
+| `getSettings` / `setSettings`                                                                        | invoke | – / settings → settings (validated)                                                                                        |
+| `listLogDays`                                                                                        | invoke | – → days with a log file, newest first                                                                                     |
+| `readLogDay`                                                                                         | invoke | `YYYY-MM-DD` → the day's last 2,000 entries and how many lines were unreadable                                             |
+| `onLogEntries`                                                                                       | event  | new log entries as they are written, batched                                                                               |
+| `openLogFolder`                                                                                      | invoke | – → opens the log folder in Finder or Explorer                                                                             |
+| `listRoasts`                                                                                         | invoke | – → saved roasts, newest first (summary only)                                                                              |
+| `getRoast`                                                                                           | invoke | roast id → the roast with its samples and events, or `not-found`                                                           |
+| `deleteRoast`                                                                                        | invoke | roast id → result                                                                                                          |
+| `onRoastsChanged`                                                                                    | event  | a roast was saved, finished or deleted, and which (History refreshes)                                                      |
+| `autoChargeSoon`                                                                                     | invoke | – → heater 0 and the countdown before the beans go in, or `not-now`                                                        |
+| `autoResume`                                                                                         | invoke | – → heater and fan back to Auto, or `safety-locked`                                                                        |
+| `onAutoStatus`                                                                                       | event  | what Auto is doing: on or off, who owns each output, preheat step, running step                                            |
+| `listProfiles`                                                                                       | invoke | – → built-ins, then your own                                                                                               |
+| `duplicateProfile`                                                                                   | invoke | profile id → the new copy, or an error                                                                                     |
+| `saveProfile`                                                                                        | invoke | profile → the saved entry; refuses a built-in                                                                              |
+| `deleteProfile`                                                                                      | invoke | profile id → result; refuses a built-in                                                                                    |
+| `copyProfile`                                                                                        | invoke | profile id and roaster → the copy on that roaster, marked needs calibration                                                |
+| `listRoasters`, `addRoaster`, `saveRoaster`, `deleteRoaster`, `setActiveRoaster`, `chooseConnection` | invoke | roaster records ([roasters.md](roasters.md)); changes wait while one is connected                                          |
+| `onRoasters`                                                                                         | event  | the roaster records changed                                                                                                |
+| `listBeans`, `addBean`, `updateBean`, `setBeanArchived`, `addStock`, `adjustStock`                   | invoke | beans and stock ([batch-and-stock.md](batch-and-stock.md))                                                                 |
+| `onBeans`                                                                                            | event  | beans or stock changed, also when a roast starts or its result is saved                                                    |
+| `setRoastSetup`                                                                                      | invoke | bean, batch and ghost of the next roast, read at charge                                                                    |
+| `saveRoastResult`                                                                                    | invoke | weights, rating, star and notes of a roast                                                                                 |
+| `makeProfileFromRoast`                                                                               | invoke | roast and style → a new profile of your own, or `too-short`                                                                |
+| `onNavigate`                                                                                         | event  | the app menu asks for a screen (`settings` from Settings…)                                                                 |
 
 - **Quit and crash:** before the app quits, and on an uncaught error in main, the session sends the safe stop (given up to 2 s) before anything else.
 - **Clock:** main uses a monotonic clock (`performance.now()`), so a system clock change can't fool the lost-connection rule.

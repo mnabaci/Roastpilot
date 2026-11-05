@@ -59,7 +59,7 @@ export function BeansScreen({
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate">{bean.name}</span>
                 <span className="truncate text-label font-normal text-ink-muted">
-                  {bean.origin} · {bean.process} · {formatGrams(bean.greenG)}
+                  {formatGrams(bean.greenG)} · {bean.origin} · {bean.process}
                 </span>
               </span>
               {bean.greenG < bean.lowStockG && !bean.archived ? (

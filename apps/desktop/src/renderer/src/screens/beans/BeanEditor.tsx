@@ -36,6 +36,8 @@ export function BeanEditor({
   const [draft, setDraft] = useState(() => toBeanDraft(bean));
   const [problem, setProblem] = useState<string>();
   const checked = useMemo(() => fromBeanDraft(draft), [draft]);
+  // A required cell left empty on a new bean isn't a mistake yet: Save just waits.
+  const initial = useMemo(() => toBeanDraft(bean), [bean]);
   const errors = checked.ok ? {} : checked.error;
   const change = (cells: Partial<BeanDraft>) => {
     setDraft((current) => ({ ...current, ...cells }));
@@ -64,7 +66,9 @@ export function BeanEditor({
           change({ [key]: value });
         }}
       />
-      {errors[key] ? <p className="text-label text-critical-text">{errors[key]}</p> : null}
+      {errors[key] && draft[key] !== initial[key] ? (
+        <p className="text-label text-critical-text">{errors[key]}</p>
+      ) : null}
     </div>
   );
   return (

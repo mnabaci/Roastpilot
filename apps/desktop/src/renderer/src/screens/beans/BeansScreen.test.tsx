@@ -61,7 +61,7 @@ describe('BeansScreen', () => {
   it('lists a bean with its stock and a low-stock badge, and opens it', () => {
     show();
     const nav = within(screen.getByRole('navigation', { name: 'Beans' }));
-    expect(nav.getByText('Ethiopia · washed · 300 g')).toBeTruthy();
+    expect(nav.getByText('300 g · Ethiopia · washed')).toBeTruthy();
     expect(nav.getByText('Low')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Yirgacheffe' })).toBeTruthy();
     expect(screen.getByText(/Dense beans often take heat slowly/)).toBeTruthy();

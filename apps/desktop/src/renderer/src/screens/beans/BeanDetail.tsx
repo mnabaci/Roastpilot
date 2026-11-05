@@ -8,24 +8,12 @@ import { useAuto, useRoasters } from '../../stores/use-stores';
 import { activeRoaster } from '../../stores/roasters-store';
 import { roastNumbers, roastTitle } from '../history/history-format';
 import { setupForBean } from '../roast/roast-setup';
-import { describePlan, formatGrams } from './batch-format';
+import { describePlan } from './batch-format';
 import { BeanEditor } from './BeanEditor';
+import { BeanFacts } from './BeanFacts';
 import { AddStockForm, AdjustStockForm } from './StockForms';
 
 type Panel = 'none' | 'edit' | 'add-stock' | 'adjust-stock';
-
-const facts = (bean: Bean): readonly [string, string | null][] => [
-  ['Origin', bean.origin],
-  ['Process', bean.process],
-  ['Variety', bean.variety],
-  ['Density', bean.densityGL === null ? null : `${String(bean.densityGL)} g/L`],
-  ['Altitude', bean.altitudeM === null ? null : `${String(bean.altitudeM)} m`],
-  ['Moisture', bean.moisturePct === null ? null : `${String(bean.moisturePct)} %`],
-  ['Bean size', bean.screen === null ? null : `Screen ${String(bean.screen)}`],
-  ['Decaf', bean.decaf ? 'Yes' : null],
-  ['Supplier', bean.supplier],
-  ['Notes', bean.notes],
-];
 
 /** One bean: its record, stock, roasts and what you can do with it (docs/spec/ui.md, Beans screen). */
 export function BeanDetail({
@@ -105,10 +93,11 @@ export function BeanDetail({
       <div className="grid grid-cols-3 gap-3">
         <StatCard
           label="Green"
-          value={formatGrams(bean.greenG)}
+          value={formatNumber(bean.greenG, 0)}
+          unit="g"
           context={bean.batchPlan ? describePlan(bean.batchPlan) : 'No batch plan'}
         />
-        <StatCard label="Roasted" value={formatGrams(bean.roastedG)} />
+        <StatCard label="Roasted" value={formatNumber(bean.roastedG, 0)} unit="g" />
         <StatCard
           label="Weight loss"
           value={formatNumber(bean.avgLossPct, 1)}
@@ -117,7 +106,12 @@ export function BeanDetail({
         />
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button variant="primary" disabled={bean.archived} onClick={roastThis}>
+        <Button
+          // One primary at a time: an open form has its own.
+          variant={panel === 'none' ? 'primary' : 'secondary'}
+          disabled={bean.archived}
+          onClick={roastThis}
+        >
           Roast this bean
         </Button>
         <Button
@@ -162,25 +156,14 @@ export function BeanDetail({
       ) : null}
       {panel === 'add-stock' ? <AddStockForm bean={bean} onDone={close} /> : null}
       {panel === 'adjust-stock' ? <AdjustStockForm bean={bean} onDone={close} /> : null}
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-body">
-        {facts(bean).flatMap(([label, value]) =>
-          value === null
-            ? []
-            : [
-                <dt key={label} className="text-ink-muted">
-                  {label}
-                </dt>,
-                <dd key={`${label}-value`} className="first-letter:uppercase">
-                  {value}
-                </dd>,
-              ],
-        )}
-      </dl>
-      {beanHints(bean).map((hint) => (
-        <p key={hint} className="text-label text-ink-muted">
-          {hint}
-        </p>
-      ))}
+      <BeanFacts bean={bean} />
+      <div className="flex flex-col gap-1">
+        {beanHints(bean).map((hint) => (
+          <p key={hint} className="text-label text-ink-muted">
+            {hint}
+          </p>
+        ))}
+      </div>
       <div className="flex flex-col gap-2">
         <h3 className="text-label text-ink-muted">
           {best ? `Best favourite: ${roastTitle(best.startedAt)}` : 'No favourite yet'}

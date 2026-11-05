@@ -12,6 +12,7 @@ type SyncApi = Pick<
   | 'listRoasters'
   | 'listBeans'
   | 'onBeans'
+  | 'onRoastsChanged'
   | 'onRoasters'
   | 'onReading'
   | 'onConnection'
@@ -43,6 +44,12 @@ export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsu
     }),
     api.onBeans((beans) => {
       stores.beans.setState({ beans });
+    }),
+    api.onRoastsChanged(({ id, deleted }) => {
+      const { setup } = stores.beans.getState();
+      if (deleted && setup.ghostRoastId === id) {
+        stores.beans.setState({ setup: { ...setup, ghostRoastId: null } });
+      }
     }),
     api.onRoasters((roasters) => {
       stores.roasters.setState({ roasters });

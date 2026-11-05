@@ -192,4 +192,14 @@ describe('HistoryScreen', () => {
     deleted(NEWER.id);
     expect(api.getRoast).toHaveBeenCalledTimes(reads);
   });
+
+  it('filters to favourites, and says when nothing matches', async () => {
+    const user = userEvent.setup();
+    const api = fakeApi({
+      listRoasts: vi.fn(() => Promise.resolve([summary(1, '2026-11-04T10:00:00.000Z')])),
+    });
+    renderApp(<HistoryScreen onOpenProfile={() => undefined} />, {}, api);
+    await user.click(await screen.findByRole('button', { name: 'Favourites' }));
+    expect(screen.getByText('No roasts match these filters')).toBeTruthy();
+  });
 });

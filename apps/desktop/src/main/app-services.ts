@@ -225,6 +225,8 @@ export function createAppServices({
       isRecording: (id) => recorder.isRecording(id),
       onDeleted: (id) => {
         publish(IPC_CHANNELS.roastsChanged, { id, deleted: true });
+        // The next roast's row points at its ghost, which has to exist.
+        if (beans.setup.ghostRoastId === id) beans.setSetup({ ...beans.setup, ghostRoastId: null });
       },
       onResultSaved: (id) => {
         publish(IPC_CHANNELS.roastsChanged, { id, deleted: false });

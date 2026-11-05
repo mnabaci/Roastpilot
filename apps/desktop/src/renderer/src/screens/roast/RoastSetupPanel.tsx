@@ -106,7 +106,9 @@ export function RoastSetupPanel() {
         value={setup.beanId === null ? NONE : String(setup.beanId)}
         options={[
           { value: NONE, label: 'No bean' },
-          ...beans.filter((b) => !b.archived).map((b) => ({ value: String(b.id), label: b.name })),
+          ...beans
+            .filter((b) => !b.archived || b.id === setup.beanId)
+            .map((b) => ({ value: String(b.id), label: b.name })),
         ]}
         onChange={(value) => {
           if (!roaster) return;

@@ -73,4 +73,22 @@ describe('syncWithMain', () => {
     syncWithMain(api, createStores(), logger())();
     for (const stop of stops) expect(stop).toHaveBeenCalledOnce();
   });
+
+  it('forgets a ghost that was deleted, and keeps it when another roast changes', () => {
+    let changed: (change: { id: number; deleted: boolean }) => void = () => undefined;
+    const api = fakeApi({
+      onRoastsChanged: vi.fn((listener: typeof changed) => {
+        changed = listener;
+        return () => undefined;
+      }),
+    });
+    const setup = { beanId: 1, batchG: 300, ghostRoastId: 5 };
+    const stores = createStores({ setup });
+    syncWithMain(api, stores, logger());
+    changed({ id: 5, deleted: false });
+    changed({ id: 6, deleted: true });
+    expect(stores.beans.getState().setup).toEqual(setup);
+    changed({ id: 5, deleted: true });
+    expect(stores.beans.getState().setup).toEqual({ ...setup, ghostRoastId: null });
+  });
 });

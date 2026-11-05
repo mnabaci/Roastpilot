@@ -301,4 +301,18 @@ describe('createAppServices', () => {
       expect(services.snapshot().auto.stopped).toBe(true);
     });
   });
+
+  it('forgets the next roast ghost when that roast is deleted', async () => {
+    const roasts = {
+      ...unavailableRepository('x'),
+      delete: () => Promise.resolve(ok(undefined)),
+    };
+    const { services, published } = setup(roasts);
+    services.beans.setSetup({ beanId: null, batchG: null, ghostRoastId: 5 });
+    await services.history.delete(4);
+    expect(services.snapshot().setup.ghostRoastId).toBe(5);
+    await services.history.delete(5);
+    expect(services.snapshot().setup.ghostRoastId).toBeNull();
+    expect(published).toContainEqual([IPC_CHANNELS.roastsChanged, { id: 5, deleted: true }]);
+  });
 });

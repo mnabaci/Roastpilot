@@ -179,6 +179,8 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
               />
             )}
           </>
+        ) : selected.status === 'none' ? (
+          <p className="text-body text-ink-muted">No roasts match these filters</p>
         ) : (
           <p className="text-label text-ink-muted">Loading…</p>
         )}
