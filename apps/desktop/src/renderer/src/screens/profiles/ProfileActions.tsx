@@ -12,11 +12,14 @@ export function ProfileActions({
   entry,
   state,
   active,
+  locked,
   onSelect,
 }: {
   entry: ProfileEntry;
   state: ProfileDraftState;
   active: boolean;
+  /** Auto is running a profile: the choice, and the one it runs, wait until Drop. */
+  locked: boolean;
   onSelect: (id: string) => void;
 }) {
   const { api, stores, logger } = useDeps();
@@ -72,7 +75,7 @@ export function ProfileActions({
     <div className="flex flex-wrap items-center gap-2">
       {state.edited ? (
         <>
-          <Button variant="primary" disabled={!state.valid} onClick={save}>
+          <Button variant="primary" disabled={!state.valid || (active && locked)} onClick={save}>
             Save
           </Button>
           <Button variant="ghost" onClick={state.discard}>
@@ -84,6 +87,7 @@ export function ProfileActions({
           {active ? null : (
             <Button
               variant="primary"
+              disabled={locked}
               onClick={() => {
                 saveSettings({ autoProfile: id });
               }}
@@ -94,7 +98,7 @@ export function ProfileActions({
           <Button variant="secondary" onClick={duplicate}>
             Duplicate
           </Button>
-          {entry.builtIn ? null : (
+          {entry.builtIn || (active && locked) ? null : (
             <ConfirmInline
               label="Delete"
               question="Delete this profile? · saved roasts keep their copy"

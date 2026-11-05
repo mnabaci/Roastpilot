@@ -1,4 +1,11 @@
-import { DEFAULT_SETTINGS, err, ok, type AutoProfile } from '@roastpilot/shared';
+import {
+  AUTO_OFF,
+  DEFAULT_SETTINGS,
+  err,
+  ok,
+  READY_ROAST,
+  type AutoProfile,
+} from '@roastpilot/shared';
 import type * as Ui from '@roastpilot/ui';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -136,5 +143,30 @@ describe('ProfilesScreen', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Disk full');
     expect(screen.getByRole('textbox', { name: 'BT cap' })).toHaveValue('205');
+  });
+
+  describe('while Auto runs a profile', () => {
+    const running = {
+      auto: { ...AUTO_OFF, enabled: true },
+      roast: { ...READY_ROAST, phase: 'roasting' as const },
+    };
+    const openRunning = (id: string) =>
+      renderApp(<ProfilesScreen />, { profiles: withMine, ...settingsOn(id), ...running });
+
+    it('holds Save and Delete for the one it runs, and keeps your edit', async () => {
+      openRunning('custom-1');
+      expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
+      await edit('BT cap', '205');
+      expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+      expect(screen.getByRole('textbox', { name: 'BT cap' })).toHaveValue('205');
+    });
+
+    it('holds Use for Auto, but other profiles can still be saved', async () => {
+      openRunning('light-steps');
+      await userEvent.click(screen.getByRole('button', { name: 'Mine' }));
+      expect(screen.getByRole('button', { name: 'Use for Auto' })).toBeDisabled();
+      await edit('BT cap', '205');
+      expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+    });
   });
 });

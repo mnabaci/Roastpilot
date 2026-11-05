@@ -51,7 +51,8 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 - Top values: charge temp, dry-end temp, development time, BT cap, batch size.
 - Steps table: one row per step. A step profile has end temp, duration, RoR range, heat estimate, fan and backup time; a curve profile has end temp, heat estimate, fan and backup time, plus a table of curve points (time, temp). Add and remove steps; Soak comes first and Development last, always. The soak's length is the Soak time setting.
 - A preview chart shows the planned curve and the heater and fan steps, and updates as you type. Problems show next to the cell, one line each, and Save waits until there are none.
-- A profile can be saved during a roast: the running roast keeps the copy it started with.
+- With Auto on, the profile stays put from Preheat until Drop: no other choice on the Roast screen or with Use for Auto, and the one running can't be saved or deleted. Unsaved edits wait, and other profiles can still be edited. The Auto / Manual switch stays live.
+- The list stays still and only the editor scrolls.
 - **Later:** drag points on the chart, and the milestone builder to draw a curve from a few milestones (milestone 8).
 - New profile from a roast: "Make step profile" (phases from its heat/fan changes) or "Make curve profile" (its BT curve).
 - Import an Artisan `.alog` as a curve profile.

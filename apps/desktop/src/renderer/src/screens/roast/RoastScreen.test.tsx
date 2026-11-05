@@ -490,12 +490,17 @@ describe('RoastScreen', () => {
       );
     });
 
-    it('keeps the profile choice still during a roast', () => {
-      renderApp(<RoastScreen onConnect={onConnect} />, {
-        ...auto('roasting'),
-        roast: { ...roast('roasting'), chargedAtMs: 1000 },
-      });
-      expect(screen.getByLabelText('Profile')).toBeDisabled();
+    it.each(['preheat', 'roasting', 'development'] as const)(
+      'keeps the profile choice still in %s',
+      (phase) => {
+        renderApp(<RoastScreen onConnect={onConnect} />, auto(phase));
+        expect(screen.getByLabelText('Profile')).toBeDisabled();
+      },
+    );
+
+    it.each(['ready', 'cooling', 'done'] as const)('lets you choose again in %s', (phase) => {
+      renderApp(<RoastScreen onConnect={onConnect} />, auto(phase));
+      expect(screen.getByLabelText('Profile')).toBeEnabled();
     });
 
     it('Charge soon asks main once the hold is over', async () => {

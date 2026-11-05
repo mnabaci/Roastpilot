@@ -11,10 +11,12 @@ export function ProfilesScreen() {
   const chosenId = useSettings((s) => s.settings.autoProfile);
   const [openId, setOpenId] = useState<string>();
   const open = profiles.find((e) => e.profile.id === openId) ?? activeEntry(profiles, chosenId);
-  // Relative, so screen-reader-only labels scroll with the table instead of growing the page.
   return (
-    <main className="relative flex min-h-0 flex-1 gap-6 overflow-y-auto p-6">
-      <nav aria-label="Profiles" className="flex w-48 shrink-0 flex-col gap-1">
+    <main className="flex min-h-0 flex-1 overflow-hidden">
+      <nav
+        aria-label="Profiles"
+        className="flex w-54 shrink-0 flex-col gap-1 overflow-y-auto py-6 pl-6"
+      >
         <h1 className="pb-2 text-title">Profiles</h1>
         {profiles.map(({ profile }) => (
           <Button
@@ -36,7 +38,10 @@ export function ProfilesScreen() {
           </Button>
         ))}
       </nav>
-      {open ? <ProfileEditor key={open.profile.id} entry={open} onSelect={setOpenId} /> : null}
+      {/* Only this side scrolls. Relative, so screen-reader-only labels scroll with the table. */}
+      <div className="relative min-h-0 min-w-0 flex-1 overflow-y-auto p-6">
+        {open ? <ProfileEditor key={open.profile.id} entry={open} onSelect={setOpenId} /> : null}
+      </div>
     </main>
   );
 }

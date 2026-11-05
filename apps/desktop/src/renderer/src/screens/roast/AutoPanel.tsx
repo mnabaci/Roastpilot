@@ -2,8 +2,8 @@ import type { RoastMode } from '@roastpilot/shared';
 import { SelectField } from '@roastpilot/ui';
 import { Choice } from '../settings/Choice';
 import { useSaveSettings } from '../settings/use-save-settings';
-import { useAuto, useRoast, useSettings } from '../../stores/use-stores';
-import { useActiveProfile } from './use-active-profile';
+import { useAuto, useSettings } from '../../stores/use-stores';
+import { useActiveProfile, useProfileLocked } from './use-active-profile';
 
 const MODES: readonly { id: RoastMode; label: string }[] = [
   { id: 'manual', label: 'Manual' },
@@ -16,8 +16,7 @@ export function AutoPanel() {
   const profiles = useAuto((s) => s.profiles);
   const active = useActiveProfile();
   const save = useSaveSettings();
-  // The running roast keeps the profile it charged with.
-  const running = useRoast((s) => s.roast.chargedAtMs !== null && s.roast.droppedAtMs === null);
+  const locked = useProfileLocked();
   return (
     <section aria-label="Roast mode" className="flex flex-col gap-2">
       <Choice
@@ -32,7 +31,7 @@ export function AutoPanel() {
         <>
           <SelectField
             label="Profile"
-            disabled={running}
+            disabled={locked}
             value={active.profile.id}
             options={profiles.map(({ profile }) => ({ value: profile.id, label: profile.name }))}
             onChange={(autoProfile) => {

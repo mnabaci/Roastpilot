@@ -1,7 +1,8 @@
 import type { ProfileEntry } from '@roastpilot/shared';
 import { Badge, NumberField, RoastChart, TextField } from '@roastpilot/ui';
 import { useMemo, useState } from 'react';
-import { useRoast, useSettings } from '../../stores/use-stores';
+import { useSettings } from '../../stores/use-stores';
+import { useProfileLocked } from '../roast/use-active-profile';
 import { CurvePointsTable } from './CurvePointsTable';
 import { ProfileActions } from './ProfileActions';
 import { isStepProfile, type ProfileDraft } from './profile-draft';
@@ -33,7 +34,7 @@ export function ProfileEditor({
   const { draft, errors, valid, change, edited } = state;
   const soakS = useSettings((s) => s.settings.soakTimeS);
   const active = useSettings((s) => s.settings.autoProfile) === entry.profile.id;
-  const roasting = useRoast((s) => s.roast.chargedAtMs !== null && s.roast.droppedAtMs === null);
+  const locked = useProfileLocked();
   const readOnly = entry.builtIn;
   // While a cell has a problem the chart keeps the last profile that worked.
   const [shown, setShown] = useState(valid ?? entry.profile);
@@ -55,7 +56,13 @@ export function ProfileEditor({
             set({ name });
           }}
         />
-        <ProfileActions entry={entry} state={state} active={active} onSelect={onSelect} />
+        <ProfileActions
+          entry={entry}
+          state={state}
+          active={active}
+          locked={locked}
+          onSelect={onSelect}
+        />
       </div>
       <p className="flex flex-wrap items-center gap-2 text-label text-ink-muted">
         {entry.builtIn ? <Badge tone="neutral">Built-in</Badge> : null}
@@ -63,9 +70,7 @@ export function ProfileEditor({
         {edited ? <Badge tone="heat">Not saved</Badge> : null}
         {entry.profile.needsCalibration ? <span>Needs calibration</span> : null}
         {readOnly ? <span>· Duplicate it to change it</span> : null}
-        {active && roasting ? (
-          <span>· The running roast keeps the copy it started with</span>
-        ) : null}
+        {active && locked ? <span>· Save waits until Drop: Auto is running this one</span> : null}
       </p>
       {errors.name ? (
         <p role="alert" className="text-label text-critical-text">
