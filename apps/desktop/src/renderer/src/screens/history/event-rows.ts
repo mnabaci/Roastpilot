@@ -6,6 +6,10 @@ import { savedAsLive } from './saved-roast-chart';
 const EVENT_LABEL: Readonly<Record<SavedEvent['kind'], string>> = {
   charge: 'Charge',
   'turning-point': 'Turning point',
+  'dry-end': 'Dry end',
+  phase: 'Step',
+  override: 'Override',
+  'stall-guard': 'Stall guard',
   'first-crack': 'First crack',
   drop: 'Drop',
   'cool-end': 'Cool end',
@@ -41,7 +45,7 @@ export function eventRows(detail: RoastDetail): EventRow[] {
       const ror = atMs > 0 && atMs <= dropMs ? rateOfRise(rorReadings(upTo, 0)) : undefined;
       const bt = formatNumber(event.bt ?? values?.bt, 1);
       return {
-        event: EVENT_LABEL[event.kind],
+        event: [EVENT_LABEL[event.kind], event.detail].filter(Boolean).join(' · '),
         time: formatClock(event.tS),
         bt: bt === undefined ? undefined : `${bt} °C`,
         ror: formatNumber(ror, 1),

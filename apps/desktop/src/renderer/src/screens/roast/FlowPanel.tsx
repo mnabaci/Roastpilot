@@ -1,11 +1,13 @@
 import type { RoastAction } from '@roastpilot/shared';
 import { Button } from '@roastpilot/ui';
 import { ConfirmInline } from '../../features/ConfirmInline';
+import { autoFlowStep } from './auto-flow';
 import { flowHint, flowStep, isConnected } from './flow-step';
+import { useActiveProfile } from './use-active-profile';
 import { RoasterCooling } from './RoasterCooling';
 import { useRun } from '../../features/use-run';
 import { useDeps } from '../../app/app-context';
-import { useConnection, useRoast } from '../../stores/use-stores';
+import { useAuto, useConnection, useRoast } from '../../stores/use-stores';
 
 /** The one next action for the state, with its one-line hint. */
 export function FlowPanel({
@@ -22,7 +24,10 @@ export function FlowPanel({
   const roast = useRoast((s) => s.roast);
   const temp = useRoast((s) => s.readings.at(-1)?.values.bt);
   const { phase } = roast;
-  const step = flowStep(roast);
+  const auto = useAuto((s) => s.status);
+  const profile = useActiveProfile();
+  const autoStep = autoFlowStep(roast, auto, profile?.profile);
+  const step = autoStep ?? flowStep(roast);
   const act = (action: RoastAction) => {
     run('roast.action-failed', async () => {
       const result = await api.roastAction(action);
@@ -47,10 +52,24 @@ export function FlowPanel({
       </div>
     );
   }
-  const hint = flowHint(roast, { coolingLeftS, temp });
+  const hint = autoStep?.hint ?? flowHint(roast, { coolingLeftS, temp });
   const noRoast = phase === 'ready' || phase === 'done';
   return (
     <div className="flex flex-col gap-2">
+      {step.chargeSoon ? (
+        <Button
+          variant="primary"
+          size="lg"
+          onClick={() => {
+            run('auto.charge-soon-failed', async () => {
+              const result = await api.autoChargeSoon();
+              if (!result.ok) logger.info('auto.charge-soon-refused', { ...result.error });
+            });
+          }}
+        >
+          Charge soon
+        </Button>
+      ) : null}
       {step.primary ? (
         <Button
           variant="primary"

@@ -1,6 +1,7 @@
 import { rateOfRise, ROR_DRAW_LIMITS, ROR_WINDOW_MS, rorReadings } from '@roastpilot/core';
 import {
   DEFAULT_TEMP_NAMES,
+  type CurvePoint,
   type Reading,
   type RoastEvent,
   type RoastState,
@@ -13,6 +14,7 @@ export const GAP_MS = 3_000;
 const MARKER_LABELS: Partial<Record<RoastEvent['kind'], string>> = {
   charge: 'Charge',
   'turning-point': 'TP',
+  'dry-end': 'Dry end',
   'first-crack': 'First crack',
   drop: 'Drop',
   end: 'End',
@@ -111,7 +113,11 @@ function untilRoastEnd(roast: RoastState, readings: readonly Reading[]): readonl
 export function roastChartData(
   roast: RoastState,
   allReadings: readonly Reading[],
-  { smoothingS, tempName = DEFAULT_TEMP_NAMES.name }: { smoothingS: number; tempName?: string },
+  {
+    smoothingS,
+    tempName = DEFAULT_TEMP_NAMES.name,
+    plan,
+  }: { smoothingS: number; tempName?: string; plan?: readonly CurvePoint[] | undefined },
 ): { layers: ChartLayer[]; markers: ChartMarker[] } {
   const readings = untilRoastEnd(roast, allReadings);
   const zeroMs = roast.chargedAtMs ?? readings[0]?.atMs ?? 0;
@@ -147,8 +153,29 @@ export function roastChartData(
     const label = MARKER_LABELS[event.kind];
     return label ? [{ id: event.kind, label, t: toT(event.atMs), tone: 'ink' }] : [];
   });
+  // Only from charge on: the plan's clock starts there, and the preheat's doesn't.
+  const planned: ChartLayer[] =
+    plan && roast.chargedAtMs !== null
+      ? [
+          {
+            id: 'plan',
+            label: 'Plan',
+            axis: 'temperature',
+            tone: 'target',
+            width: 2,
+            dash: [6, 6],
+            points: plan.map((point) => ({ t: point.tS, v: point.c })),
+          },
+        ]
+      : [];
   return {
-    layers: [temperature, ror, output('heater', 'Heater', 'heat'), output('fan', 'Fan', 'air')],
+    layers: [
+      ...planned,
+      temperature,
+      ror,
+      output('heater', 'Heater', 'heat'),
+      output('fan', 'Fan', 'air'),
+    ],
     markers,
   };
 }

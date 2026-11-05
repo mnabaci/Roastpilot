@@ -1,8 +1,10 @@
 import { silentLogger } from '@roastpilot/core';
 import {
+  AUTO_OFF,
   DEFAULT_SETTINGS,
   err,
   ok,
+  type AutoProfile,
   type ConnectionState,
   type RoastpilotApi,
 } from '@roastpilot/shared';
@@ -33,6 +35,7 @@ export function fakeApi(overrides: Partial<RoastpilotApi> = {}): Mocked<Roastpil
         roast: READY_ROAST,
         readings: [],
         safety: { locked: false, tripped: [] },
+        auto: AUTO_OFF,
       }),
     ),
     roastAction: vi.fn(() => Promise.resolve(ok(undefined))),
@@ -48,6 +51,15 @@ export function fakeApi(overrides: Partial<RoastpilotApi> = {}): Mocked<Roastpil
     getRoast: vi.fn((id: number) => Promise.resolve(err({ kind: 'not-found' as const, id }))),
     deleteRoast: vi.fn(() => Promise.resolve(ok(undefined))),
     onRoastsChanged: vi.fn(() => unsubscribe),
+    autoChargeSoon: vi.fn(() => Promise.resolve(ok(undefined))),
+    autoResume: vi.fn(() => Promise.resolve(ok(undefined))),
+    onAutoStatus: vi.fn(() => unsubscribe),
+    listProfiles: vi.fn(() => Promise.resolve([])),
+    duplicateProfile: vi.fn((id: string) =>
+      Promise.resolve(err({ kind: 'not-found' as const, id })),
+    ),
+    saveProfile: vi.fn((profile: AutoProfile) => Promise.resolve(ok({ profile, builtIn: false }))),
+    deleteProfile: vi.fn(() => Promise.resolve(ok(undefined))),
     ...overrides,
   } as Mocked<RoastpilotApi>;
 }

@@ -17,6 +17,8 @@ export interface FlowStop {
  * one-line hint.
  */
 export interface FlowStep {
+  /** Auto's Charge soon takes the primary place (docs/spec/roast-control.md). */
+  chargeSoon?: boolean;
   primary?: FlowButton;
   secondary?: FlowButton;
   quiet?: FlowButton;
@@ -24,7 +26,7 @@ export interface FlowStep {
   hint: string;
 }
 
-const END_ROAST: FlowStop = {
+export const END_ROAST: FlowStop = {
   label: 'End roast',
   question: 'End the roast? · everything turns off',
 };

@@ -32,6 +32,8 @@ const NEWER = summary(2, '2026-11-04T14:32:00.000Z');
 const OLDER = summary(1, '2026-11-02T18:20:00.000Z', { fcTimeS: null, endedAt: null });
 const detail = (s: RoastSummary): RoastDetail => ({
   ...s,
+  mode: 'manual',
+  profile: null,
   samples: [{ tS: 0, values: { bt: 180 } }],
   events: [{ kind: 'charge', tS: 0, bt: 180 }],
 });

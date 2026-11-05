@@ -1,9 +1,10 @@
-import { DEFAULT_SETTINGS, err, READY_ROAST, type Reading } from '@roastpilot/shared';
+import { AUTO_OFF, DEFAULT_SETTINGS, err, READY_ROAST, type Reading } from '@roastpilot/shared';
 import { act, fireEvent, screen } from '@testing-library/react';
 import type * as Ui from '@roastpilot/ui';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { addReading } from '../../stores/roast-store';
+import { BUILT_INS as profiles } from '../../test/profiles';
 import { CONNECTED, fakeApi, renderApp } from '../../test/render-app';
 import { RoastScreen } from './RoastScreen';
 
@@ -458,6 +459,70 @@ describe('RoastScreen', () => {
       await vi.waitFor(() => {
         expect(heater).toHaveValue('50');
       });
+    });
+  });
+
+  describe('Auto', () => {
+    const settings = { ...DEFAULT_SETTINGS, roastMode: 'auto' } as const;
+    const on = { ...AUTO_OFF, enabled: true };
+    const auto = (phase: (typeof READY_ROAST)['phase'], status = {}) => ({
+      ...connected,
+      roast: roast(phase),
+      settings,
+      profiles,
+      auto: { ...on, ...status },
+    });
+
+    it('stays Manual with no profile choice until you pick Auto', async () => {
+      const { api } = renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, profiles });
+      expect(screen.queryByLabelText('Profile')).toBeNull();
+      await userEvent.click(screen.getByRole('button', { name: 'Auto' }));
+      expect(api.setSettings).toHaveBeenCalledWith(expect.objectContaining({ roastMode: 'auto' }));
+      expect(screen.getByLabelText('Profile')).toHaveValue('light-steps');
+      expect(screen.getByText('Needs calibration · stay close.')).toBeInTheDocument();
+    });
+
+    it('picks a profile', async () => {
+      const { api } = renderApp(<RoastScreen onConnect={onConnect} />, auto('ready'));
+      await userEvent.selectOptions(screen.getByLabelText('Profile'), 'light-curve');
+      expect(api.setSettings).toHaveBeenCalledWith(
+        expect.objectContaining({ autoProfile: 'light-curve' }),
+      );
+    });
+
+    it('Charge soon asks main once the hold is over', async () => {
+      const { api } = renderApp(
+        <RoastScreen onConnect={onConnect} />,
+        auto('preheat', { preheatStep: 'add-beans' }),
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Charge soon' }));
+      expect(api.autoChargeSoon).toHaveBeenCalledOnce();
+    });
+
+    it('shows Auto on an output it drives, and Manual with Resume auto on one you took', async () => {
+      const { api } = renderApp(
+        <RoastScreen onConnect={onConnect} />,
+        auto('roasting', { fan: 'manual', phaseName: 'Yellowing', nextPhaseAtC: 165 }),
+      );
+      expect(screen.getByText('Yellowing · next at 165 °C')).toBeInTheDocument();
+      expect(screen.getByText('Auto', { selector: 'span' })).toBeInTheDocument();
+      // getByRole fails on more than one: only the fan you took offers it.
+      await userEvent.click(screen.getByRole('button', { name: 'Resume auto' }));
+      expect(api.autoResume).toHaveBeenCalledOnce();
+    });
+
+    it('after a stop says both outputs are yours, and offers no Resume auto while locked', () => {
+      renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...auto('roasting', { stopped: true, heater: 'manual', fan: 'manual' }),
+        safety: { locked: true, tripped: [] },
+      });
+      expect(screen.queryByRole('button', { name: 'Resume auto' })).toBeNull();
+      expect(screen.getByText('Heater locked · acknowledge above')).toBeInTheDocument();
+    });
+
+    it('offers no Resume auto on Manual', () => {
+      renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast('roasting') });
+      expect(screen.queryByRole('button', { name: 'Resume auto' })).toBeNull();
     });
   });
 });

@@ -17,6 +17,7 @@ const CONNECTION_LABEL: Readonly<Record<ConnectionState['status'], string>> = {
 const SCREENS: readonly { id: Screen; label: string }[] = [
   { id: 'roast', label: 'Roast' },
   { id: 'history', label: 'History' },
+  { id: 'profiles', label: 'Profiles' },
   { id: 'settings', label: 'Settings' },
   { id: 'logs', label: 'Logs' },
 ];

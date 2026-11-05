@@ -1,3 +1,4 @@
+import { plannedCurve } from '@roastpilot/core';
 import { READY_ROAST, type Reading, type RoastDetail, type RoastState } from '@roastpilot/shared';
 import type { ChartLayer, ChartMarker } from '@roastpilot/ui';
 import { roastChartData } from '../roast/roast-chart-data';
@@ -34,7 +35,10 @@ export function savedRoastChart(
   smoothingS: number,
 ): { layers: ChartLayer[]; markers: ChartMarker[] } {
   const own = savedAsLive(detail);
-  const chart = roastChartData(own.roast, own.readings, { smoothingS });
+  const chart = roastChartData(own.roast, own.readings, {
+    smoothingS,
+    ...(detail.profile ? { plan: plannedCurve(detail.profile) } : {}),
+  });
   if (!compare) return chart;
   const other = savedAsLive(compare.detail);
   const otherBt = roastChartData(other.roast, other.readings, { smoothingS }).layers.find(
