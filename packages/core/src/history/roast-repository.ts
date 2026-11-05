@@ -1,5 +1,6 @@
 import type {
   AutoProfile,
+  RoasterId,
   Result,
   RoastDetail,
   RoastId,
@@ -20,6 +21,7 @@ export interface RoastRepository {
     startedAt: string;
     mode: 'manual' | 'auto';
     profile: AutoProfile | null;
+    roasterId: RoasterId | null;
   }): Promise<Result<RoastId, StorageError>>;
   addSamples(id: RoastId, samples: readonly SavedSample[]): Promise<Result<void, StorageError>>;
   addEvent(id: RoastId, event: SavedEvent): Promise<Result<void, StorageError>>;

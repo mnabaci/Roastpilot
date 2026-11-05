@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { ConfirmInline } from '../../features/ConfirmInline';
 import { useRun } from '../../features/use-run';
+import { useRoasters } from '../../stores/use-stores';
 import { useSaveSettings } from '../settings/use-save-settings';
 import type { ProfileDraftState } from './use-profile-draft';
 
@@ -27,6 +28,8 @@ export function ProfileActions({
   const saveSettings = useSaveSettings();
   const [problem, setProblem] = useState<string>();
   const { id } = entry.profile;
+  const others = useRoasters((s) => s.roasters).filter((r) => !r.active);
+  const [copied, setCopied] = useState<string>();
   const refresh = async () => {
     stores.auto.setState({ profiles: await api.listProfiles() });
   };
@@ -58,6 +61,17 @@ export function ProfileActions({
       setProblem(undefined);
       await refresh();
       onSelect(copy.value.profile.id);
+    });
+  };
+  const copyTo = (roasterId: number, name: string) => {
+    run('profiles.copy-failed', async () => {
+      const copy = await api.copyProfile({ id, roasterId });
+      if (!copy.ok) {
+        refused(copy.error);
+        return;
+      }
+      setProblem(undefined);
+      setCopied(`Copied to ${name} · needs calibration there`);
     });
   };
   const remove = () => {
@@ -98,6 +112,17 @@ export function ProfileActions({
           <Button variant="secondary" onClick={duplicate}>
             Duplicate
           </Button>
+          {others.map((roaster) => (
+            <Button
+              key={roaster.id}
+              variant="ghost"
+              onClick={() => {
+                copyTo(roaster.id, roaster.name);
+              }}
+            >
+              Copy to {roaster.name}
+            </Button>
+          ))}
           {entry.builtIn || (active && locked) ? null : (
             <ConfirmInline
               label="Delete"
@@ -108,6 +133,7 @@ export function ProfileActions({
           )}
         </>
       )}
+      {copied ? <p className="w-full text-label text-ink-muted">{copied}</p> : null}
       {problem ? (
         <p role="alert" className="w-full text-label text-critical-text">
           {problem}

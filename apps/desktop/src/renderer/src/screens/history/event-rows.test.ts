@@ -7,6 +7,7 @@ const detail: RoastDetail = {
   id: 7,
   mode: 'manual',
   profile: null,
+  roasterId: null,
   startedAt: '2026-11-04T17:37:20.466Z',
   endedAt: '2026-11-04T17:52:23.388Z',
   fcTimeS: 90,

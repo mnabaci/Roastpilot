@@ -14,6 +14,7 @@ export const RoastSummarySchema = z.object({
   fcTimeS: z.number().nullable(),
   dropTimeS: z.number().nullable(),
   dropTemp: z.number().nullable(),
+  roasterId: z.number().int().positive().nullable(),
 });
 
 /** One reading of a saved roast; negative `tS` is before charge (preheat). */

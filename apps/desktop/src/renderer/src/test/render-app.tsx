@@ -6,6 +6,7 @@ import {
   ok,
   type AutoProfile,
   type ConnectionState,
+  type Roaster,
   type RoastpilotApi,
 } from '@roastpilot/shared';
 import { render } from '@testing-library/react';
@@ -60,6 +61,16 @@ export function fakeApi(overrides: Partial<RoastpilotApi> = {}): Mocked<Roastpil
     ),
     saveProfile: vi.fn((profile: AutoProfile) => Promise.resolve(ok({ profile, builtIn: false }))),
     deleteProfile: vi.fn(() => Promise.resolve(ok(undefined))),
+    copyProfile: vi.fn((request: { id: string }) =>
+      Promise.resolve(err({ kind: 'not-found' as const, id: request.id })),
+    ),
+    listRoasters: vi.fn(() => Promise.resolve([])),
+    addRoaster: vi.fn(() => Promise.resolve(err({ kind: 'in-use' as const }))),
+    saveRoaster: vi.fn((roaster: Roaster) => Promise.resolve(ok(roaster))),
+    deleteRoaster: vi.fn(() => Promise.resolve(ok(undefined))),
+    setActiveRoaster: vi.fn(() => Promise.resolve(ok(undefined))),
+    chooseConnection: vi.fn(() => Promise.resolve(ok(undefined))),
+    onRoasters: vi.fn(() => unsubscribe),
     ...overrides,
   } as Mocked<RoastpilotApi>;
 }

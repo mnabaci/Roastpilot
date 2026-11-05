@@ -3,3 +3,4 @@ export { openDatabase } from './open-database';
 export { drizzleOn } from './proxy-db';
 export { SqliteProfileRepository } from './sqlite-profile-repository';
 export { SqliteRoastRepository } from './sqlite-roast-repository';
+export { SqliteRoasterRepository } from './sqlite-roaster-repository';

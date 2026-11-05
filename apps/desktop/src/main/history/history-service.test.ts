@@ -11,6 +11,7 @@ const ROAST: RoastSummary = {
   fcTimeS: null,
   dropTimeS: null,
   dropTemp: null,
+  roasterId: null,
 };
 
 function setup(repository = unavailableRepository('disk gone')) {

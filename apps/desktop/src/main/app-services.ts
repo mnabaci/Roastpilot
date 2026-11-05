@@ -1,4 +1,5 @@
 import {
+  DEFAULT_SAFETY_LIMITS,
   ManualRoast,
   ReadingHistory,
   RoasterSession,
@@ -7,6 +8,7 @@ import {
   type Clock,
   type Logger,
   type ProfileRepository,
+  type RoasterRepository,
   type RoastRepository,
   type SettingsStore,
 } from '@roastpilot/core';
@@ -21,6 +23,8 @@ import {
 import { createAutoPilot, roastPlan } from './auto-wiring';
 import { HistoryService } from './history/history-service';
 import { ProfileService } from './profiles/profile-service';
+import { RoasterService } from './roasters/roaster-service';
+import { startLoading } from './start-loading';
 import { SettingsService } from './settings/settings-service';
 
 export interface AppServicesDeps {
@@ -29,6 +33,7 @@ export interface AppServicesDeps {
   settingsStore: SettingsStore;
   roasts: RoastRepository;
   profileStore: ProfileRepository;
+  roasterStore: RoasterRepository;
   /** New ids for your own profiles. */
   newProfileId: () => string;
   /** Wall-clock time as ISO 8601, for saved roasts. */
@@ -49,6 +54,7 @@ export interface AppServices {
   recorder: RoastRecorder;
   pilot: ReturnType<typeof createAutoPilot>;
   profiles: ProfileService;
+  roasters: RoasterService;
   snapshot: () => Snapshot;
 }
 
@@ -59,6 +65,7 @@ export function createAppServices({
   settingsStore,
   roasts,
   profileStore,
+  roasterStore,
   newProfileId,
   nowIso,
   onConnectionChange,
@@ -71,15 +78,28 @@ export function createAppServices({
     repository: roasts,
     nowIso,
     readingsSoFar: () => history.all(),
-    plan: () => roastPlan(settings, profiles),
+    plan: () => roastPlan(settings, profiles, roasters.active().id),
     onSaved: (id) => {
       publish(IPC_CHANNELS.roastsChanged, { id, deleted: false });
     },
     logger: historyLogger,
   });
-  const session = new RoasterSession({
+  const roasters: RoasterService = new RoasterService({
+    repository: roasterStore,
+    inUse: () => session.connection.status !== 'disconnected',
+    onChange: (list) => {
+      publish(IPC_CHANNELS.roastersChanged, list);
+    },
+    logger: logger.child('roasters'),
+  });
+  const session: RoasterSession = new RoasterSession({
     clock,
     logger: logger.child('session'),
+    limits: () => {
+      const { maxTempC, maxTimeS } = roasters.active();
+      return { ...DEFAULT_SAFETY_LIMITS, maxTempC, maxRoastMs: maxTimeS * 1000 };
+    },
+    tempOffsetC: () => roasters.active().tempOffsetC,
     onReading: (reading) => {
       history.add(reading);
       recorder.onReading(reading);
@@ -119,15 +139,11 @@ export function createAppServices({
     store: profileStore,
     newId: newProfileId,
     chosenId: () => settings.latest.autoProfile,
+    activeRoaster: () => roasters.active(),
     logger: logger.child('profiles'),
   });
-  settings.get().catch((error: unknown) => {
-    logger.error('settings.load-failed', { error: serializeError(error) });
-  });
   // Before the first roast, so a chosen profile of your own is there without opening a window.
-  profiles.list().catch((error: unknown) => {
-    logger.error('profiles.load-failed', { error: serializeError(error) });
-  });
+  startLoading({ settings, roasters, profiles, logger });
   const roast = new ManualRoast({
     clock,
     logger: roastLogger,
@@ -168,6 +184,7 @@ export function createAppServices({
     roast,
     settings,
     profiles,
+    roasters,
     readings: () => history.all(),
     publish,
     logger,
@@ -194,6 +211,7 @@ export function createAppServices({
     recorder,
     pilot,
     profiles,
+    roasters,
     snapshot,
   };
 }

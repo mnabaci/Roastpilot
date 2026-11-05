@@ -1,6 +1,7 @@
 // Saved roasts (docs/spec/data-model.md). Change only through a new migration (add-migration skill).
 import { sql } from 'drizzle-orm';
 import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { roasters } from './roasters';
 
 export const roasts = sqliteTable(
   'roasts',
@@ -14,6 +15,7 @@ export const roasts = sqliteTable(
     fcTimeS: real('fc_time_s'),
     dropTimeS: real('drop_time_s'),
     dropTemp: real('drop_temp'),
+    roasterId: integer('roaster_id').references(() => roasters.id),
   },
   (table) => [index('roasts_started_at').on(table.startedAt)],
 );

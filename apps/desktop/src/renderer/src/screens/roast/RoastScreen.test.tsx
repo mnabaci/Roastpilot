@@ -538,4 +538,18 @@ describe('RoastScreen', () => {
       expect(screen.queryByRole('button', { name: 'Resume auto' })).toBeNull();
     });
   });
+
+  it('hides the controls the connected roaster does not have', () => {
+    const channels = CONNECTED.status === 'connected' ? CONNECTED.channels : [];
+    renderApp(<RoastScreen onConnect={onConnect} />, {
+      connection: {
+        ...CONNECTED,
+        channels: channels.filter((c) => c.id !== 'fan' && c.id !== 'filter'),
+      } as typeof CONNECTED,
+    });
+    expect(screen.getByRole('slider', { name: 'Heater' })).toBeInTheDocument();
+    expect(screen.queryByRole('slider', { name: 'Fan' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Filter/ })).toBeNull();
+    expect(screen.getByRole('button', { name: /Drum/ })).toBeInTheDocument();
+  });
 });

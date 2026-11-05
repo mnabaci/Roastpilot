@@ -24,7 +24,7 @@ and never move between roasters on their own (see [roast-control.md](roast-contr
 - **Two records to start:** Skywalker and Simulator, made by the migration. Add another by picking a model and filling in the record; a Simulator is the only other model until a new driver ships.
 - **In the record:** name, model, connection, batch min / ideal / max, safety limits, temperature offset, preheat hold and PID gains. Batch min starts at 250 g; change it once you've tested smaller batches. Cooling stays in Settings, as it doesn't depend on the roaster so far.
 - **Moving over:** the connection in Settings moves to the Skywalker or Simulator record on first start. Your own profiles and every saved roast move to the Skywalker record, simulator practice roasts included, as nothing recorded which roaster they used.
-- **Active roaster:** one at a time. Connect uses it. Changing it, or its limits and gains, waits while it is connected. Its profiles, batch sizes and limits follow.
+- **Active roaster:** one at a time. Connect uses it, and picking a port or the Simulator in the Connection section makes the roaster of that kind active. Changing it, or its limits and gains, waits while it is connected. Its profiles, batch sizes and limits follow.
 - **Limits:** the record's temperature and time limits replace the fixed ones, and can only be set at or below the model's own (Skywalker: 240 °C, 20 min).
 - **Offset:** added to the temperature reading before anything else sees it, safety rules included.
 - **Deleting:** a roaster with saved roasts or your own profiles can't be deleted, and neither can the active one.

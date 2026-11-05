@@ -25,10 +25,10 @@ describe('migrate', () => {
     const db = new DatabaseSync(':memory:');
     expect(migrate(db)).toEqual({
       ok: true,
-      value: { applied: ['0000_roasts', '0001_profiles'] },
+      value: { applied: ['0000_roasts', '0001_profiles', '0002_roasters'] },
     });
     expect(tables(db)).toEqual(
-      expect.arrayContaining(['profiles', 'roast_events', 'roast_samples', 'roasts']),
+      expect.arrayContaining(['profiles', 'roast_events', 'roast_samples', 'roasters', 'roasts']),
     );
     expect(version(db)).toBe(MIGRATIONS.length);
     expect(migrate(db)).toEqual({ ok: true, value: { applied: [] } });
@@ -38,11 +38,26 @@ describe('migrate', () => {
     const db = new DatabaseSync(':memory:');
     migrate(db, MIGRATIONS.slice(0, 1));
     db.exec(`INSERT INTO roasts (mode, started_at) VALUES ('manual', '2026-11-04T10:00:00.000Z')`);
-    expect(migrate(db)).toEqual({ ok: true, value: { applied: ['0001_profiles'] } });
-    expect(db.prepare('SELECT mode, profile FROM roasts').all()).toEqual([
-      { mode: 'manual', profile: null },
+    expect(migrate(db)).toEqual({
+      ok: true,
+      value: { applied: ['0001_profiles', '0002_roasters'] },
+    });
+    expect(db.prepare('SELECT mode, profile, roaster_id FROM roasts').all()).toEqual([
+      { mode: 'manual', profile: null, roaster_id: 1 },
     ]);
     expect(tables(db)).toContain('profiles');
+  });
+
+  it('makes Skywalker and Simulator, Skywalker active, and gives it your own profiles', () => {
+    const db = new DatabaseSync(':memory:');
+    migrate(db, MIGRATIONS.slice(0, 2));
+    db.exec(`INSERT INTO profiles VALUES ('custom-1', '{}', '2026-11-04T10:00:00.000Z')`);
+    migrate(db);
+    expect(db.prepare('SELECT id, name, model, is_active FROM roasters').all()).toEqual([
+      { id: 1, name: 'Skywalker', model: 'skywalker', is_active: 1 },
+      { id: 2, name: 'Simulator', model: 'simulator', is_active: 0 },
+    ]);
+    expect(db.prepare('SELECT roaster_id FROM profiles').all()).toEqual([{ roaster_id: 1 }]);
   });
 
   it('applies only the migrations a database is missing, keeping its data', () => {

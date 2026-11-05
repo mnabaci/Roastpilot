@@ -42,6 +42,7 @@ export {
   SetOutputRequestSchema,
   type AppApi,
   type AutoApi,
+  type RoastersApi,
   type ProfilesApi,
   type HistoryApi,
   type LogsApi,
@@ -158,3 +159,17 @@ export {
   type SafetyAction,
   type SafetyEvent,
 } from './safety-event';
+export {
+  CopyProfileRequestSchema,
+  MODEL_LIMITS,
+  NewRoasterSchema,
+  RoasterErrorSchema,
+  RoasterIdSchema,
+  RoasterModelSchema,
+  RoasterSchema,
+  type NewRoaster,
+  type Roaster,
+  type RoasterError,
+  type RoasterId,
+  type RoasterModel,
+} from './roaster';

@@ -9,9 +9,13 @@ import {
 import {
   AutoProfileSchema,
   ConnectTargetSchema,
+  CopyProfileRequestSchema,
   IPC_CHANNELS,
   LogDaySchema,
+  NewRoasterSchema,
   ProfileIdSchema,
+  RoasterIdSchema,
+  RoasterSchema,
   RendererLogEntrySchema,
   RoastActionSchema,
   RoastIdSchema,
@@ -25,6 +29,7 @@ import {
 } from '@roastpilot/shared';
 import type { HistoryService } from './history/history-service';
 import type { ProfileService } from './profiles/profile-service';
+import type { RoasterService } from './roasters/roaster-service';
 import type { SettingsService } from './settings/settings-service';
 
 export interface IpcDeps {
@@ -36,7 +41,11 @@ export interface IpcDeps {
   settings: Pick<SettingsService, 'get' | 'set'>;
   history: Pick<HistoryService, 'list' | 'get' | 'delete'>;
   pilot: Pick<AutoPilot, 'chargeSoon' | 'outputRequested' | 'resume'>;
-  profiles: Pick<ProfileService, 'list' | 'duplicate' | 'save' | 'delete'>;
+  profiles: Pick<ProfileService, 'list' | 'duplicate' | 'copyTo' | 'save' | 'delete'>;
+  roasters: Pick<
+    RoasterService,
+    'load' | 'add' | 'save' | 'delete' | 'setActive' | 'chooseConnection'
+  >;
   /** The clock's now, for Charge soon. */
   nowMs: () => number;
   snapshot: () => Snapshot;
@@ -67,6 +76,7 @@ export function createIpcHandlers({
   history,
   pilot,
   profiles,
+  roasters,
   nowMs,
   snapshot,
   listPorts,
@@ -111,6 +121,22 @@ export function createIpcHandlers({
     ),
     [IPC_CHANNELS.deleteProfile]: handler((payload) =>
       profiles.delete(ProfileIdSchema.parse(payload)),
+    ),
+    [IPC_CHANNELS.copyProfile]: handler((payload) => {
+      const { id, roasterId } = CopyProfileRequestSchema.parse(payload);
+      return profiles.copyTo(id, roasterId);
+    }),
+    [IPC_CHANNELS.listRoasters]: handler(() => roasters.load()),
+    [IPC_CHANNELS.addRoaster]: handler((payload) => roasters.add(NewRoasterSchema.parse(payload))),
+    [IPC_CHANNELS.saveRoaster]: handler((payload) => roasters.save(RoasterSchema.parse(payload))),
+    [IPC_CHANNELS.deleteRoaster]: handler((payload) =>
+      roasters.delete(RoasterIdSchema.parse(payload)),
+    ),
+    [IPC_CHANNELS.setActiveRoaster]: handler((payload) =>
+      roasters.setActive(RoasterIdSchema.parse(payload)),
+    ),
+    [IPC_CHANNELS.chooseConnection]: handler((payload) =>
+      roasters.chooseConnection(ConnectTargetSchema.parse(payload)),
     ),
   };
 }

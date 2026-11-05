@@ -6,6 +6,7 @@ import {
   SavedEventSchema,
   SavedSampleSchema,
   type AutoProfile,
+  type RoasterId,
   type Result,
   type RoastDetail,
   type RoastId,
@@ -35,6 +36,7 @@ const summaryColumns = {
   fcTimeS: roasts.fcTimeS,
   dropTimeS: roasts.dropTimeS,
   dropTemp: roasts.dropTemp,
+  roasterId: roasts.roasterId,
 };
 
 /** Saved roasts in SQLite (docs/spec/data-model.md). Rows are checked on the way out. */
@@ -51,12 +53,14 @@ export class SqliteRoastRepository implements RoastRepository {
     startedAt: string;
     mode: 'manual' | 'auto';
     profile: AutoProfile | null;
+    roasterId: RoasterId | null;
   }): Promise<Result<RoastId, StorageError>> {
     return attempt(async () => {
       const values = {
         startedAt: roast.startedAt,
         mode: roast.mode,
         profile: roast.profile && JSON.stringify(roast.profile),
+        roasterId: roast.roasterId,
       };
       const row = await this.#db.insert(roasts).values(values).returning({ id: roasts.id }).get();
       return row.id;

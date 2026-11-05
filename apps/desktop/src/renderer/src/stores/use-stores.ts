@@ -1,5 +1,5 @@
 import { useStore } from 'zustand';
-import type { ConnectionState, Settings } from '@roastpilot/shared';
+import type { ConnectionState, Roaster, Settings } from '@roastpilot/shared';
 import { useDeps } from '../app/app-context';
 import type { AutoData } from './auto-store';
 import type { RoastData } from './roast-store';
@@ -18,6 +18,9 @@ export const useRoast = <T>(select: (state: RoastData) => T): T =>
 
 export const useSafety = <T>(select: (state: SafetyState) => T): T =>
   useStore(useDeps().stores.safety, select);
+
+export const useRoasters = <T>(select: (state: { roasters: Roaster[] }) => T): T =>
+  useStore(useDeps().stores.roasters, select);
 
 export const useAuto = <T>(select: (state: AutoData) => T): T =>
   useStore(useDeps().stores.auto, select);

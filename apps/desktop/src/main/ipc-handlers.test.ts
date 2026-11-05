@@ -1,5 +1,5 @@
 import { createLogger, type RoasterDriver } from '@roastpilot/core';
-import { SKYWALKER_PROFILES } from '@roastpilot/drivers';
+import { BUILT_IN_ROASTERS, SKYWALKER_PROFILES } from '@roastpilot/drivers';
 import {
   AUTO_OFF,
   DEFAULT_SETTINGS,
@@ -82,7 +82,34 @@ function setup() {
         return err({ kind: 'safety-locked' });
       },
     },
+    roasters: {
+      load: () => Promise.resolve([]),
+      add: (r) => {
+        calls.push(['addRoaster', r]);
+        return Promise.resolve(err({ kind: 'in-use' }));
+      },
+      save: (r) => {
+        calls.push(['saveRoaster', r.id]);
+        return Promise.resolve(err({ kind: 'in-use' }));
+      },
+      delete: (id) => {
+        calls.push(['deleteRoaster', id]);
+        return Promise.resolve(err({ kind: 'active' }));
+      },
+      setActive: (id) => {
+        calls.push(['setActive', id]);
+        return Promise.resolve(ok(undefined));
+      },
+      chooseConnection: (target) => {
+        calls.push(['choose', target]);
+        return Promise.resolve(ok(undefined));
+      },
+    },
     profiles: {
+      copyTo: (id, roasterId) => {
+        calls.push(['copy', id, roasterId]);
+        return Promise.resolve(err({ kind: 'not-found', id }));
+      },
       list: () => Promise.resolve([]),
       duplicate: (id) => {
         calls.push(['duplicate', id]);
@@ -156,6 +183,13 @@ describe('createIpcHandlers', () => {
         IPC_CHANNELS.duplicateProfile,
         IPC_CHANNELS.saveProfile,
         IPC_CHANNELS.deleteProfile,
+        IPC_CHANNELS.copyProfile,
+        IPC_CHANNELS.listRoasters,
+        IPC_CHANNELS.addRoaster,
+        IPC_CHANNELS.saveRoaster,
+        IPC_CHANNELS.deleteRoaster,
+        IPC_CHANNELS.setActiveRoaster,
+        IPC_CHANNELS.chooseConnection,
       ].sort(),
     );
   });
@@ -203,6 +237,28 @@ describe('roast, snapshot and settings handlers', () => {
     const { handlers, calls } = setup();
     await handlers[IPC_CHANNELS.setOutput]?.({ channel: 'heater', value: 50 });
     expect(calls).toContainEqual(['pilotOutput', 'heater', 50]);
+  });
+
+  it('checks roaster requests at the boundary', async () => {
+    const { handlers, calls } = setup();
+    const roaster = BUILT_IN_ROASTERS[0];
+    await expect(
+      handlers[IPC_CHANNELS.saveRoaster]?.({ ...roaster, maxTempC: 500 }),
+    ).rejects.toThrow();
+    await expect(
+      handlers[IPC_CHANNELS.addRoaster]?.({ name: '', model: 'skywalker' }),
+    ).rejects.toThrow();
+    await expect(handlers[IPC_CHANNELS.setActiveRoaster]?.(-1)).rejects.toThrow();
+    await expect(handlers[IPC_CHANNELS.chooseConnection]?.({ kind: 'wifi' })).rejects.toThrow();
+    expect(calls).toEqual([]);
+    await handlers[IPC_CHANNELS.saveRoaster]?.(roaster);
+    await handlers[IPC_CHANNELS.setActiveRoaster]?.(2);
+    await handlers[IPC_CHANNELS.copyProfile]?.({ id: 'custom-1', roasterId: 2 });
+    expect(calls).toEqual([
+      ['saveRoaster', 1],
+      ['setActive', 2],
+      ['copy', 'custom-1', 2],
+    ]);
   });
 
   it('passes Charge soon and Resume auto on', async () => {

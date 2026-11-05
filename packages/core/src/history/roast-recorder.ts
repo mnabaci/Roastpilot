@@ -1,5 +1,6 @@
 import type {
   AutoProfile,
+  RoasterId,
   Reading,
   Result,
   RoastEvent,
@@ -20,7 +21,11 @@ export interface RoastRecorderDeps {
   /** Readings kept since Preheat, saved at charge. */
   readingsSoFar: () => readonly Reading[];
   /** How this roast runs, read at charge. Manual unless Auto is on. */
-  plan?: () => { mode: 'manual' | 'auto'; profile: AutoProfile | null };
+  plan?: () => {
+    mode: 'manual' | 'auto';
+    profile: AutoProfile | null;
+    roasterId: RoasterId | null;
+  };
   /** A roast was created or finished. */
   onSaved: (id: RoastId) => void;
   logger?: Logger;
@@ -116,7 +121,7 @@ export class RoastRecorder {
     // A charge point found before the press moves the start back with it.
     const earlierMs = state.startPressedAtMs === null ? 0 : state.startPressedAtMs - chargedAtMs;
     const startedAt = new Date(Date.parse(this.#deps.nowIso()) - earlierMs).toISOString();
-    const plan = this.#deps.plan?.() ?? { mode: 'manual', profile: null };
+    const plan = this.#deps.plan?.() ?? { mode: 'manual', profile: null, roasterId: null };
     const created = this.#enqueue(() => this.#deps.repository.create({ startedAt, ...plan }));
     const recording: Recording = { chargedAtMs, id: created, eventsSaved: 0 };
     this.#recording = recording;

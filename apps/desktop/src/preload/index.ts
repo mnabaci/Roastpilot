@@ -52,6 +52,14 @@ const api: RoastpilotApi = {
   duplicateProfile: (id) => ipcRenderer.invoke(IPC_CHANNELS.duplicateProfile, id),
   saveProfile: (profile) => ipcRenderer.invoke(IPC_CHANNELS.saveProfile, profile),
   deleteProfile: (id) => ipcRenderer.invoke(IPC_CHANNELS.deleteProfile, id),
+  copyProfile: (request) => ipcRenderer.invoke(IPC_CHANNELS.copyProfile, request),
+  listRoasters: () => ipcRenderer.invoke(IPC_CHANNELS.listRoasters),
+  addRoaster: (roaster) => ipcRenderer.invoke(IPC_CHANNELS.addRoaster, roaster),
+  saveRoaster: (roaster) => ipcRenderer.invoke(IPC_CHANNELS.saveRoaster, roaster),
+  deleteRoaster: (id) => ipcRenderer.invoke(IPC_CHANNELS.deleteRoaster, id),
+  setActiveRoaster: (id) => ipcRenderer.invoke(IPC_CHANNELS.setActiveRoaster, id),
+  chooseConnection: (target) => ipcRenderer.invoke(IPC_CHANNELS.chooseConnection, target),
+  onRoasters: (listener) => subscribe(IPC_CHANNELS.roastersChanged, listener),
   log: (entry) => {
     ipcRenderer.send(IPC_CHANNELS.log, entry);
   },

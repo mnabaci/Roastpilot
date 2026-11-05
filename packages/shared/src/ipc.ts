@@ -17,6 +17,7 @@ import type { RendererLogEntry } from './log-entry';
 import type { LogDay, LogDayRead, LogRecord } from './log-record';
 import type { AutoProfile, ProfileEntry, ProfileError, ProfileId } from './profile';
 import type { Result } from './result';
+import type { NewRoaster, Roaster, RoasterError, RoasterId } from './roaster';
 import {
   RoastStateSchema,
   type RoastAction,
@@ -67,6 +68,14 @@ export const IPC_CHANNELS = {
   duplicateProfile: 'profiles:duplicate',
   saveProfile: 'profiles:save',
   deleteProfile: 'profiles:delete',
+  copyProfile: 'profiles:copy',
+  listRoasters: 'roasters:list',
+  addRoaster: 'roasters:add',
+  saveRoaster: 'roasters:save',
+  deleteRoaster: 'roasters:delete',
+  setActiveRoaster: 'roasters:set-active',
+  chooseConnection: 'roasters:choose-connection',
+  roastersChanged: 'roasters:changed',
 } as const;
 
 /** Everything a window needs when it opens or reloads mid-roast. */
@@ -90,6 +99,7 @@ export interface IpcEventPayloads {
   [IPC_CHANNELS.navigate]: Screen;
   [IPC_CHANNELS.roastsChanged]: { id: RoastId; deleted: boolean };
   [IPC_CHANNELS.autoStatus]: AutoStatus;
+  [IPC_CHANNELS.roastersChanged]: Roaster[];
 }
 export type IpcEventChannel = keyof IpcEventPayloads;
 
@@ -176,6 +186,23 @@ export interface ProfilesApi {
   saveProfile(profile: AutoProfile): Promise<Result<ProfileEntry, ProfileError>>;
   /** Refuses a built-in. */
   deleteProfile(id: ProfileId): Promise<Result<void, ProfileError>>;
+  /** A copy on another roaster, marked "needs calibration". */
+  copyProfile(request: {
+    id: ProfileId;
+    roasterId: RoasterId;
+  }): Promise<Result<ProfileEntry, ProfileError>>;
+}
+
+/** Roaster records (docs/spec/roasters.md). Changes wait while one is connected. */
+export interface RoastersApi {
+  listRoasters(): Promise<Roaster[]>;
+  addRoaster(roaster: NewRoaster): Promise<Result<Roaster, RoasterError>>;
+  saveRoaster(roaster: Roaster): Promise<Result<Roaster, RoasterError>>;
+  deleteRoaster(id: RoasterId): Promise<Result<void, RoasterError>>;
+  setActiveRoaster(id: RoasterId): Promise<Result<void, RoasterError>>;
+  /** Picks a port or the Simulator: the roaster of that kind becomes active and keeps it. */
+  chooseConnection(target: ConnectTarget): Promise<Result<void, RoasterError>>;
+  onRoasters(listener: (roasters: Roaster[]) => void): Unsubscribe;
 }
 
 /** The window itself: what it needs when it opens, and where the app menu sends it. */
@@ -196,4 +223,5 @@ export interface RoastpilotApi
     HistoryApi,
     AutoApi,
     ProfilesApi,
+    RoastersApi,
     AppApi {}

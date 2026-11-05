@@ -16,7 +16,12 @@ function setup() {
 }
 
 async function created(repository: SqliteRoastRepository, startedAt: string) {
-  const result = await repository.create({ startedAt, mode: 'manual', profile: null });
+  const result = await repository.create({
+    startedAt,
+    mode: 'manual',
+    profile: null,
+    roasterId: null,
+  });
   if (!result.ok) throw new Error('create failed');
   return result.value;
 }
@@ -39,6 +44,7 @@ describe('SqliteRoastRepository', () => {
         id,
         mode: 'manual',
         profile: null,
+        roasterId: null,
         startedAt: '2026-11-04T10:00:00.000Z',
         endedAt: null,
         fcTimeS: null,
@@ -62,6 +68,7 @@ describe('SqliteRoastRepository', () => {
       startedAt: '2026-11-04T10:00:00.000Z',
       mode: 'auto',
       profile: TEST_PROFILE,
+      roasterId: null,
     });
     if (!made.ok) throw new Error('create failed');
     await repository.addEvent(made.value, { kind: 'phase', tS: 60, bt: 95, detail: 'Heat on' });
@@ -141,7 +148,7 @@ describe('SqliteRoastRepository', () => {
     const { repository, sqlite } = setup();
     sqlite.close();
     expect(
-      await repository.create({ startedAt: 'x', mode: 'manual', profile: null }),
+      await repository.create({ startedAt: 'x', mode: 'manual', profile: null, roasterId: null }),
     ).toMatchObject({
       ok: false,
       error: { kind: 'storage-failed' },

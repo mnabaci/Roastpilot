@@ -9,6 +9,8 @@ type SyncApi = Pick<
   | 'getSnapshot'
   | 'getSettings'
   | 'listProfiles'
+  | 'listRoasters'
+  | 'onRoasters'
   | 'onReading'
   | 'onConnection'
   | 'onSafetyEvent'
@@ -37,14 +39,27 @@ export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsu
     api.onAutoStatus((status) => {
       stores.auto.setState({ status });
     }),
+    api.onRoasters((roasters) => {
+      stores.roasters.setState({ roasters });
+      // Profiles belong to a roaster, so the list follows the active one.
+      api
+        .listProfiles()
+        .then((profiles) => {
+          stores.auto.setState({ profiles });
+        })
+        .catch((error: unknown) => {
+          logger.error('sync.profiles-failed', { error: serializeError(error) });
+        });
+    }),
   ];
-  Promise.all([api.getSnapshot(), api.getSettings(), api.listProfiles()])
-    .then(([snapshot, settings, profiles]) => {
+  Promise.all([api.getSnapshot(), api.getSettings(), api.listProfiles(), api.listRoasters()])
+    .then(([snapshot, settings, profiles, roasters]) => {
       stores.connection.setState({ connection: snapshot.connection });
       stores.roast.setState({ roast: snapshot.roast, readings: [...snapshot.readings] });
       stores.safety.setState(snapshot.safety, true);
       stores.settings.setState({ settings });
       stores.auto.setState({ status: snapshot.auto, profiles });
+      stores.roasters.setState({ roasters });
       stores.sync.setState({ ready: true });
     })
     .catch((error: unknown) => {

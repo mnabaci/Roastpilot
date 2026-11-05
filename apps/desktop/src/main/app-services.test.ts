@@ -10,7 +10,11 @@ import { drizzleOn, openDatabase, SqliteRoastRepository } from '@roastpilot/stor
 import { DEFAULT_SETTINGS, IPC_CHANNELS, ok, type Settings } from '@roastpilot/shared';
 import { describe, expect, it, vi } from 'vitest';
 import { createAppServices } from './app-services';
-import { unavailableProfiles, unavailableRepository } from './history/unavailable-repository';
+import {
+  unavailableProfiles,
+  unavailableRepository,
+  unavailableRoasters,
+} from './history/unavailable-repository';
 
 function setup(
   roasts: RoastRepository = unavailableRepository('not in this test'),
@@ -28,6 +32,7 @@ function setup(
     settingsStore,
     roasts,
     profileStore: unavailableProfiles('not in this test'),
+    roasterStore: unavailableRoasters('not in this test'),
     newProfileId: () => 'custom-1',
     nowIso: () => '2026-11-04T10:00:00.000Z',
     onConnectionChange: () => undefined,

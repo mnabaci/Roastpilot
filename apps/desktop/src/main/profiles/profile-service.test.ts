@@ -9,9 +9,15 @@ const MINE: AutoProfile = { ...SKYWALKER_PROFILES['light-steps'], id: 'custom-a'
 function setup(start: AutoProfile[] = []) {
   let stored = [...start];
   let chosen = 'light-steps';
+  let roasterId = 1;
+  const owners = new Map<string, number>(start.map((p) => [p.id, 1]));
   const store: ProfileRepository = {
-    list: () => Promise.resolve(ok(stored)),
-    save: (profile) => {
+    list: () =>
+      Promise.resolve(
+        ok(stored.map((profile) => ({ profile, roasterId: owners.get(profile.id) ?? 1 }))),
+      ),
+    save: (profile, owner) => {
+      owners.set(profile.id, owner);
       stored = [...stored.filter((p) => p.id !== profile.id), profile];
       return Promise.resolve(ok(undefined));
     },
@@ -25,11 +31,15 @@ function setup(start: AutoProfile[] = []) {
     store,
     newId: () => 'custom-new',
     chosenId: () => chosen,
+    activeRoaster: () => ({ id: roasterId, model: 'skywalker' }),
     logger: silentLogger,
   });
   return {
     service,
     stored: () => stored,
+    useRoaster: (id: number) => {
+      roasterId = id;
+    },
     choose: (id: string) => {
       chosen = id;
     },
@@ -57,6 +67,7 @@ describe('ProfileService', () => {
       store: failing,
       newId: () => 'x',
       chosenId: () => 'light-steps',
+      activeRoaster: () => ({ id: 1, model: 'skywalker' }),
       logger: silentLogger,
     });
     expect(await service.list()).toHaveLength(2);
@@ -115,5 +126,35 @@ describe('ProfileService', () => {
       ok: false,
       error: { kind: 'not-found', id: 'nope' },
     });
+  });
+
+  it("lists only the active roaster's own, and runs its first built-in if the choice is elsewhere", async () => {
+    const { service, useRoaster, choose } = setup([MINE]);
+    choose('custom-a');
+    await service.list();
+    expect(service.active().id).toBe('custom-a');
+    useRoaster(2);
+    const list = await service.list();
+    expect(list.map((e) => e.profile.id)).toEqual(['light-steps', 'light-curve']);
+    expect(service.active().id).toBe('light-steps');
+  });
+
+  it('copies to another roaster, marked needs calibration, leaving this list alone', async () => {
+    const { service } = setup([{ ...MINE, needsCalibration: false }]);
+    await service.list();
+    const copy = await service.copyTo('custom-a', 2);
+    expect(copy).toMatchObject({
+      ok: true,
+      value: { profile: { id: 'custom-new', needsCalibration: true } },
+    });
+    expect((await service.list()).map((e) => e.profile.id)).not.toContain('custom-new');
+  });
+
+  it('saving your own keeps it on its roaster', async () => {
+    const { service, useRoaster } = setup([MINE]);
+    await service.list();
+    useRoaster(2);
+    await service.save({ ...MINE, name: 'Edited' });
+    expect((await service.list()).map((e) => e.profile.id)).not.toContain('custom-a');
   });
 });

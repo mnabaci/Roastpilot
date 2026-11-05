@@ -7,26 +7,28 @@ import {
   type ManualRoast,
   type RoasterSession,
 } from '@roastpilot/core';
-import { SKYWALKER_TUNING } from '@roastpilot/drivers';
 import {
   IPC_CHANNELS,
   type AutoProfile,
   type IpcEventChannel,
   type IpcEventPayloads,
   type Reading,
+  type RoasterId,
 } from '@roastpilot/shared';
 import type { ProfileService } from './profiles/profile-service';
+import type { RoasterService } from './roasters/roaster-service';
 import type { SettingsService } from './settings/settings-service';
 
 /** How the roast charging now runs, for the saved copy: read once, at charge. */
 export function roastPlan(
   settings: Pick<SettingsService, 'latest'>,
   profiles: Pick<ProfileService, 'active'>,
-): { mode: 'manual' | 'auto'; profile: AutoProfile | null } {
+  roasterId: RoasterId,
+): { mode: 'manual' | 'auto'; profile: AutoProfile | null; roasterId: RoasterId } {
   const { roastMode, soakTimeS } = settings.latest;
   return roastMode === 'auto'
-    ? { mode: 'auto', profile: withSoakTime(profiles.active(), soakTimeS) }
-    : { mode: 'manual', profile: null };
+    ? { mode: 'auto', profile: withSoakTime(profiles.active(), soakTimeS), roasterId }
+    : { mode: 'manual', profile: null, roasterId };
 }
 
 function noteAutoEvent(roast: ManualRoast, event: AutoEvent): void {
@@ -51,6 +53,7 @@ export function createAutoPilot({
   roast,
   settings,
   profiles,
+  roasters,
   readings,
   publish,
   logger,
@@ -59,6 +62,7 @@ export function createAutoPilot({
   roast: ManualRoast;
   settings: Pick<SettingsService, 'latest'>;
   profiles: Pick<ProfileService, 'active'>;
+  roasters: Pick<RoasterService, 'active'>;
   readings: () => readonly Reading[];
   publish: <C extends IpcEventChannel>(channel: C, payload: IpcEventPayloads[C]) => void;
   logger: Logger;
@@ -82,7 +86,7 @@ export function createAutoPilot({
       if (!dropped.ok) throw new Error(`Drop refused: ${dropped.error.kind}`);
     },
     profile: () => profiles.active(),
-    tuning: () => SKYWALKER_TUNING,
+    tuning: () => roasters.active().tuning,
     soakS: () => settings.latest.soakTimeS,
     onEvent: (event) => {
       // Only a roast has a timeline to put it on: preheat overrides stay in the log.

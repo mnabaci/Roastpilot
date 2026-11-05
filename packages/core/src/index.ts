@@ -46,4 +46,5 @@ export { AutoPilot, type AutoPilotDeps } from './auto/auto-pilot';
 export type { AutoEvent } from './auto/roast-run';
 export { plannedCurve } from './auto/steps-curve';
 export type { ProfileRepository } from './profiles/profile-repository';
+export type { RoasterRepository } from './roasters/roaster-repository';
 export { withSoakTime } from './auto/phase-plan';

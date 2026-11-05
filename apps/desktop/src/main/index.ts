@@ -5,6 +5,7 @@ import {
   drizzleOn,
   openDatabase,
   SqliteProfileRepository,
+  SqliteRoasterRepository,
   SqliteRoastRepository,
 } from '@roastpilot/storage';
 import { IPC_CHANNELS } from '@roastpilot/shared';
@@ -16,7 +17,11 @@ import { createAppServices } from './app-services';
 import { installCrashHandlers } from './crash-handlers';
 import { createDriver } from './driver-factory';
 import { SimulatorBeans } from './simulator-beans';
-import { unavailableProfiles, unavailableRepository } from './history/unavailable-repository';
+import {
+  unavailableProfiles,
+  unavailableRepository,
+  unavailableRoasters,
+} from './history/unavailable-repository';
 import { broadcast, registerIpcHandlers, registerIpcListener } from './ipc';
 import { createIpcHandlers, handleRendererLog, withErrorLogging } from './ipc-handlers';
 import { createMainWindow, devIcon } from './main-window';
@@ -63,6 +68,11 @@ const profileStore = database.ok
   : unavailableProfiles(
       database.error.kind === 'storage-failed' ? database.error.message : 'unavailable',
     );
+const roasterStore = database.ok
+  ? new SqliteRoasterRepository(drizzleOn(database.value), storageLogger)
+  : unavailableRoasters(
+      database.error.kind === 'storage-failed' ? database.error.message : 'unavailable',
+    );
 
 // Asleep, nothing watches the roaster: stay awake while one is connected, and keep the screen on
 // during a roast (docs/spec/safety.md).
@@ -76,7 +86,7 @@ const power = createPowerGuard({
 
 const simulatorBeans = new SimulatorBeans();
 
-const { session, roast, settings, history, recorder, pilot, profiles, snapshot } =
+const { session, roast, settings, history, recorder, pilot, profiles, roasters, snapshot } =
   createAppServices({
     clock: systemClock,
     logger,
@@ -85,6 +95,7 @@ const { session, roast, settings, history, recorder, pilot, profiles, snapshot }
     }),
     roasts,
     profileStore,
+    roasterStore,
     newProfileId: () => `custom-${randomUUID()}`,
     nowIso: () => new Date().toISOString(),
     onConnectionChange: (state) => {
@@ -145,6 +156,7 @@ app
           history,
           pilot,
           profiles,
+          roasters,
           nowMs: () => systemClock.now(),
           snapshot,
           listPorts: () => listSerialPorts(),
