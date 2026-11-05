@@ -56,6 +56,25 @@ export {
   type LogDayRead,
   type LogRecord,
 } from './log-record';
+export {
+  AutoProfileSchema,
+  AutoTuningSchema,
+  CurvePointSchema,
+  PhaseHeatSchema,
+  PhaseNextSchema,
+  PidGainsSchema,
+  ProfileIdSchema,
+  ProfilePhaseSchema,
+  PROFILE_SCHEMA_VERSION,
+  type AutoProfile,
+  type AutoTuning,
+  type CurvePoint,
+  type PhaseHeat,
+  type PhaseNext,
+  type PidGains,
+  type ProfileId,
+  type ProfilePhase,
+} from './profile';
 export { err, ok, type Result } from './result';
 export {
   RoastActionErrorSchema,
@@ -94,6 +113,8 @@ export {
   CoolingEndSchema,
   CoolingTimeSchema,
   RoasterCoolToSchema,
+  RoastModeSchema,
+  SoakTimeSchema,
   DEFAULT_SETTINGS,
   SettingsSchema,
   SettingsWriteErrorSchema,
@@ -103,7 +124,9 @@ export {
   type CoolingEnd,
   type CoolingTime,
   type RoasterCoolTo,
+  type RoastMode,
   type Settings,
+  type SoakTime,
   type SettingsWriteError,
 } from './settings';
 export {

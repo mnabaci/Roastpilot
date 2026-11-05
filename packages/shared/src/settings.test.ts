@@ -8,9 +8,31 @@ const ROAST_DEFAULTS = {
   coolingBelowC: 90,
   coolRoasterAfter: true,
   roasterCoolToC: 50,
+  roastMode: 'manual',
+  autoProfile: 'light-steps',
+  soakTimeS: 60,
 };
 
 describe('SettingsSchema', () => {
+  it('stays on Manual with a 1:00 soak unless you choose otherwise', () => {
+    expect(DEFAULT_SETTINGS.roastMode).toBe('manual');
+    expect(DEFAULT_SETTINGS.soakTimeS).toBe(60);
+  });
+
+  it('keeps a chosen Auto setup', () => {
+    const chosen = { roastMode: 'auto', autoProfile: 'light-curve', soakTimeS: 90 };
+    expect(SettingsSchema.parse(chosen)).toMatchObject(chosen);
+  });
+
+  it('falls back on a soak time that is not offered, or an unknown profile', () => {
+    const parsed = SettingsSchema.parse({ soakTimeS: 7, autoProfile: 'dark', roastMode: 'auto' });
+    expect(parsed).toMatchObject({
+      roastMode: 'auto',
+      autoProfile: 'light-steps',
+      soakTimeS: 60,
+    });
+  });
+
   it('defaults to Guided and no roaster', () => {
     expect(DEFAULT_SETTINGS).toEqual({
       connection: null,
@@ -31,6 +53,9 @@ describe('SettingsSchema', () => {
       coolingBelowC: 70,
       coolRoasterAfter: false,
       roasterCoolToC: 40,
+      roastMode: 'auto',
+      autoProfile: 'light-curve',
+      soakTimeS: 90,
     };
     expect(SettingsSchema.parse(settings)).toEqual(settings);
   });
