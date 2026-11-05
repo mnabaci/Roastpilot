@@ -1,0 +1,58 @@
+import { createLogger, ManualClock } from '@roastpilot/core';
+import type { LogEntry } from '@roastpilot/shared';
+import { describe, expect, it } from 'vitest';
+import { openDatabase } from './open-database';
+import { drizzleOn } from './proxy-db';
+import { SqliteProfileRepository } from './sqlite-profile-repository';
+import { TEST_PROFILE as MINE } from './test-profile';
+
+function setup() {
+  const entries: LogEntry[] = [];
+  const logger = createLogger({ write: (e) => entries.push(e) }, 'storage');
+  const opened = openDatabase(':memory:', logger);
+  if (!opened.ok) throw new Error(opened.error.kind);
+  const clock = new ManualClock(0);
+  const repository = new SqliteProfileRepository(drizzleOn(opened.value), clock, logger);
+  return { sqlite: opened.value, entries, clock, repository };
+}
+
+describe('SqliteProfileRepository', () => {
+  it('starts empty', async () => {
+    expect(await setup().repository.list()).toEqual({ ok: true, value: [] });
+  });
+
+  it('saves a profile and reads it back whole', async () => {
+    const { repository } = setup();
+    expect(await repository.save(MINE)).toEqual({ ok: true, value: undefined });
+    expect(await repository.list()).toEqual({ ok: true, value: [MINE] });
+  });
+
+  it('replaces the one with the same id', async () => {
+    const { repository } = setup();
+    await repository.save(MINE);
+    await repository.save({ ...MINE, name: 'Renamed' });
+    expect(await repository.list()).toEqual({ ok: true, value: [{ ...MINE, name: 'Renamed' }] });
+  });
+
+  it('says whether there was one to delete', async () => {
+    const { repository } = setup();
+    await repository.save(MINE);
+    expect(await repository.delete(MINE.id)).toEqual({ ok: true, value: true });
+    expect(await repository.delete(MINE.id)).toEqual({ ok: true, value: false });
+    expect(await repository.list()).toEqual({ ok: true, value: [] });
+  });
+
+  it('skips and logs a row it can no longer read, and keeps the rest', async () => {
+    const { repository, sqlite, entries } = setup();
+    await repository.save(MINE);
+    sqlite.exec(`INSERT INTO profiles VALUES ('old', '{"old":true}', '2026-01-01T00:00:00.000Z')`);
+    expect(await repository.list()).toEqual({ ok: true, value: [MINE] });
+    expect(entries.map((e) => e.event)).toContain('storage.profile-unreadable');
+  });
+
+  it('turns a broken database into a typed error', async () => {
+    const { repository, sqlite } = setup();
+    sqlite.close();
+    expect(await repository.list()).toMatchObject({ ok: false, error: { kind: 'storage-failed' } });
+  });
+});

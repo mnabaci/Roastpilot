@@ -6,6 +6,7 @@ import {
   serializeError,
   type Clock,
   type Logger,
+  type ProfileRepository,
   type RoastRepository,
   type SettingsStore,
 } from '@roastpilot/core';
@@ -17,7 +18,9 @@ import {
   type IpcEventPayloads,
   type Snapshot,
 } from '@roastpilot/shared';
+import { createAutoPilot, roastPlan } from './auto-wiring';
 import { HistoryService } from './history/history-service';
+import { ProfileService } from './profiles/profile-service';
 import { SettingsService } from './settings/settings-service';
 
 export interface AppServicesDeps {
@@ -25,6 +28,9 @@ export interface AppServicesDeps {
   logger: Logger;
   settingsStore: SettingsStore;
   roasts: RoastRepository;
+  profileStore: ProfileRepository;
+  /** New ids for your own profiles. */
+  newProfileId: () => string;
   /** Wall-clock time as ISO 8601, for saved roasts. */
   nowIso: () => string;
   /** Every connection change, besides the windows (the power guard). */
@@ -41,6 +47,8 @@ export interface AppServices {
   settings: SettingsService;
   history: HistoryService;
   recorder: RoastRecorder;
+  pilot: ReturnType<typeof createAutoPilot>;
+  profiles: ProfileService;
   snapshot: () => Snapshot;
 }
 
@@ -50,6 +58,8 @@ export function createAppServices({
   logger,
   settingsStore,
   roasts,
+  profileStore,
+  newProfileId,
   nowIso,
   onConnectionChange,
   onRoastChange = () => undefined,
@@ -61,6 +71,7 @@ export function createAppServices({
     repository: roasts,
     nowIso,
     readingsSoFar: () => history.all(),
+    plan: () => roastPlan(settings, profiles),
     onSaved: (id) => {
       publish(IPC_CHANNELS.roastsChanged, { id });
     },
@@ -77,6 +88,9 @@ export function createAppServices({
       roast.onReading(reading).catch((error: unknown) => {
         roastLogger.error('roast.reading-failed', { error: serializeError(error) });
       });
+      pilot.onReading(reading).catch((error: unknown) => {
+        roastLogger.error('auto.reading-failed', { error: serializeError(error) });
+      });
     },
     onConnection: (state) => {
       onConnectionChange(state);
@@ -87,17 +101,32 @@ export function createAppServices({
           roastLogger.error('roast.restore-failed', { error: serializeError(error) });
         });
       } else if (state.status === 'disconnected') roast.stopRoasterCooling('disconnected');
+      if (state.status === 'disconnected' || state.status === 'lost') pilot.stop(state.status);
     },
     onSafetyEvent: (event) => {
       publish(IPC_CHANNELS.safetyEvent, event);
-      if (event.kind === 'tripped' && event.action === 'safe-stop')
+      if (event.kind === 'tripped' && event.action === 'safe-stop') {
         roast.stopRoasterCooling('safety-stop');
+        pilot.stop('safety-stop');
+      }
     },
   });
   const roastLogger = logger.child('roast');
-  const settings = new SettingsService(settingsStore);
+  const settings = new SettingsService(settingsStore, (latest) => {
+    pilot.setEnabled(latest.roastMode === 'auto');
+  });
+  const profiles = new ProfileService({
+    store: profileStore,
+    newId: newProfileId,
+    chosenId: () => settings.latest.autoProfile,
+    logger: logger.child('profiles'),
+  });
   settings.get().catch((error: unknown) => {
     logger.error('settings.load-failed', { error: serializeError(error) });
+  });
+  // Before the first roast, so a chosen profile of your own is there without opening a window.
+  profiles.list().catch((error: unknown) => {
+    logger.error('profiles.load-failed', { error: serializeError(error) });
   });
   const roast = new ManualRoast({
     clock,
@@ -134,11 +163,21 @@ export function createAppServices({
       session.roastEnded();
     },
   });
+  const pilot = createAutoPilot({
+    session,
+    roast,
+    settings,
+    profiles,
+    readings: () => history.all(),
+    publish,
+    logger,
+  });
   const snapshot = (): Snapshot => ({
     connection: session.connection,
     roast: roast.state,
     readings: [...history.all()],
     safety: session.safetyStatus,
+    auto: pilot.status,
   });
   return {
     session,
@@ -153,6 +192,8 @@ export function createAppServices({
       logger: historyLogger,
     }),
     recorder,
+    pilot,
+    profiles,
     snapshot,
   };
 }

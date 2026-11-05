@@ -6,7 +6,14 @@ import type { Stores } from '../stores/stores';
 
 type SyncApi = Pick<
   RoastpilotApi,
-  'getSnapshot' | 'getSettings' | 'onReading' | 'onConnection' | 'onSafetyEvent' | 'onRoast'
+  | 'getSnapshot'
+  | 'getSettings'
+  | 'listProfiles'
+  | 'onReading'
+  | 'onConnection'
+  | 'onSafetyEvent'
+  | 'onRoast'
+  | 'onAutoStatus'
 >;
 
 /**
@@ -27,13 +34,17 @@ export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsu
     api.onRoast((roast) => {
       stores.roast.setState((data) => setRoast(data, roast));
     }),
+    api.onAutoStatus((status) => {
+      stores.auto.setState({ status });
+    }),
   ];
-  Promise.all([api.getSnapshot(), api.getSettings()])
-    .then(([snapshot, settings]) => {
+  Promise.all([api.getSnapshot(), api.getSettings(), api.listProfiles()])
+    .then(([snapshot, settings, profiles]) => {
       stores.connection.setState({ connection: snapshot.connection });
       stores.roast.setState({ roast: snapshot.roast, readings: [...snapshot.readings] });
       stores.safety.setState(snapshot.safety, true);
       stores.settings.setState({ settings });
+      stores.auto.setState({ status: snapshot.auto, profiles });
       stores.sync.setState({ ready: true });
     })
     .catch((error: unknown) => {

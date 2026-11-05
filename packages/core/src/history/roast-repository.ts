@@ -1,4 +1,5 @@
 import type {
+  AutoProfile,
   Result,
   RoastDetail,
   RoastId,
@@ -15,7 +16,11 @@ export type RoastSummaryPatch = Partial<
 
 /** Saved roasts (docs/spec/data-model.md). Implemented in `storage`. */
 export interface RoastRepository {
-  create(roast: { startedAt: string; mode: 'manual' }): Promise<Result<RoastId, StorageError>>;
+  create(roast: {
+    startedAt: string;
+    mode: 'manual' | 'auto';
+    profile: AutoProfile | null;
+  }): Promise<Result<RoastId, StorageError>>;
   addSamples(id: RoastId, samples: readonly SavedSample[]): Promise<Result<void, StorageError>>;
   addEvent(id: RoastId, event: SavedEvent): Promise<Result<void, StorageError>>;
   update(id: RoastId, patch: RoastSummaryPatch): Promise<Result<void, StorageError>>;

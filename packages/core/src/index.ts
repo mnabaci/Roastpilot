@@ -42,3 +42,8 @@ export { MAX_HISTORY_READINGS, ReadingHistory } from './roast/reading-history';
 export type { SettingsStore } from './settings/settings-store';
 export type { RoastRepository, RoastSummaryPatch } from './history/roast-repository';
 export { RoastRecorder, type RoastRecorderDeps } from './history/roast-recorder';
+export { AutoPilot, type AutoPilotDeps } from './auto/auto-pilot';
+export type { AutoEvent } from './auto/roast-run';
+export { plannedCurve } from './auto/steps-curve';
+export type { ProfileRepository } from './profiles/profile-repository';
+export { withSoakTime } from './auto/phase-plan';

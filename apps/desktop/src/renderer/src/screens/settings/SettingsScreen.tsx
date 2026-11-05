@@ -1,3 +1,4 @@
+import { AutoSection } from './AutoSection';
 import { ConnectionSection } from './ConnectionSection';
 import { ChartSection } from './ChartSection';
 import { ControlsSection } from './ControlsSection';
@@ -16,6 +17,7 @@ export function SettingsScreen() {
           </div>
           <div className="flex max-w-xl flex-col gap-8">
             <RoastSection />
+            <AutoSection />
             <ChartSection />
           </div>
         </div>

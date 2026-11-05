@@ -10,7 +10,7 @@ import { drizzleOn, openDatabase, SqliteRoastRepository } from '@roastpilot/stor
 import { DEFAULT_SETTINGS, IPC_CHANNELS, ok, type Settings } from '@roastpilot/shared';
 import { describe, expect, it, vi } from 'vitest';
 import { createAppServices } from './app-services';
-import { unavailableRepository } from './history/unavailable-repository';
+import { unavailableProfiles, unavailableRepository } from './history/unavailable-repository';
 
 function setup(
   roasts: RoastRepository = unavailableRepository('not in this test'),
@@ -27,6 +27,8 @@ function setup(
     logger: silentLogger,
     settingsStore,
     roasts,
+    profileStore: unavailableProfiles('not in this test'),
+    newProfileId: () => 'custom-1',
     nowIso: () => '2026-11-04T10:00:00.000Z',
     onConnectionChange: () => undefined,
     publish: (channel, payload) => {
@@ -44,7 +46,12 @@ describe('createAppServices', () => {
     await services.roast.act('preheat');
     const channels = new Set(published.map(([c]) => c));
     expect(channels).toEqual(
-      new Set([IPC_CHANNELS.connection, IPC_CHANNELS.reading, IPC_CHANNELS.roast]),
+      new Set([
+        IPC_CHANNELS.connection,
+        IPC_CHANNELS.reading,
+        IPC_CHANNELS.roast,
+        IPC_CHANNELS.autoStatus,
+      ]),
     );
   });
 
@@ -206,5 +213,85 @@ describe('createAppServices', () => {
       [IPC_CHANNELS.roastsChanged, { id: 1 }],
       [IPC_CHANNELS.roastsChanged, { id: 1 }],
     ]);
+  });
+
+  describe('Auto', () => {
+    const AUTO = { roastMode: 'auto', soakTimeS: 45 } as const;
+
+    function autoSetup(settings: Partial<Settings> = AUTO) {
+      const opened = openDatabase(':memory:', silentLogger);
+      if (!opened.ok) throw new Error('no database');
+      const repository = new SqliteRoastRepository(drizzleOn(opened.value), silentLogger);
+      return { repository, ...setup(repository, settings) };
+    }
+
+    const outputs = (sim: SimulatedDriver) => {
+      const set = vi.spyOn(sim, 'setOutput');
+      return () => set.mock.calls.map(([channel]) => channel);
+    };
+
+    it('stays off on Manual: nothing but your own commands reach the roaster', async () => {
+      const { clock, services, sim } = autoSetup({});
+      await services.settings.get();
+      const sent = outputs(sim);
+      await services.session.connect(sim, { kind: 'simulator' });
+      await services.roast.act('preheat');
+      await clock.runFor(5000);
+      expect(sent()).not.toContain('heater');
+      expect(services.snapshot().auto.enabled).toBe(false);
+    });
+
+    it('drives the heater in Preheat once Settings say Auto, and tells the windows', async () => {
+      const { clock, services, sim, published } = autoSetup();
+      await services.settings.get();
+      const sent = outputs(sim);
+      await services.session.connect(sim, { kind: 'simulator' });
+      await services.roast.act('preheat');
+      await clock.runFor(5000);
+      expect(sent()).toContain('heater');
+      expect(services.snapshot().auto.preheatStep).not.toBeNull();
+      expect(published.map(([c]) => c)).toContain(IPC_CHANNELS.autoStatus);
+    });
+
+    it('saves an Auto roast with its profile copy and soak, and the phase it ran', async () => {
+      const { clock, services, sim, repository } = autoSetup();
+      await services.settings.get();
+      await services.session.connect(sim, { kind: 'simulator' });
+      await services.roast.act('preheat');
+      await clock.runFor(3000);
+      await services.roast.act('start');
+      await clock.runFor(3000);
+      await services.recorder.flush();
+      const saved = await repository.get(1);
+      if (!saved.ok) throw new Error('not saved');
+      expect(saved.value.mode).toBe('auto');
+      expect(saved.value.profile?.phases[0]?.next).toEqual({ on: 'time', afterS: 45 });
+      expect(saved.value.events.map((e) => [e.kind, e.detail])).toContainEqual(['phase', 'Soak']);
+    });
+
+    it('stops on emergency stop and never sends the heater again by itself', async () => {
+      const { clock, services, sim } = autoSetup();
+      await services.settings.get();
+      await services.session.connect(sim, { kind: 'simulator' });
+      await services.roast.act('preheat');
+      await clock.runFor(3000);
+      services.session.emergencyStop();
+      await clock.runFor(1000);
+      expect(services.snapshot().auto.stopped).toBe(true);
+      const sent = outputs(sim);
+      await clock.runFor(5000);
+      expect(sent()).not.toContain('heater');
+      expect(services.pilot.resume()).toEqual({ ok: false, error: { kind: 'safety-locked' } });
+    });
+
+    it('stops when the roaster is disconnected', async () => {
+      const { clock, services, sim } = autoSetup();
+      await services.settings.get();
+      await services.session.connect(sim, { kind: 'simulator' });
+      await services.roast.act('preheat');
+      await clock.runFor(2000);
+      await services.session.disconnect();
+      expect(services.snapshot().auto.stopped).toBe(true);
+    });
   });
 });

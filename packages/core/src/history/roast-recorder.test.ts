@@ -2,6 +2,7 @@ import {
   err,
   ok,
   READY_ROAST,
+  type AutoProfile,
   type LogEntry,
   type Reading,
   type Result,
@@ -31,12 +32,18 @@ class FakeRepository implements RoastRepository {
     return Promise.resolve(err({ kind: 'storage-failed', message: 'disk full' }));
   }
 
-  create(roast: { startedAt: string }): Saved<RoastId> {
+  create(roast: {
+    startedAt: string;
+    mode: 'manual' | 'auto';
+    profile: AutoProfile | null;
+  }): Saved<RoastId> {
     if (this.failing) return this.#fail();
     const id = this.#next++;
     this.roasts.set(id, {
       id,
       startedAt: roast.startedAt,
+      mode: roast.mode,
+      profile: roast.profile,
       endedAt: null,
       fcTimeS: null,
       dropTimeS: null,
@@ -156,6 +163,8 @@ describe('RoastRecorder', () => {
 
     expect(repository.roasts.get(1)).toEqual({
       id: 1,
+      mode: 'manual',
+      profile: null,
       startedAt: '2026-11-04T10:00:00.000Z',
       endedAt: '2026-11-04T10:15:40.000Z',
       fcTimeS: 480,
@@ -205,6 +214,32 @@ describe('RoastRecorder', () => {
         { kind: 'charge', tS: 0, bt: 186 },
         { kind: 'turning-point', tS: 64, bt: 92.2 },
       ],
+    });
+  });
+
+  it('keeps the event detail, and the mode and profile copy the plan gives at charge', async () => {
+    const repository = new FakeRepository();
+    const profile = { name: 'copy' } as unknown as AutoProfile;
+    const recorder = new RoastRecorder({
+      repository,
+      nowIso: () => '2026-11-04T10:00:00.000Z',
+      readingsSoFar: () => [],
+      onSaved: () => undefined,
+      plan: () => ({ mode: 'auto', profile }),
+    });
+    recorder.onRoastChange(PREHEAT);
+    recorder.onRoastChange(CHARGED);
+    recorder.onRoastChange({
+      ...CHARGED,
+      events: [...CHARGED.events, { kind: 'phase', atMs: 180_000, bt: 90, detail: 'Heat on' }],
+    });
+    await recorder.flush();
+    expect(repository.roasts.get(1)).toMatchObject({ mode: 'auto', profile });
+    expect(repository.roasts.get(1)?.events.at(-1)).toEqual({
+      kind: 'phase',
+      tS: 60,
+      bt: 90,
+      detail: 'Heat on',
     });
   });
 

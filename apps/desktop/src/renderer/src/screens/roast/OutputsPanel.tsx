@@ -3,7 +3,9 @@ import { OutputControl } from '@roastpilot/ui';
 import { controlsAccess } from './controls-access';
 import { isConnected } from './flow-step';
 import { useOutput } from './use-output';
-import { useConnection, useRoast, useSafety, useSettings } from '../../stores/use-stores';
+import { useRun } from '../../features/use-run';
+import { useDeps } from '../../app/app-context';
+import { useAuto, useConnection, useRoast, useSafety, useSettings } from '../../stores/use-stores';
 import { OnOffButton } from './OnOffButton';
 
 /**
@@ -16,6 +18,20 @@ export function OutputsPanel() {
   const connected = useConnection((s) => isConnected(s.connection));
   const locked = useSafety((s) => s.locked);
   const access = controlsAccess(level, phase, connected);
+  const { api, logger } = useDeps();
+  const run = useRun();
+  const auto = useAuto((s) => s.status);
+  // Auto drives both outputs from Preheat until Drop; outside that the sliders are simply yours.
+  const driving = auto.enabled && ['preheat', 'roasting', 'development'].includes(phase);
+  const resume = () => {
+    run('auto.resume-failed', async () => {
+      const result = await api.autoResume();
+      if (!result.ok) logger.info('auto.resume-refused', { ...result.error });
+    });
+  };
+  const owner = (output: 'heater' | 'fan') =>
+    driving && auto[output] === 'auto' ? 'auto' : 'manual';
+  const canResume = driving && connected && !locked;
   const heater = useOutput('heater');
   const fan = useOutput('fan');
   const drum = useOutput('drum');
@@ -23,19 +39,22 @@ export function OutputsPanel() {
   const cooling = useOutput('cooling');
   const hint = locked
     ? 'Heater locked · acknowledge above'
-    : heater.value > 0 && drum.value === 0
-      ? 'Drum is off'
-      : !access.heater && connected
-        ? phase === 'cooling'
-          ? 'Cooling · heater off, fan at 100%'
-          : 'Heater waits for Preheat'
-        : undefined;
+    : driving && auto.stopped
+      ? 'Auto stopped · heater and fan are yours'
+      : heater.value > 0 && drum.value === 0
+        ? 'Drum is off'
+        : !access.heater && connected
+          ? phase === 'cooling'
+            ? 'Cooling · heater off, fan at 100%'
+            : 'Heater waits for Preheat'
+          : undefined;
   return (
     <section aria-label="Outputs" className="flex flex-col gap-5 rounded-xl bg-surface px-5 py-4.5">
       <OutputControl
         label="Heater"
         tone="heat"
-        mode="manual"
+        mode={owner('heater')}
+        {...(canResume ? { onResumeAuto: resume } : {})}
         // With no roaster, its last values would look live: show a dash instead.
         value={connected ? heater.value : undefined}
         onChange={heater.set}
@@ -44,7 +63,8 @@ export function OutputsPanel() {
       <OutputControl
         label="Fan"
         tone="air"
-        mode="manual"
+        mode={owner('fan')}
+        {...(canResume ? { onResumeAuto: resume } : {})}
         value={connected ? fan.value : undefined}
         onChange={fan.set}
         disabled={!access.fan}

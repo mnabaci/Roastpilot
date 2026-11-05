@@ -1,4 +1,17 @@
 export {
+  AutoChargeSoonErrorSchema,
+  AutoResumeErrorSchema,
+  AUTO_OFF,
+  AutoStatusSchema,
+  OutputOwnerSchema,
+  PreheatStepSchema,
+  type AutoChargeSoonError,
+  type AutoResumeError,
+  type AutoStatus,
+  type OutputOwner,
+  type PreheatStep,
+} from './auto-status';
+export {
   ChannelSchema,
   OutputChannelSchema,
   ReadingSchema,
@@ -28,6 +41,8 @@ export {
   type IpcEventPayloads,
   SetOutputRequestSchema,
   type AppApi,
+  type AutoApi,
+  type ProfilesApi,
   type HistoryApi,
   type LogsApi,
   type RoastApi,
@@ -56,6 +71,31 @@ export {
   type LogDayRead,
   type LogRecord,
 } from './log-record';
+export {
+  AutoProfileSchema,
+  AutoTuningSchema,
+  CurvePointSchema,
+  PhaseHeatSchema,
+  PhaseNextSchema,
+  PidGainsSchema,
+  DEFAULT_PROFILE_ID,
+  ProfileEntrySchema,
+  ProfileErrorSchema,
+  ProfileIdSchema,
+  PROFILE_LIMITS,
+  ProfilePhaseSchema,
+  PROFILE_SCHEMA_VERSION,
+  type AutoProfile,
+  type AutoTuning,
+  type CurvePoint,
+  type PhaseHeat,
+  type PhaseNext,
+  type PidGains,
+  type ProfileEntry,
+  type ProfileError,
+  type ProfileId,
+  type ProfilePhase,
+} from './profile';
 export { err, ok, type Result } from './result';
 export {
   RoastActionErrorSchema,
@@ -94,6 +134,8 @@ export {
   CoolingEndSchema,
   CoolingTimeSchema,
   RoasterCoolToSchema,
+  RoastModeSchema,
+  SoakTimeSchema,
   DEFAULT_SETTINGS,
   SettingsSchema,
   SettingsWriteErrorSchema,
@@ -103,7 +145,9 @@ export {
   type CoolingEnd,
   type CoolingTime,
   type RoasterCoolTo,
+  type RoastMode,
   type Settings,
+  type SoakTime,
   type SettingsWriteError,
 } from './settings';
 export {

@@ -1,4 +1,5 @@
 import type {
+  AutoProfile,
   Reading,
   Result,
   RoastEvent,
@@ -18,6 +19,8 @@ export interface RoastRecorderDeps {
   nowIso: () => string;
   /** Readings kept since Preheat, saved at charge. */
   readingsSoFar: () => readonly Reading[];
+  /** How this roast runs, read at charge. Manual unless Auto is on. */
+  plan?: () => { mode: 'manual' | 'auto'; profile: AutoProfile | null };
   /** A roast was created or finished. */
   onSaved: (id: RoastId) => void;
   logger?: Logger;
@@ -40,6 +43,10 @@ const SUMMARY_FROM_EVENT: Readonly<
 > = {
   charge: () => ({}),
   'turning-point': () => ({}),
+  'dry-end': () => ({}),
+  phase: () => ({}),
+  override: () => ({}),
+  'stall-guard': () => ({}),
   'first-crack': (tS) => ({ fcTimeS: tS }),
   drop: (tS, event) => ({ dropTimeS: tS, dropTemp: event.bt }),
   'cool-end': (_tS, _event, nowIso) => ({ endedAt: nowIso }),
@@ -109,9 +116,8 @@ export class RoastRecorder {
     // A charge point found before the press moves the start back with it.
     const earlierMs = state.startPressedAtMs === null ? 0 : state.startPressedAtMs - chargedAtMs;
     const startedAt = new Date(Date.parse(this.#deps.nowIso()) - earlierMs).toISOString();
-    const created = this.#enqueue(() =>
-      this.#deps.repository.create({ startedAt, mode: 'manual' }),
-    );
+    const plan = this.#deps.plan?.() ?? { mode: 'manual', profile: null };
+    const created = this.#enqueue(() => this.#deps.repository.create({ startedAt, ...plan }));
     const recording: Recording = { chargedAtMs, id: created, eventsSaved: 0 };
     this.#recording = recording;
     this.#write(recording, async (id) => {
@@ -137,6 +143,7 @@ export class RoastRecorder {
           kind: event.kind,
           tS,
           bt: event.bt,
+          ...(event.detail === undefined ? {} : { detail: event.detail }),
         });
         if (!added.ok || Object.keys(patch).length === 0) return added;
         const updated = await this.#deps.repository.update(id, patch);

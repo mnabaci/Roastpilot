@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ConnectTargetSchema } from './connection';
+import { DEFAULT_PROFILE_ID, ProfileIdSchema } from './profile';
 
 /** How much of the Roast screen is live (docs/spec/manual-mode.md, Guided and Full control). */
 export const ControlsLevelSchema = z.enum(['guided', 'full']);
@@ -40,6 +41,19 @@ export const RoasterCoolToSchema = z.union([
   z.literal(70),
 ]);
 
+/** Who drives heater and fan during a roast (docs/spec/roast-control.md, Auto mode). */
+export const RoastModeSchema = z.enum(['manual', 'auto']);
+
+/** How long Auto's soak keeps the heater at 0 after charge, in seconds. */
+export const SoakTimeSchema = z.union([
+  z.literal(30),
+  z.literal(45),
+  z.literal(60),
+  z.literal(75),
+  z.literal(90),
+  z.literal(120),
+]);
+
 /** Missing or unknown fields fall back to defaults, so an older settings file still loads. */
 export const SettingsSchema = z.object({
   /** The roaster last picked in Settings; the app never connects by itself. */
@@ -54,6 +68,10 @@ export const SettingsSchema = z.object({
   /** Keep cooling the empty roaster after bean cooling, down to `roasterCoolToC`. */
   coolRoasterAfter: z.boolean().catch(true).default(true),
   roasterCoolToC: RoasterCoolToSchema.catch(50).default(50),
+  /** Manual unless you choose Auto, so an update never hands your roast to the controller. */
+  roastMode: RoastModeSchema.catch('manual').default('manual'),
+  autoProfile: ProfileIdSchema.catch(DEFAULT_PROFILE_ID).default(DEFAULT_PROFILE_ID),
+  soakTimeS: SoakTimeSchema.catch(60).default(60),
 });
 
 export const DEFAULT_SETTINGS = SettingsSchema.parse({});
@@ -69,5 +87,7 @@ export type CoolingTime = z.infer<typeof CoolingTimeSchema>;
 export type CoolingEnd = z.infer<typeof CoolingEndSchema>;
 export type CoolingBelow = z.infer<typeof CoolingBelowSchema>;
 export type RoasterCoolTo = z.infer<typeof RoasterCoolToSchema>;
+export type RoastMode = z.infer<typeof RoastModeSchema>;
+export type SoakTime = z.infer<typeof SoakTimeSchema>;
 export type Settings = z.infer<typeof SettingsSchema>;
 export type SettingsWriteError = z.infer<typeof SettingsWriteErrorSchema>;

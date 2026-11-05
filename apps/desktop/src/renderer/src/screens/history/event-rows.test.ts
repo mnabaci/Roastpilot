@@ -5,6 +5,8 @@ import { eventRows } from './event-rows';
 /** A roast saved at 1 s: BT climbing 0.2 °C/s from charge, heater 80 then 40 after 60 s. */
 const detail: RoastDetail = {
   id: 7,
+  mode: 'manual',
+  profile: null,
   startedAt: '2026-11-04T17:37:20.466Z',
   endedAt: '2026-11-04T17:52:23.388Z',
   fcTimeS: 90,
@@ -69,6 +71,22 @@ describe('eventRows', () => {
         heater: undefined,
         fan: undefined,
       },
+    ]);
+  });
+
+  it('names what Auto did from the saved detail', () => {
+    const auto: RoastDetail = {
+      ...detail,
+      events: [
+        { kind: 'phase', tS: 60, bt: 110, detail: 'Heat on' },
+        { kind: 'dry-end', tS: 70, bt: 150 },
+        { kind: 'override', tS: 80, bt: 155, detail: 'fan 50' },
+      ],
+    };
+    expect(eventRows(auto).map((row) => row.event)).toEqual([
+      'Step · Heat on',
+      'Dry end',
+      'Override · fan 50',
     ]);
   });
 });

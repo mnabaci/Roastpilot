@@ -1,9 +1,11 @@
 import type { Logger, RoastRepository, RoastSummaryPatch } from '@roastpilot/core';
 import {
   err,
+  AutoProfileSchema,
   ok,
   SavedEventSchema,
   SavedSampleSchema,
+  type AutoProfile,
   type Result,
   type RoastDetail,
   type RoastId,
@@ -15,23 +17,16 @@ import {
 import { asc, desc, eq } from 'drizzle-orm';
 import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy';
 import { z } from 'zod';
+import { attempt, parseJson } from './attempt';
 import { roastEvents, roasts, roastSamples } from './schema/roasts';
 
 /** Rows per INSERT, well under SQLite's bound-parameter limit. */
 const INSERT_CHUNK = 500;
 
-const EventDetailSchema = z.object({ bt: z.number().nullable().catch(null) });
-
-async function attempt<T>(work: () => Promise<T>): Promise<Result<T, StorageError>> {
-  try {
-    return ok(await work());
-  } catch (error) {
-    return err({
-      kind: 'storage-failed',
-      message: error instanceof Error ? error.message : String(error),
-    });
-  }
-}
+const EventDetailSchema = z.object({
+  bt: z.number().nullable().catch(null),
+  note: z.string().optional().catch(undefined),
+});
 
 const summaryColumns = {
   id: roasts.id,
@@ -52,9 +47,18 @@ export class SqliteRoastRepository implements RoastRepository {
     this.#logger = logger;
   }
 
-  create(roast: { startedAt: string; mode: 'manual' }): Promise<Result<RoastId, StorageError>> {
+  create(roast: {
+    startedAt: string;
+    mode: 'manual' | 'auto';
+    profile: AutoProfile | null;
+  }): Promise<Result<RoastId, StorageError>> {
     return attempt(async () => {
-      const row = await this.#db.insert(roasts).values(roast).returning({ id: roasts.id }).get();
+      const values = {
+        startedAt: roast.startedAt,
+        mode: roast.mode,
+        profile: roast.profile && JSON.stringify(roast.profile),
+      };
+      const row = await this.#db.insert(roasts).values(values).returning({ id: roasts.id }).get();
       return row.id;
     });
   }
@@ -80,7 +84,7 @@ export class SqliteRoastRepository implements RoastRepository {
           roastId: id,
           tS: event.tS,
           type: event.kind,
-          detail: JSON.stringify({ bt: event.bt }),
+          detail: JSON.stringify({ bt: event.bt, note: event.detail }),
         })
         .run();
     });
@@ -105,7 +109,7 @@ export class SqliteRoastRepository implements RoastRepository {
   async get(id: RoastId): Promise<Result<RoastDetail, StorageError>> {
     const read = await attempt(async () => {
       const summary = await this.#db
-        .select(summaryColumns)
+        .select({ ...summaryColumns, mode: roasts.mode, profile: roasts.profile })
         .from(roasts)
         .where(eq(roasts.id, id))
         .get();
@@ -138,12 +142,23 @@ export class SqliteRoastRepository implements RoastRepository {
         kind: row.type,
         tS: row.tS,
         bt: detail.success ? detail.data.bt : null,
+        ...(detail.success && detail.data.note !== undefined ? { detail: detail.data.note } : {}),
       });
       return parsed.success ? [parsed.data] : [];
     });
     const skipped = samples.length - savedSamples.length + (events.length - savedEvents.length);
     if (skipped > 0) this.#logger.warn('storage.rows-unreadable', { roastId: id, skipped });
-    return ok({ ...summary, samples: savedSamples, events: savedEvents });
+    // An unreadable copy only loses the plan line; the roast itself stays.
+    const profile = AutoProfileSchema.nullable().safeParse(
+      summary.profile === null ? null : parseJson(summary.profile),
+    );
+    if (!profile.success) this.#logger.warn('storage.profile-unreadable', { roastId: id });
+    return ok({
+      ...summary,
+      profile: profile.success ? profile.data : null,
+      samples: savedSamples,
+      events: savedEvents,
+    });
   }
 
   async delete(id: RoastId): Promise<Result<void, StorageError>> {
@@ -152,14 +167,5 @@ export class SqliteRoastRepository implements RoastRepository {
     );
     if (!deleted.ok) return deleted;
     return deleted.value.length > 0 ? ok(undefined) : err({ kind: 'not-found', id });
-  }
-}
-
-/** Parsed JSON, or undefined when the text isn't JSON (the schema check then rejects the row). */
-function parseJson(text: string): unknown {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return undefined;
   }
 }

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { AutoProfileSchema } from './profile';
 import { RoastEventSchema } from './roast';
 
 /** Saved roasts (docs/spec/data-model.md, Saving a roast). Times are seconds from charge. */
@@ -25,9 +26,13 @@ export const SavedEventSchema = z.object({
   kind: RoastEventSchema.shape.kind,
   tS: z.number(),
   bt: z.number().nullable(),
+  detail: z.string().optional(),
 });
 
 export const RoastDetailSchema = RoastSummarySchema.extend({
+  mode: z.enum(['manual', 'auto']),
+  /** The copy of the profile an Auto roast ran. */
+  profile: AutoProfileSchema.nullable(),
   samples: z.array(SavedSampleSchema),
   events: z.array(SavedEventSchema),
 });

@@ -136,6 +136,11 @@ function series(
 
 const xScale: uPlot.Scale = { time: false, range: TIME_RANGE };
 
+/** With no RoR axis, both plots keep the same room for the last time label, so they still line up. */
+const NO_AXIS_RIGHT_PX = 24;
+const noAxisGutter = (rightAxis: boolean): Pick<uPlot.Options, 'padding'> =>
+  rightAxis ? {} : { padding: [null, NO_AXIS_RIGHT_PX, null, null] };
+
 /** The temperature chart: °C on the left, RoR on the right, markers with labels. */
 export function buildChartOptions({
   width,
@@ -154,6 +159,7 @@ export function buildChartOptions({
     height,
     legend: { show: false },
     cursor: hover.cursor,
+    ...noAxisGutter(rightAxis),
     scales: { x: xScale, temperature: { range: TEMPERATURE_RANGE }, ror: { range: ROR_RANGE } },
     axes: [
       {
@@ -205,6 +211,7 @@ export function buildStripOptions({
     height,
     legend: { show: false },
     cursor: hover.cursor,
+    ...noAxisGutter(rightAxis),
     scales: { x: xScale, output: { range: OUTPUT_RANGE } },
     axes: [
       // Same time scale as the chart above; its labels are the chart's.

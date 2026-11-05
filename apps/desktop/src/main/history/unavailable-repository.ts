@@ -1,4 +1,4 @@
-import type { RoastRepository } from '@roastpilot/core';
+import type { ProfileRepository, RoastRepository } from '@roastpilot/core';
 import { err } from '@roastpilot/shared';
 
 /**
@@ -16,4 +16,10 @@ export function unavailableRepository(message: string): RoastRepository {
     get: fail,
     delete: fail,
   };
+}
+
+/** The same for your own profiles: the built-ins stay available, saving says why it can't. */
+export function unavailableProfiles(message: string): ProfileRepository {
+  const fail = () => Promise.resolve(err({ kind: 'storage-failed' as const, message }));
+  return { list: fail, save: fail, delete: fail };
 }

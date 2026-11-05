@@ -2,15 +2,16 @@
 
 - Switch between Auto and Manual at any time. In Manual you set heater and fan.
 - A coach card shows the next suggested setting, the reason and an Apply button: "Heater 65% → 75% · 4 °C below target, RoR falling".
-- Suggestions come from the same phase plan and PID trim running in the background, so Manual and Auto never disagree: "Next step at 150 °C: heat 65%, fan 50%".
+- Suggestions come from the same phase plan and PID running in the background, so Manual and Auto never disagree: "Next step at 150 °C: heat 65%, fan 50%".
 - At most one new suggestion every 15 s, and only when it differs by 10% or more.
 - Milestone nudges: first crack expected soon (from the ghost), drop temp approaching.
 - All safety rules apply in Manual mode too.
 
 ## Manual roast flow
 
-Until Auto mode exists (milestone 4), a roast is driven by hand through these states. The flow
-lives in `core` (`ManualRoast`) and runs in main, so a closed window changes nothing.
+A roast moves through these states, by hand or with Auto mode driving heater and fan
+([roast-control.md](roast-control.md)). The flow lives in `core` (`ManualRoast`) and runs in main,
+so a closed window changes nothing.
 
 | State       | Entered by                          | What the app does                                                                                                 | Next action (Guided) |
 | ----------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------- | -------------------- |

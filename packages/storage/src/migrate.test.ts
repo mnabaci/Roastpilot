@@ -23,10 +23,26 @@ describe('migrate', () => {
 
   it('builds an empty database, and does nothing the second time', () => {
     const db = new DatabaseSync(':memory:');
-    expect(migrate(db)).toEqual({ ok: true, value: { applied: ['0000_roasts'] } });
-    expect(tables(db)).toEqual(expect.arrayContaining(['roast_events', 'roast_samples', 'roasts']));
+    expect(migrate(db)).toEqual({
+      ok: true,
+      value: { applied: ['0000_roasts', '0001_profiles'] },
+    });
+    expect(tables(db)).toEqual(
+      expect.arrayContaining(['profiles', 'roast_events', 'roast_samples', 'roasts']),
+    );
     expect(version(db)).toBe(MIGRATIONS.length);
     expect(migrate(db)).toEqual({ ok: true, value: { applied: [] } });
+  });
+
+  it('brings a database from the first version up to date, keeping its roasts', () => {
+    const db = new DatabaseSync(':memory:');
+    migrate(db, MIGRATIONS.slice(0, 1));
+    db.exec(`INSERT INTO roasts (mode, started_at) VALUES ('manual', '2026-11-04T10:00:00.000Z')`);
+    expect(migrate(db)).toEqual({ ok: true, value: { applied: ['0001_profiles'] } });
+    expect(db.prepare('SELECT mode, profile FROM roasts').all()).toEqual([
+      { mode: 'manual', profile: null },
+    ]);
+    expect(tables(db)).toContain('profiles');
   });
 
   it('applies only the migrations a database is missing, keeping its data', () => {

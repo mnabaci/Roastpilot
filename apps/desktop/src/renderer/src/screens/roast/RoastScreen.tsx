@@ -4,7 +4,9 @@ import { useMemo } from 'react';
 import { roastChartData } from './roast-chart-data';
 import { roastNumbers } from './roast-numbers';
 import { skippedSteps, stageTimes } from './stage-times';
+import { AutoPanel } from './AutoPanel';
 import { FlowPanel } from './FlowPanel';
+import { useRunningPlan } from './use-active-profile';
 import { OutputsPanel } from './OutputsPanel';
 import { RoastNumbersRow } from './RoastNumbersRow';
 import { useSensorNames } from '../../features/use-sensor-names';
@@ -42,9 +44,10 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
   const shown = connected ? numbers : { ...numbers, bt: undefined, ror: undefined };
   const smoothingS = useSettings((s) => s.settings.chartSmoothingS);
   const temp = useSensorNames();
+  const plan = useRunningPlan();
   const chart = useMemo(
-    () => roastChartData(roast, readings, { smoothingS, tempName: temp.name }),
-    [roast, readings, smoothingS, temp.name],
+    () => roastChartData(roast, readings, { smoothingS, tempName: temp.name, plan }),
+    [roast, readings, smoothingS, temp.name, plan],
   );
   return (
     <main className="grid min-h-0 flex-1 grid-cols-[1fr_auto] content-start gap-6 overflow-y-auto p-6">
@@ -77,6 +80,7 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
         <RoastChart title="Roast curve" layers={chart.layers} markers={chart.markers} />
       </div>
       <aside aria-label="Controls" className="flex w-80 flex-col gap-5">
+        <AutoPanel />
         <FlowPanel coolingLeftS={numbers.coolingLeftS} onConnect={onConnect} />
         <OutputsPanel />
         <p className="text-label text-ink-muted">Stay with the roaster while it runs.</p>

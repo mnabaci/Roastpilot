@@ -15,3 +15,4 @@ export { EventTable, type EventRow } from './components/EventTable';
 export { Mark, type MarkProps } from './components/Mark';
 export { RoastStrip, type RoastStripNumber, type RoastStripProps } from './components/RoastStrip';
 export { SelectField, type SelectFieldProps } from './components/SelectField';
+export { NumberField, type NumberFieldProps } from './components/NumberField';

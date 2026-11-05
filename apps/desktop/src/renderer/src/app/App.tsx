@@ -2,6 +2,7 @@ import type { Screen } from '@roastpilot/shared';
 import { useEffect, useState, type ReactNode } from 'react';
 import { HistoryScreen } from '../screens/history/HistoryScreen';
 import { LogsScreen } from '../screens/logs/LogsScreen';
+import { ProfilesScreen } from '../screens/profiles/ProfilesScreen';
 import { RoastScreen } from '../screens/roast/RoastScreen';
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { useConnection, useSync } from '../stores/use-stores';
@@ -32,6 +33,7 @@ export function App() {
       />
     ),
     history: () => <HistoryScreen />,
+    profiles: () => <ProfilesScreen />,
     settings: () => <SettingsScreen />,
     logs: () => <LogsScreen />,
   };

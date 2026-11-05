@@ -3,6 +3,7 @@ import type { LogEntry } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { openDatabase } from './open-database';
 import { drizzleOn } from './proxy-db';
+import { TEST_PROFILE } from './test-profile';
 import { SqliteRoastRepository } from './sqlite-roast-repository';
 
 function setup() {
@@ -15,7 +16,7 @@ function setup() {
 }
 
 async function created(repository: SqliteRoastRepository, startedAt: string) {
-  const result = await repository.create({ startedAt, mode: 'manual' });
+  const result = await repository.create({ startedAt, mode: 'manual', profile: null });
   if (!result.ok) throw new Error('create failed');
   return result.value;
 }
@@ -36,6 +37,8 @@ describe('SqliteRoastRepository', () => {
       ok: true,
       value: {
         id,
+        mode: 'manual',
+        profile: null,
         startedAt: '2026-11-04T10:00:00.000Z',
         endedAt: null,
         fcTimeS: null,
@@ -51,6 +54,34 @@ describe('SqliteRoastRepository', () => {
         ],
       },
     });
+  });
+
+  it('keeps the copy of the profile an Auto roast ran, and what Auto did', async () => {
+    const { repository } = setup();
+    const made = await repository.create({
+      startedAt: '2026-11-04T10:00:00.000Z',
+      mode: 'auto',
+      profile: TEST_PROFILE,
+    });
+    if (!made.ok) throw new Error('create failed');
+    await repository.addEvent(made.value, { kind: 'phase', tS: 60, bt: 95, detail: 'Heat on' });
+    const read = await repository.get(made.value);
+    expect(read).toMatchObject({
+      ok: true,
+      value: {
+        mode: 'auto',
+        profile: TEST_PROFILE,
+        events: [{ kind: 'phase', tS: 60, bt: 95, detail: 'Heat on' }],
+      },
+    });
+  });
+
+  it('keeps a roast whose profile copy can no longer be read, and logs it', async () => {
+    const { repository, sqlite, entries } = setup();
+    const id = await created(repository, '2026-11-04T10:00:00.000Z');
+    sqlite.exec(`UPDATE roasts SET mode = 'auto', profile = '{"old":true}'`);
+    expect(await repository.get(id)).toMatchObject({ ok: true, value: { profile: null } });
+    expect(entries.map((e) => e.event)).toContain('storage.profile-unreadable');
   });
 
   it('saves more samples than fit in one insert', async () => {
@@ -109,7 +140,9 @@ describe('SqliteRoastRepository', () => {
   it('a write to a closed database is a storage-failed result, not a throw', async () => {
     const { repository, sqlite } = setup();
     sqlite.close();
-    expect(await repository.create({ startedAt: 'x', mode: 'manual' })).toMatchObject({
+    expect(
+      await repository.create({ startedAt: 'x', mode: 'manual', profile: null }),
+    ).toMatchObject({
       ok: false,
       error: { kind: 'storage-failed' },
     });

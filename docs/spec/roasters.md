@@ -10,7 +10,7 @@ and never move between roasters on their own (see [roast-control.md](roast-contr
 | Capabilities                     | Heater, fan, drum, cooling, filter                  |
 | Batch size min / ideal / max (g) | [min] / 375 / 400                                   |
 | Safety limits                    | 240 °C, 20 min                                      |
-| PID gains, trim limit            | Tuned on real roasts; trim ±10%                     |
+| PID gains, correction limit      | Tuned on real roasts; ±20%                          |
 | Temperature offset               | 0 °C                                                |
 | Preheat hold / cooling time      | 2:30 hold at charge temp / 4 min                    |
 | Built-in profiles                | Skywalker set: Light (soak technique), Medium, Dark |

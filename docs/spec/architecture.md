@@ -55,6 +55,13 @@ flowchart TB
 | `getRoast`                    | invoke | roast id → the roast with its samples and events, or `not-found`                                                           |
 | `deleteRoast`                 | invoke | roast id → result                                                                                                          |
 | `onRoastsChanged`             | event  | a roast was saved, finished or deleted (History refreshes)                                                                 |
+| `autoChargeSoon`              | invoke | – → heater 0 and the countdown before the beans go in, or `not-now`                                                        |
+| `autoResume`                  | invoke | – → heater and fan back to Auto, or `safety-locked`                                                                        |
+| `onAutoStatus`                | event  | what Auto is doing: on or off, who owns each output, preheat step, running step                                            |
+| `listProfiles`                | invoke | – → built-ins, then your own                                                                                               |
+| `duplicateProfile`            | invoke | profile id → the new copy, or an error                                                                                     |
+| `saveProfile`                 | invoke | profile → the saved entry; refuses a built-in                                                                              |
+| `deleteProfile`               | invoke | profile id → result; refuses a built-in                                                                                    |
 | `onNavigate`                  | event  | the app menu asks for a screen (`settings` from Settings…)                                                                 |
 
 - **Quit and crash:** before the app quits, and on an uncaught error in main, the session sends the safe stop (given up to 2 s) before anything else.

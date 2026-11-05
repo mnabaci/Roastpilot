@@ -24,10 +24,23 @@ export const RoastActionSchema = z.enum([
 ]);
 
 export const RoastEventSchema = z.object({
-  kind: z.enum(['charge', 'turning-point', 'first-crack', 'drop', 'cool-end', 'end']),
+  kind: z.enum([
+    'charge',
+    'turning-point',
+    'dry-end',
+    'first-crack',
+    'drop',
+    'cool-end',
+    'end',
+    // What Auto did (docs/spec/data-model.md, Auto mode); `detail` says which.
+    'phase',
+    'override',
+    'stall-guard',
+  ]),
   atMs: z.number(),
   /** Bean temperature when it happened; null if there was no reading yet. */
   bt: z.number().nullable(),
+  detail: z.string().optional(),
 });
 
 export const RoastStateSchema = z.object({

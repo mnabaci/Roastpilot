@@ -28,6 +28,7 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 
 - **Top bar:** connection status, active roaster, selected bean and profile, phase name.
 - **Milestone 2:** the manual flow from [manual-mode.md](manual-mode.md): top bar (connection status, state), phase stepper, big numbers (BT, RoR, time, development), live chart (BT and RoR, charge/FC/drop markers, heater and fan strip), heater and fan controls, drum and filter fan switches, flow buttons and the red Emergency stop. Safety trips show as one banner per event with Acknowledge on it ("Emergency stop · heater off, fan and cooling on"); a separate Heater locked banner only when the lock outlives every trip. The focus ring shows only for keyboard focus. Bean, profile, ghost and coach come later.
+- **Milestone 4:** adds the Auto / Manual switch, a choice of profile with "needs calibration", Auto badges and Resume auto on heater and fan, the current phase and next trigger as one line in the flow panel ("Yellowing · next at 165 °C"), Charge soon, the profile's dashed curve and the dry-end marker on the chart. Soak time lives in Settings under Auto. Bean, ghost, coach and the RoR band come later.
 - **Preheat:** shows the between-batch protocol (cool, climb, hold countdown), then "Add beans".
 - **Before preheat:** bean picker (search + recent), batch weight (prefilled from the bean's batch plan), then the suggested profile and ghost with a one-line reason and a Change link for each.
 - **Phase stepper:** Preheat, Roast, First crack, Drop, Cool; finished stages show their duration underneath (see [manual-mode.md](manual-mode.md)).
@@ -46,9 +47,13 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 
 ## Profiles screen
 
-- List of profiles; built-ins can be duplicated, not overwritten.
-- Edit phases in a table (heat mode, heat %, fan %, RoR band, next-phase trigger), with a preview chart.
-- Curve editor: drag points on the chart or edit them in a table; milestone builder to draw a curve from a few milestones.
+- **Milestone 4:** list on the left, editor on the right. Built-ins are read-only with Duplicate; a copy can be renamed, edited, saved, discarded or deleted (asked once inline). "Use for Auto" picks the one Auto runs.
+- Top values: charge temp, dry-end temp, development time, BT cap, batch size.
+- Steps table: one row per step. A step profile has end temp, duration, RoR range, heat estimate, fan and backup time; a curve profile has end temp, heat estimate, fan and backup time, plus a table of curve points (time, temp). Add and remove steps; Soak comes first and Development last, always. The soak's length is the Soak time setting.
+- A preview chart shows the planned curve and the heater and fan steps, and updates as you type. Problems show next to the cell, one line each, and Save waits until there are none.
+- With Auto on, the profile stays put from Preheat until Drop: no other choice on the Roast screen or with Use for Auto, and the one running can't be saved or deleted. Unsaved edits wait, and other profiles can still be edited. The Auto / Manual switch stays live.
+- The list stays still and only the editor scrolls.
+- **Later:** drag points on the chart, and the milestone builder to draw a curve from a few milestones (milestone 8).
 - New profile from a roast: "Make step profile" (phases from its heat/fan changes) or "Make curve profile" (its BT curve).
 - Import an Artisan `.alog` as a curve profile.
 - "Copy to another roaster" makes a copy marked "needs calibration".
