@@ -6,7 +6,9 @@ export const roasts = sqliteTable(
   'roasts',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    mode: text('mode', { enum: ['manual'] }).notNull(),
+    mode: text('mode', { enum: ['manual', 'auto'] }).notNull(),
+    /** JSON copy of the profile an Auto roast ran, with its schemaVersion. */
+    profile: text('profile'),
     startedAt: text('started_at').notNull(),
     endedAt: text('ended_at'),
     fcTimeS: real('fc_time_s'),

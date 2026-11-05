@@ -118,6 +118,13 @@ export class ManualRoast {
     if (channel === 'heater' && value > 0) this.#cooling.stopWithoutOutputs('heater-on');
   }
 
+  /** Adds what Auto did to the roast's events, so it is saved like any other (data-model.md). */
+  note(kind: 'dry-end' | 'phase' | 'override' | 'stall-guard', detail?: string): void {
+    const event = this.#event(kind, this.#deps.clock.now());
+    const noted = detail === undefined ? event : { ...event, detail };
+    this.#set({ ...this.#state, events: [...this.#state.events, noted] });
+  }
+
   /** One step per action; ALLOWED_FROM has already checked the state. */
   readonly #steps: Readonly<Record<RoastAction, (nowMs: number) => Promise<void>>> = {
     preheat: async (nowMs) => {

@@ -1,4 +1,10 @@
 import { z } from 'zod';
+import {
+  AutoStatusSchema,
+  type AutoChargeSoonError,
+  type AutoResumeError,
+  type AutoStatus,
+} from './auto-status';
 import { ReadingSchema, type Reading } from './channels';
 import {
   ConnectionStateSchema,
@@ -9,6 +15,7 @@ import {
 import type { DriverError } from './driver-error';
 import type { RendererLogEntry } from './log-entry';
 import type { LogDay, LogDayRead, LogRecord } from './log-record';
+import type { AutoProfile, ProfileEntry, ProfileError, ProfileId } from './profile';
 import type { Result } from './result';
 import {
   RoastStateSchema,
@@ -53,6 +60,13 @@ export const IPC_CHANNELS = {
   getRoast: 'history:get',
   deleteRoast: 'history:delete',
   roastsChanged: 'history:changed',
+  autoStatus: 'auto:status',
+  autoChargeSoon: 'auto:charge-soon',
+  autoResume: 'auto:resume',
+  listProfiles: 'profiles:list',
+  duplicateProfile: 'profiles:duplicate',
+  saveProfile: 'profiles:save',
+  deleteProfile: 'profiles:delete',
 } as const;
 
 /** Everything a window needs when it opens or reloads mid-roast. */
@@ -62,6 +76,7 @@ export const SnapshotSchema = z.object({
   /** Readings of the current roast (or the last minutes before one). */
   readings: z.array(ReadingSchema),
   safety: z.object({ locked: z.boolean(), tripped: z.array(z.string()) }),
+  auto: AutoStatusSchema,
 });
 export type Snapshot = z.infer<typeof SnapshotSchema>;
 
@@ -74,6 +89,7 @@ export interface IpcEventPayloads {
   [IPC_CHANNELS.logEntries]: LogRecord[];
   [IPC_CHANNELS.navigate]: Screen;
   [IPC_CHANNELS.roastsChanged]: { id: RoastId };
+  [IPC_CHANNELS.autoStatus]: AutoStatus;
 }
 export type IpcEventChannel = keyof IpcEventPayloads;
 
@@ -141,6 +157,27 @@ export interface HistoryApi {
   onRoastsChanged(listener: (change: { id: RoastId }) => void): Unsubscribe;
 }
 
+/** Auto mode (docs/spec/roast-control.md, Auto mode); on or off is the `roastMode` setting. */
+export interface AutoApi {
+  /** Heater 0 and the countdown before the beans go in. */
+  autoChargeSoon(): Promise<Result<void, AutoChargeSoonError>>;
+  /** Hands heater and fan back to Auto; refused while the heater is locked. */
+  autoResume(): Promise<Result<void, AutoResumeError>>;
+  onAutoStatus(listener: (status: AutoStatus) => void): Unsubscribe;
+}
+
+/** The Profiles screen (docs/spec/ui.md). */
+export interface ProfilesApi {
+  /** Built-ins first; only the built-ins when storage can't be read (logged in main). */
+  listProfiles(): Promise<ProfileEntry[]>;
+  /** Saves a copy as your own, and returns it. */
+  duplicateProfile(id: ProfileId): Promise<Result<ProfileEntry, ProfileError>>;
+  /** Refuses a built-in. */
+  saveProfile(profile: AutoProfile): Promise<Result<ProfileEntry, ProfileError>>;
+  /** Refuses a built-in. */
+  deleteProfile(id: ProfileId): Promise<Result<void, ProfileError>>;
+}
+
 /** The window itself: what it needs when it opens, and where the app menu sends it. */
 export interface AppApi {
   getSnapshot(): Promise<Snapshot>;
@@ -150,4 +187,13 @@ export interface AppApi {
 
 /** The typed API the preload script exposes to the renderer as `window.roastpilot`. */
 export interface RoastpilotApi
-  extends RoasterApi, SafetyApi, RoastApi, SettingsApi, LogsApi, HistoryApi, AppApi {}
+  extends
+    RoasterApi,
+    SafetyApi,
+    RoastApi,
+    SettingsApi,
+    LogsApi,
+    HistoryApi,
+    AutoApi,
+    ProfilesApi,
+    AppApi {}

@@ -87,7 +87,10 @@ export class AutoPilot {
 
   /** Auto or Manual, at any time. Outputs stay as they are until the next reading. */
   setEnabled(enabled: boolean): void {
-    if (enabled === this.#enabled) return;
+    if (enabled === this.#enabled) {
+      this.#publish();
+      return;
+    }
     this.#enabled = enabled;
     this.#logger.info('auto.mode-changed', { enabled });
     this.#sent = {};
@@ -162,12 +165,15 @@ export class AutoPilot {
   }
 
   async #tick(reading: Reading): Promise<void> {
-    const state = this.#deps.roast();
-    this.#syncWithFlow(state);
+    // Off, Auto keeps nothing: a manual roast records nothing from here.
     if (!this.#enabled) {
+      this.#preheat = undefined;
+      this.#run = undefined;
       this.#publish();
       return;
     }
+    const state = this.#deps.roast();
+    this.#syncWithFlow(state);
     if (this.#deps.heaterLocked()) this.stop('heater-locked');
     const btC = reading.values[BEAN_TEMP];
     if (state.phase === 'preheat') await this.#tickPreheat(reading.atMs, btC);
@@ -187,6 +193,9 @@ export class AutoPilot {
       this.#run = undefined;
       this.#dropping = false;
       this.#sent = {};
+      // The roast is over: a stop or an override doesn't carry into the next one.
+      this.#stopped = false;
+      this.#owners = { heater: 'auto', fan: 'auto' };
       return;
     }
     const chargedAtMs = state.chargedAtMs;

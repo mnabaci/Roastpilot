@@ -117,6 +117,20 @@ describe('AutoPilot', () => {
     expect(setOutput).not.toHaveBeenCalled();
   });
 
+  it('tells the window once when asked to stay as it is', () => {
+    const { pilot, onChange } = setup(ROASTING);
+    pilot.setEnabled(true);
+    const before = onChange.mock.calls.length;
+    pilot.setEnabled(true);
+    expect(onChange.mock.calls.length).toBe(before);
+  });
+
+  it('records nothing for a manual roast', async () => {
+    const { feed, events } = setup(ROASTING);
+    await feed(1_000, 170);
+    expect(events).toEqual([]);
+  });
+
   it('sends nothing in Ready, Cooling or Done', async () => {
     for (const phase of ['ready', 'cooling', 'done'] as const) {
       const { pilot, feed, setOutput } = setup({ phase });
@@ -328,6 +342,20 @@ describe('AutoPilot', () => {
       await feed(90_000, 96);
       expect(setOutput).not.toHaveBeenCalled();
       expect(pilot.status.stopped).toBe(true);
+    });
+
+    it('does not carry a stop or an override into the next roast', async () => {
+      const { pilot, feed, setState, setOutput } = setup(ROASTING);
+      pilot.setEnabled(true);
+      await feed(1_000, 170);
+      pilot.stop('emergency-stop');
+      setState({ phase: 'done' });
+      await feed(2_000, 100);
+      expect(pilot.status).toMatchObject({ stopped: false, heater: 'auto', fan: 'auto' });
+      setState({ phase: 'preheat' });
+      setOutput.mockClear();
+      await feed(3_000, 100);
+      expect(setOutput).toHaveBeenCalledWith('heater', expect.any(Number));
     });
 
     it('refuses Resume auto while the heater is locked', async () => {

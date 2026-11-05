@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ProfileIdSchema } from './profile';
+import { DEFAULT_PROFILE_ID, ProfileIdSchema } from './profile';
 
 /** Who sets one output: Auto, or you until Resume auto. */
 export const OutputOwnerSchema = z.enum(['auto', 'manual']);
@@ -31,6 +31,20 @@ export const AutoStatusSchema = z.object({
   nextPhaseAtC: z.number().nullable(),
   stallTripped: z.boolean(),
 });
+
+/** Auto is off: what a window shows before main has said anything. */
+export const AUTO_OFF: z.infer<typeof AutoStatusSchema> = {
+  enabled: false,
+  profileId: DEFAULT_PROFILE_ID,
+  stopped: false,
+  heater: 'auto',
+  fan: 'auto',
+  preheatStep: null,
+  preheatLeftS: null,
+  phaseName: null,
+  nextPhaseAtC: null,
+  stallTripped: false,
+};
 
 export const AutoResumeErrorSchema = z.object({ kind: z.literal('safety-locked') });
 export const AutoChargeSoonErrorSchema = z.object({ kind: z.literal('not-now') });

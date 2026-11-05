@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ConnectTargetSchema } from './connection';
-import { ProfileIdSchema } from './profile';
+import { DEFAULT_PROFILE_ID, ProfileIdSchema } from './profile';
 
 /** How much of the Roast screen is live (docs/spec/manual-mode.md, Guided and Full control). */
 export const ControlsLevelSchema = z.enum(['guided', 'full']);
@@ -70,7 +70,7 @@ export const SettingsSchema = z.object({
   roasterCoolToC: RoasterCoolToSchema.catch(50).default(50),
   /** Manual unless you choose Auto, so an update never hands your roast to the controller. */
   roastMode: RoastModeSchema.catch('manual').default('manual'),
-  autoProfile: ProfileIdSchema.catch('light-steps').default('light-steps'),
+  autoProfile: ProfileIdSchema.catch(DEFAULT_PROFILE_ID).default(DEFAULT_PROFILE_ID),
   soakTimeS: SoakTimeSchema.catch(60).default(60),
 });
 

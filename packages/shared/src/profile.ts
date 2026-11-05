@@ -42,7 +42,20 @@ export const ProfilePhaseSchema = z.object({
 /** One point of the target curve: seconds since charge and the temperature expected then. */
 export const CurvePointSchema = z.object({ tS: z.number().nonnegative(), c: z.number() });
 
-export const ProfileIdSchema = z.enum(['light-steps', 'light-curve']);
+/** Built-ins have fixed ids; your own get a generated one. */
+export const ProfileIdSchema = z.string().min(1).max(64);
+
+/** The profile Auto falls back to when the chosen one is gone. */
+export const DEFAULT_PROFILE_ID = 'light-steps';
+
+/** Sane limits for a profile, below the roaster's safety limits (docs/spec/safety.md). */
+export const PROFILE_LIMITS = {
+  chargeC: { min: 100, max: 230 },
+  capC: { max: 235 },
+  devTimeS: { min: 30, max: 600 },
+  durationS: { max: 900 },
+  backupS: { max: 1140 },
+} as const;
 
 /** A roast plan for one roaster (docs/spec/roast-control.md, Profile format). */
 export const AutoProfileSchema = z
@@ -62,6 +75,43 @@ export const AutoProfileSchema = z
     phases: z.array(ProfilePhaseSchema).min(1),
   })
   .superRefine((profile, ctx) => {
+    const issue = (path: (string | number)[], message: string) => {
+      ctx.addIssue({ code: 'custom', path, message });
+    };
+    const { chargeC, capC, devTimeS, dryEndC } = profile;
+    if (chargeC < PROFILE_LIMITS.chargeC.min || chargeC > PROFILE_LIMITS.chargeC.max) {
+      issue(
+        ['chargeC'],
+        `Between ${String(PROFILE_LIMITS.chargeC.min)} and ${String(PROFILE_LIMITS.chargeC.max)} °C`,
+      );
+    }
+    if (capC > PROFILE_LIMITS.capC.max) {
+      issue(['capC'], `At most ${String(PROFILE_LIMITS.capC.max)} °C`);
+    }
+    if (devTimeS < PROFILE_LIMITS.devTimeS.min || devTimeS > PROFILE_LIMITS.devTimeS.max) {
+      issue(['devTimeS'], 'Between 0:30 and 10:00');
+    }
+    if (dryEndC >= capC) issue(['dryEndC'], 'Must be below the BT cap');
+    let lastTriggerC = Number.NEGATIVE_INFINITY;
+    let lastBackupS = 0;
+    profile.phases.forEach((phase, index) => {
+      if (phase.heat.mode === 'target' && phase.heat.durationS > PROFILE_LIMITS.durationS.max) {
+        issue(['phases', index, 'heat', 'durationS'], 'At most 15:00');
+      }
+      if (phase.next.on !== 'bt') return;
+      if (phase.next.c >= capC) issue(['phases', index, 'next', 'c'], 'Must be below the BT cap');
+      if (phase.next.c <= lastTriggerC) {
+        issue(['phases', index, 'next', 'c'], 'Must be above the step before');
+      }
+      if (phase.next.backupS <= lastBackupS) {
+        issue(['phases', index, 'next', 'backupS'], 'Must be after the step before');
+      }
+      if (phase.next.backupS > PROFILE_LIMITS.backupS.max) {
+        issue(['phases', index, 'next', 'backupS'], 'At most 19:00');
+      }
+      lastTriggerC = phase.next.c;
+      lastBackupS = phase.next.backupS;
+    });
     const lastIndex = profile.phases.length - 1;
     profile.phases.forEach((phase, index) => {
       if (
@@ -130,3 +180,18 @@ export type ProfileId = z.infer<typeof ProfileIdSchema>;
 export type AutoProfile = z.infer<typeof AutoProfileSchema>;
 export type PidGains = z.infer<typeof PidGainsSchema>;
 export type AutoTuning = z.infer<typeof AutoTuningSchema>;
+
+/** A profile as the Profiles screen lists it. */
+export const ProfileEntrySchema = z.object({
+  profile: AutoProfileSchema,
+  builtIn: z.boolean(),
+});
+
+export const ProfileErrorSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('built-in'), id: ProfileIdSchema }),
+  z.object({ kind: z.literal('not-found'), id: ProfileIdSchema }),
+  z.object({ kind: z.literal('storage-failed'), message: z.string() }),
+]);
+
+export type ProfileEntry = z.infer<typeof ProfileEntrySchema>;
+export type ProfileError = z.infer<typeof ProfileErrorSchema>;

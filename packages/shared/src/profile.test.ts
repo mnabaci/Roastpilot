@@ -76,6 +76,43 @@ describe('AutoProfileSchema', () => {
     );
   });
 
+  it.each([
+    ['chargeC', { chargeC: 90 }],
+    ['chargeC', { chargeC: 240 }],
+    ['capC', { capC: 236 }],
+    ['devTimeS', { devTimeS: 10 }],
+    ['devTimeS', { devTimeS: 601 }],
+    ['dryEndC', { dryEndC: 200 }],
+  ])('refuses %s outside its limits, naming the field', (field, change) => {
+    const parsed = AutoProfileSchema.safeParse({ ...profile, ...change });
+    expect(parsed.error?.issues.map((i) => i.path[0])).toContain(field);
+  });
+
+  it('refuses a temperature trigger at or above the BT cap, or below the step before', () => {
+    const [soak, ...rest] = profile.phases;
+    const step = (c: number, backupS: number) =>
+      ({
+        name: 'Step',
+        heat: { mode: 'follow', pct: 50 },
+        fanPct: 30,
+        next: { on: 'bt', c, backupS },
+      }) as const;
+    const withSteps = (steps: AutoProfile['phases']) => ({
+      ...profile,
+      phases: [...(soak ? [soak] : []), ...steps, ...rest.slice(-1)],
+    });
+    expect(AutoProfileSchema.safeParse(withSteps([step(150, 100), step(170, 200)])).success).toBe(
+      true,
+    );
+    for (const steps of [
+      [step(150, 100), step(140, 200)],
+      [step(150, 200), step(170, 100)],
+      [step(profile.capC, 100)],
+    ]) {
+      expect(AutoProfileSchema.safeParse(withSteps(steps)).success).toBe(false);
+    }
+  });
+
   it('refuses a saved format from a different version', () => {
     expect(AutoProfileSchema.safeParse({ ...profile, schemaVersion: 99 }).success).toBe(false);
   });

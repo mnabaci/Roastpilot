@@ -13,6 +13,19 @@ describe('ManualRoast', () => {
     expect(roast.state).toEqual(READY_ROAST);
   });
 
+  it('adds what Auto did to the events, with the latest temperature', async () => {
+    const { clock, roast, act, setBt } = setup();
+    setBt(95);
+    await act('start');
+    clock.advance(60_000);
+    roast.note('phase', 'Heat on');
+    roast.note('dry-end');
+    expect(roast.state.events.slice(1)).toEqual([
+      { kind: 'phase', atMs: 60_000, bt: 95, detail: 'Heat on' },
+      { kind: 'dry-end', atMs: 60_000, bt: 95 },
+    ]);
+  });
+
   it('Preheat turns the drum and filter fan on and starts a new roast', async () => {
     const { clock, roast, sent, signals, act } = setup();
     clock.advance(5_000);

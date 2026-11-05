@@ -25,7 +25,7 @@ describe('SettingsSchema', () => {
   });
 
   it('falls back on a soak time that is not offered, or an unknown profile', () => {
-    const parsed = SettingsSchema.parse({ soakTimeS: 7, autoProfile: 'dark', roastMode: 'auto' });
+    const parsed = SettingsSchema.parse({ soakTimeS: 7, autoProfile: 5, roastMode: 'auto' });
     expect(parsed).toMatchObject({
       roastMode: 'auto',
       autoProfile: 'light-steps',

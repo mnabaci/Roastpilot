@@ -113,7 +113,7 @@ function lightProfile(
 }
 
 /** The two Light styles (docs/spec/roast-control.md, Auto mode). */
-export const SKYWALKER_PROFILES: Readonly<Record<ProfileId, AutoProfile>> = {
+export const SKYWALKER_PROFILES = {
   'light-steps': lightProfile(
     'light-steps',
     'Light · Steps',
@@ -130,7 +130,7 @@ export const SKYWALKER_PROFILES: Readonly<Record<ProfileId, AutoProfile>> = {
     mode: 'follow',
     pct: heatPct,
   })),
-};
+} as const satisfies Readonly<Record<string, AutoProfile>>;
 
 /**
  * Cautious starting gains, set on the simulator and to be tuned on real roasts (`pid-tune`). They
