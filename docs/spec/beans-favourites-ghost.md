@@ -13,7 +13,7 @@ changes no stock and shows "No bean" in History.
 ## Beans
 
 - **Required:** name, origin, process (washed, natural, honey, other).
-- **Optional:** variety, altitude (m), supplier, purchase date, notes.
+- **Optional:** variety, altitude (m), density (g/L), moisture (%), bean size (screen), decaf, supplier, purchase date, notes. Density is the one to measure yourself: weigh a fixed volume of green beans.
 - **Stock:** see [batch-and-stock.md](batch-and-stock.md).
 - **Archive** a finished bean; its roasts stay in History.
 
@@ -28,9 +28,29 @@ changes no stock and shows "No bean" in History.
 Before preheat, with Auto on, the app picks in this order, among the active roaster's profiles, and shows why, e.g. "Your favourite roast of this bean, Oct 29":
 
 1. Same bean: the profile of its best favourite.
-2. New bean: best favourite of beans with the same process and origin.
-3. Then: same process only.
+2. New bean: best favourite of the most similar bean: same process and decaf or not, then closest density, then closest altitude, then same origin.
+3. Then: best favourite of any bean with the same decaf or not.
 4. Otherwise: the roaster's first built-in (Light · Steps), until Medium ships.
+
+## A profile for a bean
+
+- A bean can have its own profile. "Make a profile for this bean" duplicates the suggested one, names it after the bean and opens it in the editor; from then on it is that bean's first suggestion, ahead of its favourites.
+- Choosing another profile before a roast doesn't change the bean's own.
+
+## Hints
+
+- One line under the suggestion, from what the bean's record says. Only ever advice: the app never changes a profile from a bean's characteristics, and no formula calculates one.
+- General roasting knowledge, not measured on this roaster, so worded "often" and "consider".
+
+| Bean                  | Hint                                                            |
+| --------------------- | --------------------------------------------------------------- |
+| Natural or honey      | These often brown faster · consider less heat late in the roast |
+| Decaf                 | Decaf often roasts fast and looks dark · judge by temperature   |
+| Density below 700 g/L | Soft beans often run fast · consider less heat early            |
+| Density above 800 g/L | Dense beans often take heat slowly · consider more heat early   |
+| Moisture above 12%    | Wetter beans often dry slowly · expect a longer drying phase    |
+
+At most two show, in this order. The density cut-offs are starting guesses; revisit them once there are starred roasts to compare.
 
 ## Favourite → step profile
 

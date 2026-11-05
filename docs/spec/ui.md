@@ -72,7 +72,7 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 
 - Bean list: name, origin, process, stock left, low-stock badge.
 - Bean detail: its info, all its roasts with stars, and its best favourite.
-- Actions: Add bean, Edit, Add stock (with the batch calculator), Adjust stock, Archive, Roast this bean.
+- Actions: Add bean, Edit, Add stock (with the batch calculator), Adjust stock, Make a profile for this bean, Archive, Roast this bean.
 - List on the left, detail on the right, and only the right side scrolls, as on Profiles.
 
 ## Batch calculator
