@@ -138,7 +138,7 @@ export class SqliteRoastRepository implements RoastRepository {
       await this.#db.update(roasts).set(result).where(eq(roasts.id, id)).run();
       if (row.beanId !== null) {
         await this.#moveStock(row.beanId, {
-          greenG: (row.batchG ?? 0) - (result.batchG ?? row.batchG ?? 0),
+          greenG: (row.batchG ?? 0) - (result.batchG ?? 0),
           roastedG: (result.roastedG ?? 0) - (row.roastedG ?? 0),
         });
       }

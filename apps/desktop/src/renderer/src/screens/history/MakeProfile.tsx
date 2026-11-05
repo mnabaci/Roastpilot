@@ -33,7 +33,7 @@ export function MakeProfile({
                   logger.info('history.make-profile-refused', { ...made.error });
                   setNote(
                     made.error.kind === 'too-short'
-                      ? 'Too little to go on · it needs a first crack and a drop'
+                      ? 'Too little to go on · it needs a first crack, and a drop hotter than its charge'
                       : "Couldn't make the profile · see Logs",
                   );
                   return;

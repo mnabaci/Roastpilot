@@ -87,14 +87,24 @@ export function profileFromRoast({
     roast.events.find((e) => e.kind === 'dry-end')?.bt ??
     roast.profile?.dryEndC ??
     FALLBACK_DRY_END_C;
-  const peakC = points.reduce((peak, p) => Math.max(peak, p.bt), 0);
+  // The hot reading at charge says nothing about the roast: everything counts from the turning point.
+  const beforeCrack = points.filter((p) => p.tS <= fcTimeS);
+  const turning = beforeCrack.reduce<Point | undefined>(
+    (low, p) => (low === undefined || p.bt < low.bt ? p : low),
+    undefined,
+  );
+  if (!turning) return undefined;
+  const peakC = points
+    .filter((p) => p.tS >= turning.tS)
+    .reduce((peak, p) => Math.max(peak, p.bt), 0);
   if (points.length < MIN_SAMPLES || peakC <= dryEndC) return undefined;
 
   const soakEnd = points.findIndex((p) => p.heater > 0);
   const [firstPoint] = points;
   if (!firstPoint) return undefined;
   const soakS = soakEnd > 0 ? (points[soakEnd]?.tS ?? 0) : 0;
-  const rising = points.filter((p) => p.tS >= soakS && p.tS <= fcTimeS);
+  const startS = Math.max(soakS, turning.tS);
+  const rising = beforeCrack.filter((p) => p.tS >= startS);
   const sameOutputs =
     style === 'curve'
       ? (a: Point, b: Point) => a.fan === b.fan
@@ -112,6 +122,8 @@ export function profileFromRoast({
     PROFILE_LIMITS.chargeC.min,
     PROFILE_LIMITS.chargeC.max,
   );
+  // Auto would drop at the cap straight after charge.
+  if (chargeC >= capC) return undefined;
   const curve: CurvePoint[] = simplifyCurve(
     points.map((p) => ({ tS: p.tS, c: p.bt })),
     CURVE_POINTS,

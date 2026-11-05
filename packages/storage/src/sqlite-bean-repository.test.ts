@@ -171,6 +171,20 @@ describe('SqliteBeanRepository', () => {
       expect(await one(beans)).toMatchObject({ greenG: 650 });
     });
 
+    it('clearing the batch gives it back, and retyping takes it once', async () => {
+      const { beans, roasts, roastId } = await roasted();
+      await roasts.saveResult({ ...result(roastId, null), batchG: null });
+      expect(await one(beans)).toMatchObject({ greenG: 1000 });
+      await roasts.saveResult(result(roastId, null));
+      expect(await one(beans)).toMatchObject({ greenG: 600 });
+    });
+
+    it('a roasted weight above the green one stays out of the average', async () => {
+      const { beans, roasts, roastId } = await roasted();
+      await roasts.saveResult(result(roastId, 3200));
+      expect(await one(beans)).toMatchObject({ avgLossPct: null });
+    });
+
     it('deleting a roast gives no stock back', async () => {
       const { beans, roasts, roastId } = await roasted();
       await roasts.delete(roastId);

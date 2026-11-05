@@ -106,6 +106,38 @@ describe('profileFromRoast', () => {
   });
 });
 
+describe('profileFromRoast, around charge', () => {
+  const withBt = (bt: (tS: number) => number, heater = 60) => ({
+    ...ROAST,
+    events: [],
+    samples: ROAST.samples.map((s) => ({
+      tS: s.tS,
+      values: { bt: bt(s.tS), heater, fan: 30 },
+    })),
+  });
+  const dip = (tS: number) => (tS < 60 ? 170 - tS : 110 + (tS - 60) * 0.15);
+
+  it('takes the cap from the roast, not the hot charge', () => {
+    expect(make(withBt((tS) => (tS < 60 ? 205 - tS : 145 + (tS - 60) * 0.11)))?.capC).toBe(208);
+    expect(make(withBt(dip))?.capC).toBe(194);
+  });
+
+  it('refuses a roast that charged hotter than it dropped', () => {
+    expect(make(withBt((tS) => (tS < 60 ? 230 - tS * 2 : 110 + (tS - 60) * 0.15)))).toBeUndefined();
+  });
+
+  it('does not pass the dry end on the charge reading alone', () => {
+    const cold = withBt((tS) => (tS < 60 ? 180 - tS : 120 + (tS - 60) * 0.02));
+    expect(make(cold)).toBeUndefined();
+  });
+
+  it('with the heater on through the dip, the first step only climbs', () => {
+    const step = make(withBt(dip))?.phases[1];
+    if (step?.heat.mode !== 'target') throw new Error('expected a target step');
+    expect(step.heat.rorMin).toBeGreaterThan(0);
+  });
+});
+
 describe('simplifyCurve', () => {
   it('keeps both ends and the sharpest corner', () => {
     const points = [0, 1, 2, 3, 4].map((tS) => ({ tS, c: tS === 2 ? 10 : 0 }));

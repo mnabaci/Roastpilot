@@ -40,7 +40,13 @@ export class SqliteBeanRepository implements BeanRepository {
           avg: sql<number>`avg((${roasts.batchG} - ${roasts.roastedG}) * 100.0 / ${roasts.batchG})`,
         })
         .from(roasts)
-        .where(and(isNotNull(roasts.batchG), isNotNull(roasts.roastedG), isNotNull(roasts.beanId)))
+        .where(
+          and(
+            isNotNull(roasts.beanId),
+            // A roasted weight above the green one is a typo, not a weight loss.
+            sql`${roasts.roastedG} <= ${roasts.batchG}`,
+          ),
+        )
         .groupBy(roasts.beanId)
         .all();
       const purchases = await this.#db
