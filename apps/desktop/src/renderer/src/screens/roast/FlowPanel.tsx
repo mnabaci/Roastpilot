@@ -1,7 +1,8 @@
 import type { RoastAction } from '@roastpilot/shared';
-import { Button, formatClock } from '@roastpilot/ui';
+import { Button } from '@roastpilot/ui';
 import { ConfirmInline } from '../../features/ConfirmInline';
-import { flowStep, isConnected } from './flow-step';
+import { flowHint, flowStep, isConnected } from './flow-step';
+import { RoasterCooling } from './RoasterCooling';
 import { useRun } from '../../features/use-run';
 import { useDeps } from '../../app/app-context';
 import { useConnection, useRoast } from '../../stores/use-stores';
@@ -18,8 +19,10 @@ export function FlowPanel({
   const run = useRun();
   const connected = useConnection((s) => isConnected(s.connection));
   const lost = useConnection((s) => s.connection.status === 'lost');
-  const phase = useRoast((s) => s.roast.phase);
-  const step = flowStep(phase);
+  const roast = useRoast((s) => s.roast);
+  const temp = useRoast((s) => s.readings.at(-1)?.values.bt);
+  const { phase } = roast;
+  const step = flowStep(roast);
   const act = (action: RoastAction) => {
     run('roast.action-failed', async () => {
       const result = await api.roastAction(action);
@@ -44,10 +47,8 @@ export function FlowPanel({
       </div>
     );
   }
-  const hint =
-    phase === 'cooling' && coolingLeftS !== undefined
-      ? `${step.hint} ${formatClock(coolingLeftS)} left.`
-      : step.hint;
+  const hint = flowHint(roast, { coolingLeftS, temp });
+  const noRoast = phase === 'ready' || phase === 'done';
   return (
     <div className="flex flex-col gap-2">
       {step.primary ? (
@@ -73,9 +74,21 @@ export function FlowPanel({
           {step.secondary.label}
         </Button>
       ) : null}
+      {noRoast ? <RoasterCooling onAction={act} /> : null}
+      {step.quiet ? (
+        <Button
+          variant="ghost"
+          onClick={() => {
+            if (step.quiet) act(step.quiet.action);
+          }}
+        >
+          {step.quiet.label}
+        </Button>
+      ) : null}
       {step.stop ? (
         <ConfirmInline
           key={phase}
+          variant="secondary"
           label={step.stop.label}
           question={step.stop.question}
           confirmLabel={step.stop.label}

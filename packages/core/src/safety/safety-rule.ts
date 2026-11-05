@@ -10,6 +10,8 @@ export interface SafetyState {
   /** Valid readings, oldest first, reaching back a little further than the longest rule window. */
   history: readonly Reading[];
   roastStartedMs: number | undefined;
+  /** The roast's turning point, once found; BT falls between charge and here. */
+  turningPointMs: number | undefined;
 }
 
 export interface SafetyRule {

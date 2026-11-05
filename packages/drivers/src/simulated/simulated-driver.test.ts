@@ -67,7 +67,8 @@ describe('SimulatedDriver', () => {
     await driver.setOutput('heater', 100);
     await driver.setOutput('fan', 40);
     const bt = await pollFor(clock, driver, 60);
-    expect(bt).toBeGreaterThan(80);
+    // Like the real roaster: about 0.5 °C a second from cold at heater 100.
+    expect(bt).toBeGreaterThan(45);
     expect(await readValues(driver)).toMatchObject({ heater: 100, fan: 40 });
   });
 

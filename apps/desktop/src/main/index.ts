@@ -9,9 +9,11 @@ import { buildAppMenu } from './app-menu';
 import { createAppServices } from './app-services';
 import { installCrashHandlers } from './crash-handlers';
 import { createDriver } from './driver-factory';
+import { SimulatorBeans } from './simulator-beans';
 import { unavailableRepository } from './history/unavailable-repository';
 import { broadcast, registerIpcHandlers, registerIpcListener } from './ipc';
 import { createIpcHandlers, handleRendererLog, withErrorLogging } from './ipc-handlers';
+import { createMainWindow, devIcon } from './main-window';
 import { createAppLogger } from './logging/app-logger';
 import { listLogDays, readLogDay } from './logging/log-reader';
 import { pruneOldLogsLater } from './logging/prune';
@@ -19,7 +21,6 @@ import { createPowerGuard } from './power-guard';
 import { createQuitGuard } from './quit-guard';
 import { JsonSettingsStore } from './settings/json-settings-store';
 import { systemClock } from './system-clock';
-import { WINDOW_BACKGROUND } from './window-background';
 
 const logDir = app.getPath('logs');
 const logs = createAppLogger({
@@ -52,7 +53,8 @@ const roasts = database.ok
       database.error.kind === 'storage-failed' ? database.error.message : 'unavailable',
     );
 
-// Asleep, nothing watches the roaster: stay awake while one is connected (docs/spec/safety.md).
+// Asleep, nothing watches the roaster: stay awake while one is connected, and keep the screen on
+// during a roast (docs/spec/safety.md).
 const power = createPowerGuard({
   blocker: powerSaveBlocker,
   emergencyStop: (rule) => {
@@ -60,6 +62,8 @@ const power = createPowerGuard({
   },
   logger: logger.child('power'),
 });
+
+const simulatorBeans = new SimulatorBeans();
 
 const { session, roast, settings, history, recorder, snapshot } = createAppServices({
   clock: systemClock,
@@ -71,6 +75,10 @@ const { session, roast, settings, history, recorder, snapshot } = createAppServi
   nowIso: () => new Date().toISOString(),
   onConnectionChange: (state) => {
     power.onConnection(state);
+  },
+  onRoastChange: (state) => {
+    power.onRoast(state);
+    simulatorBeans.onRoast(state);
   },
   publish: broadcast,
 });
@@ -105,43 +113,10 @@ app.on(
   }),
 );
 
-function createWindow(): void {
-  const win = new BrowserWindow({
-    width: 1280,
-    height: 860,
-    minWidth: 960,
-    minHeight: 640,
-    title: 'Roastpilot',
-    backgroundColor: WINDOW_BACKGROUND,
-    webPreferences: {
-      preload: join(import.meta.dirname, '../preload/index.cjs'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
-  });
-
-  const devUrl = process.env.ELECTRON_RENDERER_URL;
-
-  // Never open new windows or navigate away from the app's own pages.
-  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-  win.webContents.on('will-navigate', (event, url) => {
-    if (!devUrl || !url.startsWith(devUrl)) {
-      logger.warn('window.navigation-blocked', { url });
-      event.preventDefault();
-    }
-  });
-  win.webContents.on('render-process-gone', (_event, details) => {
-    logger.error('window.renderer-gone', { reason: details.reason, exitCode: details.exitCode });
-  });
-
-  const loaded = devUrl
-    ? win.loadURL(devUrl)
-    : win.loadFile(join(import.meta.dirname, '../renderer/index.html'));
-  loaded.catch((error: unknown) => {
-    logger.error('window.load-failed', { error: serializeError(error) });
-  });
-}
+const DEV_ICON = devIcon();
+const createWindow = () => {
+  createMainWindow({ icon: DEV_ICON, logger });
+};
 
 app
   .whenReady()
@@ -156,7 +131,8 @@ app
           history,
           snapshot,
           listPorts: () => listSerialPorts(),
-          createDriver: (target) => createDriver(target, systemClock, logger.child('driver')),
+          createDriver: (target) =>
+            simulatorBeans.attach(createDriver(target, systemClock, logger.child('driver'))),
           logs: {
             listDays: () => listLogDays(logDir),
             readDay: (day) => readLogDay(logDir, day),
@@ -193,6 +169,7 @@ app
     powerMonitor.on('resume', () => {
       power.onResume();
     });
+    if (DEV_ICON) app.dock?.setIcon(DEV_ICON);
     createWindow();
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

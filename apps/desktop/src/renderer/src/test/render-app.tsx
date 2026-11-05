@@ -10,7 +10,7 @@ import { render } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { vi, type Mocked } from 'vitest';
 import { AppProvider } from '../app/AppProvider';
-import { READY_ROAST } from '../stores/roast-store';
+import { READY_ROAST } from '@roastpilot/shared';
 import { createStores, type StoresSeed } from '../stores/stores';
 
 /** A `window.roastpilot` whose calls all succeed; override what a test needs. */
@@ -57,7 +57,7 @@ export const CONNECTED: ConnectionState = {
   status: 'connected',
   target: { kind: 'serial', path: '/dev/cu.usbserial-0001' },
   channels: [
-    { id: 'bt', kind: 'sensor', unit: 'celsius' },
+    { id: 'bt', kind: 'sensor', unit: 'celsius', name: 'Temperature', short: 'Temp' },
     { id: 'heater', ...percent },
     { id: 'fan', ...percent },
     { id: 'cooling', ...percent },

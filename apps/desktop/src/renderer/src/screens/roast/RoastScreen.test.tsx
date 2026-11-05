@@ -1,9 +1,9 @@
-import { err, type Reading } from '@roastpilot/shared';
-import { act, screen } from '@testing-library/react';
+import { DEFAULT_SETTINGS, err, READY_ROAST, type Reading } from '@roastpilot/shared';
+import { act, fireEvent, screen } from '@testing-library/react';
 import type * as Ui from '@roastpilot/ui';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { addReading, READY_ROAST } from '../../stores/roast-store';
+import { addReading } from '../../stores/roast-store';
 import { CONNECTED, fakeApi, renderApp } from '../../test/render-app';
 import { RoastScreen } from './RoastScreen';
 
@@ -60,6 +60,61 @@ describe('RoastScreen', () => {
     expect(screen.getByRole('button', { name: 'Preheat' })).toBeInTheDocument();
   });
 
+  it('cooling: +1 min adds a minute', async () => {
+    const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
+      ...connected,
+      roast: { ...roast('cooling'), coolingEndsAtMs: 200_000 },
+    });
+    await userEvent.click(screen.getByRole('button', { name: '+1 min' }));
+    expect(api.roastAction).toHaveBeenCalledWith('extend-cooling');
+  });
+
+  it('roasting: says when the charge point was found before the press', () => {
+    renderApp(<RoastScreen onConnect={onConnect} />, {
+      ...connected,
+      roast: { ...roast('roasting'), chargedAtMs: 10_000, startPressedAtMs: 17_262 },
+    });
+    expect(
+      screen.getByText('Charge found 0:07 before you pressed · press at first crack.'),
+    ).toBeInTheDocument();
+  });
+
+  describe('roaster cool-down', () => {
+    it.each(['ready', 'done'] as const)(
+      'in %s with a hot drum, offers Cool down roaster',
+      async (phase) => {
+        const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
+          ...connected,
+          roast: roast(phase),
+          readings: [reading({ bt: 92 })],
+        });
+        await userEvent.click(screen.getByRole('button', { name: 'Cool down roaster' }));
+        expect(api.roastAction).toHaveBeenCalledWith('cool-roaster');
+      },
+    );
+
+    it('not below 60 °C, nor during a roast', () => {
+      renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...connected,
+        roast: roast('done'),
+        readings: [reading({ bt: 59 })],
+      });
+      expect(screen.queryByRole('button', { name: 'Cool down roaster' })).not.toBeInTheDocument();
+    });
+
+    it('while it runs: the temperature it is heading to, and Stop', async () => {
+      const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...connected,
+        roast: { ...roast('done'), roasterCoolingSinceMs: 0, roasterCoolToC: 50 },
+        readings: [reading({ bt: 92.4 })],
+      });
+      expect(screen.getByText('Cooling the roaster · 92 °C → 50 °C')).toHaveRole('status');
+      expect(screen.queryByRole('button', { name: 'Cool down roaster' })).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Stop' }));
+      expect(api.roastAction).toHaveBeenCalledWith('stop-cooling-roaster');
+    });
+  });
+
   it('cooling: the countdown, no next step, and the outputs say why they are locked', () => {
     renderApp(<RoastScreen onConnect={onConnect} />, {
       ...connected,
@@ -102,6 +157,31 @@ describe('RoastScreen', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('names the temperature as the connected roaster does', () => {
+    const beanProbe = {
+      ...CONNECTED,
+      channels:
+        CONNECTED.status === 'connected'
+          ? [
+              {
+                id: 'bt',
+                kind: 'sensor',
+                unit: 'celsius',
+                name: 'Bean temperature',
+                short: 'BT',
+              } as const,
+              ...CONNECTED.channels.slice(1),
+            ]
+          : [],
+    };
+    renderApp(<RoastScreen onConnect={onConnect} />, {
+      connection: beanProbe,
+      roast: roast('roasting'),
+      readings: [reading({ bt: 150 }, 60_000)],
+    });
+    expect(screen.getByRole('region', { name: 'Bean temperature' })).toHaveTextContent('150.0°C');
+  });
+
   it('marks where the roast is', () => {
     renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast('development') });
     expect(screen.getByText('First crack', { selector: 'li span' }).closest('li')).toHaveAttribute(
@@ -124,13 +204,21 @@ describe('RoastScreen', () => {
   });
 
   describe('Guided', () => {
-    it('heater and fan wait for Preheat; the drum and no cooling switch', () => {
-      renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast('ready') });
-      expect(screen.getByRole('slider', { name: 'Heater' })).toBeDisabled();
-      expect(screen.getByRole('slider', { name: 'Fan' })).toBeDisabled();
-      expect(screen.getByRole('button', { name: /Drum/ })).toBeEnabled();
+    it.each(['ready', 'done'] as const)(
+      'with no roast running (%s), everything but the heater works',
+      (phase) => {
+        renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast(phase) });
+        expect(screen.getByRole('slider', { name: 'Heater' })).toBeDisabled();
+        expect(screen.getByRole('slider', { name: 'Fan' })).toBeEnabled();
+        expect(screen.getByRole('button', { name: /Drum/ })).toBeEnabled();
+        expect(screen.getByRole('button', { name: /Cooling/ })).toBeEnabled();
+        expect(screen.getByText('Heater waits for Preheat')).toBeInTheDocument();
+      },
+    );
+
+    it('roasting hides the cooling switch, as Drop handles cooling', () => {
+      renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast('roasting') });
       expect(screen.queryByRole('button', { name: /Cooling/ })).not.toBeInTheDocument();
-      expect(screen.getByText('Heater and fan wait for Preheat')).toBeInTheDocument();
     });
 
     it('from Preheat the sliders are live', () => {
@@ -142,7 +230,7 @@ describe('RoastScreen', () => {
   it('Full control: everything is live, cooling switch included', async () => {
     const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
       ...connected,
-      settings: { connection: null, controls: 'full', chartSmoothingS: 5 },
+      settings: { ...DEFAULT_SETTINGS, connection: null, controls: 'full', chartSmoothingS: 5 },
       readings: [reading({ cooling: 0 })],
     });
     expect(screen.getByRole('slider', { name: 'Heater' })).toBeEnabled();
@@ -150,27 +238,50 @@ describe('RoastScreen', () => {
     expect(api.setOutput).toHaveBeenCalledWith({ channel: 'cooling', value: 100 });
   });
 
-  it('Clear forgets the last roast, only when none is running', async () => {
-    const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
+  it('Clear empties the chart and the numbers, and hides until the next roast', async () => {
+    const { api, stores } = renderApp(<RoastScreen onConnect={onConnect} />, {
       ...connected,
-      roast: roast('done'),
+      roast: { ...roast('done'), chargedAtMs: 0 },
       readings: [reading({ bt: 40 })],
     });
     await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
     expect(api.roastAction).toHaveBeenCalledWith('clear');
+    expect(stores.roast.getState().readings).toEqual([]);
+    // Main answers with Ready; idle readings keep coming, and they are not a roast to clear.
+    act(() => {
+      stores.roast.setState((s) => addReading({ ...s, roast: READY_ROAST }, reading({ bt: 39 })));
+    });
+    expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument();
   });
 
-  it('Clear works with no roaster too, and hides when there is nothing to clear', async () => {
+  it('Clear works with no roaster too, and offers itself after a preheat ended early', async () => {
     const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
-      roast: roast('done'),
+      roast: { ...roast('ready'), preheatAtMs: 0 },
       readings: [reading({ bt: 40 })],
     });
     await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
     expect(api.roastAction).toHaveBeenCalledWith('clear');
   });
 
-  it('no Clear with an empty chart', () => {
-    renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast('ready') });
+  it('a refused Clear keeps the chart', async () => {
+    const { stores } = renderApp(
+      <RoastScreen onConnect={onConnect} />,
+      { roast: { ...roast('done'), chargedAtMs: 0 }, readings: [reading({ bt: 40 })] },
+      fakeApi({
+        roastAction: () =>
+          Promise.resolve(err({ kind: 'not-allowed', action: 'clear', phase: 'roasting' })),
+      }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
+    expect(stores.roast.getState().readings).toHaveLength(1);
+  });
+
+  it('no Clear without a roast on screen, even with idle readings', () => {
+    renderApp(<RoastScreen onConnect={onConnect} />, {
+      ...connected,
+      roast: roast('ready'),
+      readings: [reading({ bt: 22 })],
+    });
     expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument();
   });
 
@@ -261,8 +372,8 @@ describe('RoastScreen', () => {
   });
 
   describe('sliders', () => {
-    /** A drag: sets the input's value the way the browser does, then fires input. */
-    const slide = (input: HTMLElement, value: string) => {
+    /** Moves the slider the way the browser does: sets its value, then fires input. */
+    const move = (input: HTMLElement, value: string) => {
       act(() => {
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(
           input,
@@ -270,6 +381,12 @@ describe('RoastScreen', () => {
         );
         input.dispatchEvent(new Event('input', { bubbles: true }));
       });
+    };
+    /** A drag: press, move through `values`, let go. */
+    const slide = (input: HTMLElement, ...values: string[]) => {
+      fireEvent.pointerDown(input);
+      for (const value of values) move(input, value);
+      fireEvent.pointerUp(window);
     };
     const setup = (api = fakeApi()) =>
       renderApp(
@@ -284,15 +401,9 @@ describe('RoastScreen', () => {
       act(() => {
         heater.focus();
       });
-      // A change event, as a drag fires.
-      act(() => {
-        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(
-          heater,
-          '70',
-        );
-        heater.dispatchEvent(new Event('input', { bubbles: true }));
-      });
-      expect(api.setOutput).toHaveBeenCalledWith({ channel: 'heater', value: 70 });
+      slide(heater, '60', '65', '70');
+      // Only the value you let go on goes to the roaster.
+      expect(api.setOutput).toHaveBeenCalledExactlyOnceWith({ channel: 'heater', value: 70 });
       expect(heater).toHaveValue('70');
       // A reading from before the command landed doesn't pull the slider back.
       act(() => {

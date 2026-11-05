@@ -1,5 +1,5 @@
 import { createLogger } from '@roastpilot/core';
-import { DEFAULT_SETTINGS, type LogEntry } from '@roastpilot/shared';
+import { DEFAULT_SETTINGS, type LogEntry, type Settings } from '@roastpilot/shared';
 import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -31,10 +31,11 @@ describe('JsonSettingsStore', () => {
   });
 
   it('saves and loads settings', async () => {
-    const settings = {
-      connection: { kind: 'serial' as const, path: '/dev/cu.usbserial-0001' },
-      controls: 'full' as const,
-      chartSmoothingS: 10 as const,
+    const settings: Settings = {
+      ...DEFAULT_SETTINGS,
+      connection: { kind: 'serial', path: '/dev/cu.usbserial-0001' },
+      controls: 'full',
+      chartSmoothingS: 10,
     };
     expect(await store().save(settings)).toEqual({ ok: true, value: undefined });
     expect(await store().load()).toEqual(settings);
@@ -62,9 +63,8 @@ describe('JsonSettingsStore', () => {
       JSON.stringify({ connection: { kind: 'simulator' }, controls: 'expert' }),
     );
     expect(await store().load()).toEqual({
+      ...DEFAULT_SETTINGS,
       connection: { kind: 'simulator' },
-      controls: 'guided',
-      chartSmoothingS: 3,
     });
   });
 

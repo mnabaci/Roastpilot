@@ -6,7 +6,10 @@ import { useOutput } from './use-output';
 import { useConnection, useRoast, useSafety, useSettings } from '../../stores/use-stores';
 import { OnOffButton } from './OnOffButton';
 
-/** Heater and fan sliders, the drum and filter fan switches and, in Full control, the cooling switch. */
+/**
+ * Heater and fan sliders, the drum and filter fan switches and the cooling switch (Full control,
+ * or with no roast running).
+ */
 export function OutputsPanel() {
   const level = useSettings((s) => s.settings.controls);
   const phase = useRoast((s) => s.roast.phase);
@@ -22,10 +25,10 @@ export function OutputsPanel() {
     ? 'Heater locked · acknowledge above'
     : heater.value > 0 && drum.value === 0
       ? 'Drum is off'
-      : !access.outputs && connected
+      : !access.heater && connected
         ? phase === 'cooling'
           ? 'Cooling · heater off, fan at 100%'
-          : 'Heater and fan wait for Preheat'
+          : 'Heater waits for Preheat'
         : undefined;
   return (
     <section aria-label="Outputs" className="flex flex-col gap-5 rounded-xl bg-surface px-5 py-4.5">
@@ -36,7 +39,7 @@ export function OutputsPanel() {
         // With no roaster, its last values would look live: show a dash instead.
         value={connected ? heater.value : undefined}
         onChange={heater.set}
-        disabled={!access.outputs || locked}
+        disabled={!access.heater || locked}
       />
       <OutputControl
         label="Fan"
@@ -44,7 +47,7 @@ export function OutputsPanel() {
         mode="manual"
         value={connected ? fan.value : undefined}
         onChange={fan.set}
-        disabled={!access.outputs}
+        disabled={!access.fan}
       />
       <div className="flex flex-col gap-2">
         <OnOffButton

@@ -11,7 +11,8 @@ const percent = { kind: 'output', unit: 'percent', min: 0, max: 100, step: 5 } a
  * until the original controller is reconnected (seen with FILTER;100 on 2026-11-04).
  */
 export const SKYWALKER_CHANNELS: readonly Channel[] = [
-  { id: 'bt', kind: 'sensor', unit: 'celsius' },
+  // The probe is the drum where it touches the beans, not a probe in the bean mass.
+  { id: 'bt', kind: 'sensor', unit: 'celsius', name: 'Temperature', short: 'Temp' },
   { id: 'heater', ...percent },
   { id: 'fan', ...percent },
   { id: 'cooling', ...percent, step: 100 },

@@ -7,10 +7,10 @@ import {
   type RoastSummary,
 } from '@roastpilot/shared';
 import type * as Ui from '@roastpilot/ui';
-import { act, screen } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { READY_ROAST } from '../../stores/roast-store';
+import { READY_ROAST } from '@roastpilot/shared';
 import { fakeApi, renderApp } from '../../test/render-app';
 import { HistoryScreen } from './HistoryScreen';
 
@@ -93,6 +93,8 @@ describe('HistoryScreen', () => {
     expect(rows[1]).toHaveTextContent('Unfinished');
     expect(await screen.findByRole('region', { name: 'Roast curve' })).toBeInTheDocument();
     expect(screen.getByText('9:40', { selector: '*' })).toBeInTheDocument();
+    const events = screen.getByRole('table', { name: 'Events' });
+    expect(within(events).getByRole('row', { name: /Charge/ })).toHaveTextContent('180.0 °C');
   });
 
   it('opens a roast when picked', async () => {

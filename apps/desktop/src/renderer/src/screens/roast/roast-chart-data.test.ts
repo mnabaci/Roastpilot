@@ -1,6 +1,5 @@
-import type { Reading } from '@roastpilot/shared';
+import { READY_ROAST, type Reading } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import { READY_ROAST } from '../../stores/roast-store';
 import { roastChartData } from './roast-chart-data';
 
 const RAW = { smoothingS: 0 };
@@ -48,6 +47,47 @@ describe('roastChartData', () => {
     );
     expect(markers).toEqual([]);
   });
+
+  it('marks the turning point as TP', () => {
+    const { markers } = roastChartData(
+      {
+        ...READY_ROAST,
+        phase: 'roasting',
+        chargedAtMs: 10_000,
+        events: [
+          { kind: 'charge', atMs: 10_000, bt: 180 },
+          { kind: 'turning-point', atMs: 74_000, bt: 92.2 },
+        ],
+      },
+      readings,
+      RAW,
+    );
+    expect(markers.map((m) => [m.label, m.t])).toEqual([
+      ['Charge', 0],
+      ['TP', 64],
+    ]);
+  });
+
+  it.each(['cool-end', 'end'] as const)(
+    'every line stops at %s; later readings are not drawn',
+    (kind) => {
+      const { layers } = roastChartData(
+        {
+          ...READY_ROAST,
+          phase: 'done',
+          chargedAtMs: 10_000,
+          events: [
+            { kind: 'charge', atMs: 10_000, bt: 100 },
+            { kind, atMs: 40_000, bt: 105 },
+          ],
+        },
+        readings,
+        RAW,
+      );
+      const last = (id: string) => layers.find((l) => l.id === id)?.points.at(-1)?.t;
+      expect(last('bt')).toBe(30);
+    },
+  );
 
   it('heater and fan as step layers for the strip, skipping readings without them', () => {
     const { layers } = roastChartData(

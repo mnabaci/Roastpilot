@@ -11,4 +11,7 @@ export type { ChartLayer, ChartMarker, ChartPoint } from './components/roast-cha
 export { formatClock, formatNumber } from './lib/format';
 export { TextField, type TextFieldProps } from './components/TextField';
 export { RoastList, type RoastListItem, type RoastListProps } from './components/RoastList';
+export { EventTable, type EventRow } from './components/EventTable';
+export { Mark, type MarkProps } from './components/Mark';
+export { RoastStrip, type RoastStripNumber, type RoastStripProps } from './components/RoastStrip';
 export { SelectField, type SelectFieldProps } from './components/SelectField';

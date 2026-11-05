@@ -5,12 +5,19 @@ import type { RoastNumbers } from './roast-numbers';
 const clock = (s: number | undefined) =>
   s === undefined || !Number.isFinite(s) ? undefined : formatClock(s);
 
-/** BT, RoR, time (in preheat, then since charge) and development: numbers first (docs/spec/manual-mode.md). */
-export function RoastNumbersRow({ numbers }: { numbers: RoastNumbers }) {
+/** Temperature, RoR, time (in preheat, then since charge) and development: numbers first (docs/spec/manual-mode.md). */
+export function RoastNumbersRow({
+  numbers,
+  tempName,
+}: {
+  numbers: RoastNumbers;
+  /** The connected roaster's name for its temperature. */
+  tempName: string;
+}) {
   return (
     <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
       <StatCard
-        label="Temperature"
+        label={tempName}
         value={numbers.bt === undefined ? undefined : formatNumber(numbers.bt, 1)}
         unit="°C"
         tone="heat"

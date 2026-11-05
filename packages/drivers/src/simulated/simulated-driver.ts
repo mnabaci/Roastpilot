@@ -14,7 +14,12 @@ import {
   SKYWALKER_SAFE_STOP,
   SKYWALKER_WATCHDOG_MS,
 } from '../skywalker';
-import { DEFAULT_THERMAL_CONSTANTS, stepTemperature, type ThermalConstants } from './thermal-model';
+import {
+  DEFAULT_THERMAL_CONSTANTS,
+  stepRoaster,
+  type RoasterTemps,
+  type ThermalConstants,
+} from './thermal-model';
 
 const STEP_MS = 100;
 
@@ -34,7 +39,7 @@ export class SimulatedDriver implements RoasterDriver {
   readonly #protocolVersion: number;
   readonly #outputs = new Map<string, OutputChannel>();
   readonly #values = new Map<string, number>();
-  #tempC: number;
+  #temps: RoasterTemps;
   #stalledTempC: number | undefined;
   #simulatedToMs: number;
   #lastCommandMs: number;
@@ -45,7 +50,8 @@ export class SimulatedDriver implements RoasterDriver {
     this.#clock = options.clock;
     this.#constants = { ...DEFAULT_THERMAL_CONSTANTS, ...options.constants };
     this.#protocolVersion = options.protocolVersion ?? SKYWALKER_PROTOCOL_VERSION;
-    this.#tempC = this.#constants.ambientC;
+    const ambient = this.#constants.ambientC;
+    this.#temps = { drumC: ambient, beansC: undefined, probeC: ambient };
     this.#simulatedToMs = this.#clock.now();
     this.#lastCommandMs = this.#clock.now();
     for (const channel of this.channels) {
@@ -81,7 +87,10 @@ export class SimulatedDriver implements RoasterDriver {
       ok({
         atMs: this.#clock.now(),
         // Like the real driver: the temperature plus every output (docs/spec/hardware.md).
-        values: { ...Object.fromEntries(this.#values), bt: this.#stalledTempC ?? this.#tempC },
+        values: {
+          ...Object.fromEntries(this.#values),
+          bt: this.#stalledTempC ?? this.#temps.probeC,
+        },
       }),
     );
   }
@@ -110,7 +119,7 @@ export class SimulatedDriver implements RoasterDriver {
   /** Fault: keep reporting the current temperature, like the sketch's stale readings. */
   stallTemperature(stalled: boolean): void {
     this.#advance();
-    this.#stalledTempC = stalled ? this.#tempC : undefined;
+    this.#stalledTempC = stalled ? this.#temps.probeC : undefined;
   }
 
   /** Fault: the USB cable is pulled. The roaster keeps running until the watchdog trips. */
@@ -118,6 +127,18 @@ export class SimulatedDriver implements RoasterDriver {
     this.#advance();
     this.#unplugged = true;
     this.#connected = false;
+  }
+
+  /** Beans in: room-temperature beans start soaking up the drum's heat, so BT dips, then turns. */
+  chargeBeans(): void {
+    this.#advance();
+    this.#temps = { ...this.#temps, beansC: this.#constants.ambientC };
+  }
+
+  /** Beans out into the cooling tray: the probe reads the drum again. */
+  dumpBeans(): void {
+    this.#advance();
+    this.#temps = { ...this.#temps, beansC: undefined };
   }
 
   /** The cable is back. Call `connect()` again before talking to the roaster. */
@@ -143,13 +164,13 @@ export class SimulatedDriver implements RoasterDriver {
       if (this.#simulatedToMs - this.#lastCommandMs > SKYWALKER_WATCHDOG_MS) {
         for (const channel of this.#outputs.keys()) this.#values.set(channel, 0);
       }
-      this.#tempC = stepTemperature(
-        this.#tempC,
+      this.#temps = stepRoaster(
+        this.#temps,
         { heater: this.#value('heater'), fan: this.#value('fan'), cooling: this.#value('cooling') },
         this.#constants,
         dtMs / 1000,
       );
-      if (this.#tempC > SKYWALKER_ESTOP_C) {
+      if (this.#temps.probeC > SKYWALKER_ESTOP_C) {
         this.#values.set('heater', 0);
         this.#values.set('fan', 100);
       }

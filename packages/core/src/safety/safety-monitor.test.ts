@@ -72,6 +72,19 @@ describe('SafetyMonitor', () => {
     });
   });
 
+  it('counts max roast time from the charge point when it was found before the press', () => {
+    const { clock, monitor, events, read } = setup();
+    const roastTime = () => kinds(events).filter((k) => k.endsWith('max-roast-time'));
+    clock.advance(10_000);
+    monitor.roastStarted(3_000);
+    clock.advance(20 * 60_000 - 7_000 - 1);
+    read(200);
+    expect(roastTime()).toEqual([]);
+    clock.advance(1);
+    read(200);
+    expect(roastTime()).toEqual(['tripped:max-roast-time']);
+  });
+
   describe('lost connection', () => {
     it('trips after 3 s without a valid reading, even if nothing reads', () => {
       const { clock, monitor, events, read, safeStops } = setup();
@@ -143,6 +156,23 @@ describe('SafetyMonitor', () => {
       expect(events[0]).toMatchObject({ action: 'alarm' });
       expect(safeStops()).toBe(0);
       expect(monitor.locked).toBe(false);
+    });
+
+    it('watches for a stall from the turning point, not through the charge dip', () => {
+      const { clock, events, read, monitor } = setup();
+      monitor.roastStarted();
+      for (let i = 0; i <= 60; i++) {
+        read(180 - i, 70);
+        clock.advance(1000);
+      }
+      expect(kinds(events)).not.toContain('tripped:slow-rise');
+      // Turned, then flat for a minute at heater 70 %: that is a stall.
+      monitor.turningPoint();
+      for (let i = 0; i <= 61; i++) {
+        read(120, 70);
+        clock.advance(1000);
+      }
+      expect(kinds(events)).toContain('tripped:slow-rise');
     });
 
     it('keeps enough history for a 60 s window after hours of readings', () => {

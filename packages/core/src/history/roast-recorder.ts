@@ -39,6 +39,7 @@ const SUMMARY_FROM_EVENT: Readonly<
   Record<RoastEvent['kind'], (tS: number, event: RoastEvent, nowIso: string) => RoastSummaryPatch>
 > = {
   charge: () => ({}),
+  'turning-point': () => ({}),
   'first-crack': (tS) => ({ fcTimeS: tS }),
   drop: (tS, event) => ({ dropTimeS: tS, dropTemp: event.bt }),
   'cool-end': (_tS, _event, nowIso) => ({ endedAt: nowIso }),
@@ -55,6 +56,8 @@ export class RoastRecorder {
   readonly #logger: Logger;
   readonly #writes: FailureStreak;
   #recording: Recording | undefined;
+  /** The charge of the roast last finished: Done keeps it, and later changes aren't a new roast. */
+  #finishedChargedAtMs: number | undefined;
   #queue: Promise<void> = Promise.resolve();
 
   constructor(deps: RoastRecorderDeps) {
@@ -68,11 +71,17 @@ export class RoastRecorder {
     const { chargedAtMs } = state;
     if (chargedAtMs === null) {
       this.#recording = undefined;
+      this.#finishedChargedAtMs = undefined;
       return;
     }
+    // Done keeps the charge on screen; a roaster cool-down after it changes the state again.
+    if (chargedAtMs === this.#finishedChargedAtMs) return;
     if (this.#recording?.chargedAtMs !== chargedAtMs) this.#start(state, chargedAtMs);
     this.#saveNewEvents(state);
-    if (state.phase === 'done') this.#recording = undefined;
+    if (state.phase === 'done') {
+      this.#recording = undefined;
+      this.#finishedChargedAtMs = chargedAtMs;
+    }
   }
 
   /** Every reading from the roaster; saved while a roast is recording. */
@@ -97,7 +106,9 @@ export class RoastRecorder {
   #start(state: RoastState, chargedAtMs: number): void {
     const since = state.preheatAtMs ?? chargedAtMs;
     const earlier = this.#deps.readingsSoFar().filter((r) => r.atMs >= since);
-    const startedAt = this.#deps.nowIso();
+    // A charge point found before the press moves the start back with it.
+    const earlierMs = state.startPressedAtMs === null ? 0 : state.startPressedAtMs - chargedAtMs;
+    const startedAt = new Date(Date.parse(this.#deps.nowIso()) - earlierMs).toISOString();
     const created = this.#enqueue(() =>
       this.#deps.repository.create({ startedAt, mode: 'manual' }),
     );

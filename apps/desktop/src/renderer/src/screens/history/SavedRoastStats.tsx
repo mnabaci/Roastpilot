@@ -1,4 +1,4 @@
-import type { RoastSummary } from '@roastpilot/shared';
+import { DEFAULT_TEMP_NAMES, type RoastSummary } from '@roastpilot/shared';
 import { formatClock, formatNumber, StatCard } from '@roastpilot/ui';
 
 const clock = (s: number | null) => (s === null ? undefined : formatClock(s));
@@ -25,7 +25,7 @@ export function SavedRoastStats({ roast }: { roast: RoastSummary }) {
         value={formatNumber(roast.dropTemp, 1)}
         unit="°C"
         tone="heat"
-        context="Bean temperature"
+        context={DEFAULT_TEMP_NAMES.name}
       />
     </div>
   );

@@ -7,6 +7,7 @@ import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { useConnection, useSync } from '../stores/use-stores';
 import { SafetyBanners } from './SafetyBanners';
 import { useDeps } from './app-context';
+import { LiveRoastStrip } from './LiveRoastStrip';
 import { TopBar } from './TopBar';
 
 /** The app shell: top bar, safety banners, and the current screen. */
@@ -39,6 +40,14 @@ export function App() {
     <div className="flex h-screen flex-col overflow-hidden bg-bg font-sans text-ink">
       <TopBar screen={shown} onNavigate={setScreen} />
       <SafetyBanners />
+      {/* On the other screens, what the roast needs from you (docs/spec/ui.md, Roast strip). */}
+      {ready && shown !== 'roast' ? (
+        <LiveRoastStrip
+          onOpen={() => {
+            setScreen('roast');
+          }}
+        />
+      ) : null}
       <div className="flex min-h-0 flex-1 flex-col">{ready ? screens[shown]() : null}</div>
     </div>
   );

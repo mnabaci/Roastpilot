@@ -7,16 +7,19 @@ import {
 } from '@roastpilot/core';
 import { SimulatedDriver } from '@roastpilot/drivers';
 import { drizzleOn, openDatabase, SqliteRoastRepository } from '@roastpilot/storage';
-import { DEFAULT_SETTINGS, IPC_CHANNELS, ok } from '@roastpilot/shared';
-import { describe, expect, it } from 'vitest';
+import { DEFAULT_SETTINGS, IPC_CHANNELS, ok, type Settings } from '@roastpilot/shared';
+import { describe, expect, it, vi } from 'vitest';
 import { createAppServices } from './app-services';
 import { unavailableRepository } from './history/unavailable-repository';
 
-function setup(roasts: RoastRepository = unavailableRepository('not in this test')) {
+function setup(
+  roasts: RoastRepository = unavailableRepository('not in this test'),
+  settings: Partial<Settings> = {},
+) {
   const clock = new ManualClock();
   const published: [string, unknown][] = [];
   const settingsStore: SettingsStore = {
-    load: () => Promise.resolve(DEFAULT_SETTINGS),
+    load: () => Promise.resolve({ ...DEFAULT_SETTINGS, ...settings }),
     save: () => Promise.resolve(ok(undefined)),
   };
   const services = createAppServices({
@@ -107,6 +110,73 @@ describe('createAppServices', () => {
     await clock.runFor(3000);
     expect(services.snapshot().connection.status).toBe('connected');
     expect(services.snapshot().readings.at(-1)?.values).toMatchObject({ drum: 1, filter: 1 });
+  });
+
+  it('cools the beans for the Cooling time setting', async () => {
+    const { clock, services, sim } = setup(undefined, { coolingTimeMin: 2 });
+    await services.settings.get();
+    await services.session.connect(sim, { kind: 'simulator' });
+    await services.roast.act('start');
+    await services.roast.act('drop');
+    expect(services.roast.state.coolingEndsAtMs).toBe(clock.now() + 2 * 60_000);
+  });
+
+  it('a safety stop ends the roaster cool-down, and none starts while locked', async () => {
+    const { services, sim } = setup();
+    await services.session.connect(sim, { kind: 'simulator' });
+    await services.roast.act('cool-roaster');
+    services.session.emergencyStop();
+    expect(services.roast.state.roasterCoolingSinceMs).toBeNull();
+    expect(await services.roast.act('cool-roaster')).toMatchObject({ ok: false });
+  });
+
+  it('a disconnect ends the roaster cool-down', async () => {
+    const { services, sim } = setup();
+    await services.session.connect(sim, { kind: 'simulator' });
+    await services.roast.act('cool-roaster');
+    await services.session.disconnect();
+    expect(services.roast.state.roasterCoolingSinceMs).toBeNull();
+  });
+
+  it('disconnected during bean cooling: cool end starts no roaster cool-down', async () => {
+    const { clock, services, sim } = setup();
+    await services.session.connect(sim, { kind: 'simulator' });
+    await services.session.setOutput('heater', 100);
+    await clock.runFor(4 * 60_000);
+    await services.roast.act('start');
+    await services.roast.act('drop');
+    await services.session.disconnect();
+    await clock.runFor(DEFAULT_COOLING_MS);
+    expect(services.roast.state).toMatchObject({ phase: 'done', roasterCoolingSinceMs: null });
+  });
+
+  it('finds the charge point and the turning point from the roaster readings', async () => {
+    const { clock, services, sim, published } = setup();
+    const turningPoint = vi.spyOn(services.session, 'turningPoint');
+    await services.session.connect(sim, { kind: 'simulator' });
+    await services.roast.act('preheat');
+    await services.session.setOutput('heater', 100);
+    await clock.runFor(2 * 60_000);
+    sim.chargeBeans();
+    const beansInMs = clock.now();
+    // Start pressed 7 s after the beans went in.
+    await clock.runFor(7000);
+    await services.roast.act('start');
+    const { chargedAtMs } = services.roast.state;
+    expect(chargedAtMs).toBeLessThan(beansInMs + 3000);
+    expect(chargedAtMs).toBeGreaterThanOrEqual(beansInMs - 1000);
+    await services.session.setOutput('heater', 70);
+    await clock.runFor(3 * 60_000);
+    const tp = services.roast.state.events.find((e) => e.kind === 'turning-point');
+    expect(tp?.bt).toBeGreaterThan(50);
+    expect(tp?.bt).toBeLessThan(150);
+    expect(turningPoint).toHaveBeenCalledExactlyOnceWith(tp?.atMs);
+    // Heater 70 % through the charge dip: no stalled-temperature alarm.
+    const stalls = published.filter(
+      ([channel, event]) =>
+        channel === IPC_CHANNELS.safetyEvent && (event as { rule?: string }).rule === 'slow-rise',
+    );
+    expect(stalls).toEqual([]);
   });
 
   it('saves the roast from Preheat to cool end, and tells the windows', async () => {

@@ -10,6 +10,7 @@ import {
 } from '@roastpilot/shared';
 import type { Clock } from '../clock';
 import { FailureStreak } from '../logging/failure-streak';
+import { guardListener } from '../logging/guard-listener';
 import { silentLogger, type Logger } from '../logging/logger';
 import { serializeError } from '../logging/serialize-error';
 import type { RoasterDriver } from '../roaster-driver';
@@ -17,6 +18,7 @@ import { SafetyGuardedDriver } from '../safety/safety-guarded-driver';
 import type { SafetyLimits } from '../safety/safety-limits';
 import { EMERGENCY_STOP, SafetyMonitor, type COMPUTER_SLEEP } from '../safety/safety-monitor';
 import { lostConnectionRule } from '../safety/rules/lost-connection';
+import { logSafetyEvent } from '../safety/log-safety-event';
 
 export const POLL_MS = 1_000;
 /** How long quit and disconnect wait for the safe stop before going on (docs/spec/architecture.md). */
@@ -38,7 +40,6 @@ export interface RoasterSessionOptions {
  */
 export class RoasterSession {
   readonly #clock: Clock;
-  /** The caller's listeners, guarded so a throwing listener can't break polling or safety. */
   #connection: ConnectionState = { status: 'disconnected' };
   readonly #publish: Pick<RoasterSessionOptions, 'onReading' | 'onConnection' | 'onSafetyEvent'>;
   readonly #monitor: SafetyMonitor;
@@ -54,20 +55,23 @@ export class RoasterSession {
   constructor(options: RoasterSessionOptions) {
     this.#clock = options.clock;
     this.#logger = options.logger ?? silentLogger;
+    // The caller's listeners, guarded so a throwing listener can't break polling or safety.
+    const guard = <T>(listener: string, fn: (payload: T) => void) =>
+      guardListener(this.#logger, 'session.listener-failed', fn, { listener });
     this.#publish = {
-      onReading: this.#guard('onReading', options.onReading),
-      onConnection: this.#guard('onConnection', (state: ConnectionState) => {
+      onReading: guard('onReading', options.onReading),
+      onConnection: guard('onConnection', (state: ConnectionState) => {
         this.#connection = state;
         options.onConnection(state);
       }),
-      onSafetyEvent: this.#guard('onSafetyEvent', options.onSafetyEvent),
+      onSafetyEvent: guard('onSafetyEvent', options.onSafetyEvent),
     };
     this.#reads = new FailureStreak(this.#logger, 'session.read');
     this.#monitor = new SafetyMonitor({
       clock: options.clock,
       safeStop: () => this.#inner?.safeStop() ?? Promise.resolve(),
       onEvent: (event) => {
-        this.#logSafetyEvent(event);
+        logSafetyEvent(this.#logger, event);
         this.#publish.onSafetyEvent(event);
         this.#followLostConnection(event);
       },
@@ -147,8 +151,13 @@ export class RoasterSession {
   }
 
   /** Charge: arms the max-roast-time rule. */
-  roastStarted(): void {
-    this.#monitor.roastStarted();
+  roastStarted(atMs?: number): void {
+    this.#monitor.roastStarted(atMs);
+  }
+
+  /** The turning point: the stall alarm watches from here. */
+  turningPoint(atMs?: number): void {
+    this.#monitor.turningPoint(atMs);
   }
 
   /** Drop: the max-roast-time rule stands down. */
@@ -189,31 +198,6 @@ export class RoasterSession {
 
   async #safeStopWithin(driver: RoasterDriver): Promise<void> {
     await Promise.race([driver.safeStop(), this.#clock.delay(SAFE_STOP_TIMEOUT_MS)]);
-  }
-
-  #guard<T>(name: string, listener: (payload: T) => void): (payload: T) => void {
-    return (payload) => {
-      try {
-        listener(payload);
-      } catch (error) {
-        this.#logger.error('session.listener-failed', {
-          listener: name,
-          error: serializeError(error),
-        });
-      }
-    };
-  }
-
-  #logSafetyEvent(event: SafetyEvent): void {
-    if (event.kind === 'tripped') {
-      const context = { rule: event.rule, action: event.action };
-      if (event.action === 'safe-stop') this.#logger.error('safety.tripped', context);
-      else this.#logger.warn('safety.tripped', context);
-    } else if (event.kind === 'cleared') {
-      this.#logger.info('safety.cleared', { rule: event.rule });
-    } else {
-      this.#logger.info('safety.unlocked');
-    }
   }
 
   #followLostConnection(event: SafetyEvent): void {

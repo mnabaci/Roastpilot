@@ -46,6 +46,7 @@ export class SafetyMonitor {
   #armed = false;
   #lastValidReadingMs: number | undefined;
   #roastStartedMs: number | undefined;
+  #turningPointMs: number | undefined;
   #locked = false;
 
   constructor(options: SafetyMonitorOptions) {
@@ -110,13 +111,22 @@ export class SafetyMonitor {
     this.check();
   }
 
-  roastStarted(): void {
-    this.#roastStartedMs = this.#clock.now();
+  /** Charge; `atMs` is the charge point when it was found before the press. */
+  roastStarted(atMs: number = this.#clock.now()): void {
+    this.#roastStartedMs = atMs;
+    this.#turningPointMs = undefined;
+    this.check();
+  }
+
+  /** The turning point: BT rises again, so a stall counts from here. */
+  turningPoint(atMs: number = this.#clock.now()): void {
+    this.#turningPointMs = atMs;
     this.check();
   }
 
   roastEnded(): void {
     this.#roastStartedMs = undefined;
+    this.#turningPointMs = undefined;
     this.check();
   }
 
@@ -171,6 +181,7 @@ export class SafetyMonitor {
       lastValidReadingMs: this.#lastValidReadingMs,
       history: this.#history,
       roastStartedMs: this.#roastStartedMs,
+      turningPointMs: this.#turningPointMs,
     };
   }
 

@@ -1,6 +1,7 @@
 import { MAX_HISTORY_READINGS } from '@roastpilot/core';
 import { describe, expect, it } from 'vitest';
-import { addReading, READY_ROAST, setRoast, type RoastData } from './roast-store';
+import { READY_ROAST } from '@roastpilot/shared';
+import { addReading, setRoast, type RoastData } from './roast-store';
 
 const reading = (atMs: number) => ({ atMs, values: { bt: 100 } });
 const empty: RoastData = { roast: READY_ROAST, readings: [] };

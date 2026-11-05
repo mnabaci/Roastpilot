@@ -1,10 +1,14 @@
 import type { ControlsLevel } from '@roastpilot/shared';
-import { Button } from '@roastpilot/ui';
 import { useSettings } from '../../stores/use-stores';
 import { useSaveSettings } from './use-save-settings';
+import { Choice } from './Choice';
 
 const LEVELS: readonly { id: ControlsLevel; label: string; hint: string }[] = [
-  { id: 'guided', label: 'Guided', hint: 'Heater and fan from Preheat until Drop' },
+  {
+    id: 'guided',
+    label: 'Guided',
+    hint: 'Heater from Preheat until Drop · the rest any time no roast runs',
+  },
   { id: 'full', label: 'Full control', hint: 'Every output, any time, cooling switch included' },
 ];
 
@@ -18,20 +22,14 @@ export function ControlsSection() {
       <h2 id="controls-heading" className="text-heading">
         Controls
       </h2>
-      <div role="group" aria-label="Controls" className="flex gap-2">
-        {LEVELS.map(({ id, label }) => (
-          <Button
-            key={id}
-            aria-pressed={level === id}
-            className={level === id ? 'bg-heat-tint text-heat' : undefined}
-            onClick={() => {
-              save({ controls: id });
-            }}
-          >
-            {label}
-          </Button>
-        ))}
-      </div>
+      <Choice
+        label="Controls"
+        options={LEVELS}
+        value={level}
+        onChange={(id) => {
+          save({ controls: id });
+        }}
+      />
       <p className="text-label text-ink-muted">{current?.hint}</p>
     </section>
   );

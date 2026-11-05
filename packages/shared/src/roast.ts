@@ -16,10 +16,15 @@ export const RoastActionSchema = z.enum([
   'drop',
   'clear',
   'end',
+  /** +1 min on the cooling countdown. */
+  'extend-cooling',
+  /** Roaster cool-down from Ready or Done (docs/spec/manual-mode.md, Roaster cool-down). */
+  'cool-roaster',
+  'stop-cooling-roaster',
 ]);
 
 export const RoastEventSchema = z.object({
-  kind: z.enum(['charge', 'first-crack', 'drop', 'cool-end', 'end']),
+  kind: z.enum(['charge', 'turning-point', 'first-crack', 'drop', 'cool-end', 'end']),
   atMs: z.number(),
   /** Bean temperature when it happened; null if there was no reading yet. */
   bt: z.number().nullable(),
@@ -29,12 +34,37 @@ export const RoastStateSchema = z.object({
   phase: RoastPhaseSchema,
   /** When Preheat was pressed; null if the roast started without it (Full control). */
   preheatAtMs: z.number().nullable(),
+  /** The charge point: the reading before the charge drop, or when Start was pressed. */
   chargedAtMs: z.number().nullable(),
+  /** When Start was pressed; later than `chargedAtMs` when the charge point was found earlier. */
+  startPressedAtMs: z.number().nullable(),
   firstCrackAtMs: z.number().nullable(),
   droppedAtMs: z.number().nullable(),
+  /** When bean cooling ends: the countdown, or the 10 min cap when it ends by temperature. */
   coolingEndsAtMs: z.number().nullable(),
+  /** Bean cooling ends once BT is below this; null when it ends by time. */
+  coolingBelowC: z.number().nullable(),
   events: z.array(RoastEventSchema),
+  /** When the roaster cool-down began; null when it isn't running. */
+  roasterCoolingSinceMs: z.number().nullable(),
+  /** The running roaster cool-down's target, in °C; null when it isn't running. */
+  roasterCoolToC: z.number().nullable(),
 });
+
+/** No roast yet: what the app starts with and Clear goes back to. */
+export const READY_ROAST: RoastState = {
+  phase: 'ready',
+  preheatAtMs: null,
+  chargedAtMs: null,
+  startPressedAtMs: null,
+  firstCrackAtMs: null,
+  droppedAtMs: null,
+  coolingEndsAtMs: null,
+  coolingBelowC: null,
+  events: [],
+  roasterCoolingSinceMs: null,
+  roasterCoolToC: null,
+};
 
 export const RoastActionErrorSchema = z.object({
   kind: z.literal('not-allowed'),

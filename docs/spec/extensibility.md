@@ -21,6 +21,7 @@ extension point is a small interface plus a registry the app fills at startup.
 ## Generic data, not fixed fields
 
 - **Channels:** a driver declares what it reads (e.g. `bt` in °C) and what it controls (e.g. `heater` 0–100, step 5). Sensor cards and output controls are built from that list, so a roaster with two probes or no fan just works.
+- **Sensor names:** each sensor names itself for the screen, in full and short: the id is the role the app's logic uses (`bt`: the temperature that follows the beans, which the charge point, turning point, RoR, cooling and safety read; later `et`), the names are what the roaster really measures. The Skywalker's probe is the drum where it touches the beans, so its `bt` is "Temperature" / "Temp"; a roaster with bean and environment probes says "Bean temperature" / "BT" and "Environment temperature" / "ET". The Roast screen, chart and roast strip show the connected roaster's names. History shows "Temperature" / "Temp" until saved roasts record which roaster made them.
 - **Samples:** each sample stores a map of channel values, so a new sensor needs no schema change.
 - **Domain events:** one event bus (`ReadingReceived`, `PhaseChanged`, `RoastSaved`, `SafetyTripped`, …). Features subscribe; the core never calls them directly.
 - **Versioned formats:** profiles and exports carry a `schemaVersion`; database changes go through Drizzle migrations.

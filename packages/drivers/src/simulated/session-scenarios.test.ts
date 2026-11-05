@@ -29,7 +29,7 @@ describe('RoasterSession on the simulated Skywalker', () => {
     await session.setOutput('heater', 100);
     await clock.runFor(60_000);
     expect(readings.length).toBeGreaterThanOrEqual(60);
-    expect(readings.at(-1)?.values.bt).toBeGreaterThan(70);
+    expect(readings.at(-1)?.values.bt).toBeGreaterThan(45);
   });
 
   it('a pulled cable goes lost, reconnects by itself and sends the second safe stop', async () => {

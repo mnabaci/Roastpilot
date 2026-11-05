@@ -1,5 +1,5 @@
 import type { RoastId } from '@roastpilot/shared';
-import { RoastList, SelectField } from '@roastpilot/ui';
+import { EventTable, RoastList, SelectField } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
@@ -8,6 +8,7 @@ import { DeleteRoast } from './DeleteRoast';
 import { inProgressId, roastRows, roastTitle, selectionAfterDelete } from './history-format';
 import { SavedRoastChart } from './SavedRoastChart';
 import { SavedRoastStats } from './SavedRoastStats';
+import { eventRows } from './event-rows';
 import { useRoastList } from './use-roast-list';
 import { useSavedRoast } from './use-saved-roast';
 
@@ -124,6 +125,7 @@ export function HistoryScreen() {
               compareLabel={compareLabel}
               smoothingS={smoothingS}
             />
+            <EventTable rows={eventRows(selected.detail)} />
           </>
         ) : (
           <p className="text-label text-ink-muted">Loading…</p>

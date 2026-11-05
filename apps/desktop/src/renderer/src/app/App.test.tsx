@@ -1,8 +1,8 @@
-import { act, screen } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import type * as Ui from '@roastpilot/ui';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import type { Screen } from '@roastpilot/shared';
+import { READY_ROAST, type Screen } from '@roastpilot/shared';
 import { CONNECTED, fakeApi, renderApp } from '../test/render-app';
 import { App } from './App';
 
@@ -80,6 +80,29 @@ describe('App', () => {
     renderApp(<App />);
     await userEvent.click(screen.getByRole('button', { name: 'Logs' }));
     expect(screen.getByRole('heading', { name: 'Logs' })).toBeInTheDocument();
+  });
+
+  it('shows the mark and the name in the top bar', () => {
+    renderApp(<App />, { connection: CONNECTED });
+    expect(within(screen.getByRole('banner')).getByText('Roastpilot')).toBeInTheDocument();
+  });
+
+  it('off the Roast screen during a roast, the strip shows it and opens Roast', async () => {
+    renderApp(<App />, {
+      connection: CONNECTED,
+      roast: { ...READY_ROAST, phase: 'roasting', chargedAtMs: 0 },
+      readings: [{ atMs: 60_000, values: { bt: 150 } }],
+    });
+    expect(screen.queryByRole('button', { name: /Roasting · 1:00/ })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'History' }));
+    await userEvent.click(screen.getByRole('button', { name: /Roasting · 1:00/ }));
+    expect(screen.getByRole('button', { name: 'Roast' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('no strip when no roast is running', async () => {
+    renderApp(<App />, { connection: CONNECTED, readings: [{ atMs: 0, values: { bt: 22 } }] });
+    await userEvent.click(screen.getByRole('button', { name: 'History' }));
+    expect(screen.queryByRole('button', { name: /Ready ·/ })).not.toBeInTheDocument();
   });
 
   it('the app menu opens a screen (Settings… ⌘,)', () => {

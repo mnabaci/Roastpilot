@@ -1,4 +1,7 @@
-/** Hand-picked constants (docs/spec/hardware.md, Simulator). Refit from the first real roast. */
+/**
+ * Fitted to roasts 6 and 7 of 2026-11-04 (375 g) by `pnpm fit:simulator 6 7`: RMS error 8.7 °C,
+ * within about 5 °C from charge to drop (docs/spec/hardware.md, Simulator).
+ */
 export interface ThermalConstants {
   ambientC: number;
   /** °C per second at heater 100, before losses. */
@@ -7,14 +10,23 @@ export interface ThermalConstants {
   roomLossPerS: number;
   fanLossFactor: number;
   coolingLossFactor: number;
+  /** Beans in the drum: fraction of the drum-to-beans gap the beans gain per second. */
+  beanGainPerS: number;
+  /** The same gap, as the fraction the drum loses per second to the beans. */
+  drumToBeansPerS: number;
+  /** How slowly the probe follows the bean mass, in seconds (time constant). */
+  probeLagS: number;
 }
 
 export const DEFAULT_THERMAL_CONSTANTS: ThermalConstants = {
   ambientC: 22,
-  heatGainCPerS: 1.5,
-  roomLossPerS: 0.0054,
-  fanLossFactor: 1,
-  coolingLossFactor: 3,
+  heatGainCPerS: 0.59,
+  roomLossPerS: 0.00043,
+  fanLossFactor: 1.9,
+  coolingLossFactor: 5.6,
+  beanGainPerS: 0.0097,
+  drumToBeansPerS: 0.0056,
+  probeLagS: 45,
 };
 
 export interface ThermalInputs {
@@ -38,4 +50,33 @@ export function stepTemperature(
       (constants.coolingLossFactor * inputs.cooling) / 100);
   const loss = lossRate * (tempC - constants.ambientC);
   return tempC + (heat - loss) * dtS;
+}
+
+/** The drum, the beans in it (if any) and what the probe reads. */
+export interface RoasterTemps {
+  drumC: number;
+  beansC: number | undefined;
+  probeC: number;
+}
+
+/**
+ * Advances drum, beans and probe by `dtS` seconds. Without beans the probe reads the drum; with
+ * beans the drum heats them, loses that heat, and the probe follows the beans with a lag, which
+ * gives the dip at charge and the turning point.
+ */
+export function stepRoaster(
+  temps: RoasterTemps,
+  inputs: ThermalInputs,
+  constants: ThermalConstants,
+  dtS: number,
+): RoasterTemps {
+  const { beansC } = temps;
+  let drumC = stepTemperature(temps.drumC, inputs, constants, dtS);
+  // No beans: the probe sits in hot air and reads the drum.
+  if (beansC === undefined) return { drumC, beansC, probeC: drumC };
+  const gap = temps.drumC - beansC;
+  drumC -= constants.drumToBeansPerS * gap * dtS;
+  const nextBeans = beansC + constants.beanGainPerS * gap * dtS;
+  const follow = Math.min(1, dtS / constants.probeLagS);
+  return { drumC, beansC: nextBeans, probeC: temps.probeC + (nextBeans - temps.probeC) * follow };
 }

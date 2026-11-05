@@ -12,6 +12,7 @@ import {
 import {
   IPC_CHANNELS,
   type ConnectionState,
+  type RoastState,
   type IpcEventChannel,
   type IpcEventPayloads,
   type Snapshot,
@@ -28,6 +29,8 @@ export interface AppServicesDeps {
   nowIso: () => string;
   /** Every connection change, besides the windows (the power guard). */
   onConnectionChange: (state: ConnectionState) => void;
+  /** Every roast change, besides the windows (the power guard). */
+  onRoastChange?: (state: RoastState) => void;
   /** Sends an event to every window. */
   publish: <C extends IpcEventChannel>(channel: C, payload: IpcEventPayloads[C]) => void;
 }
@@ -49,6 +52,7 @@ export function createAppServices({
   roasts,
   nowIso,
   onConnectionChange,
+  onRoastChange = () => undefined,
   publish,
 }: AppServicesDeps): AppServices {
   const history = new ReadingHistory();
@@ -69,6 +73,10 @@ export function createAppServices({
       history.add(reading);
       recorder.onReading(reading);
       publish(IPC_CHANNELS.reading, reading);
+      // After it is kept: the turning point and the roaster cool-down look at the readings.
+      roast.onReading(reading).catch((error: unknown) => {
+        roastLogger.error('roast.reading-failed', { error: serializeError(error) });
+      });
     },
     onConnection: (state) => {
       onConnectionChange(state);
@@ -78,27 +86,49 @@ export function createAppServices({
         roast.restoreOutputs().catch((error: unknown) => {
           roastLogger.error('roast.restore-failed', { error: serializeError(error) });
         });
-      }
+      } else if (state.status === 'disconnected') roast.stopRoasterCooling('disconnected');
     },
     onSafetyEvent: (event) => {
       publish(IPC_CHANNELS.safetyEvent, event);
+      if (event.kind === 'tripped' && event.action === 'safe-stop')
+        roast.stopRoasterCooling('safety-stop');
     },
   });
   const roastLogger = logger.child('roast');
+  const settings = new SettingsService(settingsStore);
+  settings.get().catch((error: unknown) => {
+    logger.error('settings.load-failed', { error: serializeError(error) });
+  });
   const roast = new ManualRoast({
     clock,
     logger: roastLogger,
     setOutput: (channel, value) => session.setOutput(channel, value),
     latestBt: () => history.latest()?.values.bt,
+    readings: () => history.all(),
+    canCoolRoaster: () => session.connection.status === 'connected' && !session.safetyStatus.locked,
+    options: () => {
+      const latest = settings.latest;
+      return {
+        findChargePoint: latest.findChargePoint,
+        coolingMs: latest.coolingTimeMin * 60_000,
+        coolingBelowC: latest.coolingEnd === 'temperature' ? latest.coolingBelowC : null,
+        coolRoasterAfter: latest.coolRoasterAfter,
+        roasterCoolToC: latest.roasterCoolToC,
+      };
+    },
     onChange: (state) => {
       recorder.onRoastChange(state);
+      onRoastChange(state);
       publish(IPC_CHANNELS.roast, state);
     },
     onNewRoast: () => {
       history.clear();
     },
-    onRoastStarted: () => {
-      session.roastStarted();
+    onRoastStarted: (chargedAtMs) => {
+      session.roastStarted(chargedAtMs);
+    },
+    onTurningPoint: (atMs) => {
+      session.turningPoint(atMs);
     },
     onRoastEnded: () => {
       session.roastEnded();
@@ -113,7 +143,7 @@ export function createAppServices({
   return {
     session,
     roast,
-    settings: new SettingsService(settingsStore),
+    settings,
     history: new HistoryService({
       repository: roasts,
       isRecording: (id) => recorder.isRecording(id),
