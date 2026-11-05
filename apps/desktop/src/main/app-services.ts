@@ -73,7 +73,7 @@ export function createAppServices({
     readingsSoFar: () => history.all(),
     plan: () => roastPlan(settings, profiles),
     onSaved: (id) => {
-      publish(IPC_CHANNELS.roastsChanged, { id });
+      publish(IPC_CHANNELS.roastsChanged, { id, deleted: false });
     },
     logger: historyLogger,
   });
@@ -187,7 +187,7 @@ export function createAppServices({
       repository: roasts,
       isRecording: (id) => recorder.isRecording(id),
       onDeleted: (id) => {
-        publish(IPC_CHANNELS.roastsChanged, { id });
+        publish(IPC_CHANNELS.roastsChanged, { id, deleted: true });
       },
       logger: historyLogger,
     }),

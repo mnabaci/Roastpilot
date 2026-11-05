@@ -44,7 +44,7 @@ function renderWithPhase(roasts: RoastSummary[], phase: RoastPhase) {
 }
 
 function setup(roasts: RoastSummary[] = [NEWER, OLDER]) {
-  const listeners = new Set<(change: { id: RoastId }) => void>();
+  const listeners = new Set<(change: { id: RoastId; deleted: boolean }) => void>();
   let list = roasts;
   const api = fakeApi({
     listRoasts: vi.fn(() => Promise.resolve(list)),
@@ -56,7 +56,7 @@ function setup(roasts: RoastSummary[] = [NEWER, OLDER]) {
       list = list.filter((r) => r.id !== id);
       return Promise.resolve(ok(undefined));
     }),
-    onRoastsChanged: vi.fn((listener: (change: { id: RoastId }) => void) => {
+    onRoastsChanged: vi.fn((listener: (change: { id: RoastId; deleted: boolean }) => void) => {
       listeners.add(listener);
       return () => listeners.delete(listener);
     }),
@@ -67,7 +67,12 @@ function setup(roasts: RoastSummary[] = [NEWER, OLDER]) {
     save: (roast: RoastSummary) => {
       list = [roast, ...list];
       act(() => {
-        for (const listener of listeners) listener({ id: roast.id });
+        for (const listener of listeners) listener({ id: roast.id, deleted: false });
+      });
+    },
+    deleted: (id: RoastId) => {
+      act(() => {
+        for (const listener of listeners) listener({ id, deleted: true });
       });
     },
   };
@@ -162,5 +167,15 @@ describe('HistoryScreen', () => {
     renderWithPhase([live, NEWER], 'roasting');
     expect(await screen.findByText('Saving as it roasts')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+  });
+
+  it('does not read a roast again once it is deleted', async () => {
+    const { api, deleted } = setup();
+    await vi.waitFor(() => {
+      expect(api.getRoast).toHaveBeenCalledWith(NEWER.id);
+    });
+    const reads = api.getRoast.mock.calls.length;
+    deleted(NEWER.id);
+    expect(api.getRoast).toHaveBeenCalledTimes(reads);
   });
 });

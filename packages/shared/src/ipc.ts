@@ -88,7 +88,7 @@ export interface IpcEventPayloads {
   [IPC_CHANNELS.roast]: RoastState;
   [IPC_CHANNELS.logEntries]: LogRecord[];
   [IPC_CHANNELS.navigate]: Screen;
-  [IPC_CHANNELS.roastsChanged]: { id: RoastId };
+  [IPC_CHANNELS.roastsChanged]: { id: RoastId; deleted: boolean };
   [IPC_CHANNELS.autoStatus]: AutoStatus;
 }
 export type IpcEventChannel = keyof IpcEventPayloads;
@@ -154,7 +154,7 @@ export interface HistoryApi {
   /** Refuses the roast being saved right now (`in-progress`). */
   deleteRoast(id: RoastId): Promise<Result<void, DeleteRoastError>>;
   /** A roast was saved, finished or deleted. */
-  onRoastsChanged(listener: (change: { id: RoastId }) => void): Unsubscribe;
+  onRoastsChanged(listener: (change: { id: RoastId; deleted: boolean }) => void): Unsubscribe;
 }
 
 /** Auto mode (docs/spec/roast-control.md, Auto mode); on or off is the `roastMode` setting. */

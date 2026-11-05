@@ -33,7 +33,8 @@ export function useSavedRoast(id: RoastId | undefined): SavedRoastState {
         });
     };
     const stop = api.onRoastsChanged((change) => {
-      if (change.id === id) load();
+      // A deleted roast has nothing to read; the list moves on to the next one.
+      if (change.id === id && !change.deleted) load();
     });
     load();
     return () => {

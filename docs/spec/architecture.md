@@ -54,7 +54,7 @@ flowchart TB
 | `listRoasts`                  | invoke | – → saved roasts, newest first (summary only)                                                                              |
 | `getRoast`                    | invoke | roast id → the roast with its samples and events, or `not-found`                                                           |
 | `deleteRoast`                 | invoke | roast id → result                                                                                                          |
-| `onRoastsChanged`             | event  | a roast was saved, finished or deleted (History refreshes)                                                                 |
+| `onRoastsChanged`             | event  | a roast was saved, finished or deleted, and which (History refreshes)                                                      |
 | `autoChargeSoon`              | invoke | – → heater 0 and the countdown before the beans go in, or `not-now`                                                        |
 | `autoResume`                  | invoke | – → heater and fan back to Auto, or `safety-locked`                                                                        |
 | `onAutoStatus`                | event  | what Auto is doing: on or off, who owns each output, preheat step, running step                                            |

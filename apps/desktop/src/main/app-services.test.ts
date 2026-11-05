@@ -210,8 +210,8 @@ describe('createAppServices', () => {
     ]);
     expect(detail.ok && detail.value.samples[0]?.tS).toBeLessThan(0);
     expect(published.filter(([c]) => c === IPC_CHANNELS.roastsChanged)).toEqual([
-      [IPC_CHANNELS.roastsChanged, { id: 1 }],
-      [IPC_CHANNELS.roastsChanged, { id: 1 }],
+      [IPC_CHANNELS.roastsChanged, { id: 1, deleted: false }],
+      [IPC_CHANNELS.roastsChanged, { id: 1, deleted: false }],
     ]);
   });
 
