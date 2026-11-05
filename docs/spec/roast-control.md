@@ -55,6 +55,7 @@ Each phase:
 - Charge temp 180 °C. Dry end at BT 150 °C. Drop at 1:30 after first crack, or at BT 200 °C, whichever comes first.
 - Curve points, from roast 7 (2026-11-04): 0:00 180 °C, 1:04 92 °C (turning point), 2:34 110 °C, 5:05 150 °C, 6:19 165 °C, 7:57 180 °C, 9:18 190 °C, 11:03 197 °C.
 - Drum at 100% throughout to agitate the beans.
+- A step profile's dashed curve comes from its steps: charge, the turning point, each step's end at its planned time, then the BT cap at the planned drop.
 - These numbers come from roasts 6 and 7 and stay marked "needs calibration" until tuned on real roasts: first crack came at 191–193 °C and both roasts dropped near 197 °C.
 - The soak runs for the Soak time setting, in Settings under Auto: 0:30, 0:45, 1:00, 1:15, 1:30 or 2:00 (default 1:00). It applies to both Light profiles and is taken at Start. Roasts 6 and 7 turned the heater on at about 1:06 and 0:54.
 
@@ -100,10 +101,11 @@ Target and follow both handle room conditions: outdoors or on a heat-soaked roas
 
 ## Creating a curve profile
 
-1. **From a roast you liked:** star it, then "Make curve profile". Its BT curve is simplified to about 10 editable points; its fan changes become the fan steps; an initial soak is kept as a fixed phase.
-2. **Milestone builder:** enter charge temp and a few milestones (turnaround, yellowing, first crack, drop: time and BT). The app draws a smooth curve through them.
-3. **Edit points:** drag curve points on the chart or type them in a table.
-4. **Import from Artisan:** load an `.alog` roast as the curve (an `Importer`), marked "needs calibration" if it came from another roaster.
+1. **From the Profiles screen:** duplicate Light · Curve and edit its points in a table.
+2. **From a roast you liked:** star it, then "Make curve profile". Its BT curve is simplified to about 10 editable points; its fan changes become the fan steps; an initial soak is kept as a fixed phase.
+3. **Milestone builder:** enter charge temp and a few milestones (turnaround, yellowing, first crack, drop: time and BT). The app draws a smooth curve through them.
+4. **Drag points** on the chart (milestone 8).
+5. **Import from Artisan:** load an `.alog` roast as the curve (an `Importer`), marked "needs calibration" if it came from another roaster.
 
 A curve profile is usually: a fixed soak phase, then one `follow` phase until drop, with the fan on its own schedule.
 
@@ -133,7 +135,7 @@ Touching the heater or fan switches that output to manual; the other output stay
 
 - **Choosing it:** a setting on the Roast screen, Auto or Manual, Manual by default. It can be changed at any time, also mid-roast.
 - **What it drives:** heater and fan, from Preheat until Drop. The flow stays as in [manual-mode.md](manual-mode.md), with the same states, events, cooling, roaster cool-down and saving; Auto presses Drop by itself. You still press Preheat, Start and First crack.
-- **Profiles:** two Skywalker Light styles to choose from, shipped as data with the Skywalker driver and marked "needs calibration". Medium, Dark and making your own come later, with the Profiles work (milestone 6).
+- **Profiles:** two Skywalker Light styles to choose from, shipped as data with the Skywalker driver and marked "needs calibration", and your own copies from the Profiles screen ([ui.md](ui.md)). Medium, Dark and making a profile from a roast come later (milestone 6).
   - **Light · Steps:** the table above: each step aims for its end temperature in its duration, inside its RoR range.
   - **Light · Curve:** the same curve points, end rule, fan steps and fixed soak, with every other phase `follow`: no planned heat, the PID sets the heater 0–100%.
 - **PID gains:** cautious starting values kept with the profile's roaster data, tuned on real roasts (`pid-tune`). They move to the roaster record in milestone 5.

@@ -12,6 +12,6 @@ One file per decision: context, decision, consequences. Add one with the `plan-f
 - [Phase-based profiles with PID trim, per roaster](0008-phase-based-profiles.md)
 - [One generic output method on RoasterDriver](0009-generic-driver-outputs.md)
 - [Node's built-in SQLite instead of better-sqlite3](0010-node-sqlite.md)
-- [Built-in profile as data, with Auto beside the flow](0011-built-in-profile-as-data.md)
+- [Profiles as JSON documents, with Auto beside the flow](0011-built-in-profile-as-data.md)
 
 Template: [template.md](template.md)
