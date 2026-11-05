@@ -5,11 +5,11 @@ import { activeEntry } from '../roast/use-active-profile';
 import { ProfileEditor } from './ProfileEditor';
 
 /** Your profiles and the built-ins, with one open to edit (docs/spec/ui.md, Profiles screen). */
-export function ProfilesScreen() {
+export function ProfilesScreen({ openFirst }: { openFirst?: string | undefined }) {
   const profiles = useAuto((s) => s.profiles);
   const drafts = useAuto((s) => s.drafts);
   const chosenId = useSettings((s) => s.settings.autoProfile);
-  const [openId, setOpenId] = useState<string>();
+  const [openId, setOpenId] = useState(openFirst);
   const open = profiles.find((e) => e.profile.id === openId) ?? activeEntry(profiles, chosenId);
   return (
     <main className="flex min-h-0 flex-1 overflow-hidden">

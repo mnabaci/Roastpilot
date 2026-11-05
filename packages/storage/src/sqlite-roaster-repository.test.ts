@@ -88,7 +88,15 @@ describe('SqliteRoasterRepository', () => {
 
   it('counts what belongs to a roaster', async () => {
     const { repository, roasts } = setup();
-    await roasts.create({ startedAt: 'x', mode: 'manual', profile: null, roasterId: 2 });
+    await roasts.create({
+      startedAt: 'x',
+      mode: 'manual',
+      profile: null,
+      roasterId: 2,
+      beanId: null,
+      batchG: null,
+      ghostRoastId: null,
+    });
     expect(await repository.usage(2)).toEqual({ ok: true, value: { roasts: 1, profiles: 0 } });
     expect(await repository.usage(1)).toEqual({ ok: true, value: { roasts: 0, profiles: 0 } });
   });

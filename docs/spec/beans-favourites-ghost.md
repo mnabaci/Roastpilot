@@ -54,8 +54,8 @@ At most two show, in this order. The density cut-offs are starting guesses; revi
 
 ## Favourite → step profile
 
-- Phases come from the heat and fan changes that actually ran (merged to at most 6), each triggered at the BT where it happened.
-- Reference points come from the run's BT curve, simplified to about 8 points.
+- Steps come from the heat and fan changes that actually ran (merged to at most 6): each ends at the BT where it happened, in the time it took, with the RoR it ran at ±1 °C/min, its average heat and its fan. Development runs from first crack.
+- A roast that never crossed the dry-end temperature, or has too little to go on, can't make one; the button says so.
 - Charge temp, dry-end temp, development time and BT cap come from the run.
 - The new profile belongs to the same roaster as the run.
 - The result is a new custom profile; the roast itself is never changed.
@@ -71,4 +71,4 @@ See [roast-control.md](roast-control.md#creating-a-curve-profile): the run's BT 
 - **Drawn:** ghost temperature and RoR as faded lines, plus faded dry-end, FC and drop markers.
 - **Delta readout:** "+3 °C vs ghost" and "0:12 ahead / behind" (when the ghost reached today's temperature).
 - Reference only: it never steers the controller, which follows the profile.
-- A roast whose profile is gone is still a favourite: suggestions use the copy it saved, offered as a new profile of your own only when you accept it.
+- A favourite whose profile is gone, or that ran on Manual, can still be a ghost; suggestions skip it.

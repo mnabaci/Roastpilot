@@ -5,13 +5,16 @@ import { roastChartData } from './roast-chart-data';
 import { roastNumbers } from './roast-numbers';
 import { skippedSteps, stageTimes } from './stage-times';
 import { AutoPanel } from './AutoPanel';
+import { formatGhostDelta, ghostChart, ghostDelta } from './ghost';
+import { RoastSetupPanel } from './RoastSetupPanel';
 import { FlowPanel } from './FlowPanel';
 import { useRunningPlan } from './use-active-profile';
 import { OutputsPanel } from './OutputsPanel';
 import { RoastNumbersRow } from './RoastNumbersRow';
 import { useSensorNames } from '../../features/use-sensor-names';
 import { clearReadings } from '../../stores/roast-store';
-import { useConnection, useRoast, useSettings } from '../../stores/use-stores';
+import { useBeans, useConnection, useRoast, useSettings } from '../../stores/use-stores';
+import { useSavedRoast } from '../history/use-saved-roast';
 import { isConnected } from './flow-step';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
@@ -49,6 +52,20 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
     () => roastChartData(roast, readings, { smoothingS, tempName: temp.name, plan }),
     [roast, readings, smoothingS, temp.name, plan],
   );
+  // The ghost starts at charge: before it, the chart's clock is the preheat's.
+  const ghostId = useBeans((s) => s.setup.ghostRoastId);
+  const ghost = useSavedRoast(ghostId ?? undefined);
+  const ghostDetail = ghost.status === 'loaded' ? ghost.detail : undefined;
+  const charged = roast.chargedAtMs !== null;
+  const ghostLayers = useMemo(
+    () => (ghostDetail && charged ? ghostChart(ghostDetail, smoothingS) : undefined),
+    [ghostDetail, charged, smoothingS],
+  );
+  const roasting = roast.phase === 'roasting' || roast.phase === 'development';
+  const delta =
+    ghostDetail && roasting && shown.bt !== undefined && numbers.elapsedS !== undefined
+      ? ghostDelta(ghostDetail.samples, numbers.elapsedS, shown.bt)
+      : undefined;
   return (
     <main className="grid min-h-0 flex-1 grid-cols-[1fr_auto] content-start gap-6 overflow-y-auto p-6">
       <div className="flex min-w-0 flex-col gap-5">
@@ -76,11 +93,20 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
             </Button>
           ) : null}
         </div>
-        <RoastNumbersRow numbers={shown} tempName={temp.name} />
-        <RoastChart title="Roast curve" layers={chart.layers} markers={chart.markers} />
+        <RoastNumbersRow
+          numbers={shown}
+          tempName={temp.name}
+          {...(delta ? { ghostLine: formatGhostDelta(delta) } : {})}
+        />
+        <RoastChart
+          title="Roast curve"
+          layers={[...(ghostLayers?.layers ?? []), ...chart.layers]}
+          markers={[...(ghostLayers?.markers ?? []), ...chart.markers]}
+        />
       </div>
       <aside aria-label="Controls" className="flex w-80 flex-col gap-5">
         <AutoPanel />
+        <RoastSetupPanel />
         <FlowPanel coolingLeftS={numbers.coolingLeftS} onConnect={onConnect} />
         <OutputsPanel />
         <p className="text-label text-ink-muted">Stay with the roaster while it runs.</p>

@@ -2,6 +2,7 @@ import { createLogger, type RoasterDriver } from '@roastpilot/core';
 import { BUILT_IN_ROASTERS, SKYWALKER_PROFILES } from '@roastpilot/drivers';
 import {
   AUTO_OFF,
+  NO_ROAST_SETUP,
   DEFAULT_SETTINGS,
   err,
   IPC_CHANNELS,
@@ -24,6 +25,7 @@ const SNAPSHOT: Snapshot = {
   readings: [],
   safety: { locked: false, tripped: [] },
   auto: AUTO_OFF,
+  setup: NO_ROAST_SETUP,
 };
 
 function setup() {
@@ -70,6 +72,10 @@ function setup() {
         calls.push(['deleteRoast', id]);
         return Promise.resolve(ok(undefined));
       },
+      saveResult: (result) => {
+        calls.push(['saveResult', result.id]);
+        return Promise.resolve(ok(undefined));
+      },
     },
     pilot: {
       chargeSoon: (nowMs) => {
@@ -81,6 +87,36 @@ function setup() {
         calls.push(['resume']);
         return err({ kind: 'safety-locked' });
       },
+    },
+    beans: {
+      list: () => Promise.resolve([]),
+      add: (fields) => {
+        calls.push(['addBean', fields.name]);
+        return Promise.resolve(ok(1));
+      },
+      update: (update) => {
+        calls.push(['updateBean', update.id]);
+        return Promise.resolve(ok(undefined));
+      },
+      setArchived: (request) => {
+        calls.push(['archive', request]);
+        return Promise.resolve(ok(undefined));
+      },
+      addStock: (stock) => {
+        calls.push(['addStock', stock.grams]);
+        return Promise.resolve(ok(undefined));
+      },
+      adjustStock: (stock) => {
+        calls.push(['adjustStock', stock.greenG]);
+        return Promise.resolve(ok(undefined));
+      },
+      setSetup: (setup) => {
+        calls.push(['setup', setup]);
+      },
+    },
+    makeProfile: (request) => {
+      calls.push(['makeProfile', request]);
+      return Promise.resolve(err({ kind: 'too-short' }));
     },
     roasters: {
       load: () => Promise.resolve([]),
@@ -190,6 +226,15 @@ describe('createIpcHandlers', () => {
         IPC_CHANNELS.deleteRoaster,
         IPC_CHANNELS.setActiveRoaster,
         IPC_CHANNELS.chooseConnection,
+        IPC_CHANNELS.listBeans,
+        IPC_CHANNELS.addBean,
+        IPC_CHANNELS.updateBean,
+        IPC_CHANNELS.setBeanArchived,
+        IPC_CHANNELS.addStock,
+        IPC_CHANNELS.adjustStock,
+        IPC_CHANNELS.setRoastSetup,
+        IPC_CHANNELS.saveRoastResult,
+        IPC_CHANNELS.makeProfileFromRoast,
       ].sort(),
     );
   });
@@ -258,6 +303,31 @@ describe('roast, snapshot and settings handlers', () => {
       ['saveRoaster', 1],
       ['setActive', 2],
       ['copy', 'custom-1', 2],
+    ]);
+  });
+
+  it('checks bean requests at the boundary', async () => {
+    const { handlers, calls } = setup();
+    await expect(handlers[IPC_CHANNELS.addBean]?.({ name: '' })).rejects.toThrow();
+    await expect(handlers[IPC_CHANNELS.addStock]?.({ beanId: 1, grams: -5 })).rejects.toThrow();
+    await expect(handlers[IPC_CHANNELS.setRoastSetup]?.({ beanId: 'x' })).rejects.toThrow();
+    await expect(handlers[IPC_CHANNELS.saveRoastResult]?.({ id: 1, rating: 9 })).rejects.toThrow();
+    await expect(
+      handlers[IPC_CHANNELS.makeProfileFromRoast]?.({ roastId: 1, style: 'wavy' }),
+    ).rejects.toThrow();
+    expect(calls).toEqual([]);
+    const setup_ = { beanId: 1, batchG: 375, ghostRoastId: null };
+    await handlers[IPC_CHANNELS.setRoastSetup]?.(setup_);
+    await handlers[IPC_CHANNELS.setBeanArchived]?.({ id: 1, archived: true });
+    const adjust = { beanId: 1, greenG: 5, roastedG: 6 };
+    await handlers[IPC_CHANNELS.adjustStock]?.(adjust);
+    const made = { roastId: 1, style: 'curve' };
+    await handlers[IPC_CHANNELS.makeProfileFromRoast]?.(made);
+    expect(calls).toEqual([
+      ['setup', setup_],
+      ['archive', { id: 1, archived: true }],
+      ['adjustStock', 5],
+      ['makeProfile', made],
     ]);
   });
 

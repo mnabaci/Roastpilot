@@ -1,13 +1,16 @@
 import type {
   AutoStatus,
+  Bean,
   ConnectionState,
   ProfileEntry,
   Reading,
   Roaster,
+  RoastSetup,
   RoastState,
   Settings,
 } from '@roastpilot/shared';
 import { createAutoStore, type AutoStore } from './auto-store';
+import { createBeansStore, type BeansStore } from './beans-store';
 import { createConnectionStore, type ConnectionStore } from './connection-store';
 import { createRoastersStore, type RoastersStore } from './roasters-store';
 import { createRoastStore, type RoastStore } from './roast-store';
@@ -24,6 +27,7 @@ export interface Stores {
   settings: SettingsStore;
   auto: AutoStore;
   roasters: RoastersStore;
+  beans: BeansStore;
 }
 
 /** Starting values, mostly for tests. */
@@ -37,6 +41,8 @@ export interface StoresSeed {
   auto?: AutoStatus;
   profiles?: ProfileEntry[];
   roasters?: Roaster[];
+  beans?: Bean[];
+  setup?: RoastSetup;
 }
 
 export function createStores(seed: StoresSeed = {}): Stores {
@@ -51,5 +57,6 @@ export function createStores(seed: StoresSeed = {}): Stores {
     settings: createSettingsStore(seed.settings),
     auto: createAutoStore(seed.auto, seed.profiles),
     roasters: createRoastersStore(seed.roasters),
+    beans: createBeansStore(seed.beans, seed.setup),
   };
 }

@@ -72,7 +72,12 @@ export class ProfileService {
   async duplicate(id: ProfileId): Promise<Result<ProfileEntry, ProfileError>> {
     const source = [...this.#builtIns(), ...this.#ownHere()].find((p) => p.id === id);
     if (!source) return err({ kind: 'not-found', id });
-    const copy = { ...source, id: this.#deps.newId(), name: `${source.name} copy` };
+    const copy = {
+      ...source,
+      id: this.#deps.newId(),
+      name: `${source.name} copy`,
+      source: { kind: 'profile' as const, profileId: source.id },
+    };
     return this.#store(copy, this.#deps.activeRoaster().id);
   }
 
@@ -80,7 +85,20 @@ export class ProfileService {
   async copyTo(id: ProfileId, roasterId: RoasterId): Promise<Result<ProfileEntry, ProfileError>> {
     const source = [...this.#builtIns(), ...this.#ownHere()].find((p) => p.id === id);
     if (!source) return err({ kind: 'not-found', id });
-    return this.#store({ ...source, id: this.#deps.newId(), needsCalibration: true }, roasterId);
+    return this.#store(
+      {
+        ...source,
+        id: this.#deps.newId(),
+        needsCalibration: true,
+        source: { kind: 'profile', profileId: source.id },
+      },
+      roasterId,
+    );
+  }
+
+  /** A profile made elsewhere (from a roast), on the roaster it belongs to. */
+  addOn(profile: AutoProfile, roasterId: RoasterId): Promise<Result<ProfileEntry, ProfileError>> {
+    return this.#store(profile, roasterId);
   }
 
   save(profile: AutoProfile): Promise<Result<ProfileEntry, ProfileError>> {

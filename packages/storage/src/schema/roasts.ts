@@ -1,6 +1,14 @@
 // Saved roasts (docs/spec/data-model.md). Change only through a new migration (add-migration skill).
 import { sql } from 'drizzle-orm';
-import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import {
+  index,
+  integer,
+  real,
+  sqliteTable,
+  text,
+  type AnySQLiteColumn,
+} from 'drizzle-orm/sqlite-core';
+import { beans } from './beans';
 import { roasters } from './roasters';
 
 export const roasts = sqliteTable(
@@ -16,6 +24,16 @@ export const roasts = sqliteTable(
     dropTimeS: real('drop_time_s'),
     dropTemp: real('drop_temp'),
     roasterId: integer('roaster_id').references(() => roasters.id),
+    beanId: integer('bean_id').references(() => beans.id),
+    /** Self-reference: a deleted ghost just leaves this empty. */
+    ghostRoastId: integer('ghost_roast_id').references((): AnySQLiteColumn => roasts.id, {
+      onDelete: 'set null',
+    }),
+    batchG: real('batch_g'),
+    roastedG: real('roasted_g'),
+    rating: integer('rating'),
+    isFavourite: integer('is_favourite', { mode: 'boolean' }).notNull().default(false),
+    notes: text('notes'),
   },
   (table) => [index('roasts_started_at').on(table.startedAt)],
 );

@@ -40,11 +40,32 @@ export {
 export { rateOfRise, ROR_DRAW_LIMITS, ROR_WINDOW_MS, rorReadings } from './roast/rate-of-rise';
 export { MAX_HISTORY_READINGS, ReadingHistory } from './roast/reading-history';
 export type { SettingsStore } from './settings/settings-store';
-export type { RoastRepository, RoastSummaryPatch } from './history/roast-repository';
+export type {
+  RoastRepository,
+  RoastSummaryPatch,
+  NewRoast,
+  RoastPlan,
+} from './history/roast-repository';
 export { RoastRecorder, type RoastRecorderDeps } from './history/roast-recorder';
 export { AutoPilot, type AutoPilotDeps } from './auto/auto-pilot';
 export type { AutoEvent } from './auto/roast-run';
 export { plannedCurve } from './auto/steps-curve';
+export { profileFromRoast, type ProfileStyle } from './profiles/profile-from-roast';
 export type { ProfileRepository } from './profiles/profile-repository';
 export type { RoasterRepository } from './roasters/roaster-repository';
 export { withSoakTime } from './auto/phase-plan';
+export {
+  batchPlans,
+  DEFAULT_LOSS_PCT,
+  expectedRoastedG,
+  type BatchPlans,
+  type BatchSizes,
+} from './beans/batch-plans';
+export { beanHints } from './beans/bean-hints';
+export type { BeanRepository } from './beans/bean-repository';
+export {
+  bestFavourite,
+  defaultGhost,
+  suggestProfile,
+  type ProfileSuggestion,
+} from './beans/suggest-profile';

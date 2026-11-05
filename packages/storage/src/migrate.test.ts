@@ -25,10 +25,18 @@ describe('migrate', () => {
     const db = new DatabaseSync(':memory:');
     expect(migrate(db)).toEqual({
       ok: true,
-      value: { applied: ['0000_roasts', '0001_profiles', '0002_roasters'] },
+      value: { applied: ['0000_roasts', '0001_profiles', '0002_roasters', '0003_beans'] },
     });
     expect(tables(db)).toEqual(
-      expect.arrayContaining(['profiles', 'roast_events', 'roast_samples', 'roasters', 'roasts']),
+      expect.arrayContaining([
+        'bean_purchases',
+        'beans',
+        'profiles',
+        'roast_events',
+        'roast_samples',
+        'roasters',
+        'roasts',
+      ]),
     );
     expect(version(db)).toBe(MIGRATIONS.length);
     expect(migrate(db)).toEqual({ ok: true, value: { applied: [] } });
@@ -40,7 +48,7 @@ describe('migrate', () => {
     db.exec(`INSERT INTO roasts (mode, started_at) VALUES ('manual', '2026-11-04T10:00:00.000Z')`);
     expect(migrate(db)).toEqual({
       ok: true,
-      value: { applied: ['0001_profiles', '0002_roasters'] },
+      value: { applied: ['0001_profiles', '0002_roasters', '0003_beans'] },
     });
     expect(db.prepare('SELECT mode, profile, roaster_id FROM roasts').all()).toEqual([
       { mode: 'manual', profile: null, roaster_id: 1 },

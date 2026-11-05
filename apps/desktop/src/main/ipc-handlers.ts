@@ -7,7 +7,15 @@ import {
   type RoasterSession,
 } from '@roastpilot/core';
 import {
+  AddStockSchema,
+  AdjustStockSchema,
   AutoProfileSchema,
+  BeanFieldsSchema,
+  MakeProfileRequestSchema,
+  RoastResultSchema,
+  RoastSetupSchema,
+  SetArchivedSchema,
+  UpdateBeanSchema,
   ConnectTargetSchema,
   CopyProfileRequestSchema,
   IPC_CHANNELS,
@@ -24,9 +32,14 @@ import {
   type ConnectTarget,
   type LogDay,
   type LogDayRead,
+  type MakeProfileError,
+  type MakeProfileRequest,
+  type ProfileEntry,
+  type Result,
   type SerialPortInfo,
   type Snapshot,
 } from '@roastpilot/shared';
+import type { BeanService } from './beans/bean-service';
 import type { HistoryService } from './history/history-service';
 import type { ProfileService } from './profiles/profile-service';
 import type { RoasterService } from './roasters/roaster-service';
@@ -39,13 +52,18 @@ export interface IpcDeps {
   >;
   roast: Pick<ManualRoast, 'act' | 'outputRequested'>;
   settings: Pick<SettingsService, 'get' | 'set'>;
-  history: Pick<HistoryService, 'list' | 'get' | 'delete'>;
+  history: Pick<HistoryService, 'list' | 'get' | 'delete' | 'saveResult'>;
   pilot: Pick<AutoPilot, 'chargeSoon' | 'outputRequested' | 'resume'>;
   profiles: Pick<ProfileService, 'list' | 'duplicate' | 'copyTo' | 'save' | 'delete'>;
   roasters: Pick<
     RoasterService,
     'load' | 'add' | 'save' | 'delete' | 'setActive' | 'chooseConnection'
   >;
+  beans: Pick<
+    BeanService,
+    'list' | 'add' | 'update' | 'setArchived' | 'addStock' | 'adjustStock' | 'setSetup'
+  >;
+  makeProfile: (request: MakeProfileRequest) => Promise<Result<ProfileEntry, MakeProfileError>>;
   /** The clock's now, for Charge soon. */
   nowMs: () => number;
   snapshot: () => Snapshot;
@@ -77,6 +95,8 @@ export function createIpcHandlers({
   pilot,
   profiles,
   roasters,
+  beans,
+  makeProfile,
   nowMs,
   snapshot,
   listPorts,
@@ -126,6 +146,25 @@ export function createIpcHandlers({
       const { id, roasterId } = CopyProfileRequestSchema.parse(payload);
       return profiles.copyTo(id, roasterId);
     }),
+    [IPC_CHANNELS.listBeans]: handler(() => beans.list()),
+    [IPC_CHANNELS.addBean]: handler((payload) => beans.add(BeanFieldsSchema.parse(payload))),
+    [IPC_CHANNELS.updateBean]: handler((payload) => beans.update(UpdateBeanSchema.parse(payload))),
+    [IPC_CHANNELS.setBeanArchived]: handler((payload) =>
+      beans.setArchived(SetArchivedSchema.parse(payload)),
+    ),
+    [IPC_CHANNELS.addStock]: handler((payload) => beans.addStock(AddStockSchema.parse(payload))),
+    [IPC_CHANNELS.adjustStock]: handler((payload) =>
+      beans.adjustStock(AdjustStockSchema.parse(payload)),
+    ),
+    [IPC_CHANNELS.setRoastSetup]: handler((payload) => {
+      beans.setSetup(RoastSetupSchema.parse(payload));
+    }),
+    [IPC_CHANNELS.saveRoastResult]: handler((payload) =>
+      history.saveResult(RoastResultSchema.parse(payload)),
+    ),
+    [IPC_CHANNELS.makeProfileFromRoast]: handler((payload) =>
+      makeProfile(MakeProfileRequestSchema.parse(payload)),
+    ),
     [IPC_CHANNELS.listRoasters]: handler(() => roasters.load()),
     [IPC_CHANNELS.addRoaster]: handler((payload) => roasters.add(NewRoasterSchema.parse(payload))),
     [IPC_CHANNELS.saveRoaster]: handler((payload) => roasters.save(RoasterSchema.parse(payload))),

@@ -6,14 +6,15 @@ import {
   type Logger,
   type ManualRoast,
   type RoasterSession,
+  type RoastPlan,
 } from '@roastpilot/core';
 import {
   IPC_CHANNELS,
-  type AutoProfile,
   type IpcEventChannel,
   type IpcEventPayloads,
   type Reading,
   type RoasterId,
+  type RoastSetup,
 } from '@roastpilot/shared';
 import type { ProfileService } from './profiles/profile-service';
 import type { RoasterService } from './roasters/roaster-service';
@@ -24,11 +25,12 @@ export function roastPlan(
   settings: Pick<SettingsService, 'latest'>,
   profiles: Pick<ProfileService, 'active'>,
   roasterId: RoasterId,
-): { mode: 'manual' | 'auto'; profile: AutoProfile | null; roasterId: RoasterId } {
+  setup: RoastSetup,
+): RoastPlan {
   const { roastMode, soakTimeS } = settings.latest;
   return roastMode === 'auto'
-    ? { mode: 'auto', profile: withSoakTime(profiles.active(), soakTimeS), roasterId }
-    : { mode: 'manual', profile: null, roasterId };
+    ? { mode: 'auto', profile: withSoakTime(profiles.active(), soakTimeS), roasterId, ...setup }
+    : { mode: 'manual', profile: null, roasterId, ...setup };
 }
 
 function noteAutoEvent(roast: ManualRoast, event: AutoEvent): void {

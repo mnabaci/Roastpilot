@@ -7,6 +7,7 @@ import {
   serializeError,
   type Clock,
   type Logger,
+  type BeanRepository,
   type ProfileRepository,
   type RoasterRepository,
   type RoastRepository,
@@ -21,6 +22,7 @@ import {
   type Snapshot,
 } from '@roastpilot/shared';
 import { createAutoPilot, roastPlan } from './auto-wiring';
+import { BeanService } from './beans/bean-service';
 import { HistoryService } from './history/history-service';
 import { ProfileService } from './profiles/profile-service';
 import { RoasterService } from './roasters/roaster-service';
@@ -34,6 +36,7 @@ export interface AppServicesDeps {
   roasts: RoastRepository;
   profileStore: ProfileRepository;
   roasterStore: RoasterRepository;
+  beanStore: BeanRepository;
   /** New ids for your own profiles. */
   newProfileId: () => string;
   /** Wall-clock time as ISO 8601, for saved roasts. */
@@ -55,6 +58,7 @@ export interface AppServices {
   pilot: ReturnType<typeof createAutoPilot>;
   profiles: ProfileService;
   roasters: RoasterService;
+  beans: BeanService;
   snapshot: () => Snapshot;
 }
 
@@ -66,6 +70,7 @@ export function createAppServices({
   roasts,
   profileStore,
   roasterStore,
+  beanStore,
   newProfileId,
   nowIso,
   onConnectionChange,
@@ -73,14 +78,28 @@ export function createAppServices({
   publish,
 }: AppServicesDeps): AppServices {
   const history = new ReadingHistory();
+  const beans = new BeanService({
+    repository: beanStore,
+    onChange: (list) => {
+      publish(IPC_CHANNELS.beansChanged, list);
+    },
+    logger: logger.child('beans'),
+  });
+  // A roast takes its batch off green stock, and its result adds to roasted stock.
+  const refreshBeans = () => {
+    beans.refresh().catch((error: unknown) => {
+      logger.error('beans.refresh-failed', { error: serializeError(error) });
+    });
+  };
   const historyLogger = logger.child('history');
   const recorder = new RoastRecorder({
     repository: roasts,
     nowIso,
     readingsSoFar: () => history.all(),
-    plan: () => roastPlan(settings, profiles, roasters.active().id),
+    plan: () => roastPlan(settings, profiles, roasters.active().id, beans.setup),
     onSaved: (id) => {
       publish(IPC_CHANNELS.roastsChanged, { id, deleted: false });
+      refreshBeans();
     },
     logger: historyLogger,
   });
@@ -195,6 +214,7 @@ export function createAppServices({
     readings: [...history.all()],
     safety: session.safetyStatus,
     auto: pilot.status,
+    setup: beans.setup,
   });
   return {
     session,
@@ -206,12 +226,17 @@ export function createAppServices({
       onDeleted: (id) => {
         publish(IPC_CHANNELS.roastsChanged, { id, deleted: true });
       },
+      onResultSaved: (id) => {
+        publish(IPC_CHANNELS.roastsChanged, { id, deleted: false });
+        refreshBeans();
+      },
       logger: historyLogger,
     }),
     recorder,
     pilot,
     profiles,
     roasters,
+    beans,
     snapshot,
   };
 }

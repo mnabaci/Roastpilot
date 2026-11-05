@@ -1,12 +1,11 @@
-import type { Logger, RoastRepository, RoastSummaryPatch } from '@roastpilot/core';
+import type { Logger, NewRoast, RoastRepository, RoastSummaryPatch } from '@roastpilot/core';
 import {
   err,
   AutoProfileSchema,
   ok,
   SavedEventSchema,
   SavedSampleSchema,
-  type AutoProfile,
-  type RoasterId,
+  type RoastResult,
   type Result,
   type RoastDetail,
   type RoastId,
@@ -15,10 +14,11 @@ import {
   type SavedSample,
   type StorageError,
 } from '@roastpilot/shared';
-import { asc, desc, eq } from 'drizzle-orm';
+import { asc, desc, eq, sql } from 'drizzle-orm';
 import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy';
 import { z } from 'zod';
 import { attempt, parseJson } from './attempt';
+import { beans } from './schema/beans';
 import { roastEvents, roasts, roastSamples } from './schema/roasts';
 
 /** Rows per INSERT, well under SQLite's bound-parameter limit. */
@@ -37,6 +37,15 @@ const summaryColumns = {
   dropTimeS: roasts.dropTimeS,
   dropTemp: roasts.dropTemp,
   roasterId: roasts.roasterId,
+  beanId: roasts.beanId,
+  ghostRoastId: roasts.ghostRoastId,
+  batchG: roasts.batchG,
+  roastedG: roasts.roastedG,
+  rating: roasts.rating,
+  isFavourite: roasts.isFavourite,
+  notes: roasts.notes,
+  profileId: sql<string | null>`json_extract(${roasts.profile}, '$.id')`,
+  profileName: sql<string | null>`json_extract(${roasts.profile}, '$.name')`,
 };
 
 /** Saved roasts in SQLite (docs/spec/data-model.md). Rows are checked on the way out. */
@@ -49,20 +58,21 @@ export class SqliteRoastRepository implements RoastRepository {
     this.#logger = logger;
   }
 
-  create(roast: {
-    startedAt: string;
-    mode: 'manual' | 'auto';
-    profile: AutoProfile | null;
-    roasterId: RoasterId | null;
-  }): Promise<Result<RoastId, StorageError>> {
+  create(roast: NewRoast): Promise<Result<RoastId, StorageError>> {
     return attempt(async () => {
       const values = {
         startedAt: roast.startedAt,
         mode: roast.mode,
         profile: roast.profile && JSON.stringify(roast.profile),
         roasterId: roast.roasterId,
+        beanId: roast.beanId,
+        batchG: roast.batchG,
+        ghostRoastId: roast.ghostRoastId,
       };
       const row = await this.#db.insert(roasts).values(values).returning({ id: roasts.id }).get();
+      if (roast.beanId !== null && roast.batchG !== null) {
+        await this.#moveStock(roast.beanId, { greenG: -roast.batchG });
+      }
       return row.id;
     });
   }
@@ -97,6 +107,41 @@ export class SqliteRoastRepository implements RoastRepository {
   update(id: RoastId, patch: RoastSummaryPatch): Promise<Result<void, StorageError>> {
     return attempt(async () => {
       await this.#db.update(roasts).set(patch).where(eq(roasts.id, id)).run();
+    });
+  }
+
+  /** Moves stock by a difference; it stops at 0. */
+  async #moveStock(beanId: number, { greenG = 0, roastedG = 0 }): Promise<void> {
+    await this.#db
+      .update(beans)
+      .set({
+        greenG: sql`max(0, ${beans.greenG} + ${greenG})`,
+        roastedG: sql`max(0, ${beans.roastedG} + ${roastedG})`,
+      })
+      .where(eq(beans.id, beanId))
+      .run();
+  }
+
+  /** Saves what you say about the roast; stock moves only by what changed. */
+  async saveResult({ id, ...result }: RoastResult): Promise<Result<void, StorageError>> {
+    const before = await attempt(() =>
+      this.#db
+        .select({ beanId: roasts.beanId, batchG: roasts.batchG, roastedG: roasts.roastedG })
+        .from(roasts)
+        .where(eq(roasts.id, id))
+        .get(),
+    );
+    if (!before.ok) return before;
+    const row = before.value;
+    if (!row) return err({ kind: 'not-found', id });
+    return attempt(async () => {
+      await this.#db.update(roasts).set(result).where(eq(roasts.id, id)).run();
+      if (row.beanId !== null) {
+        await this.#moveStock(row.beanId, {
+          greenG: (row.batchG ?? 0) - (result.batchG ?? row.batchG ?? 0),
+          roastedG: (result.roastedG ?? 0) - (row.roastedG ?? 0),
+        });
+      }
     });
   }
 

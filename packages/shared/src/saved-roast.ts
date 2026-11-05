@@ -15,6 +15,26 @@ export const RoastSummarySchema = z.object({
   dropTimeS: z.number().nullable(),
   dropTemp: z.number().nullable(),
   roasterId: z.number().int().positive().nullable(),
+  beanId: z.number().int().positive().nullable(),
+  ghostRoastId: z.number().int().positive().nullable(),
+  batchG: z.number().nullable(),
+  roastedG: z.number().nullable(),
+  rating: z.number().int().min(1).max(5).nullable(),
+  isFavourite: z.boolean(),
+  notes: z.string().nullable(),
+  /** From the roast's profile copy; null on Manual. */
+  profileId: z.string().nullable(),
+  profileName: z.string().nullable(),
+});
+
+/** What you say about a roast after it, and can change later (docs/spec/ui.md). */
+export const RoastResultSchema = z.object({
+  id: z.number().int().positive(),
+  batchG: z.number().positive().nullable(),
+  roastedG: z.number().positive().nullable(),
+  rating: z.number().int().min(1).max(5).nullable(),
+  isFavourite: z.boolean(),
+  notes: z.string().max(4000).nullable(),
 });
 
 /** One reading of a saved roast; negative `tS` is before charge (preheat). */
@@ -50,6 +70,7 @@ export const DeleteRoastErrorSchema = z.union([
 ]);
 
 export type RoastId = z.infer<typeof RoastIdSchema>;
+export type RoastResult = z.infer<typeof RoastResultSchema>;
 export type RoastSummary = z.infer<typeof RoastSummarySchema>;
 export type SavedSample = z.infer<typeof SavedSampleSchema>;
 export type SavedEvent = z.infer<typeof SavedEventSchema>;

@@ -11,6 +11,7 @@ import { DEFAULT_SETTINGS, IPC_CHANNELS, ok, type Settings } from '@roastpilot/s
 import { describe, expect, it, vi } from 'vitest';
 import { createAppServices } from './app-services';
 import {
+  unavailableBeans,
   unavailableProfiles,
   unavailableRepository,
   unavailableRoasters,
@@ -33,6 +34,7 @@ function setup(
     roasts,
     profileStore: unavailableProfiles('not in this test'),
     roasterStore: unavailableRoasters('not in this test'),
+    beanStore: unavailableBeans('not in this test'),
     newProfileId: () => 'custom-1',
     nowIso: () => '2026-11-04T10:00:00.000Z',
     onConnectionChange: () => undefined,

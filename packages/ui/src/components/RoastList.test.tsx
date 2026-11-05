@@ -38,4 +38,19 @@ describe('RoastList', () => {
     await userEvent.keyboard('{ArrowUp}');
     expect(rows[1]).toHaveFocus();
   });
+
+  it('shows the second line and marks a favourite', () => {
+    render(
+      <RoastList
+        label="Saved roasts"
+        items={[
+          { id: 1, title: 'Wed', numbers: '9:40', detail: 'Yirgacheffe · 4/5', favourite: true },
+        ]}
+        selectedId={undefined}
+        onSelect={() => undefined}
+      />,
+    );
+    expect(screen.getByText('Yirgacheffe · 4/5')).toBeTruthy();
+    expect(screen.getByRole('img', { name: 'Favourite' })).toBeTruthy();
+  });
 });

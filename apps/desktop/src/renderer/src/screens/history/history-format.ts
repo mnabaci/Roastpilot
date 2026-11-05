@@ -1,4 +1,4 @@
-import type { RoastPhase, RoastSummary } from '@roastpilot/shared';
+import type { Bean, RoastPhase, RoastSummary } from '@roastpilot/shared';
 import { formatClock, formatNumber, type RoastListItem } from '@roastpilot/ui';
 
 /** Locale and time zone for dates; the system's when left out (tests pin them). */
@@ -49,17 +49,34 @@ export function inProgressId(
   return newest?.endedAt === null && LIVE_PHASES.includes(livePhase) ? newest.id : undefined;
 }
 
+/** `Yirgacheffe · Light · Steps · 4/5`: bean, profile and rating. */
+export function roastDetailLine(
+  roast: RoastSummary,
+  beans: readonly Pick<Bean, 'id' | 'name'>[],
+): string {
+  return [
+    beans.find((b) => b.id === roast.beanId)?.name ?? 'No bean',
+    roast.profileName ?? 'Manual',
+    roast.rating === null ? undefined : `${String(roast.rating)}/5`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
 /** List rows. A roast that never reached its end is Unfinished, unless it is in progress. */
 export function roastRows(
   roasts: readonly RoastSummary[],
   livePhase: RoastPhase,
   options: DateOptions = {},
+  beans: readonly Pick<Bean, 'id' | 'name'>[] = [],
 ): RoastListItem[] {
   const live = inProgressId(roasts, livePhase);
   return roasts.map((roast) => ({
     id: roast.id,
     title: roastTitle(roast.startedAt, options),
     numbers: roastNumbers(roast),
+    detail: roastDetailLine(roast, beans),
+    favourite: roast.isFavourite,
     badge: roast.endedAt !== null ? undefined : roast.id === live ? 'In progress' : 'Unfinished',
   }));
 }

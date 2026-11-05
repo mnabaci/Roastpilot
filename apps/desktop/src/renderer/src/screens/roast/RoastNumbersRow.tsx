@@ -9,10 +9,13 @@ const clock = (s: number | undefined) =>
 export function RoastNumbersRow({
   numbers,
   tempName,
+  ghostLine,
 }: {
   numbers: RoastNumbers;
   /** The connected roaster's name for its temperature. */
   tempName: string;
+  /** How today compares with the ghost. */
+  ghostLine?: string;
 }) {
   return (
     <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -21,6 +24,7 @@ export function RoastNumbersRow({
         value={numbers.bt === undefined ? undefined : formatNumber(numbers.bt, 1)}
         unit="°C"
         tone="heat"
+        {...(ghostLine ? { context: ghostLine } : {})}
       />
       <StatCard
         label="RoR"

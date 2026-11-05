@@ -5,6 +5,7 @@ import {
   drizzleOn,
   openDatabase,
   SqliteProfileRepository,
+  SqliteBeanRepository,
   SqliteRoasterRepository,
   SqliteRoastRepository,
 } from '@roastpilot/storage';
@@ -18,6 +19,7 @@ import { installCrashHandlers } from './crash-handlers';
 import { createDriver } from './driver-factory';
 import { SimulatorBeans } from './simulator-beans';
 import {
+  unavailableBeans,
   unavailableProfiles,
   unavailableRepository,
   unavailableRoasters,
@@ -28,6 +30,7 @@ import { createMainWindow, devIcon } from './main-window';
 import { createAppLogger } from './logging/app-logger';
 import { listLogDays, readLogDay } from './logging/log-reader';
 import { pruneOldLogsLater } from './logging/prune';
+import { makeProfileFromRoast } from './profiles/make-profile';
 import { createPowerGuard } from './power-guard';
 import { createQuitGuard } from './quit-guard';
 import { JsonSettingsStore } from './settings/json-settings-store';
@@ -74,6 +77,12 @@ const roasterStore = database.ok
       database.error.kind === 'storage-failed' ? database.error.message : 'unavailable',
     );
 
+const beanStore = database.ok
+  ? new SqliteBeanRepository(drizzleOn(database.value))
+  : unavailableBeans(
+      database.error.kind === 'storage-failed' ? database.error.message : 'unavailable',
+    );
+
 // Asleep, nothing watches the roaster: stay awake while one is connected, and keep the screen on
 // during a roast (docs/spec/safety.md).
 const power = createPowerGuard({
@@ -86,7 +95,7 @@ const power = createPowerGuard({
 
 const simulatorBeans = new SimulatorBeans();
 
-const { session, roast, settings, history, recorder, pilot, profiles, roasters, snapshot } =
+const { session, roast, settings, history, recorder, pilot, profiles, roasters, beans, snapshot } =
   createAppServices({
     clock: systemClock,
     logger,
@@ -96,6 +105,7 @@ const { session, roast, settings, history, recorder, pilot, profiles, roasters, 
     roasts,
     profileStore,
     roasterStore,
+    beanStore,
     newProfileId: () => `custom-${randomUUID()}`,
     nowIso: () => new Date().toISOString(),
     onConnectionChange: (state) => {
@@ -157,6 +167,14 @@ app
           pilot,
           profiles,
           roasters,
+          beans,
+          makeProfile: (request) =>
+            makeProfileFromRoast(request, {
+              history,
+              profiles,
+              activeRoaster: () => roasters.active(),
+              newId: () => `custom-${randomUUID()}`,
+            }),
           nowMs: () => systemClock.now(),
           snapshot,
           listPorts: () => listSerialPorts(),

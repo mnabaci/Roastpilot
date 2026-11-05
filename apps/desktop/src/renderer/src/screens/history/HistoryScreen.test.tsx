@@ -26,6 +26,15 @@ const summary = (id: number, startedAt: string, over: Partial<RoastSummary> = {}
   fcTimeS: 480,
   dropTimeS: 580,
   roasterId: null,
+  beanId: null,
+  ghostRoastId: null,
+  batchG: null,
+  roastedG: null,
+  rating: null,
+  isFavourite: false,
+  notes: null,
+  profileId: null,
+  profileName: null,
   dropTemp: 205.5,
   ...over,
 });
@@ -41,7 +50,11 @@ const detail = (s: RoastSummary): RoastDetail => ({
 
 function renderWithPhase(roasts: RoastSummary[], phase: RoastPhase) {
   const api = fakeApi({ listRoasts: vi.fn(() => Promise.resolve(roasts)) });
-  renderApp(<HistoryScreen />, { roast: { ...READY_ROAST, phase } }, api);
+  renderApp(
+    <HistoryScreen onOpenProfile={() => undefined} />,
+    { roast: { ...READY_ROAST, phase } },
+    api,
+  );
 }
 
 function setup(roasts: RoastSummary[] = [NEWER, OLDER]) {
@@ -62,7 +75,7 @@ function setup(roasts: RoastSummary[] = [NEWER, OLDER]) {
       return () => listeners.delete(listener);
     }),
   });
-  renderApp(<HistoryScreen />, {}, api);
+  renderApp(<HistoryScreen onOpenProfile={() => undefined} />, {}, api);
   return {
     api,
     save: (roast: RoastSummary) => {

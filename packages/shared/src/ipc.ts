@@ -5,6 +5,7 @@ import {
   type AutoResumeError,
   type AutoStatus,
 } from './auto-status';
+import { RoastSetupSchema } from './bean';
 import { ReadingSchema, type Reading } from './channels';
 import {
   ConnectionStateSchema,
@@ -16,6 +17,16 @@ import type { DriverError } from './driver-error';
 import type { RendererLogEntry } from './log-entry';
 import type { LogDay, LogDayRead, LogRecord } from './log-record';
 import type { AutoProfile, ProfileEntry, ProfileError, ProfileId } from './profile';
+import type {
+  AddStock,
+  AdjustStock,
+  Bean,
+  BeanFields,
+  BeanId,
+  RoastSetup,
+  UpdateBean,
+} from './bean';
+import type { MakeProfileError, MakeProfileRequest } from './make-profile';
 import type { Result } from './result';
 import type { NewRoaster, Roaster, RoasterError, RoasterId } from './roaster';
 import {
@@ -31,6 +42,7 @@ import type {
   RoastSummary,
   StorageError,
 } from './saved-roast';
+import type { RoastResult } from './saved-roast';
 import type { Screen } from './screen';
 import type { Settings, SettingsWriteError } from './settings';
 import type { AcknowledgeError, SafetyEvent } from './safety-event';
@@ -76,6 +88,16 @@ export const IPC_CHANNELS = {
   setActiveRoaster: 'roasters:set-active',
   chooseConnection: 'roasters:choose-connection',
   roastersChanged: 'roasters:changed',
+  listBeans: 'beans:list',
+  addBean: 'beans:add',
+  updateBean: 'beans:update',
+  setBeanArchived: 'beans:set-archived',
+  addStock: 'beans:add-stock',
+  adjustStock: 'beans:adjust-stock',
+  beansChanged: 'beans:changed',
+  setRoastSetup: 'roast:set-setup',
+  saveRoastResult: 'history:save-result',
+  makeProfileFromRoast: 'history:make-profile',
 } as const;
 
 /** Everything a window needs when it opens or reloads mid-roast. */
@@ -86,6 +108,7 @@ export const SnapshotSchema = z.object({
   readings: z.array(ReadingSchema),
   safety: z.object({ locked: z.boolean(), tripped: z.array(z.string()) }),
   auto: AutoStatusSchema,
+  setup: RoastSetupSchema,
 });
 export type Snapshot = z.infer<typeof SnapshotSchema>;
 
@@ -100,6 +123,7 @@ export interface IpcEventPayloads {
   [IPC_CHANNELS.roastsChanged]: { id: RoastId; deleted: boolean };
   [IPC_CHANNELS.autoStatus]: AutoStatus;
   [IPC_CHANNELS.roastersChanged]: Roaster[];
+  [IPC_CHANNELS.beansChanged]: Bean[];
 }
 export type IpcEventChannel = keyof IpcEventPayloads;
 
@@ -193,6 +217,26 @@ export interface ProfilesApi {
   }): Promise<Result<ProfileEntry, ProfileError>>;
 }
 
+/** Beans and stock (docs/spec/batch-and-stock.md). The stores follow `onBeans`. */
+export interface BeansApi {
+  /** Empty when storage can't be read (logged in main). */
+  listBeans(): Promise<Bean[]>;
+  addBean(fields: BeanFields): Promise<Result<BeanId, StorageError>>;
+  updateBean(update: UpdateBean): Promise<Result<void, StorageError>>;
+  setBeanArchived(request: { id: BeanId; archived: boolean }): Promise<Result<void, StorageError>>;
+  addStock(stock: AddStock): Promise<Result<void, StorageError>>;
+  adjustStock(stock: AdjustStock): Promise<Result<void, StorageError>>;
+  onBeans(listener: (beans: Bean[]) => void): Unsubscribe;
+  /** What the next roast is of; read at charge. */
+  setRoastSetup(setup: RoastSetup): Promise<void>;
+  /** Roasted weight, rating, star and notes. */
+  saveRoastResult(result: RoastResult): Promise<Result<void, StorageError>>;
+  /** A new profile of your own from a saved roast, on the roaster it ran on. */
+  makeProfileFromRoast(
+    request: MakeProfileRequest,
+  ): Promise<Result<ProfileEntry, MakeProfileError>>;
+}
+
 /** Roaster records (docs/spec/roasters.md). Changes wait while one is connected. */
 export interface RoastersApi {
   listRoasters(): Promise<Roaster[]>;
@@ -224,4 +268,5 @@ export interface RoastpilotApi
     AutoApi,
     ProfilesApi,
     RoastersApi,
+    BeansApi,
     AppApi {}

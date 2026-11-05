@@ -10,6 +10,8 @@ type SyncApi = Pick<
   | 'getSettings'
   | 'listProfiles'
   | 'listRoasters'
+  | 'listBeans'
+  | 'onBeans'
   | 'onRoasters'
   | 'onReading'
   | 'onConnection'
@@ -39,6 +41,9 @@ export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsu
     api.onAutoStatus((status) => {
       stores.auto.setState({ status });
     }),
+    api.onBeans((beans) => {
+      stores.beans.setState({ beans });
+    }),
     api.onRoasters((roasters) => {
       stores.roasters.setState({ roasters });
       // Profiles belong to a roaster, so the list follows the active one.
@@ -52,14 +57,21 @@ export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsu
         });
     }),
   ];
-  Promise.all([api.getSnapshot(), api.getSettings(), api.listProfiles(), api.listRoasters()])
-    .then(([snapshot, settings, profiles, roasters]) => {
+  Promise.all([
+    api.getSnapshot(),
+    api.getSettings(),
+    api.listProfiles(),
+    api.listRoasters(),
+    api.listBeans(),
+  ])
+    .then(([snapshot, settings, profiles, roasters, beans]) => {
       stores.connection.setState({ connection: snapshot.connection });
       stores.roast.setState({ roast: snapshot.roast, readings: [...snapshot.readings] });
       stores.safety.setState(snapshot.safety, true);
       stores.settings.setState({ settings });
       stores.auto.setState({ status: snapshot.auto, profiles });
       stores.roasters.setState({ roasters });
+      stores.beans.setState({ beans, setup: snapshot.setup });
       stores.sync.setState({ ready: true });
     })
     .catch((error: unknown) => {

@@ -42,6 +42,7 @@ export {
   SetOutputRequestSchema,
   type AppApi,
   type AutoApi,
+  type BeansApi,
   type RoastersApi,
   type ProfilesApi,
   type HistoryApi,
@@ -112,6 +113,8 @@ export {
   type RoastState,
 } from './roast';
 export {
+  RoastResultSchema,
+  type RoastResult,
   DeleteRoastErrorSchema,
   RoastDetailSchema,
   RoastIdSchema,
@@ -173,3 +176,31 @@ export {
   type RoasterId,
   type RoasterModel,
 } from './roaster';
+export {
+  AddStockSchema,
+  AdjustStockSchema,
+  BatchPlanSchema,
+  BeanFieldsSchema,
+  BeanIdSchema,
+  BeanProcessSchema,
+  BeanSchema,
+  NO_ROAST_SETUP,
+  RoastSetupSchema,
+  SetArchivedSchema,
+  UpdateBeanSchema,
+  type AddStock,
+  type AdjustStock,
+  type BatchPlan,
+  type Bean,
+  type BeanFields,
+  type BeanId,
+  type BeanProcess,
+  type RoastSetup,
+  type UpdateBean,
+} from './bean';
+export {
+  MakeProfileErrorSchema,
+  MakeProfileRequestSchema,
+  type MakeProfileError,
+  type MakeProfileRequest,
+} from './make-profile';

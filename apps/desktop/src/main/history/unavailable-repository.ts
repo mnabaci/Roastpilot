@@ -1,4 +1,9 @@
-import type { ProfileRepository, RoasterRepository, RoastRepository } from '@roastpilot/core';
+import type {
+  BeanRepository,
+  ProfileRepository,
+  RoasterRepository,
+  RoastRepository,
+} from '@roastpilot/core';
 import { err } from '@roastpilot/shared';
 
 /**
@@ -9,6 +14,7 @@ export function unavailableRepository(message: string): RoastRepository {
   const fail = () => Promise.resolve(err({ kind: 'storage-failed' as const, message }));
   return {
     create: fail,
+    saveResult: fail,
     addSamples: fail,
     addEvent: fail,
     update: fail,
@@ -28,4 +34,17 @@ export function unavailableProfiles(message: string): ProfileRepository {
 export function unavailableRoasters(message: string): RoasterRepository {
   const fail = () => Promise.resolve(err({ kind: 'storage-failed' as const, message }));
   return { list: fail, add: fail, save: fail, setActive: fail, usage: fail, delete: fail };
+}
+
+/** The same for beans: the screen opens empty, changes say why they can't be saved. */
+export function unavailableBeans(message: string): BeanRepository {
+  const fail = () => Promise.resolve(err({ kind: 'storage-failed' as const, message }));
+  return {
+    list: fail,
+    add: fail,
+    update: fail,
+    setArchived: fail,
+    addStock: fail,
+    adjustStock: fail,
+  };
 }

@@ -57,12 +57,19 @@ export const PROFILE_LIMITS = {
   backupS: { max: 1140 },
 } as const;
 
+export const ProfileSourceSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('profile'), profileId: ProfileIdSchema }),
+  z.object({ kind: z.literal('roast'), roastId: z.number().int().positive() }),
+]);
+
 /** A roast plan for one roaster (docs/spec/roast-control.md, Profile format). */
 export const AutoProfileSchema = z
   .object({
     schemaVersion: z.literal(PROFILE_SCHEMA_VERSION),
     id: ProfileIdSchema,
     name: z.string().min(1),
+    /** What your own profile was made from. */
+    source: ProfileSourceSchema.optional(),
     needsCalibration: z.boolean(),
     batchG: z.number().positive(),
     chargeC: z.number(),
