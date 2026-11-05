@@ -9,11 +9,13 @@ const PercentSchema = z.number().min(0).max(100);
 export const PhaseHeatSchema = z.discriminatedUnion('mode', [
   /** Exactly this %, no correction: the soak. */
   z.object({ mode: z.literal('fixed'), pct: PercentSchema }),
-  /** This % plus a limited correction, holding RoR inside the band and following the curve. */
+  /** Reach `endC` in `durationS`, RoR inside the range; `pct` is the heater's starting estimate. */
   z
     .object({
-      mode: z.literal('trim'),
+      mode: z.literal('target'),
       pct: PercentSchema,
+      endC: z.number(),
+      durationS: z.number().positive(),
       rorMin: z.number(),
       rorMax: z.number(),
     })
@@ -62,6 +64,17 @@ export const AutoProfileSchema = z
   .superRefine((profile, ctx) => {
     const lastIndex = profile.phases.length - 1;
     profile.phases.forEach((phase, index) => {
+      if (
+        phase.heat.mode === 'target' &&
+        phase.next.on === 'bt' &&
+        phase.heat.endC !== phase.next.c
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['phases', index, 'heat', 'endC'],
+          message: 'a target step must end at the temperature that starts the next phase',
+        });
+      }
       if ((phase.next.on === 'end') !== (index === lastIndex)) {
         ctx.addIssue({
           code: 'custom',
@@ -94,10 +107,10 @@ export const PidGainsSchema = z.object({
  * milestone 5 (docs/adr/0011-built-in-profile-as-data.md).
  */
 export const AutoTuningSchema = z.object({
-  /** On RoR error (°C/min), for `trim` phases. */
-  trim: PidGainsSchema,
-  /** At most this many % above or below the planned heat. */
-  trimLimitPct: z.number().positive(),
+  /** On RoR error (°C/min), for `target` phases. */
+  target: PidGainsSchema,
+  /** At most this many % above or below the heater estimate. */
+  targetLimitPct: z.number().positive(),
   /** On temperature error (°C), for `follow` phases. */
   follow: PidGainsSchema,
   /** On temperature error (°C), for the preheat climb and hold. */

@@ -21,13 +21,13 @@ const PROFILE: AutoProfile = {
     { name: 'Soak', heat: { mode: 'fixed', pct: 0 }, fanPct: 30, next: { on: 'time', afterS: 60 } },
     {
       name: 'Heat on',
-      heat: { mode: 'trim', pct: 85, rorMin: 14, rorMax: 18 },
+      heat: { mode: 'target', pct: 85, endC: 150, durationS: 245, rorMin: 14, rorMax: 18 },
       fanPct: 30,
       next: { on: 'bt', c: 150, backupS: 390 },
     },
     {
       name: 'Development',
-      heat: { mode: 'trim', pct: 40, rorMin: 3, rorMax: 7 },
+      heat: { mode: 'target', pct: 40, endC: 191, durationS: 94, rorMin: 3, rorMax: 7 },
       fanPct: 80,
       next: { on: 'end' },
     },

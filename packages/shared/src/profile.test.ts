@@ -19,7 +19,7 @@ const profile: AutoProfile = {
     { name: 'Soak', heat: { mode: 'fixed', pct: 0 }, fanPct: 30, next: { on: 'time', afterS: 60 } },
     {
       name: 'Heat on',
-      heat: { mode: 'trim', pct: 85, rorMin: 14, rorMax: 18 },
+      heat: { mode: 'target', pct: 85, endC: 150, durationS: 245, rorMin: 14, rorMax: 18 },
       fanPct: 30,
       next: { on: 'bt', c: 150, backupS: 390 },
     },
@@ -60,9 +60,20 @@ describe('AutoProfileSchema', () => {
 
   it('refuses an upside-down RoR band', () => {
     const [first, second, last] = profile.phases;
-    const flipped = { ...second, heat: { mode: 'trim', pct: 85, rorMin: 18, rorMax: 14 } };
+    const flipped = {
+      ...second,
+      heat: { mode: 'target', pct: 85, endC: 150, durationS: 245, rorMin: 18, rorMax: 14 },
+    };
     const phases = [first, flipped, last];
     expect(AutoProfileSchema.safeParse({ ...profile, phases }).success).toBe(false);
+  });
+
+  it("refuses a target step ending somewhere other than the next phase's trigger", () => {
+    const [first, second, last] = profile.phases;
+    const moved = { ...second, next: { on: 'bt', c: 160, backupS: 390 } };
+    expect(AutoProfileSchema.safeParse({ ...profile, phases: [first, moved, last] }).success).toBe(
+      false,
+    );
   });
 
   it('refuses a saved format from a different version', () => {

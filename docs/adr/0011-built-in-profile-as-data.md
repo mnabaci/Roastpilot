@@ -11,7 +11,7 @@ Auto mode needs a profile and PID gains now, but the roaster records (milestone 
 
 - The two Skywalker Light profiles (Steps and Curve) and their starting PID gains are typed data shipped with the Skywalker driver, validated with zod and carrying a `schemaVersion`. No `profiles` tables yet. Each roast saves a JSON copy of its profile.
 - An `AutoPilot` in `core` runs beside the flow instead of replacing it: it reads readings and roast state, sends heater and fan through the same guarded driver, and asks the flow to Drop. The flow keeps every state, event and cooling rule.
-- `fixed`, `trim` and `follow` control all ship now, sharing one PID and one curve lookup. `trim` also uses the curve to pick its target inside the RoR band, a refinement of ADR 0008's fixed band.
+- `fixed`, `target` and `follow` control all ship now. A `target` step gives an end temperature, a duration and a RoR range, with a heater estimate and a planned fan. This replaces ADR 0008's `trim` (planned heat, ±10%, RoR band): the goal is how the roast progresses, not a heater number, and the correction needs more room than ±10% for a different batch or a cold day.
 
 ## Consequences
 

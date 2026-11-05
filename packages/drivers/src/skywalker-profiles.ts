@@ -25,6 +25,8 @@ const LIGHT_CURVE: readonly CurvePoint[] = [
 
 interface PlannedStep {
   name: string;
+  endC: number;
+  durationS: number;
   heatPct: number;
   rorMin: number;
   rorMax: number;
@@ -35,6 +37,8 @@ interface PlannedStep {
 const LIGHT_STEPS: readonly PlannedStep[] = [
   {
     name: 'Heat on',
+    endC: 150,
+    durationS: 245,
     heatPct: 85,
     rorMin: 14,
     rorMax: 18,
@@ -43,6 +47,8 @@ const LIGHT_STEPS: readonly PlannedStep[] = [
   },
   {
     name: 'Yellowing',
+    endC: 165,
+    durationS: 74,
     heatPct: 65,
     rorMin: 12,
     rorMax: 14,
@@ -51,13 +57,24 @@ const LIGHT_STEPS: readonly PlannedStep[] = [
   },
   {
     name: 'Maillard',
+    endC: 180,
+    durationS: 98,
     heatPct: 50,
     rorMin: 8,
     rorMax: 10,
     fanPct: 65,
     next: { on: 'bt', c: 180, backupS: 660 },
   },
-  { name: 'Development', heatPct: 40, rorMin: 3, rorMax: 7, fanPct: 80, next: { on: 'end' } },
+  {
+    name: 'Development',
+    endC: 191,
+    durationS: 94,
+    heatPct: 40,
+    rorMin: 3,
+    rorMax: 7,
+    fanPct: 80,
+    next: { on: 'end' },
+  },
 ];
 
 const SOAK: ProfilePhase = {
@@ -97,12 +114,18 @@ function lightProfile(
 
 /** The two Light styles (docs/spec/roast-control.md, Auto mode). */
 export const SKYWALKER_PROFILES: Readonly<Record<ProfileId, AutoProfile>> = {
-  'light-steps': lightProfile('light-steps', 'Light · Steps', ({ heatPct, rorMin, rorMax }) => ({
-    mode: 'trim',
-    pct: heatPct,
-    rorMin,
-    rorMax,
-  })),
+  'light-steps': lightProfile(
+    'light-steps',
+    'Light · Steps',
+    ({ heatPct, endC, durationS, rorMin, rorMax }) => ({
+      mode: 'target',
+      pct: heatPct,
+      endC,
+      durationS,
+      rorMin,
+      rorMax,
+    }),
+  ),
   'light-curve': lightProfile('light-curve', 'Light · Curve', ({ heatPct }) => ({
     mode: 'follow',
     pct: heatPct,
@@ -114,8 +137,8 @@ export const SKYWALKER_PROFILES: Readonly<Record<ProfileId, AutoProfile>> = {
  * move to the roaster record in milestone 5.
  */
 export const SKYWALKER_TUNING: AutoTuning = AutoTuningSchema.parse({
-  trim: { kp: 1.5, ki: 0.02, kd: 0 },
-  trimLimitPct: 10,
+  target: { kp: 1.5, ki: 0.02, kd: 0 },
+  targetLimitPct: 20,
   follow: { kp: 1, ki: 0.01, kd: 0 },
   preheat: { kp: 5, ki: 0.02, kd: 0 },
   preheatFanPct: 30,

@@ -3,17 +3,16 @@ import { curveTargetC } from './curve';
 import { Pid } from './pid';
 import { STALL } from './stall-guard';
 
-/** The curve's pull inside the RoR band reaches the band's edge at this far off the curve, in °C. */
-const FULL_BAND_GAP_C = 2;
-
 export interface HeatInput {
   /** Seconds since charge. */
   elapsedS: number;
+  /** Seconds since this phase began. */
+  phaseElapsedS: number;
   /** Seconds since the last call. */
   dtS: number;
   btC: number | undefined;
   ror: number | undefined;
-  /** The stall guard is holding: a `trim` phase may add more heat. */
+  /** The stall guard is holding: a `target` phase may add more heat. */
   stallTripped: boolean;
 }
 
@@ -23,37 +22,38 @@ export interface OutputController {
   next(input: HeatInput): number;
 }
 
+type TargetHeat = Extract<PhaseHeat, { mode: 'target' }>;
+
 /**
- * The RoR to aim for: the band's top when 2 °C or more below the curve, its bottom when 2 °C or
- * more above it, and in proportion in between.
+ * The RoR this step needs now: the temperature still to gain over the time left, kept inside its
+ * range. Out of time and short, the top of the range; at or past the end, the bottom.
  */
-export function targetRor(band: { rorMin: number; rorMax: number }, gapC: number): number {
-  const position = Math.min(1, Math.max(0, (gapC + FULL_BAND_GAP_C) / (2 * FULL_BAND_GAP_C)));
-  return band.rorMax + (band.rorMin - band.rorMax) * position;
+export function neededRor(heat: TargetHeat, btC: number, phaseElapsedS: number): number {
+  const toGainC = heat.endC - btC;
+  if (toGainC <= 0) return heat.rorMin;
+  const leftS = heat.durationS - phaseElapsedS;
+  if (leftS <= 0) return heat.rorMax;
+  const needed = (toGainC / leftS) * 60;
+  return Math.min(heat.rorMax, Math.max(heat.rorMin, needed));
 }
 
 function fixedControl(pct: number): OutputController {
   return { next: () => pct };
 }
 
-function trimControl(
-  heat: Extract<PhaseHeat, { mode: 'trim' }>,
-  tuning: AutoTuning,
-  curve: readonly CurvePoint[],
-): OutputController {
-  const pid = new Pid(tuning.trim);
-  let reachedBand = false;
+function targetControl(heat: TargetHeat, tuning: AutoTuning): OutputController {
+  const pid = new Pid(tuning.target);
+  let reachedRange = false;
   let correction = 0;
   return {
-    next: ({ elapsedS, dtS, btC, ror, stallTripped }) => {
+    next: ({ phaseElapsedS, dtS, btC, ror, stallTripped }) => {
       if (ror === undefined || btC === undefined) return heat.pct + correction;
-      // Until RoR has reached the band, the climb out of the turning point would pin the trim.
-      if (ror >= heat.rorMin) reachedBand = true;
-      if (!reachedBand && !stallTripped) return heat.pct;
-      const curveC = curveTargetC(curve, elapsedS);
-      const target = targetRor(heat, curveC === undefined ? 0 : btC - curveC);
-      const max = stallTripped ? STALL.extraHeatLimitPct : tuning.trimLimitPct;
-      correction = pid.update(target - ror, dtS, { min: -tuning.trimLimitPct, max });
+      // Until RoR has reached the range, the climb out of the turning point would pin the PID.
+      if (ror >= heat.rorMin) reachedRange = true;
+      if (!reachedRange && !stallTripped) return heat.pct;
+      const max = stallTripped ? STALL.extraHeatLimitPct : tuning.targetLimitPct;
+      const error = neededRor(heat, btC, phaseElapsedS) - ror;
+      correction = pid.update(error, dtS, { min: -tuning.targetLimitPct, max });
       return heat.pct + correction;
     },
   };
@@ -87,8 +87,8 @@ export function heatControlFor(
   switch (heat.mode) {
     case 'fixed':
       return fixedControl(heat.pct);
-    case 'trim':
-      return trimControl(heat, tuning, curve);
+    case 'target':
+      return targetControl(heat, tuning);
     case 'follow':
       return followControl(heat, tuning, curve);
   }

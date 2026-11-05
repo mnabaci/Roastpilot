@@ -33,6 +33,7 @@ export class RoastRun {
   readonly #chargedAtMs: number;
   readonly #guard = new StallGuard();
   #index = 0;
+  #phaseStartedS = 0;
   #control: OutputController | undefined;
   #lastMs: number;
   #dryEnd = false;
@@ -76,6 +77,7 @@ export class RoastRun {
     const nextIndex = advancePhase(this.#profile, this.#index, { elapsedS, btC });
     if (nextIndex !== this.#index) {
       this.#index = nextIndex;
+      this.#phaseStartedS = elapsedS;
       this.#control = undefined;
       events.push({ kind: 'phase', name: this.phaseName ?? '' });
     }
@@ -105,7 +107,14 @@ export class RoastRun {
       this.#control = heatControlFor(phase.heat, this.#tuning, this.#profile.curve);
     }
     const heaterPct =
-      this.#control?.next({ elapsedS, dtS, btC, ror, stallTripped: guarded.tripped }) ?? 0;
+      this.#control?.next({
+        elapsedS,
+        phaseElapsedS: elapsedS - this.#phaseStartedS,
+        dtS,
+        btC,
+        ror,
+        stallTripped: guarded.tripped,
+      }) ?? 0;
 
     const sinceFirstCrackS = firstCrackAtMs === null ? undefined : (nowMs - firstCrackAtMs) / 1_000;
     const endRule = dueEndRule({ profile: this.#profile, sinceFirstCrackS, btC });

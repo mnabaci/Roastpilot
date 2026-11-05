@@ -75,7 +75,7 @@ describe.each(STYLES)('$name on the simulator', (profile) => {
 describe('Light · Steps', () => {
   const profile = SKYWALKER_PROFILES['light-steps'];
 
-  it('stays within 20% above and 10% below the plan', async () => {
+  it('stays within 30% above and 20% below its estimate', async () => {
     const { rows } = await simulateAutoRoast({ profile, tuning, firstCrackAtC: 191 });
     // Skips the few readings around a phase change, while the roaster reports the old value.
     const settled = rows.filter(
@@ -85,8 +85,8 @@ describe('Light · Steps', () => {
     expect(settled.length).toBeGreaterThan(100);
     for (const row of settled) {
       const planned = profile.phases.find((p) => p.name === row.phase)?.heat.pct ?? 0;
-      expect(row.heater).toBeLessThanOrEqual(planned + 20);
-      expect(row.heater).toBeGreaterThanOrEqual(planned - 10);
+      expect(row.heater).toBeLessThanOrEqual(planned + 30);
+      expect(row.heater).toBeGreaterThanOrEqual(planned - 20);
     }
   });
 

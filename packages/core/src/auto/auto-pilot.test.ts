@@ -33,21 +33,21 @@ const PROFILE: AutoProfile = {
     { name: 'Soak', heat: { mode: 'fixed', pct: 0 }, fanPct: 30, next: { on: 'time', afterS: 60 } },
     {
       name: 'Heat on',
-      heat: { mode: 'trim', pct: 85, rorMin: 14, rorMax: 18 },
+      heat: { mode: 'target', pct: 85, endC: 150, durationS: 245, rorMin: 14, rorMax: 18 },
       fanPct: 30,
       next: { on: 'bt', c: 150, backupS: 390 },
     },
     {
       name: 'Finish',
-      heat: { mode: 'trim', pct: 40, rorMin: 3, rorMax: 7 },
+      heat: { mode: 'target', pct: 40, endC: 191, durationS: 94, rorMin: 3, rorMax: 7 },
       fanPct: 80,
       next: { on: 'end' },
     },
   ],
 };
 const TUNING: AutoTuning = {
-  trim: { kp: 1, ki: 0, kd: 0 },
-  trimLimitPct: 10,
+  target: { kp: 1, ki: 0, kd: 0 },
+  targetLimitPct: 20,
   follow: { kp: 1, ki: 0, kd: 0 },
   preheat: { kp: 2, ki: 0, kd: 0 },
   preheatFanPct: 30,

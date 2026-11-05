@@ -9,7 +9,7 @@ export const STALL = {
   fanStepPct: 5,
   fanStepEveryS: 30,
   maxFanBelowPct: 20,
-  extraHeatLimitPct: 20,
+  extraHeatLimitPct: 30,
 } as const;
 
 export interface StallGuardInput {
@@ -29,7 +29,7 @@ export interface StallGuardOutput {
 }
 
 /**
- * Keeps a roast from stalling before first crack: holds the fan back and lets the trim add more
+ * Keeps a roast from stalling before first crack: holds the fan back and lets the PID add more
  * heat when RoR is low or falling towards it. Run from the end of the soak, once per reading.
  */
 export class StallGuard {

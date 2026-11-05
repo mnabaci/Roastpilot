@@ -20,8 +20,8 @@ const PROFILE = {
 } satisfies AutoProfile;
 
 const TUNING: AutoTuning = {
-  trim: { kp: 1, ki: 0, kd: 0 },
-  trimLimitPct: 10,
+  target: { kp: 1, ki: 0, kd: 0 },
+  targetLimitPct: 20,
   follow: { kp: 1, ki: 0, kd: 0 },
   preheat: { kp: 2, ki: 0, kd: 0 },
   preheatFanPct: 30,
