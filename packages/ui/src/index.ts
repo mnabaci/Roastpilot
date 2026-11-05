@@ -8,6 +8,7 @@ export { PhaseStepper, type PhaseStepperProps } from './components/PhaseStepper'
 export { StatCard, type StatCardProps } from './components/StatCard';
 export { RoastChart, type RoastChartProps } from './components/RoastChart';
 export type { ChartLayer, ChartMarker, ChartPoint } from './components/roast-chart/chart-layer';
+export type { ChartDrag } from './components/roast-chart/drag-handles';
 export { formatClock, formatNumber } from './lib/format';
 export { TextField, type TextFieldProps } from './components/TextField';
 export { RoastList, type RoastListItem, type RoastListProps } from './components/RoastList';

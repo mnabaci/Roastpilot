@@ -79,6 +79,8 @@ export const IPC_CHANNELS = {
   listRoasts: 'history:list',
   getRoast: 'history:get',
   deleteRoast: 'history:delete',
+  exportRoastsCsv: 'history:export-csv',
+  importArtisan: 'history:import-artisan',
   roastsChanged: 'history:changed',
   autoStatus: 'auto:status',
   autoChargeSoon: 'auto:charge-soon',
@@ -189,8 +191,17 @@ export interface LogsApi {
   openLogFolder(): Promise<void>;
 }
 
+export type ExportRoastsResult = { status: 'cancelled' } | { status: 'saved'; fileName: string };
+export type ExportRoastsError = StorageError | { kind: 'write-failed' };
+export type ImportArtisanResult = { status: 'cancelled' } | { status: 'imported'; id: RoastId };
+export type ImportArtisanError = StorageError | { kind: 'read-failed' } | { kind: 'not-artisan' };
+
 /** Saved roasts (docs/spec/ui.md, History screen). */
 export interface HistoryApi {
+  /** Asks where to save, then writes every saved roast as CSV. */
+  exportRoastsCsv(): Promise<Result<ExportRoastsResult, ExportRoastsError>>;
+  /** Asks for an Artisan `.alog`, then saves it as a new roast. */
+  importArtisan(): Promise<Result<ImportArtisanResult, ImportArtisanError>>;
   /** Newest first; an empty list when storage can't be read (logged in main). */
   listRoasts(): Promise<RoastSummary[]>;
   getRoast(id: RoastId): Promise<Result<RoastDetail, StorageError>>;

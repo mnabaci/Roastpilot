@@ -1,3 +1,5 @@
+import type { AutoProfile } from '@roastpilot/shared';
+import { formatClock } from '@roastpilot/ui';
 import type { ProfileDraft, StepDraft } from './profile-draft';
 
 /** A new step before the last, halfway to it, for you to adjust. */
@@ -26,6 +28,28 @@ export function removeStep(draft: ProfileDraft, index: number): ProfileDraft {
 export function addPoint(draft: ProfileDraft): ProfileDraft {
   const last = draft.points.at(-1);
   return { ...draft, points: [...draft.points, { time: last?.time ?? '', c: last?.c ?? '' }] };
+}
+
+/**
+ * Moves point `index` (counted after charge) to whole seconds and degrees, staying between its
+ * neighbours and under the BT cap, so a drag can't make the profile invalid.
+ */
+export function movePoint(
+  draft: ProfileDraft,
+  profile: Pick<AutoProfile, 'curve' | 'capC'>,
+  index: number,
+  to: { t: number; v: number },
+): ProfileDraft {
+  const minS = (profile.curve[index]?.tS ?? -1) + 1;
+  const maxS = (profile.curve[index + 2]?.tS ?? Infinity) - 1;
+  const tS = Math.min(Math.max(Math.round(to.t), minS), maxS);
+  const c = Math.min(Math.max(Math.round(to.v), 0), profile.capC);
+  return {
+    ...draft,
+    points: draft.points.map((point, i) =>
+      i === index ? { time: formatClock(tS), c: String(c) } : point,
+    ),
+  };
 }
 
 export function removePoint(draft: ProfileDraft, index: number): ProfileDraft {

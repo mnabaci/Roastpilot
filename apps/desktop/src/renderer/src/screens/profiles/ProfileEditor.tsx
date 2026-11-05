@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useSettings } from '../../stores/use-stores';
 import { useProfileLocked } from '../roast/use-active-profile';
 import { CurvePointsTable } from './CurvePointsTable';
+import { movePoint } from './draft-edits';
 import { ProfileActions } from './ProfileActions';
 import { isStepProfile, type ProfileDraft } from './profile-draft';
 import { profilePreview } from './profile-preview';
@@ -43,6 +44,15 @@ export function ProfileEditor({
   const set = (part: Partial<ProfileDraft>) => {
     change({ ...draft, ...part });
   };
+  const curveDrag =
+    valid && !readOnly && !isStepProfile(entry.profile)
+      ? {
+          points: valid.curve.slice(1).map((p) => ({ t: p.tS, v: p.c })),
+          onMove: (index: number, to: { t: number; v: number }) => {
+            change(movePoint(draft, valid, index, to));
+          },
+        }
+      : undefined;
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-5">
       <div className="flex flex-wrap items-end gap-3">
@@ -101,7 +111,13 @@ export function ProfileEditor({
         readOnly={readOnly}
         onChange={change}
       />
-      <RoastChart title="Preview" height={200} layers={preview.layers} markers={preview.markers} />
+      <RoastChart
+        title="Preview"
+        height={200}
+        layers={preview.layers}
+        markers={preview.markers}
+        drag={curveDrag}
+      />
       {isStepProfile(entry.profile) ? null : (
         <CurvePointsTable draft={draft} errors={errors} readOnly={readOnly} onChange={change} />
       )}

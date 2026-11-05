@@ -223,6 +223,7 @@ export function createAppServices({
     settings,
     history: new HistoryService({
       repository: roasts,
+      beanNames: async () => new Map((await beans.list()).map((bean) => [bean.id, bean.name])),
       isRecording: (id) => recorder.isRecording(id),
       onDeleted: (id) => {
         recorder.forget(id);
