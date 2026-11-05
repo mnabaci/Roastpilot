@@ -1,16 +1,22 @@
 // Composition root: wires core, drivers, logging and IPC (docs/spec/architecture.md).
 import { serializeError } from '@roastpilot/core';
 import { listSerialPorts } from '@roastpilot/drivers';
-import { drizzleOn, openDatabase, SqliteRoastRepository } from '@roastpilot/storage';
+import {
+  drizzleOn,
+  openDatabase,
+  SqliteProfileRepository,
+  SqliteRoastRepository,
+} from '@roastpilot/storage';
 import { IPC_CHANNELS } from '@roastpilot/shared';
 import { app, BrowserWindow, Menu, powerMonitor, powerSaveBlocker, shell } from 'electron';
+import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { buildAppMenu } from './app-menu';
 import { createAppServices } from './app-services';
 import { installCrashHandlers } from './crash-handlers';
 import { createDriver } from './driver-factory';
 import { SimulatorBeans } from './simulator-beans';
-import { unavailableRepository } from './history/unavailable-repository';
+import { unavailableProfiles, unavailableRepository } from './history/unavailable-repository';
 import { broadcast, registerIpcHandlers, registerIpcListener } from './ipc';
 import { createIpcHandlers, handleRendererLog, withErrorLogging } from './ipc-handlers';
 import { createMainWindow, devIcon } from './main-window';
@@ -52,6 +58,11 @@ const roasts = database.ok
   : unavailableRepository(
       database.error.kind === 'storage-failed' ? database.error.message : 'unavailable',
     );
+const profileStore = database.ok
+  ? new SqliteProfileRepository(drizzleOn(database.value), systemClock, storageLogger)
+  : unavailableProfiles(
+      database.error.kind === 'storage-failed' ? database.error.message : 'unavailable',
+    );
 
 // Asleep, nothing watches the roaster: stay awake while one is connected, and keep the screen on
 // during a roast (docs/spec/safety.md).
@@ -65,23 +76,26 @@ const power = createPowerGuard({
 
 const simulatorBeans = new SimulatorBeans();
 
-const { session, roast, settings, history, recorder, snapshot } = createAppServices({
-  clock: systemClock,
-  logger,
-  settingsStore: new JsonSettingsStore(join(app.getPath('userData'), 'settings.json'), {
-    logger: logger.child('settings'),
-  }),
-  roasts,
-  nowIso: () => new Date().toISOString(),
-  onConnectionChange: (state) => {
-    power.onConnection(state);
-  },
-  onRoastChange: (state) => {
-    power.onRoast(state);
-    simulatorBeans.onRoast(state);
-  },
-  publish: broadcast,
-});
+const { session, roast, settings, history, recorder, pilot, profiles, snapshot } =
+  createAppServices({
+    clock: systemClock,
+    logger,
+    settingsStore: new JsonSettingsStore(join(app.getPath('userData'), 'settings.json'), {
+      logger: logger.child('settings'),
+    }),
+    roasts,
+    profileStore,
+    newProfileId: () => `custom-${randomUUID()}`,
+    nowIso: () => new Date().toISOString(),
+    onConnectionChange: (state) => {
+      power.onConnection(state);
+    },
+    onRoastChange: (state) => {
+      power.onRoast(state);
+      simulatorBeans.onRoast(state);
+    },
+    publish: broadcast,
+  });
 
 installCrashHandlers({
   process,
@@ -129,6 +143,9 @@ app
           roast,
           settings,
           history,
+          pilot,
+          profiles,
+          nowMs: () => systemClock.now(),
           snapshot,
           listPorts: () => listSerialPorts(),
           createDriver: (target) =>

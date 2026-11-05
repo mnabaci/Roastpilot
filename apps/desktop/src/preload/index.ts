@@ -45,6 +45,13 @@ const api: RoastpilotApi = {
   readLogDay: (day) => ipcRenderer.invoke(IPC_CHANNELS.readLogDay, day),
   onLogEntries: (listener) => subscribe(IPC_CHANNELS.logEntries, listener),
   openLogFolder: () => ipcRenderer.invoke(IPC_CHANNELS.openLogFolder),
+  autoChargeSoon: () => ipcRenderer.invoke(IPC_CHANNELS.autoChargeSoon),
+  autoResume: () => ipcRenderer.invoke(IPC_CHANNELS.autoResume),
+  onAutoStatus: (listener) => subscribe(IPC_CHANNELS.autoStatus, listener),
+  listProfiles: () => ipcRenderer.invoke(IPC_CHANNELS.listProfiles),
+  duplicateProfile: (id) => ipcRenderer.invoke(IPC_CHANNELS.duplicateProfile, id),
+  saveProfile: (profile) => ipcRenderer.invoke(IPC_CHANNELS.saveProfile, profile),
+  deleteProfile: (id) => ipcRenderer.invoke(IPC_CHANNELS.deleteProfile, id),
   log: (entry) => {
     ipcRenderer.send(IPC_CHANNELS.log, entry);
   },

@@ -1,5 +1,7 @@
 import { createLogger, type RoasterDriver } from '@roastpilot/core';
+import { SKYWALKER_PROFILES } from '@roastpilot/drivers';
 import {
+  AUTO_OFF,
   DEFAULT_SETTINGS,
   err,
   IPC_CHANNELS,
@@ -21,6 +23,7 @@ const SNAPSHOT: Snapshot = {
   roast: READY_ROAST,
   readings: [],
   safety: { locked: false, tripped: [] },
+  auto: AUTO_OFF,
 };
 
 function setup() {
@@ -68,6 +71,33 @@ function setup() {
         return Promise.resolve(ok(undefined));
       },
     },
+    pilot: {
+      chargeSoon: (nowMs) => {
+        calls.push(['chargeSoon', nowMs]);
+        return ok(undefined);
+      },
+      outputRequested: (channel, value) => calls.push(['pilotOutput', channel, value]),
+      resume: () => {
+        calls.push(['resume']);
+        return err({ kind: 'safety-locked' });
+      },
+    },
+    profiles: {
+      list: () => Promise.resolve([]),
+      duplicate: (id) => {
+        calls.push(['duplicate', id]);
+        return Promise.resolve(err({ kind: 'not-found', id }));
+      },
+      save: (profile) => {
+        calls.push(['save', profile.id]);
+        return Promise.resolve(err({ kind: 'built-in', id: profile.id }));
+      },
+      delete: (id) => {
+        calls.push(['delete', id]);
+        return Promise.resolve(ok(undefined));
+      },
+    },
+    nowMs: () => 42,
     snapshot: () => SNAPSHOT,
     listPorts: () => Promise.resolve([{ path: 'COM3' }]),
     createDriver: (target) => {
@@ -120,6 +150,12 @@ describe('createIpcHandlers', () => {
         IPC_CHANNELS.listRoasts,
         IPC_CHANNELS.getRoast,
         IPC_CHANNELS.deleteRoast,
+        IPC_CHANNELS.autoChargeSoon,
+        IPC_CHANNELS.autoResume,
+        IPC_CHANNELS.listProfiles,
+        IPC_CHANNELS.duplicateProfile,
+        IPC_CHANNELS.saveProfile,
+        IPC_CHANNELS.deleteProfile,
       ].sort(),
     );
   });
@@ -156,12 +192,45 @@ describe('createIpcHandlers', () => {
     await handle(handlers, IPC_CHANNELS.setOutput, { channel: 'fan', value: 40 });
     expect(calls).toEqual([
       ['outputRequested', 'fan', 40],
+      ['pilotOutput', 'fan', 40],
       ['setOutput', 'fan', 40],
     ]);
   });
 });
 
 describe('roast, snapshot and settings handlers', () => {
+  it('tells Auto about your output too, so it stays yours until Resume auto', async () => {
+    const { handlers, calls } = setup();
+    await handlers[IPC_CHANNELS.setOutput]?.({ channel: 'heater', value: 50 });
+    expect(calls).toContainEqual(['pilotOutput', 'heater', 50]);
+  });
+
+  it('passes Charge soon and Resume auto on', async () => {
+    const { handlers, calls } = setup();
+    await handlers[IPC_CHANNELS.autoChargeSoon]?.(undefined);
+    expect(await handlers[IPC_CHANNELS.autoResume]?.(undefined)).toEqual(
+      err({ kind: 'safety-locked' }),
+    );
+    expect(calls).toEqual([['chargeSoon', 42], ['resume']]);
+  });
+
+  it('checks a profile at the boundary before saving it', async () => {
+    const { handlers, calls } = setup();
+    await expect(
+      handlers[IPC_CHANNELS.saveProfile]?.({ ...SKYWALKER_PROFILES['light-steps'], capC: 500 }),
+    ).rejects.toThrow();
+    expect(calls).toEqual([]);
+    await handlers[IPC_CHANNELS.saveProfile]?.(SKYWALKER_PROFILES['light-steps']);
+    await handlers[IPC_CHANNELS.duplicateProfile]?.('light-curve');
+    await handlers[IPC_CHANNELS.deleteProfile]?.('custom-1');
+    expect(calls).toEqual([
+      ['save', 'light-steps'],
+      ['duplicate', 'light-curve'],
+      ['delete', 'custom-1'],
+    ]);
+    await expect(handlers[IPC_CHANNELS.deleteProfile]?.('')).rejects.toThrow();
+  });
+
   it('passes a valid roast action on', async () => {
     const { handlers, calls } = setup();
     expect(await handle(handlers, IPC_CHANNELS.roastAction, 'first-crack')).toEqual(ok(undefined));

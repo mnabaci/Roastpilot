@@ -11,15 +11,18 @@ import {
 export class SettingsService {
   readonly #store: SettingsStore;
   #current: Promise<Settings> | undefined;
+  readonly #onChange: (settings: Settings) => void;
   #latest: Settings = DEFAULT_SETTINGS;
 
-  constructor(store: SettingsStore) {
+  constructor(store: SettingsStore, onChange: (settings: Settings) => void = () => undefined) {
     this.#store = store;
+    this.#onChange = onChange;
   }
 
   get(): Promise<Settings> {
     this.#current ??= this.#store.load().then((settings) => {
       this.#latest = settings;
+      this.#onChange(settings);
       return settings;
     });
     return this.#current;
@@ -36,6 +39,7 @@ export class SettingsService {
     if (!saved.ok) return saved;
     this.#current = Promise.resolve(settings);
     this.#latest = settings;
+    this.#onChange(settings);
     return ok(settings);
   }
 }

@@ -1,14 +1,17 @@
 import {
   serializeError,
+  type AutoPilot,
   type Logger,
   type ManualRoast,
   type RoasterDriver,
   type RoasterSession,
 } from '@roastpilot/core';
 import {
+  AutoProfileSchema,
   ConnectTargetSchema,
   IPC_CHANNELS,
   LogDaySchema,
+  ProfileIdSchema,
   RendererLogEntrySchema,
   RoastActionSchema,
   RoastIdSchema,
@@ -21,6 +24,7 @@ import {
   type Snapshot,
 } from '@roastpilot/shared';
 import type { HistoryService } from './history/history-service';
+import type { ProfileService } from './profiles/profile-service';
 import type { SettingsService } from './settings/settings-service';
 
 export interface IpcDeps {
@@ -31,6 +35,10 @@ export interface IpcDeps {
   roast: Pick<ManualRoast, 'act' | 'outputRequested'>;
   settings: Pick<SettingsService, 'get' | 'set'>;
   history: Pick<HistoryService, 'list' | 'get' | 'delete'>;
+  pilot: Pick<AutoPilot, 'chargeSoon' | 'outputRequested' | 'resume'>;
+  profiles: Pick<ProfileService, 'list' | 'duplicate' | 'save' | 'delete'>;
+  /** The clock's now, for Charge soon. */
+  nowMs: () => number;
   snapshot: () => Snapshot;
   listPorts: () => Promise<SerialPortInfo[]>;
   createDriver: (target: ConnectTarget) => RoasterDriver;
@@ -57,6 +65,9 @@ export function createIpcHandlers({
   roast,
   settings,
   history,
+  pilot,
+  profiles,
+  nowMs,
   snapshot,
   listPorts,
   createDriver,
@@ -72,6 +83,7 @@ export function createIpcHandlers({
     [IPC_CHANNELS.setOutput]: handler((payload) => {
       const { channel, value } = SetOutputRequestSchema.parse(payload);
       roast.outputRequested(channel, value);
+      pilot.outputRequested(channel, value);
       return session.setOutput(channel, value);
     }),
     [IPC_CHANNELS.emergencyStop]: handler(() => {
@@ -88,6 +100,18 @@ export function createIpcHandlers({
     [IPC_CHANNELS.listRoasts]: handler(() => history.list()),
     [IPC_CHANNELS.getRoast]: handler((payload) => history.get(RoastIdSchema.parse(payload))),
     [IPC_CHANNELS.deleteRoast]: handler((payload) => history.delete(RoastIdSchema.parse(payload))),
+    [IPC_CHANNELS.autoChargeSoon]: handler(() => pilot.chargeSoon(nowMs())),
+    [IPC_CHANNELS.autoResume]: handler(() => pilot.resume()),
+    [IPC_CHANNELS.listProfiles]: handler(() => profiles.list()),
+    [IPC_CHANNELS.duplicateProfile]: handler((payload) =>
+      profiles.duplicate(ProfileIdSchema.parse(payload)),
+    ),
+    [IPC_CHANNELS.saveProfile]: handler((payload) =>
+      profiles.save(AutoProfileSchema.parse(payload)),
+    ),
+    [IPC_CHANNELS.deleteProfile]: handler((payload) =>
+      profiles.delete(ProfileIdSchema.parse(payload)),
+    ),
   };
 }
 
