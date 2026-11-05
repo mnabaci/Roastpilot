@@ -138,6 +138,37 @@ describe('AutoPilot', () => {
     expect(drop).toHaveBeenCalledTimes(2);
   });
 
+  it('cuts the heater and stops when Drop fails, rather than driving on', async () => {
+    const { pilot, feed, setOutput, drop } = setup(ROASTING);
+    pilot.setEnabled(true);
+    drop.mockRejectedValueOnce(new Error('refused'));
+    await feed(1_000, PROFILE.capC + 1);
+    expect(setOutput).toHaveBeenLastCalledWith('heater', 0);
+    expect(pilot.status).toMatchObject({ stopped: true, heater: 'manual', fan: 'manual' });
+  });
+
+  it('leaves a heater you took alone when it fails', async () => {
+    const { pilot, feed, setOutput, drop } = setup(ROASTING);
+    pilot.setEnabled(true);
+    await feed(1_000, 170);
+    pilot.outputRequested('heater', 50);
+    setOutput.mockClear();
+    drop.mockRejectedValueOnce(new Error('refused'));
+    await feed(2_000, PROFILE.capC + 1);
+    expect(setOutput).not.toHaveBeenCalledWith('heater', 0);
+    expect(pilot.status.stopped).toBe(true);
+  });
+
+  it('still stops when even the heater cut fails', async () => {
+    const { pilot, feed, setOutput, drop } = setup(ROASTING);
+    pilot.setEnabled(true);
+    await feed(1_000, 170);
+    drop.mockRejectedValueOnce(new Error('refused'));
+    setOutput.mockRejectedValueOnce(new Error('port gone'));
+    await feed(2_000, PROFILE.capC + 1);
+    expect(pilot.status.stopped).toBe(true);
+  });
+
   it('records nothing for a manual roast', async () => {
     const { feed, events } = setup(ROASTING);
     await feed(1_000, 170);

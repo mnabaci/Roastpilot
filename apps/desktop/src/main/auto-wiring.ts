@@ -63,8 +63,7 @@ export function createAutoPilot({
   publish: <C extends IpcEventChannel>(channel: C, payload: IpcEventPayloads[C]) => void;
   logger: Logger;
 }): AutoPilot {
-  const autoLogger = logger.child('auto');
-  const pilot: AutoPilot = new AutoPilot({
+  return new AutoPilot({
     roast: () => roast.state,
     readings,
     setOutput: (channel, value) => session.setOutput(channel, value),
@@ -79,10 +78,8 @@ export function createAutoPilot({
     heaterLocked: () => session.connection.status !== 'connected' || session.safetyStatus.locked,
     drop: async () => {
       const dropped = await roast.act('drop');
-      if (dropped.ok) return;
-      autoLogger.warn('auto.drop-refused', { error: dropped.error });
-      // Never keep driving past the end of a roast: the outputs are yours from here.
-      pilot.stop('drop-refused');
+      // AutoPilot cuts the heater and stops: it never drives past the end of a roast.
+      if (!dropped.ok) throw new Error(`Drop refused: ${dropped.error.kind}`);
     },
     profile: () => profiles.active(),
     tuning: () => SKYWALKER_TUNING,
@@ -94,7 +91,6 @@ export function createAutoPilot({
     onChange: (status) => {
       publish(IPC_CHANNELS.autoStatus, status);
     },
-    logger: autoLogger,
+    logger: logger.child('auto'),
   });
-  return pilot;
 }

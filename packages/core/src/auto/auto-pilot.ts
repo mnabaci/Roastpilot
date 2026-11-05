@@ -30,7 +30,7 @@ export interface AutoPilotDeps {
   /** Clamps and rounds to what the connected roaster takes. */
   round: (channel: string, value: number) => number;
   heaterLocked: () => boolean;
-  /** Asks the flow to Drop, so cooling and saving stay in one place. */
+  /** Asks the flow to Drop, so cooling and saving stay in one place. Throws if it can't. */
   drop: () => Promise<void>;
   profile: () => AutoProfile;
   tuning: () => AutoTuning;
@@ -149,6 +149,7 @@ export class AutoPilot {
       await this.#tick(reading);
     } catch (error) {
       this.#logger.error('auto.tick-failed', { error: serializeError(error) });
+      await this.#cutHeater();
       this.stop('tick-failed');
     } finally {
       this.#busy = false;
@@ -231,6 +232,17 @@ export class AutoPilot {
     }
     await this.#outputs.send('heater', tick.heaterPct);
     await this.#outputs.send('fan', tick.fanPct);
+  }
+
+  /** Auto itself failed, so nothing is steering the heater it set: leave it at 0, not on. */
+  async #cutHeater(): Promise<void> {
+    if (this.#outputs.owner('heater') !== 'auto') return;
+    try {
+      const cut = await this.#deps.setOutput('heater', 0);
+      if (!cut.ok) this.#logger.warn('auto.heater-cut-failed', { error: cut.error });
+    } catch (error) {
+      this.#logger.error('auto.heater-cut-failed', { error: serializeError(error) });
+    }
   }
 
   #publish(): void {
