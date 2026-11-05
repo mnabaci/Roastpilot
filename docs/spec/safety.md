@@ -15,6 +15,21 @@ controller bug can't bypass it. Limits are per roaster.
 
 The app never claims it can be left alone. The roast screen says to stay with the roaster.
 
+## Auto mode
+
+Auto goes through the same `SafetyGuardedDriver` as every other command, so it can't get past the rules or the heater lock.
+
+| When                                           | Auto does                                                                                                   |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Any safe stop: a rule, Emergency stop or sleep | Hands heater and fan to manual at once and sends nothing more. After you acknowledge, you press Resume auto |
+| Lost connection, or a disconnect               | The same. Readings coming back restore the phase's outputs (heater 0), not Auto                             |
+| Stalled temperature (alarm only)               | Keeps running; you decide                                                                                   |
+| A heater or fan command fails                  | Logged, tried again at the next change or second; the lost-connection rule covers a roaster that stopped    |
+| You touch heater or fan                        | That output goes manual, the other stays on Auto, until Resume auto                                         |
+| Resume auto                                    | Refused while the heater is locked; otherwise picks up the current phase from the live reading              |
+
+Auto never turns the heater back on by itself after a stop. Time limits on the preheat are in [roast-control.md](roast-control.md). The app still never claims it can be left alone: the roast screen says to stay with the roaster in Auto too.
+
 ## How it works
 
 - **One path to the roaster.** The app only ever talks to `SafetyGuardedDriver`, which wraps the real driver. Every reading and read failure passes through the `SafetyMonitor`, so no caller can skip it.

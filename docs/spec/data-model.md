@@ -39,3 +39,7 @@ before charge (preheat) have negative times.
 - A failed write is logged once per streak and never stops the roast; the roast screen keeps
   working from memory.
 - Deleting a roast removes its samples and events (`ON DELETE CASCADE`).
+
+## Auto mode (milestone 4)
+
+One migration: `roasts.profile`, a JSON copy of the profile the roast ran (with its `schemaVersion`), empty for manual roasts; `mode` is `auto` when Auto was on at charge. New `roast_events` types: `dry_end`, `phase` (detail: its name) and `override` (detail: output, value). Built-in profiles stay data in code; the `profiles` tables arrive with the Profiles work ([ADR 0011](../adr/0011-built-in-profile-as-data.md)).
