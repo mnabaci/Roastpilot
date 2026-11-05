@@ -1,5 +1,5 @@
 import { AUTO_OFF, DEFAULT_SETTINGS, err, READY_ROAST, type Reading } from '@roastpilot/shared';
-import { act, fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import type * as Ui from '@roastpilot/ui';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -40,6 +40,39 @@ describe('RoastScreen', () => {
     });
     await userEvent.click(screen.getByRole('button', { name: label }));
     expect(api.roastAction).toHaveBeenCalledWith(action);
+  });
+
+  it('done: asks how the finished roast went in its own labelled card', async () => {
+    const saved = {
+      id: 1,
+      startedAt: '2026-11-04T10:00:00.000Z',
+      endedAt: '2026-11-04T10:12:00.000Z',
+      fcTimeS: 480,
+      dropTimeS: 570,
+      dropTemp: 205,
+      roasterId: null,
+      beanId: null,
+      ghostRoastId: null,
+      batchG: 400,
+      roastedG: null,
+      rating: null,
+      isFavourite: false,
+      notes: null,
+      profileId: null,
+      profileName: null,
+    };
+    const api = fakeApi({ listRoasts: vi.fn(() => Promise.resolve([saved])) });
+    const { stores } = renderApp(
+      <RoastScreen onConnect={onConnect} />,
+      { ...connected, roast: { ...roast('done'), chargedAtMs: 1000 } },
+      api,
+    );
+    act(() => {
+      stores.beans.setState({ currentRoastId: 1 });
+    });
+    const card = await screen.findByRole('region', { name: 'Roast just finished' });
+    expect(within(card).getByRole('region', { name: 'How it went' })).toBeInTheDocument();
+    expect(card).not.toContainElement(screen.getByRole('button', { name: 'Preheat' }));
   });
 
   it('while roasting, Drop now is there too, for a roast without a first crack', async () => {

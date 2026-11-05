@@ -37,6 +37,7 @@ export function ProfileEditor({
   const active = useSettings((s) => s.settings.autoProfile) === entry.profile.id;
   const locked = useProfileLocked();
   const readOnly = entry.builtIn;
+  const [copied, setCopied] = useState<string>();
   // While a cell has a problem the chart keeps the last profile that worked.
   const [shown, setShown] = useState(valid ?? entry.profile);
   if (valid && valid !== shown) setShown(valid);
@@ -72,6 +73,7 @@ export function ProfileEditor({
           active={active}
           locked={locked}
           onSelect={onSelect}
+          onCopied={setCopied}
         />
       </div>
       <p className="flex flex-wrap items-center gap-2 text-label text-ink-muted">
@@ -81,6 +83,7 @@ export function ProfileEditor({
         {entry.profile.needsCalibration ? <span>Needs calibration</span> : null}
         {readOnly ? <span>· Duplicate it to change it</span> : null}
         {active && locked ? <span>· Save waits until Drop: Auto is running this one</span> : null}
+        {copied ? <span>· {copied}</span> : null}
       </p>
       {errors.name ? (
         <p role="alert" className="text-label text-critical-text">
