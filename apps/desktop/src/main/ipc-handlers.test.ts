@@ -26,6 +26,7 @@ const SNAPSHOT: Snapshot = {
   safety: { locked: false, tripped: [] },
   auto: AUTO_OFF,
   setup: NO_ROAST_SETUP,
+  currentRoastId: null,
 };
 
 function setup() {

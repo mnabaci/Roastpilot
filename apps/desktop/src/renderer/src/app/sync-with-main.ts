@@ -38,6 +38,7 @@ export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsu
     }),
     api.onRoast((roast) => {
       stores.roast.setState((data) => setRoast(data, roast));
+      if (roast.chargedAtMs === null) stores.beans.setState({ currentRoastId: null });
     }),
     api.onAutoStatus((status) => {
       stores.auto.setState({ status });
@@ -45,8 +46,10 @@ export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsu
     api.onBeans((beans) => {
       stores.beans.setState({ beans });
     }),
-    api.onRoastsChanged(({ id, deleted }) => {
-      const { setup } = stores.beans.getState();
+    api.onRoastsChanged(({ id, deleted, current }) => {
+      const { setup, currentRoastId } = stores.beans.getState();
+      if (current) stores.beans.setState({ currentRoastId: id });
+      if (deleted && currentRoastId === id) stores.beans.setState({ currentRoastId: null });
       if (deleted && setup.ghostRoastId === id) {
         stores.beans.setState({ setup: { ...setup, ghostRoastId: null } });
       }
@@ -78,7 +81,11 @@ export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsu
       stores.settings.setState({ settings });
       stores.auto.setState({ status: snapshot.auto, profiles });
       stores.roasters.setState({ roasters });
-      stores.beans.setState({ beans, setup: snapshot.setup });
+      stores.beans.setState({
+        beans,
+        setup: snapshot.setup,
+        currentRoastId: snapshot.currentRoastId,
+      });
       stores.sync.setState({ ready: true });
     })
     .catch((error: unknown) => {

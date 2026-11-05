@@ -74,6 +74,7 @@ export class RoastRecorder {
   /** The charge of the roast last finished: Done keeps it, and later changes aren't a new roast. */
   #finishedChargedAtMs: number | undefined;
   #queue: Promise<void> = Promise.resolve();
+  #currentId: RoastId | null = null;
 
   constructor(deps: RoastRecorderDeps) {
     this.#deps = deps;
@@ -87,6 +88,7 @@ export class RoastRecorder {
     if (chargedAtMs === null) {
       this.#recording = undefined;
       this.#finishedChargedAtMs = undefined;
+      this.#currentId = null;
       return;
     }
     // Done keeps the charge on screen; a roaster cool-down after it changes the state again.
@@ -109,6 +111,16 @@ export class RoastRecorder {
   }
 
   /** Whether `id` is the roast being saved right now (it can't be deleted until it ends). */
+  /** The roast on screen, once its row exists, until Clear or the next charge. */
+  get currentId(): RoastId | null {
+    return this.#currentId;
+  }
+
+  /** The roast was deleted: it's no longer the one on screen. */
+  forget(id: RoastId): void {
+    if (this.#currentId === id) this.#currentId = null;
+  }
+
   isRecording(id: RoastId): boolean {
     return this.#recording?.savedId === id;
   }
@@ -126,10 +138,12 @@ export class RoastRecorder {
     const startedAt = new Date(Date.parse(this.#deps.nowIso()) - earlierMs).toISOString();
     const plan = this.#deps.plan?.() ?? MANUAL_PLAN;
     const created = this.#enqueue(() => this.#deps.repository.create({ startedAt, ...plan }));
+    this.#currentId = null;
     const recording: Recording = { chargedAtMs, id: created, eventsSaved: 0 };
     this.#recording = recording;
     this.#write(recording, async (id) => {
       recording.savedId = id;
+      this.#currentId = id;
       this.#deps.onSaved(id);
       return earlier.length > 0
         ? this.#deps.repository.addSamples(

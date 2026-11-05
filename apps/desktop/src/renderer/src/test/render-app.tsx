@@ -39,6 +39,7 @@ export function fakeApi(overrides: Partial<RoastpilotApi> = {}): Mocked<Roastpil
         safety: { locked: false, tripped: [] },
         auto: AUTO_OFF,
         setup: NO_ROAST_SETUP,
+        currentRoastId: null,
       }),
     ),
     roastAction: vi.fn(() => Promise.resolve(ok(undefined))),

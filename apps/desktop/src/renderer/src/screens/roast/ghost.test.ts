@@ -39,18 +39,24 @@ describe('ghostChart', () => {
 describe('ghostDelta', () => {
   it('compares temperature at this time, and time at this temperature', () => {
     // The ghost is at 140 °C at 260 s.
-    const delta = ghostDelta(SAMPLES, 260, 143);
+    const delta = ghostDelta(SAMPLES, null, 260, 143);
     expect(delta?.deltaC).toBeCloseTo(3);
     expect(delta?.aheadS).toBeCloseTo(15);
   });
 
   it('reads behind when today is cooler, past the dip', () => {
-    expect(ghostDelta(SAMPLES, 260, 136)?.aheadS).toBeCloseTo(-20);
+    expect(ghostDelta(SAMPLES, null, 260, 136)?.aheadS).toBeCloseTo(-20);
+  });
+
+  it('leaves cooling out, so the time still reads and nothing shows past the drop', () => {
+    const cooling = [...SAMPLES, { tS: 700, values: { bt: 60 } }, { tS: 800, values: { bt: 40 } }];
+    expect(ghostDelta(cooling, 600, 260, 143)?.aheadS).toBeCloseTo(15);
+    expect(ghostDelta(cooling, 600, 640, 210)).toBeUndefined();
   });
 
   it('has no time when the ghost never got there, and nothing past its end', () => {
-    expect(ghostDelta(SAMPLES, 260, 500)?.aheadS).toBeUndefined();
-    expect(ghostDelta(SAMPLES, 9999, 150)).toBeUndefined();
+    expect(ghostDelta(SAMPLES, null, 260, 500)?.aheadS).toBeUndefined();
+    expect(ghostDelta(SAMPLES, null, 9999, 150)).toBeUndefined();
   });
 });
 

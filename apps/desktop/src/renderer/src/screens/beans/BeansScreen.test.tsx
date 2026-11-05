@@ -1,4 +1,10 @@
-import { ok, type AutoProfile, type Bean, type RoastSummary } from '@roastpilot/shared';
+import {
+  ok,
+  READY_ROAST,
+  type AutoProfile,
+  type Bean,
+  type RoastSummary,
+} from '@roastpilot/shared';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -122,6 +128,16 @@ describe('BeansScreen', () => {
     });
     expect(api.setRoastSetup).toHaveBeenCalledWith(setup);
     expect(stores.beans.getState().setup).toEqual(setup);
+  });
+
+  it('Roast this bean waits while a roast runs', () => {
+    renderApp(<BeansScreen onRoast={() => undefined} onOpenProfile={() => undefined} />, {
+      beans: [BEAN],
+      roasters: [SKYWALKER],
+      roast: { ...READY_ROAST, phase: 'roasting' },
+    });
+    const button = screen.getByRole('button', { name: 'Roast this bean' });
+    expect((button as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('makes a profile named after the bean, links it and opens it', async () => {

@@ -43,6 +43,7 @@ export interface StoresSeed {
   roasters?: Roaster[];
   beans?: Bean[];
   setup?: RoastSetup;
+  currentRoastId?: number;
 }
 
 export function createStores(seed: StoresSeed = {}): Stores {
@@ -57,6 +58,6 @@ export function createStores(seed: StoresSeed = {}): Stores {
     settings: createSettingsStore(seed.settings),
     auto: createAutoStore(seed.auto, seed.profiles),
     roasters: createRoastersStore(seed.roasters),
-    beans: createBeansStore(seed.beans, seed.setup),
+    beans: createBeansStore(seed.beans, seed.setup, seed.currentRoastId),
   };
 }

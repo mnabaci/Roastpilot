@@ -4,7 +4,7 @@ import { Badge, Button, formatNumber, RoastList, StatCard } from '@roastpilot/ui
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
-import { useAuto, useRoasters } from '../../stores/use-stores';
+import { useAuto, useRoast, useRoasters } from '../../stores/use-stores';
 import { activeRoaster } from '../../stores/roasters-store';
 import { roastNumbers, roastTitle } from '../history/history-format';
 import { setupForBean } from '../roast/roast-setup';
@@ -34,6 +34,8 @@ export function BeanDetail({
   const [panel, setPanel] = useState<Panel>('none');
   const [problem, setProblem] = useState<string>();
   const profiles = useAuto((s) => s.profiles);
+  // The running roast keeps its bean: the next one is set up once it's over.
+  const roastRunning = useRoast((s) => s.roast.phase !== 'ready' && s.roast.phase !== 'done');
   const roaster = activeRoaster(useRoasters((s) => s.roasters));
   const own = roasts.filter((r) => r.beanId === bean.id);
   const best = bestFavourite(own);
@@ -109,7 +111,7 @@ export function BeanDetail({
         <Button
           // One primary at a time: an open form has its own.
           variant={panel === 'none' ? 'primary' : 'secondary'}
-          disabled={bean.archived}
+          disabled={bean.archived || roastRunning}
           onClick={roastThis}
         >
           Roast this bean

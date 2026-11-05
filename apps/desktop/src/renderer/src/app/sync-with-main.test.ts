@@ -1,5 +1,5 @@
 import type { Logger } from '@roastpilot/core';
-import { type Reading, DEFAULT_SETTINGS } from '@roastpilot/shared';
+import { type Reading, DEFAULT_SETTINGS, READY_ROAST } from '@roastpilot/shared';
 import { describe, expect, it, vi } from 'vitest';
 import { fakeApi } from '../test/render-app';
 import { createStores } from '../stores/stores';
@@ -90,5 +90,33 @@ describe('syncWithMain', () => {
     expect(stores.beans.getState().setup).toEqual(setup);
     changed({ id: 5, deleted: true });
     expect(stores.beans.getState().setup).toEqual({ ...setup, ghostRoastId: null });
+  });
+
+  it('follows the roast on screen: not older roasts, and not once deleted or cleared', () => {
+    let changed: (change: { id: number; deleted: boolean; current?: boolean }) => void = () =>
+      undefined;
+    let roast: (state: typeof READY_ROAST) => void = () => undefined;
+    const api = fakeApi({
+      onRoastsChanged: vi.fn((listener: typeof changed) => {
+        changed = listener;
+        return () => undefined;
+      }),
+      onRoast: vi.fn((listener: typeof roast) => {
+        roast = listener;
+        return () => undefined;
+      }),
+    });
+    const stores = createStores();
+    syncWithMain(api, stores, logger());
+    const current = () => stores.beans.getState().currentRoastId;
+    changed({ id: 8, deleted: false, current: true });
+    expect(current()).toBe(8);
+    changed({ id: 3, deleted: false });
+    expect(current()).toBe(8);
+    changed({ id: 8, deleted: true });
+    expect(current()).toBeNull();
+    changed({ id: 9, deleted: false, current: true });
+    roast(READY_ROAST);
+    expect(current()).toBeNull();
   });
 });

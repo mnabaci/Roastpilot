@@ -54,6 +54,22 @@ describe('RoastResultForm', () => {
     expect(api.saveRoastResult).not.toHaveBeenCalled();
   });
 
+  it('a bad weight says so and does not hold up the star, which saves what is saved so far', async () => {
+    const user = userEvent.setup();
+    const { api } = renderApp(<RoastResultForm roast={ROAST} />);
+    await user.type(screen.getByLabelText('Roasted'), 'abc');
+    expect(screen.getByText('Enter a weight')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Favourite' }));
+    expect(api.saveRoastResult).toHaveBeenCalledWith({
+      id: 3,
+      batchG: 400,
+      roastedG: null,
+      rating: null,
+      isFavourite: true,
+      notes: null,
+    });
+  });
+
   it('says when it could not save', async () => {
     const user = userEvent.setup();
     const failed = err({ kind: 'storage-failed' as const, message: 'x' });

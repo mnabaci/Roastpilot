@@ -98,7 +98,7 @@ export function createAppServices({
     readingsSoFar: () => history.all(),
     plan: () => roastPlan(settings, profiles, roasters.active().id, beans.setup),
     onSaved: (id) => {
-      publish(IPC_CHANNELS.roastsChanged, { id, deleted: false });
+      publish(IPC_CHANNELS.roastsChanged, { id, deleted: false, current: true });
       refreshBeans();
     },
     logger: historyLogger,
@@ -215,6 +215,7 @@ export function createAppServices({
     safety: session.safetyStatus,
     auto: pilot.status,
     setup: beans.setup,
+    currentRoastId: recorder.currentId,
   });
   return {
     session,
@@ -224,6 +225,7 @@ export function createAppServices({
       repository: roasts,
       isRecording: (id) => recorder.isRecording(id),
       onDeleted: (id) => {
+        recorder.forget(id);
         publish(IPC_CHANNELS.roastsChanged, { id, deleted: true });
         // The next roast's row points at its ghost, which has to exist.
         if (beans.setup.ghostRoastId === id) beans.setSetup({ ...beans.setup, ghostRoastId: null });

@@ -19,6 +19,9 @@ const grams = (typed: string): number | null | undefined => {
   return Number.isFinite(value) && value > 0 ? value : undefined;
 };
 
+/** A weight cell that can't be saved as typed. */
+export const badWeight = (typed: string): boolean => grams(typed) === undefined;
+
 /** What to save, or undefined while a weight isn't a number above 0. */
 export function resultFromDraft(
   draft: ResultDraft,

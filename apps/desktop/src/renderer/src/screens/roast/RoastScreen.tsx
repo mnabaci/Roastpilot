@@ -64,7 +64,7 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
   const roasting = roast.phase === 'roasting' || roast.phase === 'development';
   const delta =
     ghostDetail && roasting && shown.bt !== undefined && numbers.elapsedS !== undefined
-      ? ghostDelta(ghostDetail.samples, numbers.elapsedS, shown.bt)
+      ? ghostDelta(ghostDetail.samples, ghostDetail.dropTimeS, numbers.elapsedS, shown.bt)
       : undefined;
   return (
     <main className="grid min-h-0 flex-1 grid-cols-[1fr_auto] content-start gap-6 overflow-y-auto p-6">

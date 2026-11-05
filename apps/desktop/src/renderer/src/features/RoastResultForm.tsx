@@ -3,7 +3,13 @@ import { Button, formatNumber, NumberField, TextField } from '@roastpilot/ui';
 import { Star } from 'lucide-react';
 import { useState } from 'react';
 import { useDeps } from '../app/app-context';
-import { resultFromDraft, toResultDraft, weightLossPct, type ResultDraft } from './roast-result';
+import {
+  badWeight,
+  resultFromDraft,
+  toResultDraft,
+  weightLossPct,
+  type ResultDraft,
+} from './roast-result';
 import { useRun } from './use-run';
 
 const RATINGS = [1, 2, 3, 4, 5] as const;
@@ -27,6 +33,18 @@ export function RoastResultForm({ roast }: { roast: RoastSummary }) {
       setProblem(saved.ok ? undefined : "Couldn't save this · see Logs");
     });
   };
+  // A weight half-typed doesn't hold up the rating or star: they go with what's saved so far.
+  const withSaved = (changes: Pick<RoastResult, 'rating' | 'isFavourite'>): RoastResult => ({
+    ...(result ?? {
+      id: roast.id,
+      batchG: roast.batchG,
+      roastedG: roast.roastedG,
+      notes: roast.notes,
+      rating,
+      isFavourite,
+    }),
+    ...changes,
+  });
   const type = (cells: Partial<ResultDraft>) => {
     setDraft((current) => ({ ...current, ...cells }));
   };
@@ -41,6 +59,8 @@ export function RoastResultForm({ roast }: { roast: RoastSummary }) {
           label="Green"
           unit="g"
           value={draft.batch}
+          invalid={badWeight(draft.batch)}
+          hint={badWeight(draft.batch) ? 'Enter a weight' : undefined}
           onChange={(batch) => {
             type({ batch });
           }}
@@ -50,6 +70,8 @@ export function RoastResultForm({ roast }: { roast: RoastSummary }) {
           label="Roasted"
           unit="g"
           value={draft.roasted}
+          invalid={badWeight(draft.roasted)}
+          hint={badWeight(draft.roasted) ? 'Enter a weight' : undefined}
           onChange={(roasted) => {
             type({ roasted });
           }}
@@ -72,7 +94,7 @@ export function RoastResultForm({ roast }: { roast: RoastSummary }) {
               onClick={() => {
                 const next = rating === value ? null : value;
                 setRating(next);
-                save(result && { ...result, rating: next });
+                save(withSaved({ rating: next, isFavourite }));
               }}
             >
               {value}
@@ -88,7 +110,7 @@ export function RoastResultForm({ roast }: { roast: RoastSummary }) {
           icon={<Star aria-hidden="true" fill={isFavourite ? 'currentColor' : 'none'} />}
           onClick={() => {
             setFavourite(!isFavourite);
-            save(result && { ...result, isFavourite: !isFavourite });
+            save(withSaved({ rating, isFavourite: !isFavourite }));
           }}
         />
       </div>

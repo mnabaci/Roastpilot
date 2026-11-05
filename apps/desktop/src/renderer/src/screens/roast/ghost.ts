@@ -38,10 +38,11 @@ interface GhostPoint {
   bt: number;
 }
 
-const runOf = (samples: readonly SavedSample[]): GhostPoint[] =>
+/** Charge to drop: cooling isn't part of the comparison. */
+const runOf = (samples: readonly SavedSample[], dropS: number | null): GhostPoint[] =>
   samples.flatMap(({ tS, values }) => {
     const bt = values.bt;
-    return tS >= 0 && bt !== undefined ? [{ tS, bt }] : [];
+    return tS >= 0 && tS <= (dropS ?? Infinity) && bt !== undefined ? [{ tS, bt }] : [];
   });
 
 const between = (a: GhostPoint, b: GhostPoint, tS: number) =>
@@ -57,10 +58,11 @@ export interface GhostDelta {
 /** How today compares with the ghost (docs/spec/beans-favourites-ghost.md, Ghost layer). */
 export function ghostDelta(
   samples: readonly SavedSample[],
+  dropS: number | null,
   elapsedS: number,
   bt: number,
 ): GhostDelta | undefined {
-  const run = runOf(samples);
+  const run = runOf(samples, dropS);
   const after = run.findIndex((p) => p.tS >= elapsedS);
   const [first, second] = [run[after - 1], run[after]];
   if (!first || !second) return undefined;

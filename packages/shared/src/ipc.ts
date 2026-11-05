@@ -42,12 +42,19 @@ import type {
   RoastSummary,
   StorageError,
 } from './saved-roast';
-import type { RoastResult } from './saved-roast';
+import { RoastIdSchema, type RoastResult } from './saved-roast';
 import type { Screen } from './screen';
 import type { Settings, SettingsWriteError } from './settings';
 import type { AcknowledgeError, SafetyEvent } from './safety-event';
 
 /** Every IPC channel, in one place (docs/spec/architecture.md, IPC contract). */
+/** A saved roast changed; `current` when it's the roast on the Roast screen. */
+export interface RoastsChange {
+  id: RoastId;
+  deleted: boolean;
+  current?: boolean;
+}
+
 export const IPC_CHANNELS = {
   listPorts: 'roaster:list-ports',
   connect: 'roaster:connect',
@@ -109,6 +116,8 @@ export const SnapshotSchema = z.object({
   safety: z.object({ locked: z.boolean(), tripped: z.array(z.string()) }),
   auto: AutoStatusSchema,
   setup: RoastSetupSchema,
+  /** The roast on screen, once its row exists; null with none. */
+  currentRoastId: RoastIdSchema.nullable(),
 });
 export type Snapshot = z.infer<typeof SnapshotSchema>;
 
@@ -120,7 +129,7 @@ export interface IpcEventPayloads {
   [IPC_CHANNELS.roast]: RoastState;
   [IPC_CHANNELS.logEntries]: LogRecord[];
   [IPC_CHANNELS.navigate]: Screen;
-  [IPC_CHANNELS.roastsChanged]: { id: RoastId; deleted: boolean };
+  [IPC_CHANNELS.roastsChanged]: RoastsChange;
   [IPC_CHANNELS.autoStatus]: AutoStatus;
   [IPC_CHANNELS.roastersChanged]: Roaster[];
   [IPC_CHANNELS.beansChanged]: Bean[];
@@ -188,7 +197,7 @@ export interface HistoryApi {
   /** Refuses the roast being saved right now (`in-progress`). */
   deleteRoast(id: RoastId): Promise<Result<void, DeleteRoastError>>;
   /** A roast was saved, finished or deleted. */
-  onRoastsChanged(listener: (change: { id: RoastId; deleted: boolean }) => void): Unsubscribe;
+  onRoastsChanged(listener: (change: RoastsChange) => void): Unsubscribe;
 }
 
 /** Auto mode (docs/spec/roast-control.md, Auto mode); on or off is the `roastMode` setting. */
