@@ -80,7 +80,19 @@ Each phase:
   4. Output is clamped to 0–100 and rounded to the roaster's step (Skywalker: 5%); commands are sent only on change.
   5. Anti-windup: the integral stops while the correction is at its limit.
 - **Follow phases** run a full PID on BT error against the curve (target = curve value at elapsed time, smoothed BT, anti-windup, roaster step rounding). Past the last curve point the target carries on along the last section's slope, until the end rule drops. They need well-tuned gains per roaster (`pid-tune` skill).
-- The fan always follows the plan. It is never driven by the PID, so heat and fan don't fight.
+- The fan follows the plan and is never driven by the PID, so heat and fan don't fight. The stall guard is the one exception.
+
+### Stall guard
+
+A roast that loses its RoR before first crack stalls: in roast 6 (2026-11-04) the fan reached 100% and RoR sat near 2.5 °C/min for the last minute before first crack, where roast 7 reached it at 6.3. In Auto, Steps and Curve alike, from the end of the soak until your first-crack tap:
+
+- **Armed** once RoR has first reached 5 °C/min, so the climb out of the turning point never trips it.
+- **Trips** when RoR is below 5 °C/min, or will reach it within 60 s at its rate of fall over the last 60 s. **Clears** at 6 °C/min or more with no such fall in sight.
+- **Fan:** planned increases wait, then the fan steps down 5% every 30 s, to at most 20% below where it was when the guard tripped. After it clears, it steps back up 5% every 30 s to the plan.
+- **Heater:** in `trim` phases the correction may go up to +20% instead of +10%. `follow` phases are already free.
+- **On screen:** the flow panel says "RoR low · fan held", and each trip and clear is logged and saved as an event.
+- An output you set by hand stays yours. The temperature safety limits apply as ever. After your first-crack tap there is no guard: a low RoR is normal there (roast 7 fell to 2.4).
+- 5 °C/min, 60 s, 5%, 20% and +20% are starting values, tuned with the profile on real roasts.
 
 Trim and follow both handle room conditions: outdoors or on a heat-soaked roaster, RoR drifts out of the band and the trim corrects it. No weather data is used.
 
@@ -119,7 +131,7 @@ Touching the heater or fan switches that output to manual; the other output stay
 
 - **Choosing it:** a setting on the Roast screen, Auto or Manual, Manual by default. It can be changed at any time, also mid-roast.
 - **What it drives:** heater and fan, from Preheat until Drop. The flow stays as in [manual-mode.md](manual-mode.md), with the same states, events, cooling, roaster cool-down and saving; Auto presses Drop by itself. You still press Preheat, Start and First crack.
-- **Profiles:** two Skywalker Light styles to choose from, shipped as data with the Skywalker driver and marked "needs calibration". Medium, Dark and making your own come later, with the Profiles work (milestone 7).
+- **Profiles:** two Skywalker Light styles to choose from, shipped as data with the Skywalker driver and marked "needs calibration". Medium, Dark and making your own come later, with the Profiles work (milestone 6).
   - **Light · Steps:** the table above: planned heat and fan at each step, with the trim following the curve between steps.
   - **Light · Curve:** the same curve points, end rule, fan steps and fixed soak, with every other phase `follow`: no planned heat, the PID sets the heater 0–100%.
 - **PID gains:** cautious starting values kept with the profile's roaster data, tuned on real roasts (`pid-tune`). They move to the roaster record in milestone 5.

@@ -5,7 +5,7 @@ Date: 2026-11-05
 
 ## Context
 
-Auto mode needs a profile and PID gains now, but the roaster records (milestone 5) and the Profiles work (milestone 7) don't exist yet. The numbers will change after real roasts. The manual flow is already tested on real roasts and handles cooling, saving and reconnects.
+Auto mode needs a profile and PID gains now, but the roaster records (milestone 5) and the Profiles work (milestone 6) don't exist yet. The numbers will change after real roasts. The manual flow is already tested on real roasts and handles cooling, saving and reconnects.
 
 ## Decision
 

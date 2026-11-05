@@ -7,8 +7,8 @@ Eight milestones. Each one is usable on its own before the next starts.
 3. **Logging:** SQLite tables, save every roast, history screen with overlay.
 4. **Auto mode:** phase-based profiles (Skywalker Light first), between-batch preheat, PID trim and curve follow, dry-end marker, FC button, auto drop and cooling. Tune the trim and follow on real roasts.
 5. **Roasters:** roaster records, capability-driven UI, PID tuning per roaster.
-6. **Manual coach:** background controller, suggestion card, Apply.
-7. **Beans and favourites:** bean library, stock and yield, batch calculator, stars, step and curve profiles from a roast, profile suggestion, ghost layer.
+6. **Beans and favourites:** bean library, stock and yield, batch calculator, stars, step and curve profiles from a roast, profile suggestion, ghost layer.
+7. **Manual coach:** background controller, suggestion card, Apply.
 8. **Polish + packaging:** profile editor (phases, curve points, milestone builder), Artisan import, CSV export, macOS DMG and Windows installer.
 
 ## Open questions
