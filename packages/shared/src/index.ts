@@ -1,4 +1,16 @@
 export {
+  AutoChargeSoonErrorSchema,
+  AutoResumeErrorSchema,
+  AutoStatusSchema,
+  OutputOwnerSchema,
+  PreheatStepSchema,
+  type AutoChargeSoonError,
+  type AutoResumeError,
+  type AutoStatus,
+  type OutputOwner,
+  type PreheatStep,
+} from './auto-status';
+export {
   ChannelSchema,
   OutputChannelSchema,
   ReadingSchema,
