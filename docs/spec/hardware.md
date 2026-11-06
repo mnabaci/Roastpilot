@@ -16,7 +16,7 @@ It also still works with Artisan.
 | `READ`     | Replies with a status line (below)                  | –                           |
 | `OT1;n`    | Heater                                              | 0–100                       |
 | `OT2;n`    | Fan (vent)                                          | 0–100, steps of 5           |
-| `COOL;n`   | Bean cooling fan                                    | 0 or 100                    |
+| `COOL;n`   | Bean cooler (tray fan under the drum)               | 0 or 100                    |
 | `FILTER;n` | Filter fan                                          | levels 0–4 (on is 1)        |
 | `DRUM;n`   | Drum                                                | 0 = off, anything else = on |
 | `OFF`      | Everything off                                      | –                           |
