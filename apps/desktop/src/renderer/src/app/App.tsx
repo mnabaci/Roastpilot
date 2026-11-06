@@ -13,6 +13,9 @@ import { SafetyBanners } from './SafetyBanners';
 import { useDeps } from './app-context';
 import { LiveRoastStrip } from './LiveRoastStrip';
 import { TopBar } from './TopBar';
+import { ScreenError } from './ScreenError';
+import { ErrorBoundary } from '../features/ErrorBoundary';
+import { serializeError } from '@roastpilot/core';
 
 /** The app shell: top bar, safety banners, and the current screen. */
 export function App() {
@@ -26,7 +29,7 @@ export function App() {
   const [profileToOpen, setProfileToOpen] = useState<string>();
   // Settings reopens on the last section viewed until quit (docs/spec/ui.md, Settings).
   const [settingsSection, setSettingsSection] = useState<SettingsSection>('controls');
-  const { api } = useDeps();
+  const { api, logger } = useDeps();
   // The app menu (Settings… ⌘,) opens screens too.
   useEffect(() => api.onNavigate(setScreen), [api]);
   const shown = screen ?? (connected ? 'roast' : 'roasters');
@@ -81,7 +84,22 @@ export function App() {
           }}
         />
       ) : null}
-      <div className="flex min-h-0 flex-1 flex-col">{ready ? screens[shown]() : null}</div>
+      <div className="flex min-h-0 flex-1 flex-col">
+        {/* A screen that fails to draw shows its error page; opening another screen leaves it. */}
+        <ErrorBoundary
+          resetKey={shown}
+          onError={(error, info) => {
+            logger.error('renderer.screen-failed', {
+              screen: shown,
+              error: serializeError(error),
+              componentStack: info.componentStack,
+            });
+          }}
+          fallback={(error) => <ScreenError screen={shown} error={error} />}
+        >
+          {ready ? screens[shown]() : null}
+        </ErrorBoundary>
+      </div>
     </div>
   );
 }
