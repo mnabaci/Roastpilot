@@ -1,8 +1,8 @@
-import type { RoasterDraft } from './roaster-draft';
+import type { TextCell } from './roaster-draft';
 
 export interface FieldGroup {
   title: string;
-  cells: readonly { key: keyof RoasterDraft; label: string; unit?: string }[];
+  cells: readonly { key: TextCell; label: string; unit?: string }[];
 }
 
 /** What most people set (docs/spec/ui.md, Roasters screen). */
