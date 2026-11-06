@@ -1,20 +1,32 @@
 import type { Logger, RoastRepository } from '@roastpilot/core';
 import {
   err,
+  ok,
   type DeleteRoastError,
+  type ImportArtisanError,
   type Result,
   type RoastDetail,
   type RoastId,
+  type RoastResult,
   type RoastSummary,
   type StorageError,
 } from '@roastpilot/shared';
+import { parseArtisan, type ArtisanRoast } from './artisan-import';
+import { roastsToCsv } from './roast-csv';
 
 export interface HistoryServiceDeps {
-  repository: Pick<RoastRepository, 'list' | 'get' | 'delete'>;
+  repository: Pick<
+    RoastRepository,
+    'list' | 'get' | 'delete' | 'saveResult' | 'create' | 'addSamples' | 'addEvent' | 'update'
+  >;
+  /** Bean names by id, for the CSV. */
+  beanNames: () => Promise<ReadonlyMap<number, string>>;
   /** The roast being saved right now can't be deleted. */
   isRecording: (id: RoastId) => boolean;
   /** A roast was deleted: tell the windows. */
   onDeleted: (id: RoastId) => void;
+  /** What you said about a roast was saved: its row and the bean's stock moved. */
+  onResultSaved: (id: RoastId) => void;
   logger: Logger;
 }
 
@@ -40,6 +52,17 @@ export class HistoryService {
     return read;
   }
 
+  async saveResult(result: RoastResult): Promise<Result<void, StorageError>> {
+    const saved = await this.#deps.repository.saveResult(result);
+    if (saved.ok) {
+      this.#deps.logger.info('history.result-saved', { id: result.id });
+      this.#deps.onResultSaved(result.id);
+    } else {
+      this.#deps.logger.warn('history.result-failed', { id: result.id, error: saved.error });
+    }
+    return saved;
+  }
+
   async delete(id: RoastId): Promise<Result<void, DeleteRoastError>> {
     if (this.#deps.isRecording(id)) {
       this.#deps.logger.warn('history.delete-refused', { id, reason: 'in-progress' });
@@ -53,5 +76,73 @@ export class HistoryService {
     this.#deps.logger.info('history.deleted', { id });
     this.#deps.onDeleted(id);
     return deleted;
+  }
+
+  async exportCsv(): Promise<Result<string, StorageError>> {
+    const listed = await this.#deps.repository.list();
+    if (!listed.ok) {
+      this.#deps.logger.warn('history.export-failed', { error: listed.error });
+      return listed;
+    }
+    return ok(roastsToCsv(listed.value, await this.#deps.beanNames()));
+  }
+
+  /** Saves the roast in an `.alog`'s text as a new one, or nothing at all if a write fails. */
+  async importArtisan(text: string): Promise<Result<RoastId, ImportArtisanError>> {
+    const parsed = parseArtisan(text);
+    if (!parsed.ok) {
+      this.#deps.logger.warn('history.import-refused', { reason: parsed.error });
+      return err({ kind: 'not-artisan' });
+    }
+    const roast = parsed.value;
+    const { repository, logger } = this.#deps;
+    const created = await repository.create({
+      startedAt: roast.startedAt,
+      mode: 'manual',
+      profile: null,
+      roasterId: null,
+      beanId: null,
+      batchG: roast.batchG,
+      ghostRoastId: null,
+    });
+    if (!created.ok) {
+      logger.warn('history.import-failed', { error: created.error });
+      return created;
+    }
+    const id = created.value;
+    const filled = await this.#fillImported(id, roast);
+    if (!filled.ok) {
+      logger.warn('history.import-failed', { id, error: filled.error });
+      await repository.delete(id);
+      return filled;
+    }
+    logger.info('history.imported', { id, samples: roast.samples.length });
+    this.#deps.onResultSaved(id);
+    return ok(id);
+  }
+
+  async #fillImported(id: RoastId, roast: ArtisanRoast): Promise<Result<void, StorageError>> {
+    const { repository } = this.#deps;
+    const samples = await repository.addSamples(id, roast.samples);
+    if (!samples.ok) return samples;
+    for (const event of roast.events) {
+      const added = await repository.addEvent(id, event);
+      if (!added.ok) return added;
+    }
+    const updated = await repository.update(id, {
+      endedAt: roast.endedAt,
+      fcTimeS: roast.fcTimeS,
+      dropTimeS: roast.dropTimeS,
+      dropTemp: roast.dropTemp,
+    });
+    if (!updated.ok) return updated;
+    return repository.saveResult({
+      id,
+      batchG: roast.batchG,
+      roastedG: roast.roastedG,
+      rating: null,
+      isFavourite: false,
+      notes: roast.notes,
+    });
   }
 }

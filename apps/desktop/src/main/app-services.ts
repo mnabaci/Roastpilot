@@ -1,4 +1,5 @@
 import {
+  DEFAULT_SAFETY_LIMITS,
   ManualRoast,
   ReadingHistory,
   RoasterSession,
@@ -6,7 +7,9 @@ import {
   serializeError,
   type Clock,
   type Logger,
+  type BeanRepository,
   type ProfileRepository,
+  type RoasterRepository,
   type RoastRepository,
   type SettingsStore,
 } from '@roastpilot/core';
@@ -19,8 +22,11 @@ import {
   type Snapshot,
 } from '@roastpilot/shared';
 import { createAutoPilot, roastPlan } from './auto-wiring';
+import { BeanService } from './beans/bean-service';
 import { HistoryService } from './history/history-service';
 import { ProfileService } from './profiles/profile-service';
+import { RoasterService } from './roasters/roaster-service';
+import { startLoading } from './start-loading';
 import { SettingsService } from './settings/settings-service';
 
 export interface AppServicesDeps {
@@ -29,6 +35,8 @@ export interface AppServicesDeps {
   settingsStore: SettingsStore;
   roasts: RoastRepository;
   profileStore: ProfileRepository;
+  roasterStore: RoasterRepository;
+  beanStore: BeanRepository;
   /** New ids for your own profiles. */
   newProfileId: () => string;
   /** Wall-clock time as ISO 8601, for saved roasts. */
@@ -49,6 +57,8 @@ export interface AppServices {
   recorder: RoastRecorder;
   pilot: ReturnType<typeof createAutoPilot>;
   profiles: ProfileService;
+  roasters: RoasterService;
+  beans: BeanService;
   snapshot: () => Snapshot;
 }
 
@@ -59,6 +69,8 @@ export function createAppServices({
   settingsStore,
   roasts,
   profileStore,
+  roasterStore,
+  beanStore,
   newProfileId,
   nowIso,
   onConnectionChange,
@@ -66,20 +78,47 @@ export function createAppServices({
   publish,
 }: AppServicesDeps): AppServices {
   const history = new ReadingHistory();
+  const beans = new BeanService({
+    repository: beanStore,
+    onChange: (list) => {
+      publish(IPC_CHANNELS.beansChanged, list);
+    },
+    logger: logger.child('beans'),
+  });
+  // A roast takes its batch off green stock, and its result adds to roasted stock.
+  const refreshBeans = () => {
+    beans.refresh().catch((error: unknown) => {
+      logger.error('beans.refresh-failed', { error: serializeError(error) });
+    });
+  };
   const historyLogger = logger.child('history');
   const recorder = new RoastRecorder({
     repository: roasts,
     nowIso,
     readingsSoFar: () => history.all(),
-    plan: () => roastPlan(settings, profiles),
+    plan: () => roastPlan(settings, profiles, roasters.active().id, beans.setup),
     onSaved: (id) => {
-      publish(IPC_CHANNELS.roastsChanged, { id });
+      publish(IPC_CHANNELS.roastsChanged, { id, deleted: false, current: true });
+      refreshBeans();
     },
     logger: historyLogger,
   });
-  const session = new RoasterSession({
+  const roasters: RoasterService = new RoasterService({
+    repository: roasterStore,
+    inUse: () => session.connection.status !== 'disconnected',
+    onChange: (list) => {
+      publish(IPC_CHANNELS.roastersChanged, list);
+    },
+    logger: logger.child('roasters'),
+  });
+  const session: RoasterSession = new RoasterSession({
     clock,
     logger: logger.child('session'),
+    limits: () => {
+      const { maxTempC, maxTimeS } = roasters.active();
+      return { ...DEFAULT_SAFETY_LIMITS, maxTempC, maxRoastMs: maxTimeS * 1000 };
+    },
+    tempOffsetC: () => roasters.active().tempOffsetC,
     onReading: (reading) => {
       history.add(reading);
       recorder.onReading(reading);
@@ -119,15 +158,11 @@ export function createAppServices({
     store: profileStore,
     newId: newProfileId,
     chosenId: () => settings.latest.autoProfile,
+    activeRoaster: () => roasters.active(),
     logger: logger.child('profiles'),
   });
-  settings.get().catch((error: unknown) => {
-    logger.error('settings.load-failed', { error: serializeError(error) });
-  });
   // Before the first roast, so a chosen profile of your own is there without opening a window.
-  profiles.list().catch((error: unknown) => {
-    logger.error('profiles.load-failed', { error: serializeError(error) });
-  });
+  startLoading({ settings, roasters, profiles, logger });
   const roast = new ManualRoast({
     clock,
     logger: roastLogger,
@@ -168,6 +203,7 @@ export function createAppServices({
     roast,
     settings,
     profiles,
+    roasters,
     readings: () => history.all(),
     publish,
     logger,
@@ -178,6 +214,8 @@ export function createAppServices({
     readings: [...history.all()],
     safety: session.safetyStatus,
     auto: pilot.status,
+    setup: beans.setup,
+    currentRoastId: recorder.currentId,
   });
   return {
     session,
@@ -185,15 +223,25 @@ export function createAppServices({
     settings,
     history: new HistoryService({
       repository: roasts,
+      beanNames: async () => new Map((await beans.list()).map((bean) => [bean.id, bean.name])),
       isRecording: (id) => recorder.isRecording(id),
       onDeleted: (id) => {
-        publish(IPC_CHANNELS.roastsChanged, { id });
+        recorder.forget(id);
+        publish(IPC_CHANNELS.roastsChanged, { id, deleted: true });
+        // The next roast's row points at its ghost, which has to exist.
+        if (beans.setup.ghostRoastId === id) beans.setSetup({ ...beans.setup, ghostRoastId: null });
+      },
+      onResultSaved: (id) => {
+        publish(IPC_CHANNELS.roastsChanged, { id, deleted: false });
+        refreshBeans();
       },
       logger: historyLogger,
     }),
     recorder,
     pilot,
     profiles,
+    roasters,
+    beans,
     snapshot,
   };
 }

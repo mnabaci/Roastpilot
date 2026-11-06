@@ -11,21 +11,60 @@ const ROAST: RoastSummary = {
   fcTimeS: null,
   dropTimeS: null,
   dropTemp: null,
+  roasterId: null,
+  beanId: null,
+  ghostRoastId: null,
+  batchG: null,
+  roastedG: null,
+  rating: null,
+  isFavourite: false,
+  notes: null,
+  profileId: null,
+  profileName: null,
 };
 
 function setup(repository = unavailableRepository('disk gone')) {
   const entries: LogEntry[] = [];
   const onDeleted = vi.fn();
+  const onResultSaved = vi.fn();
   const service = new HistoryService({
     repository,
+    beanNames: () => Promise.resolve(new Map([[4, 'Yirgacheffe']])),
     isRecording: (id) => id === 9,
     onDeleted,
+    onResultSaved,
     logger: createLogger({ write: (e) => entries.push(e) }, 'history'),
   });
-  return { service, entries, onDeleted };
+  return { service, entries, onDeleted, onResultSaved };
 }
 
 describe('HistoryService', () => {
+  const RESULT = {
+    id: 1,
+    batchG: 375,
+    roastedG: 320,
+    rating: 4,
+    isFavourite: true,
+    notes: null,
+  };
+
+  it('says when a roast result is saved', async () => {
+    const repository = {
+      ...unavailableRepository('x'),
+      saveResult: () => Promise.resolve(ok(undefined)),
+    };
+    const { service, onResultSaved } = setup(repository);
+    expect(await service.saveResult(RESULT)).toEqual(ok(undefined));
+    expect(onResultSaved).toHaveBeenCalledWith(1);
+  });
+
+  it('a failed result stays quiet and is logged', async () => {
+    const { service, onResultSaved, entries } = setup();
+    expect((await service.saveResult(RESULT)).ok).toBe(false);
+    expect(onResultSaved).not.toHaveBeenCalled();
+    expect(entries.map((e) => e.event)).toContain('history.result-failed');
+  });
+
   it('lists roasts', async () => {
     const { service } = setup({
       ...unavailableRepository('x'),

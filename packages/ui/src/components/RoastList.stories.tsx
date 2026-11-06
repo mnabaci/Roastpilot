@@ -10,7 +10,13 @@ const meta = {
     selectedId: 3,
     onSelect: () => undefined,
     items: [
-      { id: 3, title: 'Wed 4 Nov · 14:32', numbers: '9:40 · FC 8:00 · 205.5 °C' },
+      {
+        id: 3,
+        title: 'Wed 4 Nov · 14:32',
+        numbers: '9:40 · FC 8:00 · 205.5 °C',
+        detail: 'Yirgacheffe · Light · Steps · 4/5',
+        favourite: true,
+      },
       { id: 2, title: 'Wed 4 Nov · 11:05', numbers: '4:12', badge: 'Unfinished' },
       { id: 1, title: 'Mon 2 Nov · 18:20', numbers: '10:18 · FC 8:41 · 208.0 °C' },
     ],

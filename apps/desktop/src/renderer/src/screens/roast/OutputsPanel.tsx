@@ -18,6 +18,11 @@ export function OutputsPanel() {
   const connected = useConnection((s) => isConnected(s.connection));
   const locked = useSafety((s) => s.locked);
   const access = controlsAccess(level, phase, connected);
+  // A control the connected roaster doesn't have is hidden; with none connected, all show.
+  const channels = useConnection((s) =>
+    s.connection.status === 'connected' ? s.connection.channels : undefined,
+  );
+  const has = (id: string) => !channels || channels.some((c) => c.id === id);
   const { api, logger } = useDeps();
   const run = useRun();
   const auto = useAuto((s) => s.status);
@@ -50,43 +55,51 @@ export function OutputsPanel() {
           : undefined;
   return (
     <section aria-label="Outputs" className="flex flex-col gap-5 rounded-xl bg-surface px-5 py-4.5">
-      <OutputControl
-        label="Heater"
-        tone="heat"
-        mode={owner('heater')}
-        {...(canResume ? { onResumeAuto: resume } : {})}
-        // With no roaster, its last values would look live: show a dash instead.
-        value={connected ? heater.value : undefined}
-        onChange={heater.set}
-        disabled={!access.heater || locked}
-      />
-      <OutputControl
-        label="Fan"
-        tone="air"
-        mode={owner('fan')}
-        {...(canResume ? { onResumeAuto: resume } : {})}
-        value={connected ? fan.value : undefined}
-        onChange={fan.set}
-        disabled={!access.fan}
-      />
+      {has('heater') ? (
+        <OutputControl
+          label="Heater"
+          tone="heat"
+          mode={owner('heater')}
+          {...(canResume ? { onResumeAuto: resume } : {})}
+          // With no roaster, its last values would look live: show a dash instead.
+          value={connected ? heater.value : undefined}
+          onChange={heater.set}
+          disabled={!access.heater || locked}
+        />
+      ) : null}
+      {has('fan') ? (
+        <OutputControl
+          label="Fan"
+          tone="air"
+          mode={owner('fan')}
+          {...(canResume ? { onResumeAuto: resume } : {})}
+          value={connected ? fan.value : undefined}
+          onChange={fan.set}
+          disabled={!access.fan}
+        />
+      ) : null}
       <div className="flex flex-col gap-2">
-        <OnOffButton
-          label="Drum"
-          on={connected && drum.value > 0}
-          disabled={!access.switches}
-          onToggle={(on) => {
-            drum.set(on ? 1 : 0);
-          }}
-        />
-        <OnOffButton
-          label="Filter"
-          on={connected && filter.value > 0}
-          disabled={!access.switches}
-          onToggle={(on) => {
-            filter.set(on ? FILTER_ON : 0);
-          }}
-        />
-        {access.showCooling ? (
+        {has('drum') ? (
+          <OnOffButton
+            label="Drum"
+            on={connected && drum.value > 0}
+            disabled={!access.switches}
+            onToggle={(on) => {
+              drum.set(on ? 1 : 0);
+            }}
+          />
+        ) : null}
+        {has('filter') ? (
+          <OnOffButton
+            label="Filter"
+            on={connected && filter.value > 0}
+            disabled={!access.switches}
+            onToggle={(on) => {
+              filter.set(on ? FILTER_ON : 0);
+            }}
+          />
+        ) : null}
+        {access.showCooling && has('cooling') ? (
           <OnOffButton
             label="Cooling"
             on={connected && cooling.value > 0}

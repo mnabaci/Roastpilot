@@ -1,5 +1,5 @@
 import { AUTO_OFF, DEFAULT_SETTINGS, err, READY_ROAST, type Reading } from '@roastpilot/shared';
-import { act, fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import type * as Ui from '@roastpilot/ui';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -40,6 +40,39 @@ describe('RoastScreen', () => {
     });
     await userEvent.click(screen.getByRole('button', { name: label }));
     expect(api.roastAction).toHaveBeenCalledWith(action);
+  });
+
+  it('done: asks how the finished roast went in its own labelled card', async () => {
+    const saved = {
+      id: 1,
+      startedAt: '2026-11-04T10:00:00.000Z',
+      endedAt: '2026-11-04T10:12:00.000Z',
+      fcTimeS: 480,
+      dropTimeS: 570,
+      dropTemp: 205,
+      roasterId: null,
+      beanId: null,
+      ghostRoastId: null,
+      batchG: 400,
+      roastedG: null,
+      rating: null,
+      isFavourite: false,
+      notes: null,
+      profileId: null,
+      profileName: null,
+    };
+    const api = fakeApi({ listRoasts: vi.fn(() => Promise.resolve([saved])) });
+    const { stores } = renderApp(
+      <RoastScreen onConnect={onConnect} />,
+      { ...connected, roast: { ...roast('done'), chargedAtMs: 1000 } },
+      api,
+    );
+    act(() => {
+      stores.beans.setState({ currentRoastId: 1 });
+    });
+    const card = await screen.findByRole('region', { name: 'Roast just finished' });
+    expect(within(card).getByRole('region', { name: 'How it went' })).toBeInTheDocument();
+    expect(card).not.toContainElement(screen.getByRole('button', { name: 'Preheat' }));
   });
 
   it('while roasting, Drop now is there too, for a roast without a first crack', async () => {
@@ -275,6 +308,85 @@ describe('RoastScreen', () => {
     );
     await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
     expect(stores.roast.getState().readings).toHaveLength(1);
+  });
+
+  describe('Clear with bean setup (stock-return prompt)', () => {
+    const beanSetup = { beanId: 1, batchG: 350, ghostRoastId: null };
+    const testBean = {
+      id: 1,
+      name: 'Ethiopia Yirgacheffe',
+      origin: 'Ethiopia',
+      process: 'washed' as const,
+      variety: null,
+      altitudeM: null,
+      densityGL: null,
+      moisturePct: null,
+      screen: null,
+      decaf: false,
+      supplier: null,
+      lowStockG: 0,
+      notes: null,
+      profileId: null,
+      greenG: 500,
+      roastedG: 0,
+      archived: false,
+      avgLossPct: null,
+      batchPlan: null,
+    };
+
+    it('clicking Clear in done phase with bean setup shows the stock-return prompt', async () => {
+      renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...connected,
+        roast: { ...roast('done'), chargedAtMs: 0 },
+        setup: beanSetup,
+        beans: [testBean],
+      });
+      await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
+      expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument();
+      expect(
+        screen.getByText(/Return 350 g of Ethiopia Yirgacheffe to stock\?/),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Return to stock' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Keep deducted' })).toBeInTheDocument();
+    });
+
+    it('"Return to stock" calls adjustStock then clears the roast', async () => {
+      const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...connected,
+        roast: { ...roast('done'), chargedAtMs: 0 },
+        setup: beanSetup,
+        beans: [testBean],
+      });
+      await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Return to stock' }));
+      expect(api.adjustStock).toHaveBeenCalledWith({ beanId: 1, greenG: 350, roastedG: 0 });
+      expect(api.roastAction).toHaveBeenCalledWith('clear');
+    });
+
+    it('"Keep deducted" clears without calling adjustStock', async () => {
+      const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...connected,
+        roast: { ...roast('done'), chargedAtMs: 0 },
+        setup: beanSetup,
+        beans: [testBean],
+      });
+      await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Keep deducted' }));
+      expect(api.adjustStock).not.toHaveBeenCalled();
+      expect(api.roastAction).toHaveBeenCalledWith('clear');
+    });
+
+    it('ready phase with bean setup goes straight to clear (stock not deducted yet)', async () => {
+      const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
+        roast: { ...roast('ready'), preheatAtMs: 0 },
+        setup: beanSetup,
+        beans: [testBean],
+      });
+      await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
+      expect(api.adjustStock).not.toHaveBeenCalled();
+      expect(api.roastAction).toHaveBeenCalledWith('clear');
+      expect(screen.queryByText(/Return.*to stock/)).not.toBeInTheDocument();
+    });
   });
 
   it('no Clear without a roast on screen, even with idle readings', () => {
@@ -537,5 +649,19 @@ describe('RoastScreen', () => {
       renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast('roasting') });
       expect(screen.queryByRole('button', { name: 'Resume auto' })).toBeNull();
     });
+  });
+
+  it('hides the controls the connected roaster does not have', () => {
+    const channels = CONNECTED.status === 'connected' ? CONNECTED.channels : [];
+    renderApp(<RoastScreen onConnect={onConnect} />, {
+      connection: {
+        ...CONNECTED,
+        channels: channels.filter((c) => c.id !== 'fan' && c.id !== 'filter'),
+      } as typeof CONNECTED,
+    });
+    expect(screen.getByRole('slider', { name: 'Heater' })).toBeInTheDocument();
+    expect(screen.queryByRole('slider', { name: 'Fan' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Filter/ })).toBeNull();
+    expect(screen.getByRole('button', { name: /Drum/ })).toBeInTheDocument();
   });
 });

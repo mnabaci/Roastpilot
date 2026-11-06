@@ -6,6 +6,7 @@ import { cn } from '../lib/utils';
 import { alignLayers } from './roast-chart/align-layers';
 import { readChartColors } from './roast-chart/chart-colors';
 import type { ChartLayer, ChartMarker } from './roast-chart/chart-layer';
+import type { ChartDrag, TimeRange } from './roast-chart/drag-handles';
 import { buildChartOptions, buildStripOptions } from './roast-chart/uplot-options';
 import { useUplot } from './roast-chart/use-uplot';
 import { formatLayerValue, valueAt } from './roast-chart/value-at';
@@ -17,11 +18,15 @@ export interface RoastChartProps {
   markers?: readonly ChartMarker[];
   height?: number;
   className?: string;
+  /** Points you can move with the pointer. */
+  drag?: ChartDrag | undefined;
 }
 
 const DEFAULT_HEIGHT = 320;
 /** The outputs strip (design system: RoastChart, Outputs strip). */
 const STRIP_HEIGHT = 96;
+const DRAG_ROOM = 0.15;
+const MIN_DRAG_ROOM_S = 30;
 
 const structureOf = (layers: readonly ChartLayer[]) =>
   layers.map((l) => `${l.id}:${l.axis}:${l.tone}:${String(l.step ?? false)}`).join('|');
@@ -36,12 +41,26 @@ export function RoastChart({
   markers = [],
   height = DEFAULT_HEIGHT,
   className,
+  drag,
 }: RoastChartProps) {
   const plotRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   // The time under the pointer: the legends show the values there (docs/spec/ui.md, Hover).
   const [hoverT, setHoverT] = useState<number>();
+  const dragRef = useRef(drag);
+  const heldTimeRange = useRef<TimeRange | undefined>(undefined);
+  // Counts finished drags: fresh data lets the time axis fit the moved points again.
+  const [dragsEnded, setDragsEnded] = useState(0);
+  useEffect(() => {
+    dragRef.current = drag;
+  });
+  // Spare time after the last point: its handle stays clear of the edge, and it can move later.
+  const adjustTimeRange = ([from, to]: TimeRange): TimeRange =>
+    heldTimeRange.current ??
+    (dragRef.current
+      ? [from, to + Math.max(MIN_DRAG_ROOM_S, (to - from) * DRAG_ROOM)]
+      : [from, to]);
 
   const { main, strip, mainData, stripData } = useMemo(() => {
     const main = layers.filter((l) => l.axis !== 'output');
@@ -54,7 +73,8 @@ export function RoastChart({
       mainData: [xs, ...series.slice(0, main.length)] as uPlot.AlignedData,
       stripData: [xs, ...series.slice(main.length)] as uPlot.AlignedData,
     };
-  }, [layers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- dragsEnded only asks for fresh arrays
+  }, [layers, dragsEnded]);
   const rightAxis = main.some((l) => l.axis === 'ror');
 
   useEffect(() => {
@@ -86,6 +106,17 @@ export function RoastChart({
         colors: readChartColors(plotRef.current ?? document.documentElement),
         rightAxis,
         onHover: setHoverT,
+        adjustTimeRange,
+        dragging: {
+          drag: () => dragRef.current,
+          onStart: (range) => {
+            heldTimeRange.current = range;
+          },
+          onEnd: () => {
+            heldTimeRange.current = undefined;
+            setDragsEnded((count) => count + 1);
+          },
+        },
       }),
   });
   useUplot({
@@ -104,6 +135,7 @@ export function RoastChart({
         rightAxis,
         stepped: uPlot.paths.stepped?.({ align: 1 }),
         onHover: setHoverT,
+        adjustTimeRange,
       }),
   });
 

@@ -2,6 +2,7 @@ import { AutoSection } from './AutoSection';
 import { ConnectionSection } from './ConnectionSection';
 import { ChartSection } from './ChartSection';
 import { ControlsSection } from './ControlsSection';
+import { RoastersSection } from './RoastersSection';
 import { RoastSection } from './RoastSection';
 
 /** Two columns on a wide window (roaster on the left, roast on the right), one when narrow. */
@@ -13,6 +14,7 @@ export function SettingsScreen() {
         <div className="grid items-start gap-8 lg:grid-cols-2 lg:gap-12">
           <div className="flex max-w-xl flex-col gap-8">
             <ConnectionSection />
+            <RoastersSection />
             <ControlsSection />
           </div>
           <div className="flex max-w-xl flex-col gap-8">

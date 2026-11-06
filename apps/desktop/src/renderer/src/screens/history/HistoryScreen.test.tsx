@@ -25,6 +25,16 @@ const summary = (id: number, startedAt: string, over: Partial<RoastSummary> = {}
   endedAt: startedAt,
   fcTimeS: 480,
   dropTimeS: 580,
+  roasterId: null,
+  beanId: null,
+  ghostRoastId: null,
+  batchG: null,
+  roastedG: null,
+  rating: null,
+  isFavourite: false,
+  notes: null,
+  profileId: null,
+  profileName: null,
   dropTemp: 205.5,
   ...over,
 });
@@ -40,11 +50,15 @@ const detail = (s: RoastSummary): RoastDetail => ({
 
 function renderWithPhase(roasts: RoastSummary[], phase: RoastPhase) {
   const api = fakeApi({ listRoasts: vi.fn(() => Promise.resolve(roasts)) });
-  renderApp(<HistoryScreen />, { roast: { ...READY_ROAST, phase } }, api);
+  renderApp(
+    <HistoryScreen onOpenProfile={() => undefined} />,
+    { roast: { ...READY_ROAST, phase } },
+    api,
+  );
 }
 
 function setup(roasts: RoastSummary[] = [NEWER, OLDER]) {
-  const listeners = new Set<(change: { id: RoastId }) => void>();
+  const listeners = new Set<(change: { id: RoastId; deleted: boolean }) => void>();
   let list = roasts;
   const api = fakeApi({
     listRoasts: vi.fn(() => Promise.resolve(list)),
@@ -56,18 +70,23 @@ function setup(roasts: RoastSummary[] = [NEWER, OLDER]) {
       list = list.filter((r) => r.id !== id);
       return Promise.resolve(ok(undefined));
     }),
-    onRoastsChanged: vi.fn((listener: (change: { id: RoastId }) => void) => {
+    onRoastsChanged: vi.fn((listener: (change: { id: RoastId; deleted: boolean }) => void) => {
       listeners.add(listener);
       return () => listeners.delete(listener);
     }),
   });
-  renderApp(<HistoryScreen />, {}, api);
+  renderApp(<HistoryScreen onOpenProfile={() => undefined} />, {}, api);
   return {
     api,
     save: (roast: RoastSummary) => {
       list = [roast, ...list];
       act(() => {
-        for (const listener of listeners) listener({ id: roast.id });
+        for (const listener of listeners) listener({ id: roast.id, deleted: false });
+      });
+    },
+    deleted: (id: RoastId) => {
+      act(() => {
+        for (const listener of listeners) listener({ id, deleted: true });
       });
     },
   };
@@ -162,5 +181,25 @@ describe('HistoryScreen', () => {
     renderWithPhase([live, NEWER], 'roasting');
     expect(await screen.findByText('Saving as it roasts')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+  });
+
+  it('does not read a roast again once it is deleted', async () => {
+    const { api, deleted } = setup();
+    await vi.waitFor(() => {
+      expect(api.getRoast).toHaveBeenCalledWith(NEWER.id);
+    });
+    const reads = api.getRoast.mock.calls.length;
+    deleted(NEWER.id);
+    expect(api.getRoast).toHaveBeenCalledTimes(reads);
+  });
+
+  it('filters to favourites, and says when nothing matches', async () => {
+    const user = userEvent.setup();
+    const api = fakeApi({
+      listRoasts: vi.fn(() => Promise.resolve([summary(1, '2026-11-04T10:00:00.000Z')])),
+    });
+    renderApp(<HistoryScreen onOpenProfile={() => undefined} />, {}, api);
+    await user.click(await screen.findByRole('button', { name: 'Favourites' }));
+    expect(screen.getByText('No roasts match these filters')).toBeTruthy();
   });
 });

@@ -5,3 +5,4 @@ export { DEFAULT_THERMAL_CONSTANTS, type ThermalConstants } from './simulated/th
 export { SKYWALKER_CHANNELS, SKYWALKER_PROTOCOL_VERSION } from './skywalker';
 export { Tc4SkywalkerDriver, type Tc4SkywalkerDriverOptions } from './tc4/tc4-skywalker-driver';
 export { SKYWALKER_PROFILES, SKYWALKER_TUNING } from './skywalker-profiles';
+export { BUILT_IN_ROASTERS, newRoaster, ROASTER_MODELS } from './roaster-models';

@@ -9,6 +9,11 @@ type SyncApi = Pick<
   | 'getSnapshot'
   | 'getSettings'
   | 'listProfiles'
+  | 'listRoasters'
+  | 'listBeans'
+  | 'onBeans'
+  | 'onRoastsChanged'
+  | 'onRoasters'
   | 'onReading'
   | 'onConnection'
   | 'onSafetyEvent'
@@ -33,18 +38,54 @@ export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsu
     }),
     api.onRoast((roast) => {
       stores.roast.setState((data) => setRoast(data, roast));
+      if (roast.chargedAtMs === null) stores.beans.setState({ currentRoastId: null });
     }),
     api.onAutoStatus((status) => {
       stores.auto.setState({ status });
     }),
+    api.onBeans((beans) => {
+      stores.beans.setState({ beans });
+    }),
+    api.onRoastsChanged(({ id, deleted, current }) => {
+      const { setup, currentRoastId } = stores.beans.getState();
+      if (current) stores.beans.setState({ currentRoastId: id });
+      if (deleted && currentRoastId === id) stores.beans.setState({ currentRoastId: null });
+      if (deleted && setup.ghostRoastId === id) {
+        stores.beans.setState({ setup: { ...setup, ghostRoastId: null } });
+      }
+    }),
+    api.onRoasters((roasters) => {
+      stores.roasters.setState({ roasters });
+      // Profiles belong to a roaster, so the list follows the active one.
+      api
+        .listProfiles()
+        .then((profiles) => {
+          stores.auto.setState({ profiles });
+        })
+        .catch((error: unknown) => {
+          logger.error('sync.profiles-failed', { error: serializeError(error) });
+        });
+    }),
   ];
-  Promise.all([api.getSnapshot(), api.getSettings(), api.listProfiles()])
-    .then(([snapshot, settings, profiles]) => {
+  Promise.all([
+    api.getSnapshot(),
+    api.getSettings(),
+    api.listProfiles(),
+    api.listRoasters(),
+    api.listBeans(),
+  ])
+    .then(([snapshot, settings, profiles, roasters, beans]) => {
       stores.connection.setState({ connection: snapshot.connection });
       stores.roast.setState({ roast: snapshot.roast, readings: [...snapshot.readings] });
       stores.safety.setState(snapshot.safety, true);
       stores.settings.setState({ settings });
       stores.auto.setState({ status: snapshot.auto, profiles });
+      stores.roasters.setState({ roasters });
+      stores.beans.setState({
+        beans,
+        setup: snapshot.setup,
+        currentRoastId: snapshot.currentRoastId,
+      });
       stores.sync.setState({ ready: true });
     })
     .catch((error: unknown) => {

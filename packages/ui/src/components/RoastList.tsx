@@ -1,3 +1,4 @@
+import { Star } from 'lucide-react';
 import type { KeyboardEvent } from 'react';
 import { cn } from '../lib/utils';
 import { Badge } from './Badge';
@@ -8,6 +9,10 @@ export interface RoastListItem {
   title: string;
   /** One line of numbers, e.g. `9:40 · FC 8:00 · 205.5 °C`. */
   numbers: string;
+  /** A second line, e.g. `Yirgacheffe · Light · Steps · 4/5`. */
+  detail?: string;
+  /** Marked with a filled star. */
+  favourite?: boolean;
   /** A short status, e.g. `Unfinished`. */
   badge?: string;
 }
@@ -61,11 +66,24 @@ export function RoastList({ label, items, selectedId, onSelect, className }: Roa
               )}
             >
               <span className="flex items-center justify-between gap-3">
-                <span className="truncate text-body font-semibold text-ink">{item.title}</span>
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span className="truncate text-body font-semibold text-ink">{item.title}</span>
+                  {item.favourite ? (
+                    <Star
+                      role="img"
+                      aria-label="Favourite"
+                      className="size-3.5 shrink-0 text-heat"
+                      fill="currentColor"
+                    />
+                  ) : null}
+                </span>
                 {item.badge ? <Badge className="shrink-0">{item.badge}</Badge> : null}
               </span>
               {item.numbers ? (
                 <span className="truncate text-label text-ink-muted">{item.numbers}</span>
+              ) : null}
+              {item.detail ? (
+                <span className="truncate text-label text-ink-muted">{item.detail}</span>
               ) : null}
             </button>
           </li>

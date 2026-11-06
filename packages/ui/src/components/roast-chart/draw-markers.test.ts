@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { labelRows } from './draw-markers';
+import { labelRows, labelX } from './draw-markers';
 
 describe('labelRows', () => {
   it('keeps labels on the top row while they fit', () => {
@@ -38,5 +38,12 @@ describe('labelRows', () => {
         8,
       ),
     ).toEqual([0, 1, 2]);
+  });
+});
+
+describe('labelX', () => {
+  it('sits right of the line, or left of it near the edge', () => {
+    expect(labelX(100, 50, 500, 8)).toBe(108);
+    expect(labelX(480, 50, 500, 8)).toBe(422);
   });
 });

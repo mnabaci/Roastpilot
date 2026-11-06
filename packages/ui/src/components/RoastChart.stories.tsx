@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { useState } from 'react';
 import { RoastChart } from './RoastChart';
 import type { ChartLayer } from './roast-chart/chart-layer';
 
@@ -76,3 +77,35 @@ export const NoReadings: Story = {
   args: { layers: [{ ...temperature, points: [] }], markers: [] },
 };
 export const WithoutOutputs: Story = { args: { layers: [temperature, ror] } };
+
+function DraggablePlan() {
+  const [points, setPoints] = useState([
+    { t: 90, v: 100 },
+    { t: 300, v: 150 },
+    { t: 600, v: 200 },
+  ]);
+  const plan: ChartLayer = {
+    id: 'plan',
+    label: 'Plan',
+    axis: 'temperature',
+    tone: 'target',
+    width: 2,
+    dash: [6, 6],
+    points: [{ t: 0, v: 180 }, ...points],
+  };
+  return (
+    <RoastChart
+      title="Preview"
+      height={280}
+      layers={[plan]}
+      drag={{
+        points,
+        onMove: (index, to) => {
+          setPoints(points.map((point, i) => (i === index ? to : point)));
+        },
+      }}
+    />
+  );
+}
+
+export const DraggablePoints: Story = { render: () => <DraggablePlan /> };

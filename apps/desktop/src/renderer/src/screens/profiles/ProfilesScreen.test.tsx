@@ -12,6 +12,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { BUILT_INS, CURVE, STEPS } from '../../test/profiles';
 import { fakeApi, renderApp } from '../../test/render-app';
+import { roastersWith } from '../../test/roasters';
 import { ProfilesScreen } from './ProfilesScreen';
 
 vi.mock('@roastpilot/ui', async (importOriginal) => ({
@@ -168,5 +169,21 @@ describe('ProfilesScreen', () => {
       await edit('BT cap', '205');
       expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
     });
+  });
+
+  it('copies to another roaster and says so', async () => {
+    const api = fakeApi({ copyProfile: vi.fn(() => Promise.resolve(ok(OWN))) });
+    renderApp(
+      <ProfilesScreen />,
+      { profiles: withMine, ...settingsOn('light-steps'), roasters: roastersWith(null) },
+      api,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Copy to Simulator' }));
+    expect(api.copyProfile).toHaveBeenCalledWith({ id: 'light-steps', roasterId: 2 });
+    const message = await screen.findByText(/needs calibration there/);
+    // Beside the Name field, the buttons' box must not grow with the message.
+    const buttons = screen.getByRole('button', { name: 'Copy to Simulator' }).parentElement;
+    expect(buttons).not.toContainElement(message);
+    expect(screen.getByText('Built-in').closest('p')).toContainElement(message);
   });
 });
