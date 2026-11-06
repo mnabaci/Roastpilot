@@ -59,7 +59,7 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 - **Mode switch:** Auto / Manual. In Manual, the coach card sits above the outputs.
 - **Outputs:** heater % and fan %, each with a slider. The Auto / Manual badge and Resume auto show only while Auto drives the roast (Preheat until Drop); in a manual roast there is nothing to tell apart. Drum, filter fan and cooling are one row of three labelled switches. With the connection lost they stay, showing dashes.
 - **Buttons:** Preheat, Start (charge), First crack, Drop now, and a red Emergency stop that is always visible (disabled only while no roaster is connected).
-- **After cooling:** roasted weight, rating, star and notes in a card over the chart, never a dialog, and all skippable. Saved as you enter them, with a quiet "Saved" after each ("Saves as you go" before); Done hides the card for that roast. They stay until the next Preheat or Clear, and can be changed later in History.
+- **After cooling:** roasted weight, rating, star and notes in a card over the chart, never a dialog, and all skippable. Weights are checked as you type: green at most the batch max of the roaster it ran on ("At most 400 g on Skywalker"), roasted never more than green, both above 0; a weight with a problem isn't saved. A loss outside 5–30 % gets a quiet "Unusual" note but saves. Saved as you enter them, with a quiet "Saved" after each ("Saves as you go" before); Done hides the card for that roast. They stay until the next Preheat or Clear, and can be changed later in History.
 
 ## Profiles screen
 

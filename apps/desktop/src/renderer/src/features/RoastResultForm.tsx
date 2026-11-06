@@ -4,13 +4,15 @@ import { Star } from 'lucide-react';
 import { useState } from 'react';
 import { useDeps } from '../app/app-context';
 import {
-  badWeight,
+  lossHint,
   resultFromDraft,
+  weightProblems,
   toResultDraft,
   weightLossPct,
   type ResultDraft,
 } from './roast-result';
 import { useRun } from './use-run';
+import { useRoasters } from '../stores/use-stores';
 
 const RATINGS = [1, 2, 3, 4, 5] as const;
 
@@ -27,7 +29,11 @@ export function RoastResultForm({ roast }: { roast: RoastSummary }) {
   const [problem, setProblem] = useState<string>();
   // Says each save landed, until the next edit starts.
   const [justSaved, setJustSaved] = useState(false);
-  const result = resultFromDraft(draft, { id: roast.id, rating, isFavourite });
+  // Weights are checked against the roaster this roast ran on.
+  const roaster = useRoasters((s) => s.roasters.find((r) => r.id === roast.roasterId));
+  const limits = { maxBatchG: roaster?.batchMaxG, roasterName: roaster?.name };
+  const problems = weightProblems(draft, limits);
+  const result = resultFromDraft(draft, { id: roast.id, rating, isFavourite }, limits);
   const save = (next: RoastResult | undefined) => {
     if (!next) return;
     run('roast.result-failed', async () => {
@@ -63,8 +69,8 @@ export function RoastResultForm({ roast }: { roast: RoastSummary }) {
           label="Green"
           unit="g"
           value={draft.batch}
-          invalid={badWeight(draft.batch)}
-          hint={badWeight(draft.batch) ? 'Enter a weight' : undefined}
+          invalid={Boolean(problems.batch)}
+          hint={problems.batch}
           onChange={(batch) => {
             type({ batch });
           }}
@@ -74,8 +80,8 @@ export function RoastResultForm({ roast }: { roast: RoastSummary }) {
           label="Roasted"
           unit="g"
           value={draft.roasted}
-          invalid={badWeight(draft.roasted)}
-          hint={badWeight(draft.roasted) ? 'Enter a weight' : undefined}
+          invalid={Boolean(problems.roasted)}
+          hint={problems.roasted}
           onChange={(roasted) => {
             type({ roasted });
           }}
@@ -85,6 +91,7 @@ export function RoastResultForm({ roast }: { roast: RoastSummary }) {
       {loss === undefined ? null : (
         <p className="text-label text-ink-muted tabular-nums">
           {formatNumber(loss, 1)}% weight loss
+          {lossHint(loss) ? ` · ${lossHint(loss) ?? ''}` : null}
         </p>
       )}
       <div className="flex items-center gap-1">
