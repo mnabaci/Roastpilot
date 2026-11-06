@@ -29,6 +29,21 @@ describe('RoastersScreen', () => {
       expect(api.setActiveRoaster).not.toHaveBeenCalled();
     });
 
+    it('Use this roaster makes it active without connecting', async () => {
+      const { api } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
+      expect(screen.queryByRole('button', { name: 'Use this roaster' })).toBeNull();
+      await userEvent.click(sidebar().getByRole('button', { name: /^Simulator/ }));
+      await userEvent.click(screen.getByRole('button', { name: 'Use this roaster' }));
+      expect(api.setActiveRoaster).toHaveBeenCalledWith(SIMULATOR.id);
+      expect(api.connect).not.toHaveBeenCalled();
+    });
+
+    it('offers no switch while a roaster is in use', async () => {
+      renderApp(<RoastersScreen />, { connection: CONNECTED, roasters: roastersWith(PORT) });
+      await userEvent.click(sidebar().getByRole('button', { name: /^Simulator/ }));
+      expect(screen.queryByRole('button', { name: 'Use this roaster' })).toBeNull();
+    });
+
     it('adds a roaster, then opens it', async () => {
       const api = fakeApi({
         addRoaster: vi.fn(() => Promise.resolve(ok({ ...SIMULATOR, id: 3, name: 'Second' }))),
