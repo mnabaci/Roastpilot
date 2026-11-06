@@ -25,3 +25,4 @@ export {
 } from './components/SegmentedControl';
 export { NavList, type NavListItem, type NavListProps } from './components/NavList';
 export { SidebarLayout, type SidebarLayoutProps } from './components/SidebarLayout';
+export { ErrorState, type ErrorStateProps } from './components/ErrorState';
