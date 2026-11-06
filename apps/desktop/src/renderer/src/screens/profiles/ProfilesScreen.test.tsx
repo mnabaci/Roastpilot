@@ -7,7 +7,7 @@ import {
   type AutoProfile,
 } from '@roastpilot/shared';
 import type * as Ui from '@roastpilot/ui';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { BUILT_INS, CURVE, STEPS } from '../../test/profiles';
@@ -36,8 +36,13 @@ describe('ProfilesScreen', () => {
   it('opens the profile Auto uses, and lists the rest', () => {
     open();
     expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Mine');
-    expect(screen.getByText('Auto uses this')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Light · Curve' })).toBeInTheDocument();
+    // Auto's profile shows its badge in the header and in the list.
+    const header = within(screen.getByRole('banner'));
+    expect(header.getByText('Auto')).toBeInTheDocument();
+    expect(header.queryByRole('button', { name: 'Use for Auto' })).toBeNull();
+    const list = within(screen.getByRole('list', { name: 'Profiles' }));
+    expect(list.getByRole('button', { name: /Mine/ })).toHaveTextContent('Auto');
+    expect(list.getByRole('button', { name: 'Light · Curve' })).toBeInTheDocument();
   });
 
   it('a built-in cannot be edited, only duplicated', async () => {
@@ -48,8 +53,9 @@ describe('ProfilesScreen', () => {
     open(api, BUILT_INS, 'light-steps');
     expect(screen.getByRole('textbox', { name: 'Name' })).toBeDisabled();
     expect(screen.getByRole('textbox', { name: 'BT cap' })).toBeDisabled();
-    expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
-    await userEvent.click(screen.getByRole('button', { name: 'Duplicate' }));
+    await userEvent.click(screen.getByRole('button', { name: /^More for/ }));
+    expect(screen.queryByRole('menuitem', { name: 'Delete' })).toBeNull();
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Duplicate' }));
     expect(api.duplicateProfile).toHaveBeenCalledWith('light-steps');
     await waitFor(() => {
       expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Mine');
@@ -124,9 +130,11 @@ describe('ProfilesScreen', () => {
   it('asks once before deleting, then goes back to the one Auto uses', async () => {
     const api = fakeApi({ listProfiles: vi.fn(() => Promise.resolve(BUILT_INS)) });
     open(api);
-    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    await userEvent.click(screen.getByRole('button', { name: /^More for/ }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
     expect(api.deleteProfile).not.toHaveBeenCalled();
-    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    const confirm = screen.getByRole('alertdialog', { name: 'Delete this profile?' });
+    await userEvent.click(within(confirm).getByRole('button', { name: 'Delete' }));
     expect(api.deleteProfile).toHaveBeenCalledWith('custom-1');
     await waitFor(() => {
       expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Light · Steps');
@@ -178,12 +186,13 @@ describe('ProfilesScreen', () => {
       { profiles: withMine, ...settingsOn('light-steps'), roasters: roastersWith(null) },
       api,
     );
-    await userEvent.click(screen.getByRole('button', { name: 'Copy to Simulator' }));
+    await userEvent.click(screen.getByRole('button', { name: /^More for/ }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Copy to Simulator' }));
     expect(api.copyProfile).toHaveBeenCalledWith({ id: 'light-steps', roasterId: 2 });
+    // One line under the header, never inside the actions beside the name.
     const message = await screen.findByText(/needs calibration there/);
-    // Beside the Name field, the buttons' box must not grow with the message.
-    const buttons = screen.getByRole('button', { name: 'Copy to Simulator' }).parentElement;
-    expect(buttons).not.toContainElement(message);
-    expect(screen.getByText('Built-in').closest('p')).toContainElement(message);
+    expect(screen.getByRole('button', { name: /^More for/ }).parentElement).not.toContainElement(
+      message,
+    );
   });
 });

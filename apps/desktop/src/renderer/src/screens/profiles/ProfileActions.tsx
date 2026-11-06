@@ -1,14 +1,13 @@
 import type { ProfileEntry } from '@roastpilot/shared';
-import { Button } from '@roastpilot/ui';
+import { Badge, Button, ConfirmDialog, Menu, type MenuItem } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
-import { ConfirmButton } from '../../features/ConfirmButton';
 import { useRun } from '../../features/use-run';
 import { useRoasters } from '../../stores/use-stores';
 import { useSaveSettings } from '../settings/use-save-settings';
 import type { ProfileDraftState } from './use-profile-draft';
 
-/** The one next thing to do with this profile, and the quieter ones. */
+/** The one next thing to do with this profile, and the rest behind "⋯" (docs/spec/ui.md, Header). */
 export function ProfileActions({
   entry,
   state,
@@ -29,6 +28,7 @@ export function ProfileActions({
   const run = useRun();
   const saveSettings = useSaveSettings();
   const [problem, setProblem] = useState<string>();
+  const [deleting, setDeleting] = useState(false);
   const { id } = entry.profile;
   const others = useRoasters((s) => s.roasters).filter((r) => !r.active);
   const refresh = async () => {
@@ -86,10 +86,30 @@ export function ProfileActions({
       await refresh();
     });
   };
-  // The problem is outside the buttons' box: its width would squeeze the Name field beside them.
+  const deletable = !entry.builtIn && !(active && locked);
+  const more: MenuItem[] = [
+    { label: 'Duplicate', onSelect: duplicate },
+    ...others.map((roaster) => ({
+      label: `Copy to ${roaster.name}`,
+      onSelect: () => {
+        copyTo(roaster.id, roaster.name);
+      },
+    })),
+    ...(deletable
+      ? [
+          {
+            label: 'Delete',
+            destructive: true,
+            onSelect: () => {
+              setDeleting(true);
+            },
+          },
+        ]
+      : []),
+  ];
   return (
-    <>
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-col items-end gap-1">
+      <div className="flex items-center gap-2">
         {state.edited ? (
           <>
             <Button variant="primary" disabled={!state.valid || (active && locked)} onClick={save}>
@@ -99,50 +119,35 @@ export function ProfileActions({
               Discard
             </Button>
           </>
+        ) : active ? (
+          <Badge tone="air">Auto</Badge>
         ) : (
-          <>
-            {active ? null : (
-              <Button
-                variant="primary"
-                disabled={locked}
-                onClick={() => {
-                  saveSettings({ autoProfile: id });
-                }}
-              >
-                Use for Auto
-              </Button>
-            )}
-            <Button variant="secondary" onClick={duplicate}>
-              Duplicate
-            </Button>
-            {others.map((roaster) => (
-              <Button
-                key={roaster.id}
-                variant="ghost"
-                onClick={() => {
-                  copyTo(roaster.id, roaster.name);
-                }}
-              >
-                Copy to {roaster.name}
-              </Button>
-            ))}
-            {entry.builtIn || (active && locked) ? null : (
-              <ConfirmButton
-                label="Delete"
-                destructive
-                question="Delete this profile? · saved roasts keep their copy"
-                confirmLabel="Delete"
-                onConfirm={remove}
-              />
-            )}
-          </>
+          <Button
+            variant="primary"
+            disabled={locked}
+            onClick={() => {
+              saveSettings({ autoProfile: id });
+            }}
+          >
+            Use for Auto
+          </Button>
         )}
+        <Menu label={`More for ${entry.profile.name}`} items={more} />
       </div>
+      <ConfirmDialog
+        open={deleting}
+        onOpenChange={setDeleting}
+        question="Delete this profile?"
+        detail="saved roasts keep their copy"
+        confirmLabel="Delete"
+        destructive
+        onConfirm={remove}
+      />
       {problem ? (
-        <p role="alert" className="w-full text-label text-critical-text">
+        <p role="alert" className="text-label text-critical-text">
           {problem}
         </p>
       ) : null}
-    </>
+    </div>
   );
 }
