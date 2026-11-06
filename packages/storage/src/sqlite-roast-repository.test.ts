@@ -57,6 +57,7 @@ describe('SqliteRoastRepository', () => {
         notes: null,
         profileId: null,
         profileName: null,
+        imported: false,
         startedAt: '2026-11-04T10:00:00.000Z',
         endedAt: null,
         fcTimeS: null,
@@ -177,5 +178,91 @@ describe('SqliteRoastRepository', () => {
       error: { kind: 'storage-failed' },
     });
     expect(await repository.list()).toMatchObject({ ok: false });
+  });
+
+  describe('stock', () => {
+    /** Two beans with 1000 g green each; reads back their green and roasted grams. */
+    function withBeans() {
+      const env = setup();
+      env.sqlite.exec(`INSERT INTO beans (name, origin, process, green_g) VALUES
+        ('Ethiopia', 'Ethiopia', 'Washed', 1000), ('Colombia', 'Colombia', 'Natural', 1000)`);
+      const stock = () =>
+        env.sqlite.prepare('SELECT green_g, roasted_g FROM beans ORDER BY id').all() as {
+          green_g: number;
+          roasted_g: number;
+        }[];
+      return { ...env, stock };
+    }
+    const roastOf = async (
+      repository: SqliteRoastRepository,
+      over: { beanId: number | null; imported?: boolean },
+    ) => {
+      const made = await repository.create({
+        startedAt: '2026-11-04T10:00:00.000Z',
+        mode: 'manual',
+        profile: null,
+        roasterId: null,
+        batchG: 400,
+        ghostRoastId: null,
+        ...over,
+      });
+      if (!made.ok) throw new Error('create failed');
+      return made.value;
+    };
+
+    it('an imported roast takes nothing off stock, and its weights move none', async () => {
+      const { repository, stock } = withBeans();
+      const id = await roastOf(repository, { beanId: 1, imported: true });
+      await repository.saveResult({
+        id,
+        batchG: 400,
+        roastedG: 340,
+        rating: null,
+        isFavourite: false,
+        notes: null,
+      });
+      expect(stock()[0]).toEqual({ green_g: 1000, roasted_g: 0 });
+      const listed = await repository.list();
+      expect(listed.ok && listed.value[0]?.imported).toBe(true);
+    });
+
+    it('changing the bean of a roast made here moves its beans from one bag to the other', async () => {
+      const { repository, stock } = withBeans();
+      const id = await roastOf(repository, { beanId: 1 });
+      await repository.saveResult({
+        id,
+        batchG: 400,
+        roastedG: 340,
+        rating: null,
+        isFavourite: false,
+        notes: null,
+      });
+      expect(stock()).toEqual([
+        { green_g: 600, roasted_g: 340 },
+        { green_g: 1000, roasted_g: 0 },
+      ]);
+      expect(await repository.setBean(id, 2)).toEqual({ ok: true, value: undefined });
+      expect(stock()).toEqual([
+        { green_g: 1000, roasted_g: 0 },
+        { green_g: 600, roasted_g: 340 },
+      ]);
+    });
+
+    it('linking an imported roast to a bean only links it', async () => {
+      const { repository, stock } = withBeans();
+      const id = await roastOf(repository, { beanId: null, imported: true });
+      await repository.setBean(id, 1);
+      expect(stock()[0]).toEqual({ green_g: 1000, roasted_g: 0 });
+      const got = await repository.get(id);
+      expect(got.ok && got.value.beanId).toBe(1);
+    });
+
+    it('setBean says not-found for an unknown roast', async () => {
+      const { repository } = withBeans();
+      expect(await repository.setBean(99, 1)).toEqual({
+        ok: false,
+        error: { kind: 'not-found', id: 99 },
+      });
+    });
   });
 });

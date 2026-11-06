@@ -36,6 +36,7 @@ const summary = (id: number, startedAt: string, over: Partial<RoastSummary> = {}
   notes: null,
   profileId: null,
   profileName: null,
+  imported: false,
   dropTemp: 205.5,
   ...over,
 });

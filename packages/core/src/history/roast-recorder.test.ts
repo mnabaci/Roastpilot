@@ -50,6 +50,7 @@ class FakeRepository implements RoastRepository {
       notes: null,
       profileId: roast.profile?.id ?? null,
       profileName: roast.profile?.name ?? null,
+      imported: roast.imported ?? false,
       endedAt: null,
       fcTimeS: null,
       dropTimeS: null,
@@ -84,6 +85,11 @@ class FakeRepository implements RoastRepository {
   get(id: RoastId): Saved<RoastDetail> {
     const roast = this.roasts.get(id);
     return Promise.resolve(roast ? ok(roast) : err({ kind: 'not-found', id }));
+  }
+  setBean(id: RoastId, beanId: number | null): Saved<void> {
+    const roast = this.roasts.get(id);
+    if (roast) this.roasts.set(id, { ...roast, beanId });
+    return Promise.resolve(ok(undefined));
   }
   delete(id: RoastId): Saved<void> {
     this.roasts.delete(id);
@@ -184,6 +190,7 @@ describe('RoastRecorder', () => {
       notes: null,
       profileId: null,
       profileName: null,
+      imported: false,
       startedAt: '2026-11-04T10:00:00.000Z',
       endedAt: '2026-11-04T10:15:40.000Z',
       fcTimeS: 480,

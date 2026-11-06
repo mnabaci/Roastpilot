@@ -25,6 +25,8 @@ export const RoastSummarySchema = z.object({
   /** From the roast's profile copy; null on Manual. */
   profileId: z.string().nullable(),
   profileName: z.string().nullable(),
+  /** Came from a file (a Roastpilot file or Artisan): its bean's stock never moves. */
+  imported: z.boolean(),
 });
 
 /** What you say about a roast after it, and can change later (docs/spec/ui.md). */

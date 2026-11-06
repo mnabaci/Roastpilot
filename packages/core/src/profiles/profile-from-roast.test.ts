@@ -32,6 +32,7 @@ const ROAST: RoastDetail = {
   notes: null,
   profileId: null,
   profileName: null,
+  imported: false,
   mode: 'manual',
   profile: null,
   samples: run(),

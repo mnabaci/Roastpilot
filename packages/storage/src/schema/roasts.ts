@@ -34,6 +34,8 @@ export const roasts = sqliteTable(
     rating: integer('rating'),
     isFavourite: integer('is_favourite', { mode: 'boolean' }).notNull().default(false),
     notes: text('notes'),
+    /** Came from a file (Roastpilot or Artisan): its bean's stock never moves. */
+    imported: integer('imported', { mode: 'boolean' }).notNull().default(false),
   },
   (table) => [index('roasts_started_at').on(table.startedAt)],
 );

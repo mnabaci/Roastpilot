@@ -8,6 +8,7 @@ const roast = (id: number, beanId: number | null, profileId: string | null, isFa
     beanId,
     profileId,
     profileName: profileId?.toUpperCase() ?? null,
+    imported: false,
     isFavourite,
   }) as RoastSummary;
 
