@@ -1,33 +1,36 @@
 import type { RoastMode } from '@roastpilot/shared';
-import { SelectField } from '@roastpilot/ui';
-import { Choice } from '../../features/Choice';
+import { SegmentedControl, SelectField } from '@roastpilot/ui';
 import { useSaveSettings } from '../settings/use-save-settings';
 import { useAuto, useSettings } from '../../stores/use-stores';
 import { useActiveProfile, useProfileLocked } from './use-active-profile';
 
-const MODES: readonly { id: RoastMode; label: string }[] = [
-  { id: 'manual', label: 'Manual' },
-  { id: 'auto', label: 'Auto' },
+const MODES: readonly { value: RoastMode; label: string }[] = [
+  { value: 'manual', label: 'Manual' },
+  { value: 'auto', label: 'Auto' },
 ];
 
-/** Who drives the roast, and with which profile (docs/spec/roast-control.md, Auto mode). */
-export function AutoPanel() {
+/**
+ * Who drives the roast, and with which profile (docs/spec/roast-control.md, Auto mode). The switch
+ * stays live mid-roast; the profile picker only shows before one, as it can't change after.
+ */
+export function ModeControl({ withProfile }: { withProfile: boolean }) {
   const mode = useSettings((s) => s.settings.roastMode);
   const profiles = useAuto((s) => s.profiles);
   const active = useActiveProfile();
   const save = useSaveSettings();
   const locked = useProfileLocked();
   return (
-    <section aria-label="Roast mode" className="flex flex-col gap-2">
-      <Choice
+    <div className="flex flex-col gap-2">
+      <SegmentedControl
         label="Roast mode"
+        className="self-start"
         options={MODES}
         value={mode}
         onChange={(roastMode) => {
           save({ roastMode });
         }}
       />
-      {mode === 'auto' && active ? (
+      {withProfile && mode === 'auto' && active ? (
         <>
           <SelectField
             label="Profile"
@@ -43,6 +46,6 @@ export function AutoPanel() {
           ) : null}
         </>
       ) : null}
-    </section>
+    </div>
   );
 }

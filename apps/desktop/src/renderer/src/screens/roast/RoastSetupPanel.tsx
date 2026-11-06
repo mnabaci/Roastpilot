@@ -1,25 +1,22 @@
-import { beanHints, suggestProfile } from '@roastpilot/core';
-import type { RoastSetup, RoastSummary } from '@roastpilot/shared';
-import { Button, NumberField, SelectField } from '@roastpilot/ui';
+import type { RoastSetup } from '@roastpilot/shared';
+import { Button } from '@roastpilot/ui';
+import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
 import { activeRoaster } from '../../stores/roasters-store';
-import { useAuto, useBeans, useRoast, useRoasters, useSettings } from '../../stores/use-stores';
-import { roastTitle } from '../history/history-format';
+import { useBeans, useRoast, useRoasters, useSettings } from '../../stores/use-stores';
 import { useRoastList } from '../history/use-roast-list';
-import { useSaveSettings } from '../settings/use-save-settings';
-import { setupForBean, stockWarning } from './roast-setup';
-import { useActiveProfile } from './use-active-profile';
-
-const NONE = 'none';
-
-const ghostLabel = (roast: RoastSummary) =>
-  `${roast.isFavourite ? '★ ' : ''}${roastTitle(roast.startedAt)}`;
+import { ghostLabel } from './ghost';
+import { GhostField } from './GhostField';
+import { ModeControl } from './ModeControl';
+import { SetupForm } from './SetupForm';
+import { useActiveProfile, useProfileLocked } from './use-active-profile';
 
 /**
- * What the next roast is of: bean, batch, the suggested profile and the ghost; every part optional
- * (docs/spec/ui.md, Before preheat). Once it runs only the ghost can change.
+ * The setup card (docs/spec/ui.md, Setup card): who drives, then one line of what the roast is of,
+ * with Change to open the rest. Before or after a roast that is the whole setup; mid-roast only the
+ * ghost, the one part that can still change.
  */
 export function RoastSetupPanel() {
   const { api, stores } = useDeps();
@@ -27,137 +24,63 @@ export function RoastSetupPanel() {
   const phase = useRoast((s) => s.roast.phase);
   const beans = useBeans((s) => s.beans);
   const setup = useBeans((s) => s.setup);
-  const roasters = useRoasters((s) => s.roasters);
+  const roaster = useRoasters((s) => activeRoaster(s.roasters));
   const mode = useSettings((s) => s.settings.roastMode);
-  const profiles = useAuto((s) => s.profiles);
-  const active = useActiveProfile();
-  const saveSettings = useSaveSettings();
-  const roasts = useRoastList();
-  const [changing, setChanging] = useState(false);
-  const [batchText, setBatchText] = useState<string>();
-
-  const roaster = activeRoaster(roasters);
-  const bean = beans.find((b) => b.id === setup.beanId);
-  const list = roasts ?? [];
+  const profile = useActiveProfile();
+  // The profile can't change from Preheat until Drop; then its name sits in the line instead.
+  const profileLocked = useProfileLocked();
+  const roasts = useRoastList() ?? [];
+  const [open, setOpen] = useState(false);
   const update = (next: RoastSetup) => {
     stores.beans.setState({ setup: next });
     run('roast.setup-failed', () => api.setRoastSetup(next));
   };
-
-  const ghostField = (
-    <SelectField
-      label="Ghost"
-      value={setup.ghostRoastId === null ? NONE : String(setup.ghostRoastId)}
-      options={[
-        { value: NONE, label: 'None' },
-        ...list.map((r) => ({ value: String(r.id), label: ghostLabel(r) })),
-      ]}
-      onChange={(value) => {
-        update({ ...setup, ghostRoastId: value === NONE ? null : Number(value) });
-      }}
-    />
-  );
-
-  // A roast is on: the bean and batch went with it.
-  const summary = [
+  const idle = phase === 'ready' || phase === 'done';
+  const bean = beans.find((b) => b.id === setup.beanId);
+  const ghost = roasts.find((r) => r.id === setup.ghostRoastId);
+  const line = [
+    mode === 'auto' ? profile?.profile.name : undefined,
     bean?.name ?? 'No bean',
-    setup.batchG === null ? null : `${String(setup.batchG)} g`,
+    setup.batchG === null ? undefined : `${String(setup.batchG)} g`,
+    ghost ? `ghost ${ghostLabel(ghost)}` : undefined,
   ]
     .filter(Boolean)
     .join(' · ');
-  if (phase !== 'ready' && !(phase === 'done' && changing)) {
-    return (
-      <section aria-label="This roast" className="flex flex-col gap-2">
-        <div className="flex items-center justify-between gap-2">
-          <p className="truncate text-body">{summary}</p>
-          {phase === 'done' ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setChanging(true);
-              }}
-            >
-              Change
-            </Button>
-          ) : null}
-        </div>
-        {ghostField}
-      </section>
-    );
-  }
-
-  const suggestion =
-    mode === 'auto'
-      ? suggestProfile({
-          bean,
-          beans,
-          roasts: list,
-          available: profiles.map((e) => e.profile.id),
-        })
-      : undefined;
-  const suggested = profiles.find((e) => e.profile.id === suggestion?.profileId);
-  const batch = batchText ?? (setup.batchG === null ? '' : String(setup.batchG));
-  const warning = stockWarning(bean, setup.batchG);
   return (
-    <section aria-label="Next roast" className="flex flex-col gap-2">
-      <SelectField
-        label="Bean"
-        value={setup.beanId === null ? NONE : String(setup.beanId)}
-        options={[
-          { value: NONE, label: 'No bean' },
-          ...beans
-            .filter((b) => !b.archived || b.id === setup.beanId)
-            .map((b) => ({ value: String(b.id), label: b.name })),
-        ]}
-        onChange={(value) => {
-          if (!roaster) return;
-          const picked = beans.find((b) => String(b.id) === value);
-          setBatchText(undefined);
-          update(
-            setupForBean(picked, { roaster, roasts: list, profileId: active?.profile.id ?? null }),
-          );
-        }}
-      />
-      {bean ? (
-        <NumberField
-          label="Batch"
-          unit="g"
-          value={batch}
-          onChange={(value) => {
-            setBatchText(value);
-            const grams = Number(value);
-            update({ ...setup, batchG: grams > 0 ? grams : null });
+    <section aria-label="Setup" className="flex flex-col gap-3 rounded-xl bg-surface px-5 py-4.5">
+      <ModeControl withProfile={open && !profileLocked} />
+      <div className="flex items-center justify-between gap-2">
+        <p title={line} className="min-w-0 truncate text-body">
+          {line}
+        </p>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="shrink-0"
+          aria-expanded={open}
+          icon={
+            <ChevronDown
+              aria-hidden="true"
+              className={open ? 'rotate-180 transition-transform' : 'transition-transform'}
+            />
+          }
+          onClick={() => {
+            setOpen(!open);
           }}
+        >
+          Change
+        </Button>
+      </div>
+      {open && idle ? (
+        <SetupForm
+          setup={setup}
+          beans={beans}
+          roaster={roaster}
+          roasts={roasts}
+          onChange={update}
         />
       ) : null}
-      {warning ? <p className="text-label text-critical-text">{warning}</p> : null}
-      {bean && suggestion && suggested ? (
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-label text-ink-muted">
-            {suggested.profile.name} · {suggestion.reason}
-          </p>
-          {suggested.profile.id !== active?.profile.id ? (
-            <Button
-              size="sm"
-              className="shrink-0"
-              onClick={() => {
-                saveSettings({ autoProfile: suggested.profile.id });
-              }}
-            >
-              Use
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
-      {bean
-        ? beanHints(bean).map((hint) => (
-            <p key={hint} className="text-label text-ink-muted">
-              {hint}
-            </p>
-          ))
-        : null}
-      {ghostField}
+      {open ? <GhostField setup={setup} roasts={roasts} onChange={update} /> : null}
     </section>
   );
 }

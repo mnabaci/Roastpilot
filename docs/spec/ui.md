@@ -46,17 +46,18 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 - **Connection lost:** sliders show a dash instead of their last values, and the flow panel shows "Reconnecting… · check the cable" with no button until readings are back.
 - **Side panel follows the roast:** it shows only what the moment needs, top to bottom:
 
-  | State                       | Panel                                                                                   |
-  | --------------------------- | --------------------------------------------------------------------------------------- |
-  | Not connected or connecting | The next action (Connect a roaster), then the setup card. No outputs.                   |
-  | Ready, Done                 | The setup card, then the next action (Preheat), then the outputs.                       |
-  | Preheat to Cooling          | The next action, then the setup as one line with Change (ghost only), then the outputs. |
+  | State                       | Panel                                                                 |
+  | --------------------------- | --------------------------------------------------------------------- |
+  | Not connected or connecting | The next action (Connect a roaster), then the setup card. No outputs. |
+  | Ready                       | The setup card, then the next action (Preheat), then the outputs.     |
+  | Preheat to Done             | The next action, then the outputs, then the setup card.               |
 
-- **Setup card:** Auto / Manual as a segmented control, then bean, batch, profile (Auto) and ghost. Once a roast runs it folds into one line: "Manual · Ethiopia Guji · 375 g · ghost Wed 4 Nov · 14:32", with Change opening the ghost (the only part that can change mid-roast).
+- **Setup card:** Auto / Manual as a segmented control (live at any time), then one line of what the roast is of, "Ethiopia Guji · 375 g · ghost Wed 4 Nov · 14:32" (the profile leads in Auto), with Change to open the rest. Closed by default. Open before or after a roast: bean, batch, profile (Auto) and ghost; mid-roast: the ghost only, the one part that can still change.
+- The panel and the chart column scroll on their own, so the action and the sliders stay in view at 960 × 640.
 - **Mode switch:** Auto / Manual. In Manual, the coach card sits above the outputs.
 - **Outputs:** heater % and fan %, each with a slider. The Auto / Manual badge and Resume auto show only while Auto drives the roast (Preheat until Drop); in a manual roast there is nothing to tell apart. Drum, filter fan and cooling are one row of three labelled switches. With the connection lost they stay, showing dashes.
 - **Buttons:** Preheat, Start (charge), First crack, Drop now, and a red Emergency stop that is always visible (disabled only while no roaster is connected).
-- **After cooling:** roasted weight, rating, star and notes inline in the flow panel, never a dialog, and all skippable; saved as you enter them. They stay until the next Preheat or Clear, and can be changed later in History.
+- **After cooling:** roasted weight, rating, star and notes in a card over the chart, never a dialog, and all skippable. Saved as you enter them, with a quiet "Saved" after each ("Saves as you go" before); Done hides the card for that roast. They stay until the next Preheat or Clear, and can be changed later in History.
 
 ## Profiles screen
 

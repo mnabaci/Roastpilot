@@ -11,6 +11,11 @@ import { RoastScreen } from './RoastScreen';
 const roast = (phase: (typeof READY_ROAST)['phase']) => ({ ...READY_ROAST, phase });
 const reading = (values: Reading['values'], atMs = 1000): Reading => ({ atMs, values });
 const connected = { connection: CONNECTED };
+/** The setup card starts closed; Change opens the rest of it. */
+const openSetup = () =>
+  userEvent.click(
+    within(screen.getByRole('region', { name: 'Setup' })).getByRole('button', { name: 'Change' }),
+  );
 const onConnect = () => undefined;
 
 vi.mock('@roastpilot/ui', async (importOriginal) => ({
@@ -24,7 +29,10 @@ describe('RoastScreen', () => {
     renderApp(<RoastScreen onConnect={go} />);
     await userEvent.click(screen.getByRole('button', { name: 'Connect a roaster' }));
     expect(go).toHaveBeenCalledOnce();
-    expect(screen.getByRole('slider', { name: 'Heater' })).toBeDisabled();
+    // Nothing to control yet: no sliders or switches, only the setup card under Connect.
+    expect(screen.queryByRole('slider', { name: 'Heater' })).toBeNull();
+    expect(screen.queryByRole('switch', { name: 'Drum' })).toBeNull();
+    expect(screen.getByRole('region', { name: 'Setup' })).toBeInTheDocument();
   });
 
   it.each([
@@ -244,15 +252,15 @@ describe('RoastScreen', () => {
         renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast(phase) });
         expect(screen.getByRole('slider', { name: 'Heater' })).toBeDisabled();
         expect(screen.getByRole('slider', { name: 'Fan' })).toBeEnabled();
-        expect(screen.getByRole('button', { name: /Drum/ })).toBeEnabled();
-        expect(screen.getByRole('button', { name: /Cooling/ })).toBeEnabled();
+        expect(screen.getByRole('switch', { name: 'Drum' })).toBeEnabled();
+        expect(screen.getByRole('switch', { name: 'Cooling' })).toBeEnabled();
         expect(screen.getByText('Heater waits for Preheat')).toBeInTheDocument();
       },
     );
 
     it('roasting hides the cooling switch, as Drop handles cooling', () => {
       renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast('roasting') });
-      expect(screen.queryByRole('button', { name: /Cooling/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('switch', { name: 'Cooling' })).not.toBeInTheDocument();
     });
 
     it('from Preheat the sliders are live', () => {
@@ -268,7 +276,7 @@ describe('RoastScreen', () => {
       readings: [reading({ cooling: 0 })],
     });
     expect(screen.getByRole('slider', { name: 'Heater' })).toBeEnabled();
-    await userEvent.click(screen.getByRole('button', { name: /Cooling/ }));
+    await userEvent.click(screen.getByRole('switch', { name: 'Cooling' }));
     expect(api.setOutput).toHaveBeenCalledWith({ channel: 'cooling', value: 100 });
   });
 
@@ -407,14 +415,14 @@ describe('RoastScreen', () => {
     expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument();
   });
 
-  it('with no roaster, the last readings show as dashes, not live values', () => {
+  it('with no roaster, the last readings never show as live values', () => {
     renderApp(<RoastScreen onConnect={onConnect} />, {
       roast: roast('preheat'),
       readings: [reading({ bt: 42.7, heater: 0, fan: 100, drum: 1 })],
     });
     expect(screen.queryByText('42.7')).not.toBeInTheDocument();
     expect(screen.queryByText('100%')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Drum/ })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByRole('switch', { name: 'Drum' })).toBeNull();
   });
 
   it('connection lost: Reconnecting with nothing to press, and dashes instead of old values', () => {
@@ -445,8 +453,8 @@ describe('RoastScreen', () => {
       roast: roast('roasting'),
       readings: [reading({ drum: 1 })],
     });
-    const drum = screen.getByRole('button', { name: /Drum/ });
-    expect(drum).toHaveAttribute('aria-pressed', 'true');
+    const drum = screen.getByRole('switch', { name: 'Drum' });
+    expect(drum).toBeChecked();
     await userEvent.click(drum);
     expect(api.setOutput).toHaveBeenCalledWith({ channel: 'drum', value: 0 });
   });
@@ -457,8 +465,8 @@ describe('RoastScreen', () => {
       roast: roast('preheat'),
       readings: [reading({ filter: 1 })],
     });
-    const filter = screen.getByRole('button', { name: /Filter/ });
-    expect(filter).toHaveAttribute('aria-pressed', 'true');
+    const filter = screen.getByRole('switch', { name: 'Filter' });
+    expect(filter).toBeChecked();
     await userEvent.click(filter);
     expect(api.setOutput).toHaveBeenCalledWith({ channel: 'filter', value: 0 });
   });
@@ -588,14 +596,16 @@ describe('RoastScreen', () => {
     it('stays Manual with no profile choice until you pick Auto', async () => {
       const { api } = renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, profiles });
       expect(screen.queryByLabelText('Profile')).toBeNull();
-      await userEvent.click(screen.getByRole('button', { name: 'Auto' }));
+      await userEvent.click(screen.getByRole('radio', { name: 'Auto' }));
       expect(api.setSettings).toHaveBeenCalledWith(expect.objectContaining({ roastMode: 'auto' }));
+      await openSetup();
       expect(screen.getByLabelText('Profile')).toHaveValue('light-steps');
       expect(screen.getByText('Needs calibration · stay close.')).toBeInTheDocument();
     });
 
     it('picks a profile', async () => {
       const { api } = renderApp(<RoastScreen onConnect={onConnect} />, auto('ready'));
+      await openSetup();
       await userEvent.selectOptions(screen.getByLabelText('Profile'), 'light-curve');
       expect(api.setSettings).toHaveBeenCalledWith(
         expect.objectContaining({ autoProfile: 'light-curve' }),
@@ -603,15 +613,20 @@ describe('RoastScreen', () => {
     });
 
     it.each(['preheat', 'roasting', 'development'] as const)(
-      'keeps the profile choice still in %s',
-      (phase) => {
+      'keeps the profile still in %s, named in the setup line',
+      async (phase) => {
         renderApp(<RoastScreen onConnect={onConnect} />, auto(phase));
-        expect(screen.getByLabelText('Profile')).toBeDisabled();
+        await openSetup();
+        expect(screen.queryByLabelText('Profile')).toBeNull();
+        expect(screen.getByRole('region', { name: 'Setup' })).toHaveTextContent('Light · Steps');
+        // The Auto / Manual switch itself stays live mid-roast.
+        expect(screen.getByRole('radio', { name: 'Manual' })).toBeEnabled();
       },
     );
 
-    it.each(['ready', 'cooling', 'done'] as const)('lets you choose again in %s', (phase) => {
+    it.each(['ready', 'cooling', 'done'] as const)('lets you choose again in %s', async (phase) => {
       renderApp(<RoastScreen onConnect={onConnect} />, auto(phase));
+      await openSetup();
       expect(screen.getByLabelText('Profile')).toBeEnabled();
     });
 
@@ -645,9 +660,12 @@ describe('RoastScreen', () => {
       expect(screen.getByText('Heater locked · acknowledge above')).toBeInTheDocument();
     });
 
-    it('offers no Resume auto on Manual', () => {
+    it('offers no Resume auto and no badges in a manual roast', () => {
       renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast('roasting') });
       expect(screen.queryByRole('button', { name: 'Resume auto' })).toBeNull();
+      const outputs = within(screen.getByRole('region', { name: 'Outputs' }));
+      expect(outputs.queryByText('Manual')).toBeNull();
+      expect(outputs.queryByText('Auto')).toBeNull();
     });
   });
 
@@ -661,7 +679,7 @@ describe('RoastScreen', () => {
     });
     expect(screen.getByRole('slider', { name: 'Heater' })).toBeInTheDocument();
     expect(screen.queryByRole('slider', { name: 'Fan' })).toBeNull();
-    expect(screen.queryByRole('button', { name: /Filter/ })).toBeNull();
-    expect(screen.getByRole('button', { name: /Drum/ })).toBeInTheDocument();
+    expect(screen.queryByRole('switch', { name: 'Filter' })).toBeNull();
+    expect(screen.getByRole('switch', { name: 'Drum' })).toBeInTheDocument();
   });
 });

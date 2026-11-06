@@ -15,8 +15,8 @@ import { useRun } from './use-run';
 const RATINGS = [1, 2, 3, 4, 5] as const;
 
 /**
- * Weights, rating, star and notes: all skippable, saved as you enter them, changeable later
- * (docs/spec/ui.md, After cooling). Key it by roast, as it keeps what you typed.
+ * Weights, rating, star and notes: all skippable, saved as you enter them (it says Saved when one
+ * lands), changeable later (docs/spec/ui.md, After cooling). Key it by roast, as it keeps what you typed.
  */
 export function RoastResultForm({ roast }: { roast: RoastSummary }) {
   const { api } = useDeps();
@@ -25,12 +25,15 @@ export function RoastResultForm({ roast }: { roast: RoastSummary }) {
   const [rating, setRating] = useState(roast.rating);
   const [isFavourite, setFavourite] = useState(roast.isFavourite);
   const [problem, setProblem] = useState<string>();
+  // Says each save landed, until the next edit starts.
+  const [justSaved, setJustSaved] = useState(false);
   const result = resultFromDraft(draft, { id: roast.id, rating, isFavourite });
   const save = (next: RoastResult | undefined) => {
     if (!next) return;
     run('roast.result-failed', async () => {
       const saved = await api.saveRoastResult(next);
       setProblem(saved.ok ? undefined : "Couldn't save this · see Logs");
+      setJustSaved(saved.ok);
     });
   };
   // A weight half-typed doesn't hold up the rating or star: they go with what's saved so far.
@@ -46,6 +49,7 @@ export function RoastResultForm({ roast }: { roast: RoastSummary }) {
     ...changes,
   });
   const type = (cells: Partial<ResultDraft>) => {
+    setJustSaved(false);
     setDraft((current) => ({ ...current, ...cells }));
   };
   const commit = () => {
@@ -126,7 +130,11 @@ export function RoastResultForm({ roast }: { roast: RoastSummary }) {
         <p role="alert" className="text-label text-critical-text">
           {problem}
         </p>
-      ) : null}
+      ) : (
+        <p role="status" className="text-label text-ink-muted">
+          {justSaved ? 'Saved' : 'Saves as you go'}
+        </p>
+      )}
     </section>
   );
 }

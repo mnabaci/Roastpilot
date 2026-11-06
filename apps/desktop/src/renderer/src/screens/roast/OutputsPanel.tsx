@@ -6,11 +6,11 @@ import { useOutput } from './use-output';
 import { useRun } from '../../features/use-run';
 import { useDeps } from '../../app/app-context';
 import { useAuto, useConnection, useRoast, useSafety, useSettings } from '../../stores/use-stores';
-import { OnOffButton } from './OnOffButton';
+import { SwitchCell } from './SwitchCell';
 
 /**
- * Heater and fan sliders, the drum and filter fan switches and the cooling switch (Full control,
- * or with no roast running).
+ * Heater and fan sliders, then one row of switches: drum, filter fan and cooling (Full control, or
+ * with no roast running).
  */
 export function OutputsPanel() {
   const level = useSettings((s) => s.settings.controls);
@@ -34,8 +34,9 @@ export function OutputsPanel() {
       if (!result.ok) logger.info('auto.resume-refused', { ...result.error });
     });
   };
+  // The badge only means something while Auto drives; in a manual roast every output is yours.
   const owner = (output: 'heater' | 'fan') =>
-    driving && auto[output] === 'auto' ? 'auto' : 'manual';
+    driving ? (auto[output] === 'auto' ? 'auto' : 'manual') : undefined;
   const canResume = driving && connected && !locked;
   const heater = useOutput('heater');
   const fan = useOutput('fan');
@@ -78,9 +79,9 @@ export function OutputsPanel() {
           disabled={!access.fan}
         />
       ) : null}
-      <div className="flex flex-col gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {has('drum') ? (
-          <OnOffButton
+          <SwitchCell
             label="Drum"
             on={connected && drum.value > 0}
             disabled={!access.switches}
@@ -90,7 +91,7 @@ export function OutputsPanel() {
           />
         ) : null}
         {has('filter') ? (
-          <OnOffButton
+          <SwitchCell
             label="Filter"
             on={connected && filter.value > 0}
             disabled={!access.switches}
@@ -100,7 +101,7 @@ export function OutputsPanel() {
           />
         ) : null}
         {access.showCooling && has('cooling') ? (
-          <OnOffButton
+          <SwitchCell
             label="Cooling"
             on={connected && cooling.value > 0}
             disabled={!connected}
