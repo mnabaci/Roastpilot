@@ -94,6 +94,8 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 - Bean detail: its info, all its roasts with stars, and its best favourite.
 - Actions: Add bean, Edit, Add stock (with the batch calculator), Adjust stock, Make a profile for this bean, Archive, Roast this bean.
 - List on the left (the shared sidebar), detail on the right; the two scroll separately.
+- **Sidebar:** "Beans ⋯" (Batch calculator, Show archived), the list, then + Add bean under it.
+- **A bean's header:** its name with Low stock and Archived badges; Roast this bean (main) and Add stock; then "⋯" with Adjust stock, Edit, Make a profile and Archive (Bring back when archived).
 
 ## Batch calculator
 
@@ -102,14 +104,15 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 ## Logs screen
 
 - Milestone 2: the log viewer from [errors-and-logging.md](errors-and-logging.md#viewer).
+- "Logs ⋯" beside the title holds Open log folder, like the other screens' title menus.
 
 ## Roasters screen
 
 - The sidebar lists the roaster records by name, the active one marked Active, and Add roaster under them. It opens on the roaster in use, else the active one.
-- **A roaster's page:** its name and model, then one primary action: Connect, or Disconnect for the one in use (Connecting… busy while it connects; a failure is one line under it). Connect makes this roaster the active one first; Use this roaster (quiet, by the name) makes it active without connecting, as Profiles and batch sizes follow it.
+- **A roaster's page:** its name and model, then one primary action: Connect, or Disconnect for the one in use (Connecting… busy while it connects; a failure is one line under it). Connect makes this roaster the active one first; its "⋯" by the name holds Use this roaster (makes it active without connecting, as Profiles and batch sizes follow it) and Delete (asked in a dialog).
 - **Port:** a Skywalker-type roaster shows its port, with Choose another to list likely roasters (USB serial adapters), the rest behind "Show all ports" (every port at once when none looks like a roaster), and Refresh. A Simulator has no port. When no port is plugged in, one hint: "No roaster found · plug it in, then Refresh".
 - **While a roaster is in use:** its page shows Disconnect and its status (Connected, Reconnecting…); every other page says "Disconnect <name> to switch", and records wait, as [roasters.md](roasters.md) says.
-- Under the action, the record: name, batch size (min, ideal, max), limits and calibration (max temp, max time, temp offset) and the preheat hold, then Save and Delete.
+- Under the action, the record: name, batch size (min, ideal, max), limits and calibration (max temp, max time, temp offset) and the preheat hold, then Save.
 - **Advanced tuning · for experts:** closed until opened, the PID gains in plain words, with one line above them: "Push (Kp): how hard the heater reacts to being off target · Catch-up (Ki): closes a gap that stays". Preheat (Push, Catch-up), Reaching step temperatures (Push, Catch-up, Most it may change %), Following a curve (Push, Catch-up). Each plain name carries the usual one in brackets ("Push (Kp)", "Most it may change (limit)"). Same numbers and limits as before.
 - **Add roaster:** a name and a model, then Add; the new roaster opens.
 - The app starts on Roasters until a roaster is connected; Connect on the Roast screen opens it too.
