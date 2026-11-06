@@ -75,6 +75,11 @@ describe('profileFromRoast', () => {
     });
   });
 
+  it('a profile from a roast made here needs no calibration; from an imported one it does', () => {
+    expect(make(ROAST)?.needsCalibration).toBe(false);
+    expect(make({ ...ROAST, imported: true })?.needsCalibration).toBe(true);
+  });
+
   it('falls back on the roaster batch when the roast has none', () => {
     expect(make({ ...ROAST, batchG: null })?.batchG).toBe(385);
   });

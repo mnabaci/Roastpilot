@@ -10,6 +10,7 @@ const samples: SavedSample[] = Array.from({ length: 300 }, (_, i) => ({
 const roast = {
   id: 3,
   roasterId: 2,
+  imported: false,
   fcTimeS: 500,
   dropTimeS: 590,
   batchG: 300,
