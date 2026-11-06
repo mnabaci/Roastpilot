@@ -80,6 +80,8 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 
 ## History screen
 
+- **Sidebar:** the title with "⋯" (Export CSV, Import from Artisan), then one row of filters: ★ (favourites only) and Bean ▾ / Profile ▾ chips that show their name until they filter, then the choice ("Ethiopia Guji ▾") in ember; then the list.
+- **The open roast:** one header row: its date and time as the title, Compare ▾, Make profile ▾ (Step profile, Curve profile) and "⋯" (Delete, asked in a dialog). The roast being roasted shows "Saving as it roasts" instead of the last two.
 - List of roasts in the shared sidebar, newest first: date and time, total time (charge to drop), first crack time, drop temp; Unfinished when cooling never ended.
 - Open a roast to see its chart, stage times and events; under the chart, a small events table (secondary text): Event · Time · Temp · RoR · Heater · Fan for Charge, Turning point, First crack, Drop and Cool end (or End), with the values read from the saved samples at each event, so older roasts get it too. A dash where there is no value; Compare overlays one other roast, faded, aligned at charge.
 - Delete asks once ("Delete this roast? · can't be undone"), then the list moves to the next roast.
