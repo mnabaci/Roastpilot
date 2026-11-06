@@ -26,3 +26,5 @@ export {
 export { NavList, type NavListItem, type NavListProps } from './components/NavList';
 export { SidebarLayout, type SidebarLayoutProps } from './components/SidebarLayout';
 export { ErrorState, type ErrorStateProps } from './components/ErrorState';
+export { Menu, type MenuItem, type MenuProps } from './components/Menu';
+export { ConfirmDialog, type ConfirmDialogProps } from './components/ConfirmDialog';
