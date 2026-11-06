@@ -54,7 +54,7 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
   | Ready                       | The setup card, then the next action (Preheat), then the outputs.     |
   | Preheat to Done             | The next action, then the outputs, then the setup card.               |
 
-- **Setup card:** Auto / Manual as a segmented control (live at any time), then one line of what the roast is of, "Ethiopia Guji · 375 g · ghost Wed 4 Nov · 14:32" (the profile leads in Auto), with Change to open the rest. Closed by default. Open before or after a roast: bean, batch, profile (Auto) and ghost; mid-roast: the ghost only, the one part that can still change.
+- **Setup card:** one row, folded by default: what the roast is of, "Light · Steps · Ethiopia Guji · 375 g · ghost Wed 4 Nov · 14:32" ("Manual" leads in a manual roast), a ▾ to unfold it, and an Auto switch that stays live at any time. Unfolded before or after a roast: profile (Auto), bean, batch and ghost; mid-roast: the ghost only, the one part that can still change, and the profile only while it isn't locked.
 - The panel and the chart column scroll on their own, so the action and the sliders stay in view at 960 × 640.
 - **Mode switch:** Auto / Manual. In Manual, the coach card sits above the outputs.
 - **Outputs:** heater % and fan %, each with a slider. The Auto / Manual badge and Resume auto show only while Auto drives the roast (Preheat until Drop); in a manual roast there is nothing to tell apart. Drum, filter fan and cooling are one row of three labelled switches. With the connection lost they stay, showing dashes.
