@@ -6,6 +6,7 @@
   "type": "module",
   "description": "The Roastpilot Electron app (main, preload, renderer).",
   "scripts": {
+    "postinstall": "install-electron",
     "predev": "electron-builder install-app-deps",
     "dev": "electron-vite dev",
     "build": "electron-vite build",

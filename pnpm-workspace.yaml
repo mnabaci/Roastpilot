@@ -1,3 +1,9 @@
 packages:
   - apps/*
   - packages/*
+
+onlyBuiltDependencies:
+  - electron
+  - esbuild
+  - better-sqlite3
+  - '@serialport/bindings-cpp'
