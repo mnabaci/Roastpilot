@@ -1,7 +1,8 @@
 import { createLogger, type RoasterDriver } from '@roastpilot/core';
-import { SKYWALKER_PROFILES } from '@roastpilot/drivers';
+import { BUILT_IN_ROASTERS, SKYWALKER_PROFILES } from '@roastpilot/drivers';
 import {
   AUTO_OFF,
+  NO_ROAST_SETUP,
   DEFAULT_SETTINGS,
   err,
   IPC_CHANNELS,
@@ -24,6 +25,8 @@ const SNAPSHOT: Snapshot = {
   readings: [],
   safety: { locked: false, tripped: [] },
   auto: AUTO_OFF,
+  setup: NO_ROAST_SETUP,
+  currentRoastId: null,
 };
 
 function setup() {
@@ -70,6 +73,10 @@ function setup() {
         calls.push(['deleteRoast', id]);
         return Promise.resolve(ok(undefined));
       },
+      saveResult: (result) => {
+        calls.push(['saveResult', result.id]);
+        return Promise.resolve(ok(undefined));
+      },
     },
     pilot: {
       chargeSoon: (nowMs) => {
@@ -82,7 +89,64 @@ function setup() {
         return err({ kind: 'safety-locked' });
       },
     },
+    beans: {
+      list: () => Promise.resolve([]),
+      add: (fields) => {
+        calls.push(['addBean', fields.name]);
+        return Promise.resolve(ok(1));
+      },
+      update: (update) => {
+        calls.push(['updateBean', update.id]);
+        return Promise.resolve(ok(undefined));
+      },
+      setArchived: (request) => {
+        calls.push(['archive', request]);
+        return Promise.resolve(ok(undefined));
+      },
+      addStock: (stock) => {
+        calls.push(['addStock', stock.grams]);
+        return Promise.resolve(ok(undefined));
+      },
+      adjustStock: (stock) => {
+        calls.push(['adjustStock', stock.greenG]);
+        return Promise.resolve(ok(undefined));
+      },
+      setSetup: (setup) => {
+        calls.push(['setup', setup]);
+      },
+    },
+    makeProfile: (request) => {
+      calls.push(['makeProfile', request]);
+      return Promise.resolve(err({ kind: 'too-short' }));
+    },
+    roasters: {
+      load: () => Promise.resolve([]),
+      add: (r) => {
+        calls.push(['addRoaster', r]);
+        return Promise.resolve(err({ kind: 'in-use' }));
+      },
+      save: (r) => {
+        calls.push(['saveRoaster', r.id]);
+        return Promise.resolve(err({ kind: 'in-use' }));
+      },
+      delete: (id) => {
+        calls.push(['deleteRoaster', id]);
+        return Promise.resolve(err({ kind: 'active' }));
+      },
+      setActive: (id) => {
+        calls.push(['setActive', id]);
+        return Promise.resolve(ok(undefined));
+      },
+      chooseConnection: (target) => {
+        calls.push(['choose', target]);
+        return Promise.resolve(ok(undefined));
+      },
+    },
     profiles: {
+      copyTo: (id, roasterId) => {
+        calls.push(['copy', id, roasterId]);
+        return Promise.resolve(err({ kind: 'not-found', id }));
+      },
       list: () => Promise.resolve([]),
       duplicate: (id) => {
         calls.push(['duplicate', id]);
@@ -156,6 +220,22 @@ describe('createIpcHandlers', () => {
         IPC_CHANNELS.duplicateProfile,
         IPC_CHANNELS.saveProfile,
         IPC_CHANNELS.deleteProfile,
+        IPC_CHANNELS.copyProfile,
+        IPC_CHANNELS.listRoasters,
+        IPC_CHANNELS.addRoaster,
+        IPC_CHANNELS.saveRoaster,
+        IPC_CHANNELS.deleteRoaster,
+        IPC_CHANNELS.setActiveRoaster,
+        IPC_CHANNELS.chooseConnection,
+        IPC_CHANNELS.listBeans,
+        IPC_CHANNELS.addBean,
+        IPC_CHANNELS.updateBean,
+        IPC_CHANNELS.setBeanArchived,
+        IPC_CHANNELS.addStock,
+        IPC_CHANNELS.adjustStock,
+        IPC_CHANNELS.setRoastSetup,
+        IPC_CHANNELS.saveRoastResult,
+        IPC_CHANNELS.makeProfileFromRoast,
       ].sort(),
     );
   });
@@ -203,6 +283,53 @@ describe('roast, snapshot and settings handlers', () => {
     const { handlers, calls } = setup();
     await handlers[IPC_CHANNELS.setOutput]?.({ channel: 'heater', value: 50 });
     expect(calls).toContainEqual(['pilotOutput', 'heater', 50]);
+  });
+
+  it('checks roaster requests at the boundary', async () => {
+    const { handlers, calls } = setup();
+    const roaster = BUILT_IN_ROASTERS[0];
+    await expect(
+      handlers[IPC_CHANNELS.saveRoaster]?.({ ...roaster, maxTempC: 500 }),
+    ).rejects.toThrow();
+    await expect(
+      handlers[IPC_CHANNELS.addRoaster]?.({ name: '', model: 'skywalker' }),
+    ).rejects.toThrow();
+    await expect(handlers[IPC_CHANNELS.setActiveRoaster]?.(-1)).rejects.toThrow();
+    await expect(handlers[IPC_CHANNELS.chooseConnection]?.({ kind: 'wifi' })).rejects.toThrow();
+    expect(calls).toEqual([]);
+    await handlers[IPC_CHANNELS.saveRoaster]?.(roaster);
+    await handlers[IPC_CHANNELS.setActiveRoaster]?.(2);
+    await handlers[IPC_CHANNELS.copyProfile]?.({ id: 'custom-1', roasterId: 2 });
+    expect(calls).toEqual([
+      ['saveRoaster', 1],
+      ['setActive', 2],
+      ['copy', 'custom-1', 2],
+    ]);
+  });
+
+  it('checks bean requests at the boundary', async () => {
+    const { handlers, calls } = setup();
+    await expect(handlers[IPC_CHANNELS.addBean]?.({ name: '' })).rejects.toThrow();
+    await expect(handlers[IPC_CHANNELS.addStock]?.({ beanId: 1, grams: -5 })).rejects.toThrow();
+    await expect(handlers[IPC_CHANNELS.setRoastSetup]?.({ beanId: 'x' })).rejects.toThrow();
+    await expect(handlers[IPC_CHANNELS.saveRoastResult]?.({ id: 1, rating: 9 })).rejects.toThrow();
+    await expect(
+      handlers[IPC_CHANNELS.makeProfileFromRoast]?.({ roastId: 1, style: 'wavy' }),
+    ).rejects.toThrow();
+    expect(calls).toEqual([]);
+    const setup_ = { beanId: 1, batchG: 375, ghostRoastId: null };
+    await handlers[IPC_CHANNELS.setRoastSetup]?.(setup_);
+    await handlers[IPC_CHANNELS.setBeanArchived]?.({ id: 1, archived: true });
+    const adjust = { beanId: 1, greenG: 5, roastedG: 6 };
+    await handlers[IPC_CHANNELS.adjustStock]?.(adjust);
+    const made = { roastId: 1, style: 'curve' };
+    await handlers[IPC_CHANNELS.makeProfileFromRoast]?.(made);
+    expect(calls).toEqual([
+      ['setup', setup_],
+      ['archive', { id: 1, archived: true }],
+      ['adjustStock', 5],
+      ['makeProfile', made],
+    ]);
   });
 
   it('passes Charge soon and Resume auto on', async () => {

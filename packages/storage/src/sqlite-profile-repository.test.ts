@@ -23,20 +23,23 @@ describe('SqliteProfileRepository', () => {
 
   it('saves a profile and reads it back whole', async () => {
     const { repository } = setup();
-    expect(await repository.save(MINE)).toEqual({ ok: true, value: undefined });
-    expect(await repository.list()).toEqual({ ok: true, value: [MINE] });
+    expect(await repository.save(MINE, 1)).toEqual({ ok: true, value: undefined });
+    expect(await repository.list()).toEqual({ ok: true, value: [{ profile: MINE, roasterId: 1 }] });
   });
 
   it('replaces the one with the same id', async () => {
     const { repository } = setup();
-    await repository.save(MINE);
-    await repository.save({ ...MINE, name: 'Renamed' });
-    expect(await repository.list()).toEqual({ ok: true, value: [{ ...MINE, name: 'Renamed' }] });
+    await repository.save(MINE, 1);
+    await repository.save({ ...MINE, name: 'Renamed' }, 1);
+    expect(await repository.list()).toEqual({
+      ok: true,
+      value: [{ profile: { ...MINE, name: 'Renamed' }, roasterId: 1 }],
+    });
   });
 
   it('says whether there was one to delete', async () => {
     const { repository } = setup();
-    await repository.save(MINE);
+    await repository.save(MINE, 1);
     expect(await repository.delete(MINE.id)).toEqual({ ok: true, value: true });
     expect(await repository.delete(MINE.id)).toEqual({ ok: true, value: false });
     expect(await repository.list()).toEqual({ ok: true, value: [] });
@@ -44,9 +47,11 @@ describe('SqliteProfileRepository', () => {
 
   it('skips and logs a row it can no longer read, and keeps the rest', async () => {
     const { repository, sqlite, entries } = setup();
-    await repository.save(MINE);
-    sqlite.exec(`INSERT INTO profiles VALUES ('old', '{"old":true}', '2026-01-01T00:00:00.000Z')`);
-    expect(await repository.list()).toEqual({ ok: true, value: [MINE] });
+    await repository.save(MINE, 1);
+    sqlite.exec(
+      `INSERT INTO profiles VALUES ('old', '{"old":true}', '2026-01-01T00:00:00.000Z', 1)`,
+    );
+    expect(await repository.list()).toEqual({ ok: true, value: [{ profile: MINE, roasterId: 1 }] });
     expect(entries.map((e) => e.event)).toContain('storage.profile-unreadable');
   });
 

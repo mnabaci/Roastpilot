@@ -5,6 +5,7 @@ import {
   type AutoResumeError,
   type AutoStatus,
 } from './auto-status';
+import { RoastSetupSchema } from './bean';
 import { ReadingSchema, type Reading } from './channels';
 import {
   ConnectionStateSchema,
@@ -16,7 +17,18 @@ import type { DriverError } from './driver-error';
 import type { RendererLogEntry } from './log-entry';
 import type { LogDay, LogDayRead, LogRecord } from './log-record';
 import type { AutoProfile, ProfileEntry, ProfileError, ProfileId } from './profile';
+import type {
+  AddStock,
+  AdjustStock,
+  Bean,
+  BeanFields,
+  BeanId,
+  RoastSetup,
+  UpdateBean,
+} from './bean';
+import type { MakeProfileError, MakeProfileRequest } from './make-profile';
 import type { Result } from './result';
+import type { NewRoaster, Roaster, RoasterError, RoasterId } from './roaster';
 import {
   RoastStateSchema,
   type RoastAction,
@@ -30,11 +42,19 @@ import type {
   RoastSummary,
   StorageError,
 } from './saved-roast';
+import { RoastIdSchema, type RoastResult } from './saved-roast';
 import type { Screen } from './screen';
 import type { Settings, SettingsWriteError } from './settings';
 import type { AcknowledgeError, SafetyEvent } from './safety-event';
 
 /** Every IPC channel, in one place (docs/spec/architecture.md, IPC contract). */
+/** A saved roast changed; `current` when it's the roast on the Roast screen. */
+export interface RoastsChange {
+  id: RoastId;
+  deleted: boolean;
+  current?: boolean;
+}
+
 export const IPC_CHANNELS = {
   listPorts: 'roaster:list-ports',
   connect: 'roaster:connect',
@@ -67,6 +87,24 @@ export const IPC_CHANNELS = {
   duplicateProfile: 'profiles:duplicate',
   saveProfile: 'profiles:save',
   deleteProfile: 'profiles:delete',
+  copyProfile: 'profiles:copy',
+  listRoasters: 'roasters:list',
+  addRoaster: 'roasters:add',
+  saveRoaster: 'roasters:save',
+  deleteRoaster: 'roasters:delete',
+  setActiveRoaster: 'roasters:set-active',
+  chooseConnection: 'roasters:choose-connection',
+  roastersChanged: 'roasters:changed',
+  listBeans: 'beans:list',
+  addBean: 'beans:add',
+  updateBean: 'beans:update',
+  setBeanArchived: 'beans:set-archived',
+  addStock: 'beans:add-stock',
+  adjustStock: 'beans:adjust-stock',
+  beansChanged: 'beans:changed',
+  setRoastSetup: 'roast:set-setup',
+  saveRoastResult: 'history:save-result',
+  makeProfileFromRoast: 'history:make-profile',
 } as const;
 
 /** Everything a window needs when it opens or reloads mid-roast. */
@@ -77,6 +115,9 @@ export const SnapshotSchema = z.object({
   readings: z.array(ReadingSchema),
   safety: z.object({ locked: z.boolean(), tripped: z.array(z.string()) }),
   auto: AutoStatusSchema,
+  setup: RoastSetupSchema,
+  /** The roast on screen, once its row exists; null with none. */
+  currentRoastId: RoastIdSchema.nullable(),
 });
 export type Snapshot = z.infer<typeof SnapshotSchema>;
 
@@ -88,8 +129,10 @@ export interface IpcEventPayloads {
   [IPC_CHANNELS.roast]: RoastState;
   [IPC_CHANNELS.logEntries]: LogRecord[];
   [IPC_CHANNELS.navigate]: Screen;
-  [IPC_CHANNELS.roastsChanged]: { id: RoastId };
+  [IPC_CHANNELS.roastsChanged]: RoastsChange;
   [IPC_CHANNELS.autoStatus]: AutoStatus;
+  [IPC_CHANNELS.roastersChanged]: Roaster[];
+  [IPC_CHANNELS.beansChanged]: Bean[];
 }
 export type IpcEventChannel = keyof IpcEventPayloads;
 
@@ -154,7 +197,7 @@ export interface HistoryApi {
   /** Refuses the roast being saved right now (`in-progress`). */
   deleteRoast(id: RoastId): Promise<Result<void, DeleteRoastError>>;
   /** A roast was saved, finished or deleted. */
-  onRoastsChanged(listener: (change: { id: RoastId }) => void): Unsubscribe;
+  onRoastsChanged(listener: (change: RoastsChange) => void): Unsubscribe;
 }
 
 /** Auto mode (docs/spec/roast-control.md, Auto mode); on or off is the `roastMode` setting. */
@@ -176,6 +219,43 @@ export interface ProfilesApi {
   saveProfile(profile: AutoProfile): Promise<Result<ProfileEntry, ProfileError>>;
   /** Refuses a built-in. */
   deleteProfile(id: ProfileId): Promise<Result<void, ProfileError>>;
+  /** A copy on another roaster, marked "needs calibration". */
+  copyProfile(request: {
+    id: ProfileId;
+    roasterId: RoasterId;
+  }): Promise<Result<ProfileEntry, ProfileError>>;
+}
+
+/** Beans and stock (docs/spec/batch-and-stock.md). The stores follow `onBeans`. */
+export interface BeansApi {
+  /** Empty when storage can't be read (logged in main). */
+  listBeans(): Promise<Bean[]>;
+  addBean(fields: BeanFields): Promise<Result<BeanId, StorageError>>;
+  updateBean(update: UpdateBean): Promise<Result<void, StorageError>>;
+  setBeanArchived(request: { id: BeanId; archived: boolean }): Promise<Result<void, StorageError>>;
+  addStock(stock: AddStock): Promise<Result<void, StorageError>>;
+  adjustStock(stock: AdjustStock): Promise<Result<void, StorageError>>;
+  onBeans(listener: (beans: Bean[]) => void): Unsubscribe;
+  /** What the next roast is of; read at charge. */
+  setRoastSetup(setup: RoastSetup): Promise<void>;
+  /** Roasted weight, rating, star and notes. */
+  saveRoastResult(result: RoastResult): Promise<Result<void, StorageError>>;
+  /** A new profile of your own from a saved roast, on the roaster it ran on. */
+  makeProfileFromRoast(
+    request: MakeProfileRequest,
+  ): Promise<Result<ProfileEntry, MakeProfileError>>;
+}
+
+/** Roaster records (docs/spec/roasters.md). Changes wait while one is connected. */
+export interface RoastersApi {
+  listRoasters(): Promise<Roaster[]>;
+  addRoaster(roaster: NewRoaster): Promise<Result<Roaster, RoasterError>>;
+  saveRoaster(roaster: Roaster): Promise<Result<Roaster, RoasterError>>;
+  deleteRoaster(id: RoasterId): Promise<Result<void, RoasterError>>;
+  setActiveRoaster(id: RoasterId): Promise<Result<void, RoasterError>>;
+  /** Picks a port or the Simulator: the roaster of that kind becomes active and keeps it. */
+  chooseConnection(target: ConnectTarget): Promise<Result<void, RoasterError>>;
+  onRoasters(listener: (roasters: Roaster[]) => void): Unsubscribe;
 }
 
 /** The window itself: what it needs when it opens, and where the app menu sends it. */
@@ -196,4 +276,6 @@ export interface RoastpilotApi
     HistoryApi,
     AutoApi,
     ProfilesApi,
+    RoastersApi,
+    BeansApi,
     AppApi {}

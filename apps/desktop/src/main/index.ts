@@ -5,6 +5,8 @@ import {
   drizzleOn,
   openDatabase,
   SqliteProfileRepository,
+  SqliteBeanRepository,
+  SqliteRoasterRepository,
   SqliteRoastRepository,
 } from '@roastpilot/storage';
 import { IPC_CHANNELS } from '@roastpilot/shared';
@@ -16,13 +18,19 @@ import { createAppServices } from './app-services';
 import { installCrashHandlers } from './crash-handlers';
 import { createDriver } from './driver-factory';
 import { SimulatorBeans } from './simulator-beans';
-import { unavailableProfiles, unavailableRepository } from './history/unavailable-repository';
+import {
+  unavailableBeans,
+  unavailableProfiles,
+  unavailableRepository,
+  unavailableRoasters,
+} from './history/unavailable-repository';
 import { broadcast, registerIpcHandlers, registerIpcListener } from './ipc';
 import { createIpcHandlers, handleRendererLog, withErrorLogging } from './ipc-handlers';
 import { createMainWindow, devIcon } from './main-window';
 import { createAppLogger } from './logging/app-logger';
 import { listLogDays, readLogDay } from './logging/log-reader';
 import { pruneOldLogsLater } from './logging/prune';
+import { makeProfileFromRoast } from './profiles/make-profile';
 import { createPowerGuard } from './power-guard';
 import { createQuitGuard } from './quit-guard';
 import { JsonSettingsStore } from './settings/json-settings-store';
@@ -63,6 +71,17 @@ const profileStore = database.ok
   : unavailableProfiles(
       database.error.kind === 'storage-failed' ? database.error.message : 'unavailable',
     );
+const roasterStore = database.ok
+  ? new SqliteRoasterRepository(drizzleOn(database.value), storageLogger)
+  : unavailableRoasters(
+      database.error.kind === 'storage-failed' ? database.error.message : 'unavailable',
+    );
+
+const beanStore = database.ok
+  ? new SqliteBeanRepository(drizzleOn(database.value))
+  : unavailableBeans(
+      database.error.kind === 'storage-failed' ? database.error.message : 'unavailable',
+    );
 
 // Asleep, nothing watches the roaster: stay awake while one is connected, and keep the screen on
 // during a roast (docs/spec/safety.md).
@@ -76,7 +95,7 @@ const power = createPowerGuard({
 
 const simulatorBeans = new SimulatorBeans();
 
-const { session, roast, settings, history, recorder, pilot, profiles, snapshot } =
+const { session, roast, settings, history, recorder, pilot, profiles, roasters, beans, snapshot } =
   createAppServices({
     clock: systemClock,
     logger,
@@ -85,6 +104,8 @@ const { session, roast, settings, history, recorder, pilot, profiles, snapshot }
     }),
     roasts,
     profileStore,
+    roasterStore,
+    beanStore,
     newProfileId: () => `custom-${randomUUID()}`,
     nowIso: () => new Date().toISOString(),
     onConnectionChange: (state) => {
@@ -145,6 +166,15 @@ app
           history,
           pilot,
           profiles,
+          roasters,
+          beans,
+          makeProfile: (request) =>
+            makeProfileFromRoast(request, {
+              history,
+              profiles,
+              activeRoaster: () => roasters.active(),
+              newId: () => `custom-${randomUUID()}`,
+            }),
           nowMs: () => systemClock.now(),
           snapshot,
           listPorts: () => listSerialPorts(),

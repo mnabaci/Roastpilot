@@ -135,9 +135,9 @@ Touching the heater or fan switches that output to manual; the other output stay
 
 - **Choosing it:** a setting on the Roast screen, Auto or Manual, Manual by default. It can be changed at any time, also mid-roast.
 - **What it drives:** heater and fan, from Preheat until Drop. The flow stays as in [manual-mode.md](manual-mode.md), with the same states, events, cooling, roaster cool-down and saving; Auto presses Drop by itself. You still press Preheat, Start and First crack.
-- **Profiles:** two Skywalker Light styles to choose from, shipped as data with the Skywalker driver and marked "needs calibration", and your own copies from the Profiles screen ([ui.md](ui.md)). Medium, Dark and making a profile from a roast come later (milestone 6).
+- **Profiles:** two Skywalker Light styles to choose from, shipped as data with the Skywalker driver and marked "needs calibration", and your own copies from the Profiles screen ([ui.md](ui.md)). Making a profile from a roast comes in milestone 6; Medium and Dark in milestone 8, once Light is tuned.
   - **Light · Steps:** the table above: each step aims for its end temperature in its duration, inside its RoR range.
   - **Light · Curve:** the same curve points, end rule, fan steps and fixed soak, with every other phase `follow`: no planned heat, the PID sets the heater 0–100%.
-- **PID gains:** cautious starting values kept with the profile's roaster data, tuned on real roasts (`pid-tune`). They move to the roaster record in milestone 5.
+- **PID gains:** cautious starting values kept with the profile's roaster data, tuned on real roasts (`pid-tune`). They live in the roaster record from milestone 5.
 - **After a stop:** see [safety.md](safety.md), Auto mode. Auto never turns the heater back on by itself.
 - **Saved:** the roast has `mode` `auto` and a copy of its profile; phase changes, dry end and overrides are events ([data-model.md](data-model.md)).

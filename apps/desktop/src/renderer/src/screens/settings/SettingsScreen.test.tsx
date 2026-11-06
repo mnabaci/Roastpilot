@@ -3,6 +3,7 @@ import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { CONNECTED, fakeApi, renderApp } from '../../test/render-app';
+import { roastersWith } from '../../test/roasters';
 import { SettingsScreen } from './SettingsScreen';
 
 const ports = () =>
@@ -12,23 +13,25 @@ describe('SettingsScreen', () => {
   it('lists the serial ports and the Simulator; Connect waits for a pick', async () => {
     renderApp(<SettingsScreen />, {}, fakeApi({ listPorts: ports }));
     expect(await screen.findByRole('button', { name: /usbserial-0001/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Simulator/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Simulator/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Connect' })).toBeDisabled();
   });
 
   it('picking a port saves it, and Connect connects to it', async () => {
-    const { api } = renderApp(<SettingsScreen />, {}, fakeApi({ listPorts: ports }));
-    await userEvent.click(await screen.findByRole('button', { name: /usbserial-0001/ }));
-    expect(api.setSettings).toHaveBeenCalledWith({
-      ...DEFAULT_SETTINGS,
-      connection: { kind: 'serial', path: '/dev/cu.usbserial-0001' },
-      controls: 'guided',
-      chartSmoothingS: 3,
+    const port = { kind: 'serial', path: '/dev/cu.usbserial-0001' } as const;
+    const api = fakeApi({
+      listPorts: ports,
+      listRoasters: vi.fn(() => Promise.resolve(roastersWith(port))),
     });
-    expect(screen.getByRole('button', { name: /usbserial-0001/ })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    renderApp(<SettingsScreen />, { roasters: roastersWith(null) }, api);
+    await userEvent.click(await screen.findByRole('button', { name: /usbserial-0001/ }));
+    expect(api.chooseConnection).toHaveBeenCalledWith(port);
+    await vi.waitFor(() => {
+      expect(screen.getByRole('button', { name: /usbserial-0001/ })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+    });
     await userEvent.click(screen.getByRole('button', { name: 'Connect' }));
     expect(api.connect).toHaveBeenCalledWith({ kind: 'serial', path: '/dev/cu.usbserial-0001' });
   });
@@ -40,12 +43,8 @@ describe('SettingsScreen', () => {
     renderApp(
       <SettingsScreen />,
       {
-        settings: {
-          ...DEFAULT_SETTINGS,
-          connection: { kind: 'simulator' },
-          controls: 'guided',
-          chartSmoothingS: 5,
-        },
+        roasters: roastersWith({ kind: 'simulator' }),
+        settings: { ...DEFAULT_SETTINGS, chartSmoothingS: 5 },
       },
       api,
     );
@@ -64,12 +63,8 @@ describe('SettingsScreen', () => {
     renderApp(
       <SettingsScreen />,
       {
-        settings: {
-          ...DEFAULT_SETTINGS,
-          connection: { kind: 'simulator' },
-          controls: 'guided',
-          chartSmoothingS: 5,
-        },
+        roasters: roastersWith({ kind: 'simulator' }),
+        settings: { ...DEFAULT_SETTINGS, chartSmoothingS: 5 },
       },
       api,
     );
@@ -77,7 +72,7 @@ describe('SettingsScreen', () => {
     const busy = screen.getByRole('button', { name: 'Connecting…' });
     expect(busy).toBeDisabled();
     expect(busy).toHaveAttribute('aria-busy', 'true');
-    expect(screen.getByRole('button', { name: /Simulator/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Simulator/ })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Refresh' })).toBeDisabled();
     act(() => {
       finish(err({ kind: 'version-mismatch', expected: 1, actual: null }));
@@ -89,12 +84,8 @@ describe('SettingsScreen', () => {
   it('shows Connecting… while main reports connecting', () => {
     renderApp(<SettingsScreen />, {
       connection: { status: 'connecting', target: { kind: 'simulator' } },
-      settings: {
-        ...DEFAULT_SETTINGS,
-        connection: { kind: 'simulator' },
-        controls: 'guided',
-        chartSmoothingS: 5,
-      },
+      roasters: roastersWith({ kind: 'simulator' }),
+      settings: { ...DEFAULT_SETTINGS, chartSmoothingS: 5 },
     });
     expect(screen.getByRole('button', { name: 'Connecting…' })).toBeDisabled();
     expect(screen.queryByRole('button', { name: 'Disconnect' })).not.toBeInTheDocument();
@@ -111,15 +102,11 @@ describe('SettingsScreen', () => {
   it('while connected: the port in use, locked, and Disconnect', async () => {
     const { api } = renderApp(<SettingsScreen />, {
       connection: CONNECTED,
-      settings: {
-        ...DEFAULT_SETTINGS,
-        connection: { kind: 'simulator' },
-        controls: 'guided',
-        chartSmoothingS: 5,
-      },
+      roasters: roastersWith({ kind: 'simulator' }),
+      settings: { ...DEFAULT_SETTINGS, chartSmoothingS: 5 },
     });
     expect(screen.getByRole('button', { name: /usbserial-0001/ })).toBeDisabled();
-    expect(screen.queryByRole('button', { name: /Simulator/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Simulator/ })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
     expect(api.disconnect).toHaveBeenCalledOnce();
   });
@@ -129,11 +116,12 @@ describe('SettingsScreen', () => {
       <SettingsScreen />,
       {
         connection: { status: 'connected', target: { kind: 'simulator' }, channels: [] },
-        settings: { ...DEFAULT_SETTINGS, connection: null, controls: 'guided', chartSmoothingS: 5 },
+        roasters: roastersWith(null),
+        settings: { ...DEFAULT_SETTINGS, chartSmoothingS: 5 },
       },
       fakeApi({ listPorts: ports }),
     );
-    const simulator = screen.getByRole('button', { name: /Simulator/ });
+    const simulator = screen.getByRole('button', { name: /^Simulator/ });
     expect(simulator).toHaveAttribute('aria-pressed', 'true');
     expect(simulator).toHaveTextContent('Connected');
     // Only the roaster in use shows, and there is nothing to refresh.
@@ -151,14 +139,13 @@ describe('SettingsScreen', () => {
     const { api } = renderApp(
       <SettingsScreen />,
       {
-        settings: {
-          ...DEFAULT_SETTINGS,
-          connection: { kind: 'serial', path: '/dev/cu.usbserial-0001' },
-          controls: 'guided',
-          chartSmoothingS: 5,
-        },
+        roasters: roastersWith({ kind: 'serial', path: '/dev/cu.usbserial-0001' }),
+        settings: { ...DEFAULT_SETTINGS, chartSmoothingS: 5 },
       },
-      fakeApi({ listPorts }),
+      fakeApi({
+        listPorts,
+        listRoasters: vi.fn(() => Promise.resolve(roastersWith({ kind: 'simulator' }))),
+      }),
     );
     const list = screen.getByRole('list', { name: 'Roasters' });
     expect(await within(list).findByText('Silicon Labs')).toBeInTheDocument();
@@ -168,11 +155,11 @@ describe('SettingsScreen', () => {
     expect(within(list).queryByText(/debug-console/)).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Show all ports (1 more)' }));
     expect(within(list).getByText(/debug-console/)).toBeInTheDocument();
-    await userEvent.click(within(list).getByRole('button', { name: /Simulator/ }));
-    expect(api.setSettings).toHaveBeenCalledWith(
-      expect.objectContaining({ connection: { kind: 'simulator' } }),
-    );
-    expect(within(list).getAllByRole('button')).toHaveLength(1);
+    await userEvent.click(within(list).getByRole('button', { name: /^Simulator/ }));
+    expect(api.chooseConnection).toHaveBeenCalledWith({ kind: 'simulator' });
+    await vi.waitFor(() => {
+      expect(within(list).getAllByRole('button')).toHaveLength(1);
+    });
   });
 
   it('roast settings: charge point, cooling time and roaster cool-down', async () => {
@@ -259,5 +246,62 @@ describe('SettingsScreen', () => {
     const { stores } = renderApp(<SettingsScreen />, {}, api);
     await userEvent.click(screen.getByRole('button', { name: 'Full control' }));
     expect(stores.settings.getState().settings.controls).toBe('full');
+  });
+
+  describe('Roasters', () => {
+    const roasters = roastersWith(null);
+    const open = (seed = {}, api = fakeApi()) =>
+      renderApp(<SettingsScreen />, { roasters, ...seed }, api);
+
+    it('lists the records, marks the active one, and switches', async () => {
+      const { api } = open();
+      const list = screen.getByRole('list', { name: 'Roaster records' });
+      expect(within(list).getByText('Active')).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Use Simulator' }));
+      expect(api.setActiveRoaster).toHaveBeenCalledWith(2);
+    });
+
+    it('saves an edit, and holds Save back while a cell has a problem', async () => {
+      const { api } = open();
+      await userEvent.click(screen.getByRole('button', { name: 'Edit Skywalker' }));
+      const maxTemp = screen.getByRole('textbox', { name: 'Max temp' });
+      await userEvent.clear(maxTemp);
+      await userEvent.type(maxTemp, '300');
+      expect(screen.getByText('At most 240 °C on this model')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+      await userEvent.clear(maxTemp);
+      await userEvent.type(maxTemp, '230');
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      expect(api.saveRoaster).toHaveBeenCalledWith(expect.objectContaining({ maxTempC: 230 }));
+    });
+
+    it('locks everything while connected', async () => {
+      open({ connection: CONNECTED });
+      expect(screen.getByText('Disconnect to change roasters')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Use Simulator' })).toBeNull();
+      await userEvent.click(screen.getByRole('button', { name: 'Edit Skywalker' }));
+      expect(screen.getByRole('textbox', { name: 'Max temp' })).toBeDisabled();
+    });
+
+    it('adds a roaster', async () => {
+      const { api } = open();
+      expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled();
+      await userEvent.type(screen.getByRole('textbox', { name: 'New roaster' }), 'Second');
+      await userEvent.click(screen.getByRole('button', { name: 'Add' }));
+      expect(api.addRoaster).toHaveBeenCalledWith({ name: 'Second', model: 'skywalker' });
+    });
+
+    it('says why a roaster with roasts stays', async () => {
+      const api = fakeApi({
+        deleteRoaster: vi.fn(() =>
+          Promise.resolve(err({ kind: 'has-roasts' as const, roasts: 2, profiles: 0 })),
+        ),
+      });
+      open({}, api);
+      await userEvent.click(screen.getByRole('button', { name: 'Edit Simulator' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+      expect(await screen.findByRole('alert')).toHaveTextContent('saved roasts or profiles');
+    });
   });
 });

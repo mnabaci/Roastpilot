@@ -18,6 +18,7 @@ import { SafetyGuardedDriver } from '../safety/safety-guarded-driver';
 import type { SafetyLimits } from '../safety/safety-limits';
 import { EMERGENCY_STOP, SafetyMonitor, type COMPUTER_SLEEP } from '../safety/safety-monitor';
 import { lostConnectionRule } from '../safety/rules/lost-connection';
+import { BEAN_TEMP } from '../safety/safety-rule';
 import { logSafetyEvent } from '../safety/log-safety-event';
 
 export const POLL_MS = 1_000;
@@ -29,7 +30,10 @@ export interface RoasterSessionOptions {
   onReading: (reading: Reading) => void;
   onConnection: (state: ConnectionState) => void;
   onSafetyEvent: (event: SafetyEvent) => void;
-  limits?: SafetyLimits;
+  /** Read on every check, so the active roaster's limits apply (docs/spec/roasters.md). */
+  limits?: SafetyLimits | (() => SafetyLimits);
+  /** Added to the temperature before anything else sees it, safety rules included. */
+  tempOffsetC?: () => number;
   logger?: Logger;
 }
 
@@ -44,6 +48,7 @@ export class RoasterSession {
   readonly #publish: Pick<RoasterSessionOptions, 'onReading' | 'onConnection' | 'onSafetyEvent'>;
   readonly #monitor: SafetyMonitor;
   readonly #logger: Logger;
+  readonly #tempOffsetC: () => number;
   readonly #reads: FailureStreak;
   #inner: RoasterDriver | undefined;
   /** What the current roaster is, for the connection state; set with the driver. */
@@ -55,6 +60,7 @@ export class RoasterSession {
   constructor(options: RoasterSessionOptions) {
     this.#clock = options.clock;
     this.#logger = options.logger ?? silentLogger;
+    this.#tempOffsetC = options.tempOffsetC ?? (() => 0);
     // The caller's listeners, guarded so a throwing listener can't break polling or safety.
     const guard = <T>(listener: string, fn: (payload: T) => void) =>
       guardListener(this.#logger, 'session.listener-failed', fn, { listener });
@@ -171,6 +177,13 @@ export class RoasterSession {
     return result;
   }
 
+  #withOffset(reading: Reading): Reading {
+    const offset = this.#tempOffsetC();
+    const bt = reading.values[BEAN_TEMP];
+    if (offset === 0 || bt === undefined) return reading;
+    return { ...reading, values: { ...reading.values, [BEAN_TEMP]: bt + offset } };
+  }
+
   async #pollLoop(generation: number): Promise<void> {
     while (generation === this.#generation && this.#driver) {
       const driver = this.#driver;
@@ -178,7 +191,7 @@ export class RoasterSession {
       if (generation !== this.#generation) return;
       this.#reads.record(reading);
       if (reading.ok) {
-        this.#publish.onReading(reading.value);
+        this.#publish.onReading(this.#withOffset(reading.value));
       } else if (reading.error.kind === 'disconnected') {
         // The port is gone: keep trying. The first reading back sends the second safe stop.
         await driver.connect();

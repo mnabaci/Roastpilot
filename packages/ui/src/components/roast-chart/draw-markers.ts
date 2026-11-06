@@ -19,6 +19,11 @@ export function labelRows(labels: readonly { x: number; width: number }[], gap: 
   });
 }
 
+/** Beside the line, or on its left when the label wouldn't fit before the plot's right edge. */
+export function labelX(x: number, width: number, right: number, gap: number): number {
+  return x + gap + width > right ? x - gap - width : x + gap;
+}
+
 /** Event markers: 1.5px dashed vertical lines, labelled at the top unless `labels` is off (the strip). */
 export function drawMarkers(
   u: uPlot,
@@ -52,7 +57,13 @@ export function drawMarkers(
     ctx.stroke();
     if (!labels) return;
     const row = rows[i] ?? 0;
-    ctx.fillText(marker.label, x + LABEL_GAP * ratio, bbox.top + (16 + row * LINE_HEIGHT) * ratio);
+    const textX = labelX(
+      x,
+      ctx.measureText(marker.label).width,
+      bbox.left + bbox.width,
+      LABEL_GAP * ratio,
+    );
+    ctx.fillText(marker.label, textX, bbox.top + (16 + row * LINE_HEIGHT) * ratio);
   });
   ctx.restore();
 }

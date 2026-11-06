@@ -17,6 +17,7 @@ const CONNECTION_LABEL: Readonly<Record<ConnectionState['status'], string>> = {
 const SCREENS: readonly { id: Screen; label: string }[] = [
   { id: 'roast', label: 'Roast' },
   { id: 'history', label: 'History' },
+  { id: 'beans', label: 'Beans' },
   { id: 'profiles', label: 'Profiles' },
   { id: 'settings', label: 'Settings' },
   { id: 'logs', label: 'Logs' },
@@ -68,10 +69,12 @@ export function TopBar({
           {CONNECTION_LABEL[status]}
         </Badge>
         {connection.status !== 'disconnected' ? (
-          // The badge says enough on a small window; six tabs leave no room for the name.
+          // The badge says enough on a small window; six tabs leave no room for more.
           <span className="hidden text-ink lg:inline">{targetLabel(connection.target)}</span>
         ) : null}
-        {status === 'connected' ? <span>· {PHASE_LABEL[phase]}</span> : null}
+        {status === 'connected' ? (
+          <span className="hidden lg:inline">· {PHASE_LABEL[phase]}</span>
+        ) : null}
       </p>
       <Button
         variant="danger"

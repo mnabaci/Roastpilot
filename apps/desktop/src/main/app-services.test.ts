@@ -10,7 +10,12 @@ import { drizzleOn, openDatabase, SqliteRoastRepository } from '@roastpilot/stor
 import { DEFAULT_SETTINGS, IPC_CHANNELS, ok, type Settings } from '@roastpilot/shared';
 import { describe, expect, it, vi } from 'vitest';
 import { createAppServices } from './app-services';
-import { unavailableProfiles, unavailableRepository } from './history/unavailable-repository';
+import {
+  unavailableBeans,
+  unavailableProfiles,
+  unavailableRepository,
+  unavailableRoasters,
+} from './history/unavailable-repository';
 
 function setup(
   roasts: RoastRepository = unavailableRepository('not in this test'),
@@ -28,6 +33,8 @@ function setup(
     settingsStore,
     roasts,
     profileStore: unavailableProfiles('not in this test'),
+    roasterStore: unavailableRoasters('not in this test'),
+    beanStore: unavailableBeans('not in this test'),
     newProfileId: () => 'custom-1',
     nowIso: () => '2026-11-04T10:00:00.000Z',
     onConnectionChange: () => undefined,
@@ -210,8 +217,8 @@ describe('createAppServices', () => {
     ]);
     expect(detail.ok && detail.value.samples[0]?.tS).toBeLessThan(0);
     expect(published.filter(([c]) => c === IPC_CHANNELS.roastsChanged)).toEqual([
-      [IPC_CHANNELS.roastsChanged, { id: 1 }],
-      [IPC_CHANNELS.roastsChanged, { id: 1 }],
+      [IPC_CHANNELS.roastsChanged, { id: 1, deleted: false, current: true }],
+      [IPC_CHANNELS.roastsChanged, { id: 1, deleted: false, current: true }],
     ]);
   });
 
@@ -293,5 +300,19 @@ describe('createAppServices', () => {
       await services.session.disconnect();
       expect(services.snapshot().auto.stopped).toBe(true);
     });
+  });
+
+  it('forgets the next roast ghost when that roast is deleted', async () => {
+    const roasts = {
+      ...unavailableRepository('x'),
+      delete: () => Promise.resolve(ok(undefined)),
+    };
+    const { services, published } = setup(roasts);
+    services.beans.setSetup({ beanId: null, batchG: null, ghostRoastId: 5 });
+    await services.history.delete(4);
+    expect(services.snapshot().setup.ghostRoastId).toBe(5);
+    await services.history.delete(5);
+    expect(services.snapshot().setup.ghostRoastId).toBeNull();
+    expect(published).toContainEqual([IPC_CHANNELS.roastsChanged, { id: 5, deleted: true }]);
   });
 });

@@ -15,6 +15,20 @@
       "when": 1793886867131,
       "tag": "0001_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793891394636,
+      "tag": "0002_roasters",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1793891947392,
+      "tag": "0003_beans",
+      "breakpoints": true
     }
   ]
 }

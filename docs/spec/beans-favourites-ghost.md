@@ -1,18 +1,19 @@
 # Beans, favourites and ghost
 
-Pick a bean before preheat. The app suggests a profile and a ghost roast from your favourites,
-and you confirm with one tap.
+Pick a bean before preheat, or roast with no bean for a test or seasoning. The app suggests a
+profile and a ghost roast from your favourites, and you confirm with one tap. A roast with no bean
+changes no stock and shows "No bean" in History.
 
 ## Profiles
 
-- Light, Medium and Dark are built in and read-only.
+- Built-ins are read-only: Light · Steps and Light · Curve now, Medium and Dark once Light is tuned.
 - Custom profiles: from scratch, by duplicating any profile, or from a favourite roast.
 - Each custom profile records its source (a profile or a roast).
 
 ## Beans
 
 - **Required:** name, origin, process (washed, natural, honey, other).
-- **Optional:** variety, altitude (m), supplier, purchase date, notes.
+- **Optional:** variety, altitude (m), density (g/L), moisture (%), bean size (screen), decaf, supplier, purchase date, notes. Density is the one to measure yourself: weigh a fixed volume of green beans.
 - **Stock:** see [batch-and-stock.md](batch-and-stock.md).
 - **Archive** a finished bean; its roasts stay in History.
 
@@ -24,17 +25,37 @@ and you confirm with one tap.
 
 ## Profile suggestion
 
-Before preheat the app picks in this order and shows why, e.g. "Your favourite roast of this bean, Oct 29":
+Before preheat, with Auto on, the app picks in this order, among the active roaster's profiles, and shows why, e.g. "Your favourite roast of this bean, Oct 29":
 
 1. Same bean: the profile of its best favourite.
-2. New bean: best favourite of beans with the same process and origin.
-3. Then: same process only.
-4. Otherwise: Medium.
+2. New bean: best favourite of the most similar bean: same process and decaf or not, then closest density, then closest altitude, then same origin.
+3. Then: best favourite of any bean with the same decaf or not.
+4. Otherwise: the roaster's first built-in (Light · Steps), until Medium ships.
+
+## A profile for a bean
+
+- A bean can have its own profile. "Make a profile for this bean" duplicates the suggested one, names it after the bean and opens it in the editor; from then on it is that bean's first suggestion, ahead of its favourites.
+- Choosing another profile before a roast doesn't change the bean's own.
+
+## Hints
+
+- One line under the suggestion, from what the bean's record says. Only ever advice: the app never changes a profile from a bean's characteristics, and no formula calculates one.
+- General roasting knowledge, not measured on this roaster, so worded "often" and "consider".
+
+| Bean                  | Hint                                                            |
+| --------------------- | --------------------------------------------------------------- |
+| Natural or honey      | These often brown faster · consider less heat late in the roast |
+| Decaf                 | Decaf often roasts fast and looks dark · judge by temperature   |
+| Density below 700 g/L | Soft beans often run fast · consider less heat early            |
+| Density above 800 g/L | Dense beans often take heat slowly · consider more heat early   |
+| Moisture above 12%    | Wetter beans often dry slowly · expect a longer drying phase    |
+
+At most two show, in this order. The density cut-offs are starting guesses; revisit them once there are starred roasts to compare.
 
 ## Favourite → step profile
 
-- Phases come from the heat and fan changes that actually ran (merged to at most 6), each triggered at the BT where it happened.
-- Reference points come from the run's BT curve, simplified to about 8 points.
+- Steps come from the heat and fan changes that actually ran (merged to at most 6): each ends at the BT where it happened, in the time it took, with the RoR it ran at ±1 °C/min, its average heat and its fan. Development runs from first crack.
+- A roast that never crossed the dry-end temperature, or has too little to go on, can't make one; the button says so.
 - Charge temp, dry-end temp, development time and BT cap come from the run.
 - The new profile belongs to the same roaster as the run.
 - The result is a new custom profile; the roast itself is never changed.
@@ -50,3 +71,4 @@ See [roast-control.md](roast-control.md#creating-a-curve-profile): the run's BT 
 - **Drawn:** ghost temperature and RoR as faded lines, plus faded dry-end, FC and drop markers.
 - **Delta readout:** "+3 °C vs ghost" and "0:12 ahead / behind" (when the ghost reached today's temperature).
 - Reference only: it never steers the controller, which follows the profile.
+- A favourite whose profile is gone, or that ran on Manual, can still be a ghost; suggestions skip it.

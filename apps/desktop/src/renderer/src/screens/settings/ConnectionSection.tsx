@@ -5,8 +5,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { connectErrorText } from './connect-error';
 import { useRun } from '../../features/use-run';
 import { useDeps } from '../../app/app-context';
-import { useConnection, useSettings } from '../../stores/use-stores';
-import { useSaveSettings } from './use-save-settings';
+import { activeRoaster } from '../../stores/roasters-store';
+import { useConnection, useRoasters } from '../../stores/use-stores';
 import { roasterRows, sameTarget } from './roaster-rows';
 
 function TargetRow({
@@ -47,8 +47,9 @@ function TargetRow({
 export function ConnectionSection() {
   const { api } = useDeps();
   const run = useRun();
-  const save = useSaveSettings();
-  const target = useSettings((s) => s.settings.connection);
+  const { stores, logger } = useDeps();
+  // The active roaster holds the port it was last connected on (docs/spec/roasters.md).
+  const target = useRoasters((s) => activeRoaster(s.roasters)?.connection ?? null);
   const connection = useConnection((s) => s.connection);
   const { status } = connection;
   // While a roaster is in use, its row is the one marked, whatever was picked before.
@@ -96,7 +97,14 @@ export function ConnectionSection() {
   });
   const select = (to: ConnectTarget) => {
     setError(undefined);
-    save({ connection: to });
+    run('roasters.choose-failed', async () => {
+      const chosen = await api.chooseConnection(to);
+      if (!chosen.ok) {
+        logger.warn('roasters.refused', { ...chosen.error });
+        return;
+      }
+      stores.roasters.setState({ roasters: await api.listRoasters() });
+    });
     setChoosing(false);
     setShowAll(false);
   };
@@ -105,7 +113,7 @@ export function ConnectionSection() {
     <section aria-labelledby="connection-heading" className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 id="connection-heading" className="text-heading">
-          Roaster
+          Connection
         </h2>
         {inUse ? null : (
           <Button

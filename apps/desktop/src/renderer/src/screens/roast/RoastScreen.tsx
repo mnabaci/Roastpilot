@@ -1,17 +1,20 @@
 import { Button, PhaseStepper, RoastChart } from '@roastpilot/ui';
 import type { RoastPhase } from '@roastpilot/shared';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { roastChartData } from './roast-chart-data';
 import { roastNumbers } from './roast-numbers';
 import { skippedSteps, stageTimes } from './stage-times';
 import { AutoPanel } from './AutoPanel';
+import { formatGhostDelta, ghostChart, ghostDelta } from './ghost';
+import { RoastSetupPanel } from './RoastSetupPanel';
 import { FlowPanel } from './FlowPanel';
 import { useRunningPlan } from './use-active-profile';
 import { OutputsPanel } from './OutputsPanel';
 import { RoastNumbersRow } from './RoastNumbersRow';
 import { useSensorNames } from '../../features/use-sensor-names';
 import { clearReadings } from '../../stores/roast-store';
-import { useConnection, useRoast, useSettings } from '../../stores/use-stores';
+import { useBeans, useConnection, useRoast, useSettings } from '../../stores/use-stores';
+import { useSavedRoast } from '../history/use-saved-roast';
 import { isConnected } from './flow-step';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
@@ -49,6 +52,45 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
     () => roastChartData(roast, readings, { smoothingS, tempName: temp.name, plan }),
     [roast, readings, smoothingS, temp.name, plan],
   );
+  const setup = useBeans((s) => s.setup);
+  const beans = useBeans((s) => s.beans);
+  // Stock was deducted at charge; ask whether to return it when clearing a completed roast.
+  const deductedBeanId = roast.phase === 'done' ? setup.beanId : null;
+  const deductedBatchG = roast.phase === 'done' ? setup.batchG : null;
+  const hasDeductedStock = deductedBeanId !== null && deductedBatchG !== null;
+  const deductedBeanName =
+    deductedBeanId !== null
+      ? (beans.find((b) => b.id === deductedBeanId)?.name ?? 'beans')
+      : 'beans';
+  const [awaitingStockReturn, setAwaitingStockReturn] = useState(false);
+
+  const clearRoast = (returnStock: boolean) => {
+    run('roast.clear-failed', async () => {
+      if (returnStock && deductedBeanId !== null && deductedBatchG !== null) {
+        await api.adjustStock({ beanId: deductedBeanId, greenG: deductedBatchG, roastedG: 0 });
+      }
+      const cleared = await api.roastAction('clear');
+      if (cleared.ok) {
+        setAwaitingStockReturn(false);
+        stores.roast.setState(clearReadings);
+      }
+    });
+  };
+
+  // The ghost starts at charge: before it, the chart's clock is the preheat's.
+  const ghostId = useBeans((s) => s.setup.ghostRoastId);
+  const ghost = useSavedRoast(ghostId ?? undefined);
+  const ghostDetail = ghost.status === 'loaded' ? ghost.detail : undefined;
+  const charged = roast.chargedAtMs !== null;
+  const ghostLayers = useMemo(
+    () => (ghostDetail && charged ? ghostChart(ghostDetail, smoothingS) : undefined),
+    [ghostDetail, charged, smoothingS],
+  );
+  const roasting = roast.phase === 'roasting' || roast.phase === 'development';
+  const delta =
+    ghostDetail && roasting && shown.bt !== undefined && numbers.elapsedS !== undefined
+      ? ghostDelta(ghostDetail.samples, ghostDetail.dropTimeS, numbers.elapsedS, shown.bt)
+      : undefined;
   return (
     <main className="grid min-h-0 flex-1 grid-cols-[1fr_auto] content-start gap-6 overflow-y-auto p-6">
       <div className="flex min-w-0 flex-col gap-5">
@@ -59,28 +101,66 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
             details={stageTimes(roast)}
             skipped={skippedSteps(roast)}
           />
-          {canClear ? (
+          {canClear && !awaitingStockReturn ? (
             <Button
               variant="ghost"
               size="sm"
               // Its text on the step names' line, keeping the 44 px target without a taller row.
               className="-my-3 shrink-0"
               onClick={() => {
-                run('roast.clear-failed', async () => {
-                  const cleared = await api.roastAction('clear');
-                  if (cleared.ok) stores.roast.setState(clearReadings);
-                });
+                if (hasDeductedStock) {
+                  setAwaitingStockReturn(true);
+                } else {
+                  run('roast.clear-failed', async () => {
+                    const cleared = await api.roastAction('clear');
+                    if (cleared.ok) stores.roast.setState(clearReadings);
+                  });
+                }
               }}
             >
               Clear
             </Button>
           ) : null}
         </div>
-        <RoastNumbersRow numbers={shown} tempName={temp.name} />
-        <RoastChart title="Roast curve" layers={chart.layers} markers={chart.markers} />
+        {canClear && awaitingStockReturn ? (
+          <div className="flex items-center gap-3 text-sm">
+            <span className="text-ink-muted shrink-0">
+              Return {deductedBatchG} g of {deductedBeanName} to stock?
+            </span>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                clearRoast(true);
+              }}
+            >
+              Return to stock
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                clearRoast(false);
+              }}
+            >
+              Keep deducted
+            </Button>
+          </div>
+        ) : null}
+        <RoastNumbersRow
+          numbers={shown}
+          tempName={temp.name}
+          {...(delta ? { ghostLine: formatGhostDelta(delta) } : {})}
+        />
+        <RoastChart
+          title="Roast curve"
+          layers={[...(ghostLayers?.layers ?? []), ...chart.layers]}
+          markers={[...(ghostLayers?.markers ?? []), ...chart.markers]}
+        />
       </div>
       <aside aria-label="Controls" className="flex w-80 flex-col gap-5">
         <AutoPanel />
+        <RoastSetupPanel />
         <FlowPanel coolingLeftS={numbers.coolingLeftS} onConnect={onConnect} />
         <OutputsPanel />
         <p className="text-label text-ink-muted">Stay with the roaster while it runs.</p>

@@ -22,7 +22,8 @@ export interface SafetyMonitorOptions {
   /** The real driver's safe stop. Must never reject (RoasterDriver contract). */
   safeStop: () => Promise<void>;
   onEvent: (event: SafetyEvent) => void;
-  limits?: SafetyLimits;
+  /** A function is read on every check, so a change of roaster applies. */
+  limits?: SafetyLimits | (() => SafetyLimits);
   logger?: Logger;
 }
 
@@ -38,7 +39,7 @@ export class SafetyMonitor {
   readonly #clock: Clock;
   readonly #safeStop: () => Promise<void>;
   readonly #onEvent: (event: SafetyEvent) => void;
-  readonly #limits: SafetyLimits;
+  readonly #readLimits: () => SafetyLimits;
   readonly #logger: Logger;
   readonly #historyMs: number;
   readonly #tripped = new Set<string>();
@@ -53,10 +54,12 @@ export class SafetyMonitor {
     this.#clock = options.clock;
     this.#safeStop = options.safeStop;
     this.#onEvent = options.onEvent;
-    this.#limits = options.limits ?? DEFAULT_SAFETY_LIMITS;
+    const { limits = DEFAULT_SAFETY_LIMITS } = options;
+    this.#readLimits = typeof limits === 'function' ? limits : () => limits;
     this.#logger = options.logger ?? silentLogger;
     this.#historyMs =
-      Math.max(this.#limits.slowRise.windowMs, this.#limits.frozenReadingMs) + HISTORY_MARGIN_MS;
+      Math.max(this.#readLimits().slowRise.windowMs, this.#readLimits().frozenReadingMs) +
+      HISTORY_MARGIN_MS;
   }
 
   /** True after a safe-stop trip until acknowledged: heater commands above 0 are refused. */
@@ -167,7 +170,7 @@ export class SafetyMonitor {
   /** A rule that throws is a bug in safety code: fail safe by treating it as tripped. */
   #evaluate(rule: SafetyRule, state: SafetyState): boolean {
     try {
-      return rule.isTripped(state, this.#limits);
+      return rule.isTripped(state, this.#readLimits());
     } catch (error) {
       this.#logger.error('safety.rule-failed', { rule: rule.id, error: serializeError(error) });
       return true;

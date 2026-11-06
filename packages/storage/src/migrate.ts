@@ -2,6 +2,8 @@ import { err, ok, type Result, type StorageError } from '@roastpilot/shared';
 import type { DatabaseSync } from 'node:sqlite';
 import roasts0000 from './migrations/0000_roasts.sql?raw';
 import profiles0001 from './migrations/0001_profiles.sql?raw';
+import roasters0002 from './migrations/0002_roasters.sql?raw';
+import beans0003 from './migrations/0003_beans.sql?raw';
 
 /**
  * Every migration drizzle-kit generated, in order (src/migrations/meta/_journal.json). Add the new
@@ -10,6 +12,8 @@ import profiles0001 from './migrations/0001_profiles.sql?raw';
 export const MIGRATIONS: readonly { tag: string; sql: string }[] = [
   { tag: '0000_roasts', sql: roasts0000 },
   { tag: '0001_profiles', sql: profiles0001 },
+  { tag: '0002_roasters', sql: roasters0002 },
+  { tag: '0003_beans', sql: beans0003 },
 ];
 
 function userVersion(db: DatabaseSync): number {

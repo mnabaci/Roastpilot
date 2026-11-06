@@ -4,6 +4,7 @@ import {
   ok,
   type AutoProfile,
   type ProfileId,
+  type RoasterId,
   type Result,
   type StorageError,
 } from '@roastpilot/shared';
@@ -24,7 +25,7 @@ export class SqliteProfileRepository implements ProfileRepository {
     this.#logger = logger;
   }
 
-  async list(): Promise<Result<AutoProfile[], StorageError>> {
+  async list(): Promise<Result<{ profile: AutoProfile; roasterId: RoasterId }[], StorageError>> {
     const rows = await attempt(() =>
       this.#db.select().from(profiles).orderBy(asc(profiles.updatedAt), asc(profiles.id)).all(),
     );
@@ -32,7 +33,8 @@ export class SqliteProfileRepository implements ProfileRepository {
     return ok(
       rows.value.flatMap((row) => {
         const parsed = AutoProfileSchema.safeParse(parseJson(row.doc));
-        if (parsed.success) return [parsed.data];
+        // Every row has a roaster since the roasters migration; 1 only guards an odd row.
+        if (parsed.success) return [{ profile: parsed.data, roasterId: row.roasterId ?? 1 }];
         // Kept in the table, so a later version that can read it still finds it.
         this.#logger.warn('storage.profile-unreadable', { id: row.id });
         return [];
@@ -40,14 +42,14 @@ export class SqliteProfileRepository implements ProfileRepository {
     );
   }
 
-  save(profile: AutoProfile): Promise<Result<void, StorageError>> {
+  save(profile: AutoProfile, roasterId: RoasterId): Promise<Result<void, StorageError>> {
     const updatedAt = new Date(this.#clock.now()).toISOString();
     const doc = JSON.stringify(profile);
     return attempt(async () => {
       await this.#db
         .insert(profiles)
-        .values({ id: profile.id, doc, updatedAt })
-        .onConflictDoUpdate({ target: profiles.id, set: { doc, updatedAt } })
+        .values({ id: profile.id, doc, updatedAt, roasterId })
+        .onConflictDoUpdate({ target: profiles.id, set: { doc, updatedAt, roasterId } })
         .run();
     });
   }

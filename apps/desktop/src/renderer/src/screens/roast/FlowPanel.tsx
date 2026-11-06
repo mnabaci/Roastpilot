@@ -5,9 +5,11 @@ import { autoFlowStep } from './auto-flow';
 import { flowHint, flowStep, isConnected } from './flow-step';
 import { useActiveProfile } from './use-active-profile';
 import { RoasterCooling } from './RoasterCooling';
+import { RoastResultForm } from '../../features/RoastResultForm';
+import { useRoastList } from '../history/use-roast-list';
 import { useRun } from '../../features/use-run';
 import { useDeps } from '../../app/app-context';
-import { useAuto, useConnection, useRoast } from '../../stores/use-stores';
+import { useAuto, useBeans, useConnection, useRoast } from '../../stores/use-stores';
 
 /** The one next action for the state, with its one-line hint. */
 export function FlowPanel({
@@ -26,6 +28,8 @@ export function FlowPanel({
   const { phase } = roast;
   const auto = useAuto((s) => s.status);
   const profile = useActiveProfile();
+  const currentId = useBeans((s) => s.currentRoastId);
+  const saved = useRoastList()?.find((r) => r.id === currentId);
   const autoStep = autoFlowStep(roast, auto, profile?.profile);
   const step = autoStep ?? flowStep(roast);
   const act = (action: RoastAction) => {
@@ -92,6 +96,9 @@ export function FlowPanel({
         >
           {step.secondary.label}
         </Button>
+      ) : null}
+      {phase === 'done' && roast.chargedAtMs !== null && saved ? (
+        <RoastResultForm key={saved.id} roast={saved} />
       ) : null}
       {noRoast ? <RoasterCooling onAction={act} /> : null}
       {step.quiet ? (

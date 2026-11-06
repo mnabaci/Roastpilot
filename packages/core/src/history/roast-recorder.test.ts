@@ -32,11 +32,7 @@ class FakeRepository implements RoastRepository {
     return Promise.resolve(err({ kind: 'storage-failed', message: 'disk full' }));
   }
 
-  create(roast: {
-    startedAt: string;
-    mode: 'manual' | 'auto';
-    profile: AutoProfile | null;
-  }): Saved<RoastId> {
+  create(roast: Parameters<RoastRepository['create']>[0]): Saved<RoastId> {
     if (this.failing) return this.#fail();
     const id = this.#next++;
     this.roasts.set(id, {
@@ -44,6 +40,16 @@ class FakeRepository implements RoastRepository {
       startedAt: roast.startedAt,
       mode: roast.mode,
       profile: roast.profile,
+      roasterId: roast.roasterId,
+      beanId: roast.beanId,
+      ghostRoastId: roast.ghostRoastId,
+      batchG: roast.batchG,
+      roastedG: null,
+      rating: null,
+      isFavourite: false,
+      notes: null,
+      profileId: roast.profile?.id ?? null,
+      profileName: roast.profile?.name ?? null,
       endedAt: null,
       fcTimeS: null,
       dropTimeS: null,
@@ -52,6 +58,9 @@ class FakeRepository implements RoastRepository {
       events: [],
     });
     return Promise.resolve(ok(id));
+  }
+  saveResult(): Saved<void> {
+    return Promise.resolve(ok(undefined));
   }
   addSamples(id: RoastId, samples: readonly SavedSample[]): Saved<void> {
     if (this.failing) return this.#fail();
@@ -165,6 +174,16 @@ describe('RoastRecorder', () => {
       id: 1,
       mode: 'manual',
       profile: null,
+      roasterId: null,
+      beanId: null,
+      ghostRoastId: null,
+      batchG: null,
+      roastedG: null,
+      rating: null,
+      isFavourite: false,
+      notes: null,
+      profileId: null,
+      profileName: null,
       startedAt: '2026-11-04T10:00:00.000Z',
       endedAt: '2026-11-04T10:15:40.000Z',
       fcTimeS: 480,
@@ -225,7 +244,14 @@ describe('RoastRecorder', () => {
       nowIso: () => '2026-11-04T10:00:00.000Z',
       readingsSoFar: () => [],
       onSaved: () => undefined,
-      plan: () => ({ mode: 'auto', profile }),
+      plan: () => ({
+        mode: 'auto',
+        profile,
+        roasterId: 2,
+        beanId: 3,
+        batchG: 375,
+        ghostRoastId: null,
+      }),
     });
     recorder.onRoastChange(PREHEAT);
     recorder.onRoastChange(CHARGED);
@@ -234,7 +260,13 @@ describe('RoastRecorder', () => {
       events: [...CHARGED.events, { kind: 'phase', atMs: 180_000, bt: 90, detail: 'Heat on' }],
     });
     await recorder.flush();
-    expect(repository.roasts.get(1)).toMatchObject({ mode: 'auto', profile });
+    expect(repository.roasts.get(1)).toMatchObject({
+      mode: 'auto',
+      profile,
+      roasterId: 2,
+      beanId: 3,
+      batchG: 375,
+    });
     expect(repository.roasts.get(1)?.events.at(-1)).toEqual({
       kind: 'phase',
       tS: 60,

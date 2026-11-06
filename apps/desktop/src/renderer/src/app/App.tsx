@@ -1,5 +1,6 @@
 import type { Screen } from '@roastpilot/shared';
 import { useEffect, useState, type ReactNode } from 'react';
+import { BeansScreen } from '../screens/beans/BeansScreen';
 import { HistoryScreen } from '../screens/history/HistoryScreen';
 import { LogsScreen } from '../screens/logs/LogsScreen';
 import { ProfilesScreen } from '../screens/profiles/ProfilesScreen';
@@ -20,6 +21,7 @@ export function App() {
     (s) => s.connection.status === 'connected' || s.connection.status === 'lost',
   );
   const [screen, setScreen] = useState<Screen | undefined>();
+  const [profileToOpen, setProfileToOpen] = useState<string>();
   const { api } = useDeps();
   // The app menu (Settings… ⌘,) opens screens too.
   useEffect(() => api.onNavigate(setScreen), [api]);
@@ -32,15 +34,39 @@ export function App() {
         }}
       />
     ),
-    history: () => <HistoryScreen />,
-    profiles: () => <ProfilesScreen />,
+    history: () => (
+      <HistoryScreen
+        onOpenProfile={(id) => {
+          setProfileToOpen(id);
+          setScreen('profiles');
+        }}
+      />
+    ),
+    beans: () => (
+      <BeansScreen
+        onRoast={() => {
+          setScreen('roast');
+        }}
+        onOpenProfile={(id) => {
+          setProfileToOpen(id);
+          setScreen('profiles');
+        }}
+      />
+    ),
+    profiles: () => <ProfilesScreen openFirst={profileToOpen} />,
     settings: () => <SettingsScreen />,
     logs: () => <LogsScreen />,
   };
   return (
     // A fixed frame: the top bar and safety banners never scroll away; each screen scrolls inside.
     <div className="flex h-screen flex-col overflow-hidden bg-bg font-sans text-ink">
-      <TopBar screen={shown} onNavigate={setScreen} />
+      <TopBar
+        screen={shown}
+        onNavigate={(next) => {
+          setProfileToOpen(undefined);
+          setScreen(next);
+        }}
+      />
       <SafetyBanners />
       {/* On the other screens, what the roast needs from you (docs/spec/ui.md, Roast strip). */}
       {ready && shown !== 'roast' ? (

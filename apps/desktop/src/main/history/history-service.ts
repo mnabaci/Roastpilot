@@ -5,16 +5,19 @@ import {
   type Result,
   type RoastDetail,
   type RoastId,
+  type RoastResult,
   type RoastSummary,
   type StorageError,
 } from '@roastpilot/shared';
 
 export interface HistoryServiceDeps {
-  repository: Pick<RoastRepository, 'list' | 'get' | 'delete'>;
+  repository: Pick<RoastRepository, 'list' | 'get' | 'delete' | 'saveResult'>;
   /** The roast being saved right now can't be deleted. */
   isRecording: (id: RoastId) => boolean;
   /** A roast was deleted: tell the windows. */
   onDeleted: (id: RoastId) => void;
+  /** What you said about a roast was saved: its row and the bean's stock moved. */
+  onResultSaved: (id: RoastId) => void;
   logger: Logger;
 }
 
@@ -38,6 +41,17 @@ export class HistoryService {
     const read = await this.#deps.repository.get(id);
     if (!read.ok) this.#deps.logger.warn('history.get-failed', { id, error: read.error });
     return read;
+  }
+
+  async saveResult(result: RoastResult): Promise<Result<void, StorageError>> {
+    const saved = await this.#deps.repository.saveResult(result);
+    if (saved.ok) {
+      this.#deps.logger.info('history.result-saved', { id: result.id });
+      this.#deps.onResultSaved(result.id);
+    } else {
+      this.#deps.logger.warn('history.result-failed', { id: result.id, error: saved.error });
+    }
+    return saved;
   }
 
   async delete(id: RoastId): Promise<Result<void, DeleteRoastError>> {
