@@ -29,11 +29,16 @@ export function RoastStrip({ lead, prompt, numbers, onOpen, className }: RoastSt
       onClick={onOpen}
       className={cn(
         'flex h-control-sm w-full items-center gap-4 overflow-hidden border-b border-border px-6 text-left whitespace-nowrap tabular-nums focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
-        prompt ? 'bg-heat-tint hover:brightness-110' : 'bg-surface hover:bg-surface-hover',
+        // Ember: a roast is heating. Brighter still when something needs you.
+        'bg-heat-tint hover:brightness-110',
         className,
       )}
     >
-      <span className={cn('shrink-0 text-body font-semibold', prompt ? 'text-heat' : 'text-ink')}>
+      <span
+        aria-hidden="true"
+        className="size-2 shrink-0 rounded-full bg-heat motion-safe:animate-pulse"
+      />
+      <span className={cn('shrink-0 text-body text-heat', prompt ? 'font-bold' : 'font-semibold')}>
         {prompt ?? lead}
       </span>
       <span className="flex min-w-0 gap-4 truncate">

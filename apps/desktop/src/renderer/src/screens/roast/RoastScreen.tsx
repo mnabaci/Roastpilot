@@ -1,4 +1,4 @@
-import { Button, PhaseStepper, RoastChart } from '@roastpilot/ui';
+import { Button, ConfirmDialog, PhaseStepper, RoastChart } from '@roastpilot/ui';
 import type { RoastPhase } from '@roastpilot/shared';
 import { useMemo, useState } from 'react';
 import { roastChartData } from './roast-chart-data';
@@ -109,7 +109,7 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
             details={stageTimes(roast)}
             skipped={skippedSteps(roast)}
           />
-          {canClear && !awaitingStockReturn ? (
+          {canClear ? (
             <Button
               variant="ghost"
               size="sm"
@@ -130,31 +130,22 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
             </Button>
           ) : null}
         </div>
-        {canClear && awaitingStockReturn ? (
-          <div className="flex items-center gap-3 text-sm">
-            <span className="text-ink-muted shrink-0">
-              Return {deductedBatchG} g of {deductedBeanName} to stock?
-            </span>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                clearRoast(true);
-              }}
-            >
-              Return to stock
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                clearRoast(false);
-              }}
-            >
-              Keep deducted
-            </Button>
-          </div>
-        ) : null}
+        <ConfirmDialog
+          open={canClear && awaitingStockReturn}
+          onOpenChange={setAwaitingStockReturn}
+          question="Clear this roast?"
+          detail={`Return ${String(deductedBatchG)} g of ${deductedBeanName} to stock?`}
+          confirmLabel="Return to stock"
+          onConfirm={() => {
+            clearRoast(true);
+          }}
+          alternative={{
+            label: 'Keep deducted',
+            onSelect: () => {
+              clearRoast(false);
+            },
+          }}
+        />
         <RoastNumbersRow
           numbers={shown}
           tempName={temp.name}

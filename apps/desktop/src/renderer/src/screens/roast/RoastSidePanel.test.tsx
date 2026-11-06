@@ -76,7 +76,7 @@ describe('Roast side panel follows the roast', () => {
       fakeApi({ listRoasts: vi.fn(() => Promise.resolve([GHOST])) }),
     );
     const setup = within(screen.getByRole('region', { name: 'Setup' }));
-    const change = setup.getByRole('button', { name: 'Change' });
+    const change = setup.getByRole('button', { name: 'Change setup' });
     expect(change).toHaveAttribute('aria-expanded', 'false');
     await userEvent.click(change);
     expect(setup.queryByLabelText('Bean')).toBeNull();
@@ -94,7 +94,7 @@ describe('Roast side panel follows the roast', () => {
     expect(order().slice(0, 3)).toEqual(['Next action', 'Outputs', 'Setup']);
     const setup = within(screen.getByRole('region', { name: 'Setup' }));
     expect(setup.queryByLabelText('Bean')).toBeNull();
-    await userEvent.click(setup.getByRole('button', { name: 'Change' }));
+    await userEvent.click(setup.getByRole('button', { name: 'Change setup' }));
     expect(setup.getByLabelText('Bean')).toBeInTheDocument();
     expect(setup.getByLabelText('Ghost')).toBeInTheDocument();
   });
@@ -102,9 +102,9 @@ describe('Roast side panel follows the roast', () => {
   it('ready: the setup starts closed, with its one line', async () => {
     renderApp(<RoastScreen onConnect={vi.fn()} />, { connection: CONNECTED });
     const setup = within(screen.getByRole('region', { name: 'Setup' }));
-    expect(setup.getByText('No bean')).toBeInTheDocument();
+    expect(setup.getByText('Manual · No bean')).toBeInTheDocument();
     expect(setup.queryByLabelText('Bean')).toBeNull();
-    await userEvent.click(setup.getByRole('button', { name: 'Change' }));
+    await userEvent.click(setup.getByRole('button', { name: 'Change setup' }));
     expect(setup.getByLabelText('Bean')).toBeInTheDocument();
   });
 

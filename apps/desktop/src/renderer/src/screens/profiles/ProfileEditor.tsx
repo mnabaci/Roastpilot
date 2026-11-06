@@ -1,5 +1,5 @@
 import type { ProfileEntry } from '@roastpilot/shared';
-import { Badge, NumberField, RoastChart, TextField } from '@roastpilot/ui';
+import { Badge, NumberField, RoastChart } from '@roastpilot/ui';
 import { useMemo, useState } from 'react';
 import { useSettings } from '../../stores/use-stores';
 import { useProfileLocked } from '../roast/use-active-profile';
@@ -56,17 +56,27 @@ export function ProfileEditor({
       : undefined;
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-5">
-      <div className="flex flex-wrap items-end gap-3">
-        <TextField
-          label="Name"
-          className="min-w-56 flex-1"
-          value={draft.name}
-          disabled={readOnly}
-          aria-invalid={Boolean(errors.name) || undefined}
-          onChange={(name) => {
-            set({ name });
-          }}
-        />
+      <header className="flex flex-wrap items-start gap-3">
+        <div className="flex min-w-60 flex-1 flex-col gap-1">
+          {/* The name is the title; click it to rename (built-ins are read-only). */}
+          <input
+            aria-label="Name"
+            value={draft.name}
+            disabled={readOnly}
+            aria-invalid={Boolean(errors.name) || undefined}
+            onChange={(event) => {
+              set({ name: event.target.value });
+            }}
+            className="-mx-2 w-full truncate rounded-md bg-transparent px-2 text-title text-ink hover:bg-surface-hover focus-visible:bg-surface focus-visible:outline-2 focus-visible:outline-focus disabled:hover:bg-transparent"
+          />
+          <div className="flex flex-wrap items-center gap-2">
+            {entry.builtIn ? <Badge tone="neutral">Built-in</Badge> : null}
+            {entry.profile.needsCalibration ? (
+              <Badge tone="neutral">Needs calibration</Badge>
+            ) : null}
+            {edited ? <Badge tone="heat">Not saved</Badge> : null}
+          </div>
+        </div>
         <ProfileActions
           entry={entry}
           state={state}
@@ -75,16 +85,18 @@ export function ProfileEditor({
           onSelect={onSelect}
           onCopied={setCopied}
         />
-      </div>
-      <p className="flex flex-wrap items-center gap-2 text-label text-ink-muted">
-        {entry.builtIn ? <Badge tone="neutral">Built-in</Badge> : null}
-        {active ? <Badge tone="air">Auto uses this</Badge> : null}
-        {edited ? <Badge tone="heat">Not saved</Badge> : null}
-        {entry.profile.needsCalibration ? <span>Needs calibration</span> : null}
-        {readOnly ? <span>· Duplicate it to change it</span> : null}
-        {active && locked ? <span>· Save waits until Drop: Auto is running this one</span> : null}
-        {copied ? <span>· {copied}</span> : null}
-      </p>
+      </header>
+      {readOnly || (active && locked) || copied ? (
+        <p className="text-label text-ink-muted">
+          {[
+            readOnly ? 'Duplicate it to change it' : undefined,
+            active && locked ? 'Save waits until Drop: Auto is running this one' : undefined,
+            copied,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+        </p>
+      ) : null}
       {errors.name ? (
         <p role="alert" className="text-label text-critical-text">
           Name: {errors.name}

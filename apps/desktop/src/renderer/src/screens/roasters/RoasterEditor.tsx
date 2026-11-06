@@ -3,7 +3,7 @@ import { Button, NumberField, TextField } from '@roastpilot/ui';
 import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
-import { ConfirmInline } from '../../features/ConfirmInline';
+import { ConfirmButton } from '../../features/ConfirmButton';
 import { useRun } from '../../features/use-run';
 import { fromRoasterDraft, toRoasterDraft } from './roaster-draft';
 import { EVERYDAY_FIELDS, TUNING_FIELDS, TUNING_HINT, type FieldGroup } from './roaster-fields';
@@ -129,7 +129,7 @@ export function RoasterEditor({
           </Button>
         ) : null}
         {roaster.active || locked ? null : (
-          <ConfirmInline
+          <ConfirmButton
             label="Delete"
             destructive
             question="Delete this roaster?"

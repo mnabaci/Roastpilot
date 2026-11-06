@@ -139,13 +139,15 @@ describe('HistoryScreen', () => {
     const { api } = setup();
     await screen.findByRole('region', { name: 'Roast curve' });
     await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
-    const confirm = screen.getByRole('group', { name: /Delete this roast\?/ });
-    expect(confirm).toHaveTextContent("can't be undone");
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    const confirm = screen.getByRole('alertdialog', { name: 'Delete this roast?' });
+    expect(confirm).toHaveAccessibleDescription("can't be undone");
+    await userEvent.click(within(confirm).getByRole('button', { name: 'Cancel' }));
     expect(api.deleteRoast).not.toHaveBeenCalled();
 
     await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
-    await userEvent.click(nth(screen.getAllByRole('button', { name: 'Delete' }), 0));
+    await userEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
     expect(api.deleteRoast).toHaveBeenCalledWith(2);
     await vi.waitFor(() => {
       expect(api.getRoast).toHaveBeenLastCalledWith(1);

@@ -8,7 +8,7 @@ Non-negotiable: UX comes first, no walls of text, and clean, reusable code throu
 - **One obvious next action:** each roast phase shows one primary button, the biggest thing on screen.
 - **Numbers, not sentences:** status is shown as big values, colour and icons. Any helper text is one short line.
 - **Readable from 1–2 m:** large type for temperature and time; green / amber / red only for real states.
-- **No pop-ups mid-roast:** alerts appear as a banner plus sound and never block the controls.
+- **No pop-ups mid-roast, except a confirmation you asked for:** alerts appear as a banner plus sound and never block the controls. The one dialog is the confirmation after you press something that can't be undone or ends something (Delete, Clear, End roast, Stop); it opens only from your own click and Escape or Cancel closes it.
 - **One design system:** shared tokens for colour, type and spacing, so every screen looks and behaves the same.
 
 ## Code rules

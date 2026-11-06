@@ -1,6 +1,6 @@
 import type { RoastAction } from '@roastpilot/shared';
 import { Button } from '@roastpilot/ui';
-import { ConfirmInline } from '../../features/ConfirmInline';
+import { ConfirmButton } from '../../features/ConfirmButton';
 import { autoFlowStep } from './auto-flow';
 import { flowHint, flowStep, isConnected } from './flow-step';
 import { useActiveProfile } from './use-active-profile';
@@ -105,7 +105,7 @@ export function FlowPanel({
         </Button>
       ) : null}
       {step.stop ? (
-        <ConfirmInline
+        <ConfirmButton
           key={phase}
           variant="secondary"
           label={step.stop.label}
