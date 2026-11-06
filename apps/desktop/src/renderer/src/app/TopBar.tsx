@@ -6,6 +6,7 @@ import { useDeps } from './app-context';
 import { useRun } from '../features/use-run';
 import { targetLabel } from './connection-label';
 import { PHASE_LABEL } from './phase-label';
+import { SCREENS } from './screen-label';
 
 const CONNECTION_LABEL: Readonly<Record<ConnectionState['status'], string>> = {
   disconnected: 'Not connected',
@@ -21,16 +22,6 @@ const DOT: Readonly<Record<ConnectionState['status'], string>> = {
   connected: 'bg-air',
   lost: 'bg-heat',
 };
-
-const SCREENS: readonly { id: Screen; label: string }[] = [
-  { id: 'roast', label: 'Roast' },
-  { id: 'history', label: 'History' },
-  { id: 'beans', label: 'Beans' },
-  { id: 'profiles', label: 'Profiles' },
-  { id: 'roasters', label: 'Roasters' },
-  { id: 'settings', label: 'Settings' },
-  { id: 'logs', label: 'Logs' },
-];
 
 /**
  * Status, navigation and an Emergency stop on every screen. It is disabled only while no roaster
