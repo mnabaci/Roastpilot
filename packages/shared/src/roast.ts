@@ -18,7 +18,7 @@ export const RoastActionSchema = z.enum([
   'end',
   /** +1 min on the cooling countdown. */
   'extend-cooling',
-  /** Roaster cool-down from Ready or Done (docs/spec/manual-mode.md, Roaster cool-down). */
+  /** Cool the drum from Ready or Done (docs/spec/manual-mode.md, Drum cooling). */
   'cool-roaster',
   'stop-cooling-roaster',
 ]);

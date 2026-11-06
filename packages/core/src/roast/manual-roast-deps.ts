@@ -21,7 +21,7 @@ export interface ManualRoastDeps {
   /** Drop: the roast is over for the max-roast-time rule. */
   onRoastEnded: () => void;
   options?: () => RoastOptions;
-  /** Connected and not locked by a safety stop: only then may the roaster cool-down start. */
+  /** Connected and not locked by a safety stop: only then may drum cooling start. */
   canCoolRoaster?: () => boolean;
   logger?: Logger;
 }

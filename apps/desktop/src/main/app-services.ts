@@ -125,7 +125,7 @@ export function createAppServices({
       history.add(reading);
       recorder.onReading(reading);
       publish(IPC_CHANNELS.reading, reading);
-      // After it is kept: the turning point and the roaster cool-down look at the readings.
+      // After it is kept: the turning point and drum cooling look at the readings.
       roast.onReading(reading).catch((error: unknown) => {
         roastLogger.error('roast.reading-failed', { error: serializeError(error) });
       });
