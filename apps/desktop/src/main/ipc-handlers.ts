@@ -26,7 +26,9 @@ import {
   RoasterSchema,
   RendererLogEntrySchema,
   RoastActionSchema,
+  ExportRoastsRequestSchema,
   RoastIdSchema,
+  SetRoastBeanRequestSchema,
   SetOutputRequestSchema,
   SettingsSchema,
   type ConnectTarget,
@@ -53,7 +55,7 @@ export interface IpcDeps {
   >;
   roast: Pick<ManualRoast, 'act' | 'outputRequested'>;
   settings: Pick<SettingsService, 'get' | 'set'>;
-  history: Pick<HistoryService, 'list' | 'get' | 'delete' | 'saveResult'>;
+  history: Pick<HistoryService, 'list' | 'get' | 'delete' | 'saveResult' | 'setBean'>;
   roastFiles: RoastFiles;
   pilot: Pick<AutoPilot, 'chargeSoon' | 'outputRequested' | 'resume'>;
   profiles: Pick<ProfileService, 'list' | 'duplicate' | 'copyTo' | 'save' | 'delete'>;
@@ -133,7 +135,14 @@ export function createIpcHandlers({
     [IPC_CHANNELS.listRoasts]: handler(() => history.list()),
     [IPC_CHANNELS.getRoast]: handler((payload) => history.get(RoastIdSchema.parse(payload))),
     [IPC_CHANNELS.deleteRoast]: handler((payload) => history.delete(RoastIdSchema.parse(payload))),
-    [IPC_CHANNELS.exportRoastsCsv]: handler(() => roastFiles.exportCsv()),
+    [IPC_CHANNELS.exportRoasts]: handler((payload) =>
+      roastFiles.exportRoasts(ExportRoastsRequestSchema.parse(payload)),
+    ),
+    [IPC_CHANNELS.importRoasts]: handler(() => roastFiles.importRoasts()),
+    [IPC_CHANNELS.setRoastBean]: handler((payload) => {
+      const { id, beanId } = SetRoastBeanRequestSchema.parse(payload);
+      return history.setBean(id, beanId);
+    }),
     [IPC_CHANNELS.importArtisan]: handler(() => roastFiles.importArtisan()),
     [IPC_CHANNELS.autoChargeSoon]: handler(() => pilot.chargeSoon(nowMs())),
     [IPC_CHANNELS.autoResume]: handler(() => pilot.resume()),

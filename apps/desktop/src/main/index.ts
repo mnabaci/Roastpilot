@@ -97,28 +97,39 @@ const power = createPowerGuard({
 
 const simulatorBeans = new SimulatorBeans();
 
-const { session, roast, settings, history, recorder, pilot, profiles, roasters, beans, snapshot } =
-  createAppServices({
-    clock: systemClock,
-    logger,
-    settingsStore: new JsonSettingsStore(join(app.getPath('userData'), 'settings.json'), {
-      logger: logger.child('settings'),
-    }),
-    roasts,
-    profileStore,
-    roasterStore,
-    beanStore,
-    newProfileId: () => `custom-${randomUUID()}`,
-    nowIso: () => new Date().toISOString(),
-    onConnectionChange: (state) => {
-      power.onConnection(state);
-    },
-    onRoastChange: (state) => {
-      power.onRoast(state);
-      simulatorBeans.onRoast(state);
-    },
-    publish: broadcast,
-  });
+const {
+  session,
+  roast,
+  settings,
+  history,
+  roastFiles: roastFileService,
+  recorder,
+  pilot,
+  profiles,
+  roasters,
+  beans,
+  snapshot,
+} = createAppServices({
+  clock: systemClock,
+  logger,
+  settingsStore: new JsonSettingsStore(join(app.getPath('userData'), 'settings.json'), {
+    logger: logger.child('settings'),
+  }),
+  roasts,
+  profileStore,
+  roasterStore,
+  beanStore,
+  newProfileId: () => `custom-${randomUUID()}`,
+  nowIso: () => new Date().toISOString(),
+  onConnectionChange: (state) => {
+    power.onConnection(state);
+  },
+  onRoastChange: (state) => {
+    power.onRoast(state);
+    simulatorBeans.onRoast(state);
+  },
+  publish: broadcast,
+});
 
 installCrashHandlers({
   process,
@@ -168,19 +179,31 @@ app
           history,
           roastFiles: createRoastFiles({
             history,
-            chooseExportPath: async () => {
+            files: roastFileService,
+            chooseExportPath: async (format, count) => {
+              const day = new Date().toISOString().slice(0, 10);
+              const what = count === 1 ? 'roast' : 'roasts';
               const { canceled, filePath } = await dialog.showSaveDialog({
-                title: 'Export roasts',
-                defaultPath: 'roastpilot-roasts.csv',
-                filters: [{ name: 'CSV', extensions: ['csv'] }],
+                title: count === 'all' ? 'Export all roasts' : `Export ${String(count)} ${what}`,
+                defaultPath:
+                  format === 'csv'
+                    ? `Roastpilot ${what} ${day}.csv`
+                    : `Roastpilot ${what} ${day}.json`,
+                filters:
+                  format === 'csv'
+                    ? [{ name: 'CSV', extensions: ['csv'] }]
+                    : [{ name: 'Roastpilot roasts', extensions: ['json'] }],
               });
               return canceled ? undefined : filePath;
             },
-            chooseImportPath: async () => {
+            chooseImportPath: async (kind) => {
               const { canceled, filePaths } = await dialog.showOpenDialog({
-                title: 'Import an Artisan roast',
+                title: kind === 'artisan' ? 'Import an Artisan roast' : 'Import Roastpilot roasts',
                 properties: ['openFile'],
-                filters: [{ name: 'Artisan roast', extensions: ['alog'] }],
+                filters:
+                  kind === 'artisan'
+                    ? [{ name: 'Artisan roast', extensions: ['alog'] }]
+                    : [{ name: 'Roastpilot roasts', extensions: ['json'] }],
               });
               return canceled ? undefined : filePaths[0];
             },

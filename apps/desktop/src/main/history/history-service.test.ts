@@ -66,6 +66,28 @@ describe('HistoryService', () => {
     expect(entries.map((e) => e.event)).toContain('history.result-failed');
   });
 
+  it('links a roast to a bean and says so; a failure is logged', async () => {
+    const setBean = vi.fn(() => Promise.resolve(ok(undefined)));
+    const { service, onResultSaved } = setup({ ...unavailableRepository('x'), setBean });
+    expect(await service.setBean(1, 3)).toEqual(ok(undefined));
+    expect(setBean).toHaveBeenCalledWith(1, 3);
+    expect(onResultSaved).toHaveBeenCalledWith(1);
+    const failing = setup();
+    expect((await failing.service.setBean(1, 3)).ok).toBe(false);
+    expect(failing.entries.map((e) => e.event)).toContain('history.set-bean-failed');
+  });
+
+  it('exports only the roasts named as CSV', async () => {
+    const other = { ...ROAST, id: 2, startedAt: '2026-11-05T10:00:00.000Z' };
+    const { service } = setup({
+      ...unavailableRepository('x'),
+      list: () => Promise.resolve(ok([ROAST, other])),
+    });
+    const csv = await service.exportCsv([2]);
+    const lines = csv.ok ? csv.value.trim().split('\n') : [];
+    expect(lines).toHaveLength(2);
+  });
+
   it('lists roasts', async () => {
     const { service } = setup({
       ...unavailableRepository('x'),
