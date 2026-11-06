@@ -50,6 +50,8 @@ export {
   type ExportRoastsResult,
   type ImportArtisanError,
   type ImportArtisanResult,
+  type ImportRoastsError,
+  type ImportRoastsResult,
   type LogsApi,
   type RoastApi,
   type RoasterApi,
@@ -208,3 +210,15 @@ export {
   type MakeProfileError,
   type MakeProfileRequest,
 } from './make-profile';
+export {
+  ExportRoastsRequestSchema,
+  FileRoastSchema,
+  ROAST_FILE_FORMAT,
+  ROAST_FILE_VERSION,
+  RoastFileSchema,
+  SetRoastBeanRequestSchema,
+  type ExportRoastsRequest,
+  type FileRoast,
+  type RoastFile,
+  type SetRoastBeanRequest,
+} from './roast-file';

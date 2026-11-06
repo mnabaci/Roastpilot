@@ -77,9 +77,17 @@ function setup() {
         calls.push(['saveResult', result.id]);
         return Promise.resolve(ok(undefined));
       },
+      setBean: (id, beanId) => {
+        calls.push(['setBean', id, beanId]);
+        return Promise.resolve(ok(undefined));
+      },
     },
     roastFiles: {
-      exportCsv: () => Promise.resolve(ok({ status: 'cancelled' })),
+      exportRoasts: (request) => {
+        calls.push(['exportRoasts', request]);
+        return Promise.resolve(ok({ status: 'cancelled' }));
+      },
+      importRoasts: () => Promise.resolve(ok({ status: 'cancelled' })),
       importArtisan: () => Promise.resolve(ok({ status: 'cancelled' })),
     },
     pilot: {
@@ -218,7 +226,9 @@ describe('createIpcHandlers', () => {
         IPC_CHANNELS.listRoasts,
         IPC_CHANNELS.getRoast,
         IPC_CHANNELS.deleteRoast,
-        IPC_CHANNELS.exportRoastsCsv,
+        IPC_CHANNELS.exportRoasts,
+        IPC_CHANNELS.importRoasts,
+        IPC_CHANNELS.setRoastBean,
         IPC_CHANNELS.importArtisan,
         IPC_CHANNELS.autoChargeSoon,
         IPC_CHANNELS.autoResume,

@@ -42,6 +42,7 @@ import type {
   RoastSummary,
   StorageError,
 } from './saved-roast';
+import type { ExportRoastsRequest, SetRoastBeanRequest } from './roast-file';
 import { RoastIdSchema, type RoastResult } from './saved-roast';
 import type { Screen } from './screen';
 import type { Settings, SettingsWriteError } from './settings';
@@ -79,7 +80,9 @@ export const IPC_CHANNELS = {
   listRoasts: 'history:list',
   getRoast: 'history:get',
   deleteRoast: 'history:delete',
-  exportRoastsCsv: 'history:export-csv',
+  exportRoasts: 'history:export',
+  importRoasts: 'history:import',
+  setRoastBean: 'history:set-bean',
   importArtisan: 'history:import-artisan',
   roastsChanged: 'history:changed',
   autoStatus: 'auto:status',
@@ -195,11 +198,22 @@ export type ExportRoastsResult = { status: 'cancelled' } | { status: 'saved'; fi
 export type ExportRoastsError = StorageError | { kind: 'write-failed' };
 export type ImportArtisanResult = { status: 'cancelled' } | { status: 'imported'; id: RoastId };
 export type ImportArtisanError = StorageError | { kind: 'read-failed' } | { kind: 'not-artisan' };
+export type ImportRoastsResult =
+  { status: 'cancelled' } | { status: 'imported'; added: number; skipped: number };
+export type ImportRoastsError =
+  StorageError | { kind: 'read-failed' } | { kind: 'not-roastpilot' } | { kind: 'newer-version' };
 
 /** Saved roasts (docs/spec/ui.md, History screen). */
 export interface HistoryApi {
   /** Asks where to save, then writes every saved roast as CSV. */
-  exportRoastsCsv(): Promise<Result<ExportRoastsResult, ExportRoastsError>>;
+  /** Every roast, or the ones named, as a Roastpilot file or a CSV; main asks where. */
+  exportRoasts(
+    request: ExportRoastsRequest,
+  ): Promise<Result<ExportRoastsResult, ExportRoastsError>>;
+  /** Reads a Roastpilot file; roasts already in History are skipped. */
+  importRoasts(): Promise<Result<ImportRoastsResult, ImportRoastsError>>;
+  /** Links a saved roast to a bean, or none (docs/spec/data-model.md). */
+  setRoastBean(request: SetRoastBeanRequest): Promise<Result<void, StorageError>>;
   /** Asks for an Artisan `.alog`, then saves it as a new roast. */
   importArtisan(): Promise<Result<ImportArtisanResult, ImportArtisanError>>;
   /** Newest first; an empty list when storage can't be read (logged in main). */
