@@ -2,7 +2,7 @@ import type { ProfileEntry } from '@roastpilot/shared';
 import { Button } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
-import { ConfirmInline } from '../../features/ConfirmInline';
+import { ConfirmButton } from '../../features/ConfirmButton';
 import { useRun } from '../../features/use-run';
 import { useRoasters } from '../../stores/use-stores';
 import { useSaveSettings } from '../settings/use-save-settings';
@@ -127,7 +127,7 @@ export function ProfileActions({
               </Button>
             ))}
             {entry.builtIn || (active && locked) ? null : (
-              <ConfirmInline
+              <ConfirmButton
                 label="Delete"
                 destructive
                 question="Delete this profile? · saved roasts keep their copy"

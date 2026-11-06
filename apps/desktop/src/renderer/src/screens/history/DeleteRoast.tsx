@@ -1,10 +1,10 @@
 import { Trash2 } from 'lucide-react';
-import { ConfirmInline } from '../../features/ConfirmInline';
+import { ConfirmButton } from '../../features/ConfirmButton';
 
 /** Delete, asked once inline: "Delete this roast? · can't be undone". */
 export function DeleteRoast({ onDelete }: { onDelete: () => void }) {
   return (
-    <ConfirmInline
+    <ConfirmButton
       label="Delete"
       destructive
       icon={<Trash2 aria-hidden="true" />}

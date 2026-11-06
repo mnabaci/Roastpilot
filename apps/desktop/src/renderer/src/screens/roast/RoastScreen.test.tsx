@@ -184,13 +184,14 @@ describe('RoastScreen', () => {
     });
     await userEvent.click(screen.getByRole('button', { name: label }));
     expect(api.roastAction).not.toHaveBeenCalled();
-    expect(
-      screen.getByRole('group', { name: new RegExp(question.replace('?', '\\?')) }),
-    ).toHaveTextContent('everything turns off');
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    const dialog = screen.getByRole('alertdialog', { name: question });
+    expect(dialog).toHaveAccessibleDescription('everything turns off');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     expect(api.roastAction).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole('button', { name: label }));
-    await userEvent.click(screen.getByRole('button', { name: label }));
+    await userEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: label }),
+    );
     expect(api.roastAction).toHaveBeenCalledWith('end');
   });
 
