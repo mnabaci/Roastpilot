@@ -82,7 +82,7 @@ describe('Roast side panel follows the roast', () => {
     await userEvent.click(change);
     expect(setup.queryByLabelText('Bean')).toBeNull();
     await vi.waitFor(() => {
-      expect(setup.getByRole('option', { name: /4 Nov/ })).toBeInTheDocument();
+      expect(setup.getByRole('option', { name: /4 Nov|Nov 4/ })).toBeInTheDocument();
     });
     await userEvent.selectOptions(setup.getByLabelText('Ghost'), String(GHOST.id));
     expect(api.setRoastSetup).toHaveBeenCalledWith(
