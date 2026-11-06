@@ -53,7 +53,7 @@ export function FlowPanel({
         <Button variant="primary" size="lg" onClick={onConnect}>
           Connect a roaster
         </Button>
-        <p className="text-label text-ink-muted">Pick a port or the Simulator in Settings.</p>
+        <p className="text-label text-ink-muted">Pick a roaster and connect it in Roasters</p>
       </div>
     );
   }

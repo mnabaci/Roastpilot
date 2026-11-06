@@ -1,6 +1,6 @@
 import type { RoastMode } from '@roastpilot/shared';
 import { SelectField } from '@roastpilot/ui';
-import { Choice } from '../settings/Choice';
+import { Choice } from '../../features/Choice';
 import { useSaveSettings } from '../settings/use-save-settings';
 import { useAuto, useSettings } from '../../stores/use-stores';
 import { useActiveProfile, useProfileLocked } from './use-active-profile';

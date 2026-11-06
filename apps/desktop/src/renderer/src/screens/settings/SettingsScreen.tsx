@@ -1,29 +1,35 @@
+import { NavList, SidebarLayout } from '@roastpilot/ui';
+import type { ReactNode } from 'react';
 import { AutoSection } from './AutoSection';
-import { ConnectionSection } from './ConnectionSection';
 import { ChartSection } from './ChartSection';
 import { ControlsSection } from './ControlsSection';
-import { RoastersSection } from './RoastersSection';
 import { RoastSection } from './RoastSection';
+import { SETTINGS_SECTIONS, type SettingsSection } from './settings-section';
 
-/** Two columns on a wide window (roaster on the left, roast on the right), one when narrow. */
-export function SettingsScreen() {
+const SECTION: Readonly<Record<SettingsSection, () => ReactNode>> = {
+  controls: () => <ControlsSection />,
+  roast: () => <RoastSection />,
+  auto: () => <AutoSection />,
+  chart: () => <ChartSection />,
+};
+
+/** The sections in the shared sidebar, one open (docs/spec/ui.md, Settings). */
+export function SettingsScreen({
+  section,
+  onSection,
+}: {
+  section: SettingsSection;
+  onSection: (section: SettingsSection) => void;
+}) {
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto p-6">
-      <div className="flex flex-col gap-8">
-        <h1 className="text-title">Settings</h1>
-        <div className="grid items-start gap-8 lg:grid-cols-2 lg:gap-12">
-          <div className="flex max-w-xl flex-col gap-8">
-            <ConnectionSection />
-            <RoastersSection />
-            <ControlsSection />
-          </div>
-          <div className="flex max-w-xl flex-col gap-8">
-            <RoastSection />
-            <AutoSection />
-            <ChartSection />
-          </div>
-        </div>
-      </div>
-    </main>
+    <SidebarLayout
+      title="Settings"
+      contentLabel="Section"
+      sidebar={
+        <NavList label="Sections" items={SETTINGS_SECTIONS} openId={section} onOpen={onSection} />
+      }
+    >
+      {SECTION[section]()}
+    </SidebarLayout>
   );
 }

@@ -34,6 +34,7 @@
   --spacing-control-sm: 44px;
   --spacing-control-md: 48px;
   --spacing-control-lg: 56px;
+  --spacing-sidebar: 256px;
 }
 
 @theme inline {

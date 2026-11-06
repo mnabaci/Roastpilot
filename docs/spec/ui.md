@@ -1,6 +1,6 @@
 # UI
 
-Six screens: Roast, History, Beans, Profiles, Logs and Settings. The roasting screen is readable from a step back from the laptop.
+Seven screens: Roast, History, Beans, Profiles, Roasters, Settings and Logs. The roasting screen is readable from a step back from the laptop.
 Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9N2dqd7ULbqovZktYe). Its components are built in `packages/ui` (`Button`, `Badge`, `StatCard`, `OutputControl`, `CoachCard`, `PhaseStepper`, `AlertBanner`) and shown in Storybook (`pnpm storybook`).
 
 ## App frame
@@ -8,6 +8,9 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 - The top bar and safety banners are fixed: they never scroll away, so Emergency stop is always on screen.
 - Each screen scrolls inside its own area; on Logs only the list of entries scrolls.
 - Nothing scrolls sideways or gets clipped from the minimum window (960 × 640) up to full screen: long text truncates, numbers fit their cards, rows wrap.
+- **Top bar:** the mark, the tabs Roast, History, Beans, Profiles, Roasters, Settings and Logs, then Emergency stop. The Roasters tab carries the connection as a dot (grey not connected, cyan connected, ember connecting or reconnecting) and says it to screen readers; on a wide window the connected roaster's name and the phase follow the tabs. It fits 960 × 640.
+- **Sidebar:** History, Beans, Profiles, Roasters and Settings share one layout: a fixed-width column on the left (the `sidebar` size token) with the screen title on top and the list under it, the chosen item on the right. The list and the right side scroll separately. The chosen item has a grey highlight (`surface-raised`): it shows where you are, not a setting. The Roast screen's controls panel is not a sidebar.
+- **Scrollbars:** thin, a `border-strong` thumb on a transparent track, in both themes; never the light system gutter.
 - **Brand:** the Roastpilot mark (a dark coffee bean on an ember tile, its cut running end to end) is the app icon in the Dock, the taskbar and the installers, and sits at the left of the top bar. The window title is "Roastpilot". In development the Dock shows the mark too; its name there stays "Electron", which macOS takes from the Electron bundle.
 - **Roast strip:** on any screen but Roast, while a roast runs (Preheat to Cooling, or the roaster cool-down), a slim fixed row under the top bar shows what needs you first, then the numbers. When an action is due it leads, highlighted, as the flow panel names it ("Dump beans · Cooling 3:58 left"); only real prompts, never a guess. Otherwise it is quiet numbers: `Roasting · 7:42   Temp 182.4 °C   RoR 8.1   Heater 60 %   Fan 40 %` (the temperature under the connected roaster's short name, [extensibility.md](extensibility.md)). Clicking it opens Roast. Safety stays in the banners, never in the strip. It fits 960 × 640: numbers only, no hints.
 
@@ -26,7 +29,7 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 
 ## Roast screen (main)
 
-- **Top bar:** connection status, active roaster, selected bean and profile, phase name.
+- **Top bar:** connection (the Roasters tab's dot), active roaster, selected bean and profile, phase name.
 - **Milestone 2:** the manual flow from [manual-mode.md](manual-mode.md): top bar (connection status, state), phase stepper, big numbers (BT, RoR, time, development), live chart (BT and RoR, charge/FC/drop markers, heater and fan strip), heater and fan controls, drum and filter fan switches, flow buttons and the red Emergency stop. Safety trips show as one banner per event with Acknowledge on it ("Emergency stop · heater off, fan and cooling on"); a separate Heater locked banner only when the lock outlives every trip. The focus ring shows only for keyboard focus. Bean, profile, ghost and coach come later.
 - **Milestone 4:** adds the Auto / Manual switch, a choice of profile with "needs calibration", Auto badges and Resume auto on heater and fan, the current phase and next trigger as one line in the flow panel ("Yellowing · next at 165 °C"), Charge soon, the profile's dashed curve and the dry-end marker on the chart. Soak time lives in Settings under Auto. Bean, ghost, coach and the RoR band come later.
 - **Preheat:** shows the between-batch protocol (cool, climb, hold countdown), then "Add beans".
@@ -47,7 +50,7 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 
 ## Profiles screen
 
-- **Milestone 4:** list on the left, editor on the right. Built-ins are read-only with Duplicate; a copy can be renamed, edited, saved, discarded or deleted (asked once inline). "Use for Auto" picks the one Auto runs.
+- **Milestone 4:** list on the left (the shared sidebar), editor on the right. Built-ins are read-only with Duplicate; a copy can be renamed, edited, saved, discarded or deleted (asked once inline). "Use for Auto" picks the one Auto runs.
 - Top values: charge temp, dry-end temp, development time, BT cap, batch size.
 - Steps table: one row per step. A step profile has end temp, duration, RoR range, heat estimate, fan and backup time; a curve profile has end temp, heat estimate, fan and backup time, plus a table of curve points (time, temp). Add and remove steps; Soak comes first and Development last, always. The soak's length is the Soak time setting.
 - A preview chart shows the planned curve and the heater and fan steps, and updates as you type. Problems show next to the cell, one line each, and Save waits until there are none.
@@ -62,7 +65,7 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 
 ## History screen
 
-- List of roasts, newest first: date and time, total time (charge to drop), first crack time, drop temp; Unfinished when cooling never ended.
+- List of roasts in the shared sidebar, newest first: date and time, total time (charge to drop), first crack time, drop temp; Unfinished when cooling never ended.
 - Open a roast to see its chart, stage times and events; under the chart, a small events table (secondary text): Event · Time · Temp · RoR · Heater · Fan for Charge, Turning point, First crack, Drop and Cool end (or End), with the values read from the saved samples at each event, so older roasts get it too. A dash where there is no value; Compare overlays one other roast, faded, aligned at charge.
 - Delete asks once ("Delete this roast? · can't be undone"), then the list moves to the next roast.
 - **Milestone 6:** bean, profile, rating and star on each row; filter by bean, profile or favourites; edit weight, rating, star and notes on the open roast; Make step profile and Make curve profile.
@@ -73,7 +76,7 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 - Bean list: name, origin, process, stock left, low-stock badge.
 - Bean detail: its info, all its roasts with stars, and its best favourite.
 - Actions: Add bean, Edit, Add stock (with the batch calculator), Adjust stock, Make a profile for this bean, Archive, Roast this bean.
-- List on the left, detail on the right, and only the right side scrolls, as on Profiles.
+- List on the left (the shared sidebar), detail on the right; the two scroll separately.
 
 ## Batch calculator
 
@@ -83,8 +86,20 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 
 - Milestone 2: the log viewer from [errors-and-logging.md](errors-and-logging.md#viewer).
 
+## Roasters screen
+
+- The sidebar lists the roaster records by name, the active one marked Active, and Add roaster under them. It opens on the roaster in use, else the active one.
+- **A roaster's page:** its name and model, then one primary action: Connect, or Disconnect for the one in use (Connecting… busy while it connects; a failure is one line under it). Connect makes this roaster the active one first; Use this roaster (quiet, by the name) makes it active without connecting, as Profiles and batch sizes follow it.
+- **Port:** a Skywalker-type roaster shows its port, with Choose another to list likely roasters (USB serial adapters), the rest behind "Show all ports" (every port at once when none looks like a roaster), and Refresh. A Simulator has no port. When no port is plugged in, one hint: "No roaster found · plug it in, then Refresh".
+- **While a roaster is in use:** its page shows Disconnect and its status (Connected, Reconnecting…); every other page says "Disconnect <name> to switch", and records wait, as [roasters.md](roasters.md) says.
+- Under the action, the record: name, batch size (min, ideal, max), limits and calibration (max temp, max time, temp offset) and the preheat hold, then Save and Delete.
+- **Advanced tuning · for experts:** closed until opened, the PID gains in plain words, with one line above them: "Push (Kp): how hard the heater reacts to being off target · Catch-up (Ki): closes a gap that stays". Preheat (Push, Catch-up), Reaching step temperatures (Push, Catch-up, Most it may change %), Following a curve (Push, Catch-up). Each plain name carries the usual one in brackets ("Push (Kp)", "Most it may change (limit)"). Same numbers and limits as before.
+- **Add roaster:** a name and a model, then Add; the new roaster opens.
+- The app starts on Roasters until a roaster is connected; Connect on the Roast screen opens it too.
+
 ## Settings
 
-- Roasters: list, add, edit, set active. Safety limits and tuning live in each roaster. The Connection section connects the active one.
-- Simulator: always available as a roaster, for practice and demos. It never runs unless you pick it.
-- **Milestone 2 (minimal):** Connection (the roaster used last with Connect and "Choose another", which lists likely roasters (USB serial adapters) and the Simulator, with other ports behind "Show all ports"; Refresh; Connect / Disconnect; while a roaster is in use, only its row shows, marked Connected (or Connecting…, Reconnecting…), and the top bar names it; while connecting, the app stays on Settings with a busy Connect button and a locked list, and a failure is one line under it) Controls (Guided / Full control, see [manual-mode.md](manual-mode.md)), Roast (Find the charge point, on; Cooling ends, by time 2–6 min (default 4) or below 70–100 °C (default 90 °C); Cool the roaster after each roast, on; Cool the roaster to, 40–70 °C, default 50 °C) and Chart (temperature smoothing: Off, 3 s, 5 s or 10 s). Saved in `settings.json` in the app's user-data folder behind a `SettingsStore` interface; roaster records replace the connection part at milestone 5.
+- The shared sidebar lists the sections Controls, Roast, Auto and Chart; only the chosen one shows. Settings opens on Controls when the app starts, then on the last section viewed until quit (not saved).
+- **Rows:** each setting is one row: name with a one-line hint under it on the left, its control on the right (it wraps under the name when narrow). On / off settings are a switch; other choices a segmented control. The chosen option keeps the `heat-tint` toggle look. A setting that doesn't apply is hidden (Cool the roaster to, while Cool the roaster after each roast is off; the cooling time or temperature, by Cooling ends).
+- **Sections:** Controls (Guided / Full control, see [manual-mode.md](manual-mode.md)); Roast (Find the charge point, on; Cooling ends, by time 2–6 min (default 4) or below 70–100 °C (default 90 °C); Cool the roaster after each roast, on; Cool the roaster to, 40–70 °C, default 50 °C); Auto (Soak time); Chart (temperature smoothing: Off, 3 s, 5 s or 10 s). Saved in `settings.json` in the app's user-data folder behind a `SettingsStore` interface.
+- Roasters and connecting have their own screen (above).

@@ -14,13 +14,25 @@ vi.mock('@roastpilot/ui', async (importOriginal) => ({
 const SIM = { kind: 'simulator' } as const;
 
 describe('App', () => {
-  it('opens on Settings until a roaster is connected', () => {
+  it('opens on Roasters until a roaster is connected', () => {
     renderApp(<App />);
-    expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Settings' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    );
+    expect(screen.getByRole('heading', { level: 1, name: 'Roasters' })).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('navigation', { name: 'Screens' })).getByRole('button', {
+        name: 'Roasters',
+      }),
+    ).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('Settings reopens on the section last viewed', async () => {
+    renderApp(<App />, { connection: CONNECTED });
+    const tabs = within(screen.getByRole('navigation', { name: 'Screens' }));
+    await userEvent.click(tabs.getByRole('button', { name: 'Settings' }));
+    expect(screen.getByRole('radiogroup', { name: 'Controls' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Chart' }));
+    await userEvent.click(tabs.getByRole('button', { name: 'Roast' }));
+    await userEvent.click(tabs.getByRole('button', { name: 'Settings' }));
+    expect(screen.getByRole('radiogroup', { name: 'Temperature smoothing' })).toBeInTheDocument();
   });
 
   it('opens on the Roast screen when connected, and navigates', async () => {
@@ -48,12 +60,12 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Emergency stop' })).toBeEnabled();
   });
 
-  it('stays on Settings while connecting, then opens Roast once connected', () => {
+  it('stays on Roasters while connecting, then opens Roast once connected', () => {
     const { stores } = renderApp(<App />);
     act(() => {
       stores.connection.setState({ connection: { status: 'connecting', target: SIM } });
     });
-    expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Roasters' })).toBeInTheDocument();
     act(() => {
       stores.connection.setState({ connection: CONNECTED });
     });
@@ -65,9 +77,13 @@ describe('App', () => {
     expect(screen.getByText('usbserial-0001')).toBeInTheDocument();
   });
 
-  it('shows the connection status', () => {
+  it('says the connection status to screen readers; the Roasters tab carries it as a dot', () => {
     renderApp(<App />, { connection: { status: 'lost', target: SIM } });
     expect(screen.getByText('Connection lost')).toBeInTheDocument();
+    const tab = within(screen.getByRole('navigation', { name: 'Screens' })).getByRole('button', {
+      name: 'Roasters',
+    });
+    expect(within(tab).getByTitle('Connection lost')).toBeInTheDocument();
   });
 
   it('shows nothing but the bar until the first snapshot', () => {

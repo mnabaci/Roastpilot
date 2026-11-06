@@ -39,6 +39,19 @@ describe('roasterRows', () => {
     expect(hidden).toBe(0);
   });
 
+  it('with no likely roaster plugged in, lists every port at once', () => {
+    const others = PORTS.filter((p) => !isLikelyRoaster(p));
+    const { rows, hidden, anyRoaster } = roasterRows(others, view);
+    expect(labels(rows)).toEqual([
+      'debug-console',
+      'Bluetooth-Incoming-Port',
+      'ArctisNova7P',
+      'Simulator',
+    ]);
+    expect(hidden).toBe(0);
+    expect(anyRoaster).toBe(false);
+  });
+
   it('the remembered roaster alone until you choose another', () => {
     expect(labels(roasterRows(PORTS, { ...view, saved: ESP32, choosing: false }).rows)).toEqual([
       'usbserial-0001',
@@ -52,9 +65,10 @@ describe('roasterRows', () => {
 
   it('choosing keeps a remembered port that is unplugged, marked Not found', () => {
     const result = roasterRows([{ path: '/dev/cu.debug-console' }], { ...view, saved: ESP32 });
-    expect(labels(result.rows)).toEqual(['usbserial-0001', 'Simulator']);
+    // No likely roaster is plugged in, so every port shows too, with nothing behind Show all.
+    expect(labels(result.rows)).toEqual(['usbserial-0001', 'debug-console', 'Simulator']);
     expect(result.rows[0]?.detail).toBe('Not found');
-    expect(result).toMatchObject({ anyRoaster: false, savedPresent: false, hidden: 1 });
+    expect(result).toMatchObject({ anyRoaster: false, savedPresent: false, hidden: 0 });
   });
 
   it('knows when the remembered port is plugged in', () => {

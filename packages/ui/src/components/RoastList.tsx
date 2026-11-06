@@ -62,7 +62,7 @@ export function RoastList({ label, items, selectedId, onSelect, className }: Roa
               }}
               className={cn(
                 'flex min-h-control-sm w-full flex-col justify-center gap-0.5 px-4 py-3 text-left tabular-nums focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
-                selected ? 'bg-heat-tint' : 'hover:bg-surface-hover',
+                selected ? 'bg-surface-raised' : 'hover:bg-surface-hover',
               )}
             >
               <span className="flex items-center justify-between gap-3">

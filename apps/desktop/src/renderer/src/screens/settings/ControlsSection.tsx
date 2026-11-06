@@ -1,36 +1,39 @@
 import type { ControlsLevel } from '@roastpilot/shared';
+import { SegmentedControl } from '@roastpilot/ui';
 import { useSettings } from '../../stores/use-stores';
 import { useSaveSettings } from './use-save-settings';
-import { Choice } from './Choice';
+import { SettingCard, SettingRow } from './SettingRow';
 
-const LEVELS: readonly { id: ControlsLevel; label: string; hint: string }[] = [
+const LEVELS: readonly { value: ControlsLevel; label: string; hint: string }[] = [
   {
-    id: 'guided',
+    value: 'guided',
     label: 'Guided',
-    hint: 'Heater from Preheat until Drop · the rest any time no roast runs',
+    hint: 'Heater only from Preheat to Drop · fan and cooling locked while the beans cool',
   },
-  { id: 'full', label: 'Full control', hint: 'Every output, any time, cooling switch included' },
+  {
+    value: 'full',
+    label: 'Full control',
+    hint: 'Heater, fan and cooling any time the roaster is connected',
+  },
 ];
 
 /** Guided or Full control (docs/spec/manual-mode.md). */
 export function ControlsSection() {
   const level = useSettings((s) => s.settings.controls);
   const save = useSaveSettings();
-  const current = LEVELS.find((l) => l.id === level);
+  const current = LEVELS.find((l) => l.value === level);
   return (
-    <section aria-labelledby="controls-heading" className="flex flex-col gap-3">
-      <h2 id="controls-heading" className="text-heading">
-        Controls
-      </h2>
-      <Choice
-        label="Controls"
-        options={LEVELS}
-        value={level}
-        onChange={(id) => {
-          save({ controls: id });
-        }}
-      />
-      <p className="text-label text-ink-muted">{current?.hint}</p>
-    </section>
+    <SettingCard title="Controls">
+      <SettingRow name="When you can use the controls" hint={current?.hint ?? ''}>
+        <SegmentedControl
+          label="Controls"
+          options={LEVELS}
+          value={level}
+          onChange={(controls) => {
+            save({ controls });
+          }}
+        />
+      </SettingRow>
+    </SettingCard>
   );
 }
