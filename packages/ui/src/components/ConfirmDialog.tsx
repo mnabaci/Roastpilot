@@ -14,6 +14,8 @@ export interface ConfirmDialogProps {
   onConfirm: () => void;
   /** Deletes something: the verb in red text (`critical-text`), never a red fill. */
   destructive?: boolean;
+  /** A second answer beside the verb, e.g. "Keep deducted" next to "Return to stock". */
+  alternative?: { label: string; onSelect: () => void } | undefined;
 }
 
 /**
@@ -28,6 +30,7 @@ export function ConfirmDialog({
   confirmLabel,
   onConfirm,
   destructive = false,
+  alternative,
 }: ConfirmDialogProps) {
   return (
     <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
@@ -48,6 +51,11 @@ export function ConfirmDialog({
             <AlertDialog.Cancel asChild>
               <Button variant="ghost">Cancel</Button>
             </AlertDialog.Cancel>
+            {alternative ? (
+              <AlertDialog.Action asChild>
+                <Button onClick={alternative.onSelect}>{alternative.label}</Button>
+              </AlertDialog.Action>
+            ) : null}
             <AlertDialog.Action asChild>
               <Button className={cn(destructive && 'text-critical-text')} onClick={onConfirm}>
                 {confirmLabel}

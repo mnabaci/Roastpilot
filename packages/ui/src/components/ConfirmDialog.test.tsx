@@ -46,4 +46,23 @@ describe('ConfirmDialog', () => {
     expect(onConfirm).not.toHaveBeenCalled();
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
+
+  it('offers a second answer when given one', async () => {
+    const onConfirm = vi.fn();
+    const keep = vi.fn();
+    render(
+      <ConfirmDialog
+        open
+        onOpenChange={vi.fn()}
+        question="Clear this roast?"
+        detail="Return 375 g of Ethiopia Guji to stock?"
+        confirmLabel="Return to stock"
+        onConfirm={onConfirm}
+        alternative={{ label: 'Keep deducted', onSelect: keep }}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Keep deducted' }));
+    expect(keep).toHaveBeenCalledOnce();
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
 });
