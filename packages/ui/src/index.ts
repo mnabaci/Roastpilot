@@ -28,3 +28,4 @@ export { SidebarLayout, type SidebarLayoutProps } from './components/SidebarLayo
 export { ErrorState, type ErrorStateProps } from './components/ErrorState';
 export { Menu, type MenuItem, type MenuProps } from './components/Menu';
 export { ConfirmDialog, type ConfirmDialogProps } from './components/ConfirmDialog';
+export { FilterSelect, type FilterSelectProps } from './components/FilterSelect';

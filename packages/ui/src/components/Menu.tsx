@@ -1,5 +1,5 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { Ellipsis } from 'lucide-react';
+import { ChevronDown, Ellipsis } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '../lib/utils';
 import { Button } from './Button';
@@ -14,8 +14,10 @@ export interface MenuItem {
 }
 
 export interface MenuProps {
-  /** Names the "⋯" button for screen readers, e.g. "More for Light · Steps". */
+  /** Names the "⋯" button for screen readers, e.g. "More for Light · Steps"; with `text`, its words. */
   label: string;
+  /** A worded button with a chevron ("Make profile ▾") instead of "⋯". */
+  text?: string;
   items: readonly MenuItem[];
   className?: string;
 }
@@ -24,17 +26,27 @@ export interface MenuProps {
  * The actions you rarely need, behind a "⋯" button (design system: Menu). Arrows move, Enter picks,
  * Escape closes and focus goes back to the button.
  */
-export function Menu({ label, items, className }: MenuProps) {
+export function Menu({ label, text, items, className }: MenuProps) {
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          aria-label={label}
-          icon={<Ellipsis aria-hidden="true" />}
-          className={className}
-        />
+        {text ? (
+          <Button
+            size="sm"
+            className={cn('flex-row-reverse', className)}
+            icon={<ChevronDown aria-hidden="true" />}
+          >
+            {text}
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={label}
+            icon={<Ellipsis aria-hidden="true" />}
+            className={className}
+          />
+        )}
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content

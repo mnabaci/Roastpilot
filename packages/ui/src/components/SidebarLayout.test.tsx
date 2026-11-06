@@ -16,4 +16,20 @@ describe('SidebarLayout', () => {
       screen.getByText('rows'),
     );
   });
+
+  it('puts the title action beside the title', () => {
+    render(
+      <SidebarLayout
+        title="History"
+        contentLabel="Roast"
+        titleAction={<button type="button">More</button>}
+        sidebar={<p>list</p>}
+      >
+        <p>roast</p>
+      </SidebarLayout>,
+    );
+    expect(screen.getByRole('navigation', { name: 'History' })).toContainElement(
+      screen.getByRole('button', { name: 'More' }),
+    );
+  });
 });
