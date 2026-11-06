@@ -6,6 +6,7 @@ import { flowHint, flowStep, isConnected } from './flow-step';
 import { useActiveProfile } from './use-active-profile';
 import { RoasterCooling } from './RoasterCooling';
 import { RoastResultForm } from '../../features/RoastResultForm';
+import { roastTitle } from '../history/history-format';
 import { useRoastList } from '../history/use-roast-list';
 import { useRun } from '../../features/use-run';
 import { useDeps } from '../../app/app-context';
@@ -97,9 +98,6 @@ export function FlowPanel({
           {step.secondary.label}
         </Button>
       ) : null}
-      {phase === 'done' && roast.chargedAtMs !== null && saved ? (
-        <RoastResultForm key={saved.id} roast={saved} />
-      ) : null}
       {noRoast ? <RoasterCooling onAction={act} /> : null}
       {step.quiet ? (
         <Button
@@ -123,6 +121,16 @@ export function FlowPanel({
           }}
           stacked
         />
+      ) : null}
+      {phase === 'done' && roast.chargedAtMs !== null && saved ? (
+        <section
+          aria-label="Roast just finished"
+          className="mt-3 flex flex-col gap-2 rounded-xl bg-surface p-4"
+        >
+          <h2 className="text-heading">Roast just finished</h2>
+          <p className="text-label text-ink-muted">{roastTitle(saved.startedAt)}</p>
+          <RoastResultForm key={saved.id} roast={saved} />
+        </section>
       ) : null}
     </div>
   );

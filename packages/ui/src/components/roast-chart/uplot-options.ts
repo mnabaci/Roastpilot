@@ -2,6 +2,7 @@ import type uPlot from 'uplot';
 import { formatClock } from '../../lib/format';
 import type { ChartColors } from './chart-colors';
 import type { ChartLayer, ChartMarker } from './chart-layer';
+import { attachDrag, drawDragHandles, type ChartDrag, type TimeRange } from './drag-handles';
 import { drawLatestDot, drawMarkers } from './draw-markers';
 
 /** uPlot's `Axis.Side` is an ambient const enum, which isolated modules can't read at runtime. */
@@ -61,6 +62,8 @@ interface CommonInput {
   rightAxis: boolean;
   /** The time under the pointer, or undefined when it leaves the plot. */
   onHover: (t: number | undefined) => void;
+  /** Changes the time range that fits the data, read at draw time. */
+  adjustTimeRange?: (fitted: TimeRange) => TimeRange;
 }
 
 /** One vertical hover line across the chart and the strip, reporting the time under it. */
@@ -89,6 +92,12 @@ function hoverCursor(onHover: (t: number | undefined) => void): Pick<uPlot.Optio
 export interface ChartOptionsInput extends CommonInput {
   /** Index of the layer that gets the current-point dot, if any. */
   latestDotLayer: number;
+  /** Moves the chart's draggable points. */
+  dragging?: {
+    drag: () => ChartDrag | undefined;
+    onStart: (range: TimeRange) => void;
+    onEnd: () => void;
+  };
 }
 
 export interface StripOptionsInput extends CommonInput {
@@ -134,7 +143,15 @@ function series(
   ];
 }
 
-const xScale: uPlot.Scale = { time: false, range: TIME_RANGE };
+const xScale = (adjust: ((fitted: TimeRange) => TimeRange) | undefined): uPlot.Scale => ({
+  time: false,
+  range: adjust
+    ? (u, min, max, scale) => {
+        const [from, to] = adjust(TIME_RANGE(u, min, max, scale) as [number, number]);
+        return [from, to];
+      }
+    : TIME_RANGE,
+});
 
 /** With no RoR axis, both plots keep the same room for the last time label, so they still line up. */
 const NO_AXIS_RIGHT_PX = 24;
@@ -151,6 +168,8 @@ export function buildChartOptions({
   colors,
   rightAxis,
   onHover,
+  adjustTimeRange,
+  dragging,
 }: ChartOptionsInput): uPlot.Options {
   const axis = axisFactory(colors);
   const hover = hoverCursor(onHover);
@@ -160,7 +179,11 @@ export function buildChartOptions({
     legend: { show: false },
     cursor: hover.cursor,
     ...noAxisGutter(rightAxis),
-    scales: { x: xScale, temperature: { range: TEMPERATURE_RANGE }, ror: { range: ROR_RANGE } },
+    scales: {
+      x: xScale(adjustTimeRange),
+      temperature: { range: TEMPERATURE_RANGE },
+      ror: { range: ROR_RANGE },
+    },
     axes: [
       {
         ...axis('x', SIDE.bottom, (_u, ticks) => ticks.map(formatClock), true),
@@ -182,11 +205,21 @@ export function buildChartOptions({
     series: series(layers, colors),
     hooks: {
       ...hover.hooks,
+      ...(dragging
+        ? {
+            ready: [
+              (u: uPlot) => {
+                attachDrag(u, dragging);
+              },
+            ],
+          }
+        : {}),
       draw: [
         (u) => {
           drawMarkers(u, markers(), colors, { labels: true });
           const layer = layers[latestDotLayer];
           if (layer) drawLatestDot(u, latestDotLayer + 1, layer, colors);
+          drawDragHandles(u, dragging?.drag(), colors);
         },
       ],
     },
@@ -203,6 +236,7 @@ export function buildStripOptions({
   rightAxis,
   stepped,
   onHover,
+  adjustTimeRange,
 }: StripOptionsInput): uPlot.Options {
   const axis = axisFactory(colors);
   const hover = hoverCursor(onHover);
@@ -212,7 +246,7 @@ export function buildStripOptions({
     legend: { show: false },
     cursor: hover.cursor,
     ...noAxisGutter(rightAxis),
-    scales: { x: xScale, output: { range: OUTPUT_RANGE } },
+    scales: { x: xScale(adjustTimeRange), output: { range: OUTPUT_RANGE } },
     axes: [
       // Same time scale as the chart above; its labels are the chart's.
       { scale: 'x', show: false },

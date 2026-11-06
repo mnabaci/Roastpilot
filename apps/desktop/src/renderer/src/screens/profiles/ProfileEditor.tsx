@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useSettings } from '../../stores/use-stores';
 import { useProfileLocked } from '../roast/use-active-profile';
 import { CurvePointsTable } from './CurvePointsTable';
+import { movePoint } from './draft-edits';
 import { ProfileActions } from './ProfileActions';
 import { isStepProfile, type ProfileDraft } from './profile-draft';
 import { profilePreview } from './profile-preview';
@@ -36,6 +37,7 @@ export function ProfileEditor({
   const active = useSettings((s) => s.settings.autoProfile) === entry.profile.id;
   const locked = useProfileLocked();
   const readOnly = entry.builtIn;
+  const [copied, setCopied] = useState<string>();
   // While a cell has a problem the chart keeps the last profile that worked.
   const [shown, setShown] = useState(valid ?? entry.profile);
   if (valid && valid !== shown) setShown(valid);
@@ -43,6 +45,15 @@ export function ProfileEditor({
   const set = (part: Partial<ProfileDraft>) => {
     change({ ...draft, ...part });
   };
+  const curveDrag =
+    valid && !readOnly && !isStepProfile(entry.profile)
+      ? {
+          points: valid.curve.slice(1).map((p) => ({ t: p.tS, v: p.c })),
+          onMove: (index: number, to: { t: number; v: number }) => {
+            change(movePoint(draft, valid, index, to));
+          },
+        }
+      : undefined;
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-5">
       <div className="flex flex-wrap items-end gap-3">
@@ -62,6 +73,7 @@ export function ProfileEditor({
           active={active}
           locked={locked}
           onSelect={onSelect}
+          onCopied={setCopied}
         />
       </div>
       <p className="flex flex-wrap items-center gap-2 text-label text-ink-muted">
@@ -71,6 +83,7 @@ export function ProfileEditor({
         {entry.profile.needsCalibration ? <span>Needs calibration</span> : null}
         {readOnly ? <span>· Duplicate it to change it</span> : null}
         {active && locked ? <span>· Save waits until Drop: Auto is running this one</span> : null}
+        {copied ? <span>· {copied}</span> : null}
       </p>
       {errors.name ? (
         <p role="alert" className="text-label text-critical-text">
@@ -101,7 +114,13 @@ export function ProfileEditor({
         readOnly={readOnly}
         onChange={change}
       />
-      <RoastChart title="Preview" height={200} layers={preview.layers} markers={preview.markers} />
+      <RoastChart
+        title="Preview"
+        height={200}
+        layers={preview.layers}
+        markers={preview.markers}
+        drag={curveDrag}
+      />
       {isStepProfile(entry.profile) ? null : (
         <CurvePointsTable draft={draft} errors={errors} readOnly={readOnly} onChange={change} />
       )}

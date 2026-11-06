@@ -10,8 +10,9 @@ import {
   SqliteRoastRepository,
 } from '@roastpilot/storage';
 import { IPC_CHANNELS } from '@roastpilot/shared';
-import { app, BrowserWindow, Menu, powerMonitor, powerSaveBlocker, shell } from 'electron';
+import { app, BrowserWindow, dialog, Menu, powerMonitor, powerSaveBlocker, shell } from 'electron';
 import { randomUUID } from 'node:crypto';
+import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { buildAppMenu } from './app-menu';
 import { createAppServices } from './app-services';
@@ -24,6 +25,7 @@ import {
   unavailableRepository,
   unavailableRoasters,
 } from './history/unavailable-repository';
+import { createRoastFiles } from './history/roast-files';
 import { broadcast, registerIpcHandlers, registerIpcListener } from './ipc';
 import { createIpcHandlers, handleRendererLog, withErrorLogging } from './ipc-handlers';
 import { createMainWindow, devIcon } from './main-window';
@@ -164,6 +166,28 @@ app
           roast,
           settings,
           history,
+          roastFiles: createRoastFiles({
+            history,
+            chooseExportPath: async () => {
+              const { canceled, filePath } = await dialog.showSaveDialog({
+                title: 'Export roasts',
+                defaultPath: 'roastpilot-roasts.csv',
+                filters: [{ name: 'CSV', extensions: ['csv'] }],
+              });
+              return canceled ? undefined : filePath;
+            },
+            chooseImportPath: async () => {
+              const { canceled, filePaths } = await dialog.showOpenDialog({
+                title: 'Import an Artisan roast',
+                properties: ['openFile'],
+                filters: [{ name: 'Artisan roast', extensions: ['alog'] }],
+              });
+              return canceled ? undefined : filePaths[0];
+            },
+            readText: (path) => readFile(path, 'utf8'),
+            writeText: (path, text) => writeFile(path, text, 'utf8'),
+            logger: logger.child('history'),
+          }),
           pilot,
           profiles,
           roasters,

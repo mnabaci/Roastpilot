@@ -15,6 +15,7 @@ export function ProfileActions({
   active,
   locked,
   onSelect,
+  onCopied,
 }: {
   entry: ProfileEntry;
   state: ProfileDraftState;
@@ -22,6 +23,7 @@ export function ProfileActions({
   /** Auto is running a profile: the choice, and the one it runs, wait until Drop. */
   locked: boolean;
   onSelect: (id: string) => void;
+  onCopied: (message: string) => void;
 }) {
   const { api, stores, logger } = useDeps();
   const run = useRun();
@@ -29,7 +31,6 @@ export function ProfileActions({
   const [problem, setProblem] = useState<string>();
   const { id } = entry.profile;
   const others = useRoasters((s) => s.roasters).filter((r) => !r.active);
-  const [copied, setCopied] = useState<string>();
   const refresh = async () => {
     stores.auto.setState({ profiles: await api.listProfiles() });
   };
@@ -71,7 +72,7 @@ export function ProfileActions({
         return;
       }
       setProblem(undefined);
-      setCopied(`Copied to ${name} · needs calibration there`);
+      onCopied(`Copied to ${name} · needs calibration there`);
     });
   };
   const remove = () => {
@@ -85,60 +86,62 @@ export function ProfileActions({
       await refresh();
     });
   };
+  // The problem is outside the buttons' box: its width would squeeze the Name field beside them.
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {state.edited ? (
-        <>
-          <Button variant="primary" disabled={!state.valid || (active && locked)} onClick={save}>
-            Save
-          </Button>
-          <Button variant="ghost" onClick={state.discard}>
-            Discard
-          </Button>
-        </>
-      ) : (
-        <>
-          {active ? null : (
-            <Button
-              variant="primary"
-              disabled={locked}
-              onClick={() => {
-                saveSettings({ autoProfile: id });
-              }}
-            >
-              Use for Auto
+    <>
+      <div className="flex flex-wrap items-center gap-2">
+        {state.edited ? (
+          <>
+            <Button variant="primary" disabled={!state.valid || (active && locked)} onClick={save}>
+              Save
             </Button>
-          )}
-          <Button variant="secondary" onClick={duplicate}>
-            Duplicate
-          </Button>
-          {others.map((roaster) => (
-            <Button
-              key={roaster.id}
-              variant="ghost"
-              onClick={() => {
-                copyTo(roaster.id, roaster.name);
-              }}
-            >
-              Copy to {roaster.name}
+            <Button variant="ghost" onClick={state.discard}>
+              Discard
             </Button>
-          ))}
-          {entry.builtIn || (active && locked) ? null : (
-            <ConfirmInline
-              label="Delete"
-              question="Delete this profile? · saved roasts keep their copy"
-              confirmLabel="Delete"
-              onConfirm={remove}
-            />
-          )}
-        </>
-      )}
-      {copied ? <p className="w-full text-label text-ink-muted">{copied}</p> : null}
+          </>
+        ) : (
+          <>
+            {active ? null : (
+              <Button
+                variant="primary"
+                disabled={locked}
+                onClick={() => {
+                  saveSettings({ autoProfile: id });
+                }}
+              >
+                Use for Auto
+              </Button>
+            )}
+            <Button variant="secondary" onClick={duplicate}>
+              Duplicate
+            </Button>
+            {others.map((roaster) => (
+              <Button
+                key={roaster.id}
+                variant="ghost"
+                onClick={() => {
+                  copyTo(roaster.id, roaster.name);
+                }}
+              >
+                Copy to {roaster.name}
+              </Button>
+            ))}
+            {entry.builtIn || (active && locked) ? null : (
+              <ConfirmInline
+                label="Delete"
+                question="Delete this profile? · saved roasts keep their copy"
+                confirmLabel="Delete"
+                onConfirm={remove}
+              />
+            )}
+          </>
+        )}
+      </div>
       {problem ? (
         <p role="alert" className="w-full text-label text-critical-text">
           {problem}
         </p>
       ) : null}
-    </div>
+    </>
   );
 }

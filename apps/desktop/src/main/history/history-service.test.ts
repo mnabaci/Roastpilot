@@ -29,6 +29,7 @@ function setup(repository = unavailableRepository('disk gone')) {
   const onResultSaved = vi.fn();
   const service = new HistoryService({
     repository,
+    beanNames: () => Promise.resolve(new Map([[4, 'Yirgacheffe']])),
     isRecording: (id) => id === 9,
     onDeleted,
     onResultSaved,

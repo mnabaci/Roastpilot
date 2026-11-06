@@ -78,6 +78,10 @@ function setup() {
         return Promise.resolve(ok(undefined));
       },
     },
+    roastFiles: {
+      exportCsv: () => Promise.resolve(ok({ status: 'cancelled' })),
+      importArtisan: () => Promise.resolve(ok({ status: 'cancelled' })),
+    },
     pilot: {
       chargeSoon: (nowMs) => {
         calls.push(['chargeSoon', nowMs]);
@@ -214,6 +218,8 @@ describe('createIpcHandlers', () => {
         IPC_CHANNELS.listRoasts,
         IPC_CHANNELS.getRoast,
         IPC_CHANNELS.deleteRoast,
+        IPC_CHANNELS.exportRoastsCsv,
+        IPC_CHANNELS.importArtisan,
         IPC_CHANNELS.autoChargeSoon,
         IPC_CHANNELS.autoResume,
         IPC_CHANNELS.listProfiles,

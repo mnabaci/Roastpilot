@@ -7,6 +7,7 @@ import { RoastResultForm } from '../../features/RoastResultForm';
 import { useBeans, useRoast, useSettings } from '../../stores/use-stores';
 import { DeleteRoast } from './DeleteRoast';
 import { MakeProfile } from './MakeProfile';
+import { RoastFileActions } from './RoastFileActions';
 import { ALL, filterRoasts, MANUAL, NO_BEAN, NO_FILTER, profileOptions } from './roast-filter';
 import { inProgressId, roastRows, roastTitle, selectionAfterDelete } from './history-format';
 import { SavedRoastChart } from './SavedRoastChart';
@@ -65,6 +66,7 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
         <p className="text-body text-ink-muted">
           No roasts yet · each roast saves itself from charge
         </p>
+        <RoastFileActions canExport={false} onImported={setPicked} />
       </main>
     );
 
@@ -84,6 +86,7 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
             Favourites
           </Button>
         </div>
+        <RoastFileActions canExport onImported={setPicked} />
         <div className="grid grid-cols-2 gap-2">
           <SelectField
             label="Bean"

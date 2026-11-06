@@ -180,6 +180,10 @@ describe('ProfilesScreen', () => {
     );
     await userEvent.click(screen.getByRole('button', { name: 'Copy to Simulator' }));
     expect(api.copyProfile).toHaveBeenCalledWith({ id: 'light-steps', roasterId: 2 });
-    expect(await screen.findByText(/needs calibration there/)).toBeInTheDocument();
+    const message = await screen.findByText(/needs calibration there/);
+    // Beside the Name field, the buttons' box must not grow with the message.
+    const buttons = screen.getByRole('button', { name: 'Copy to Simulator' }).parentElement;
+    expect(buttons).not.toContainElement(message);
+    expect(screen.getByText('Built-in').closest('p')).toContainElement(message);
   });
 });
