@@ -17,6 +17,8 @@ import { RoastResultForm } from '../../features/RoastResultForm';
 import { useBeans, useRoast, useSettings } from '../../stores/use-stores';
 import { useMakeProfile } from './use-make-profile';
 import { useRoastFiles } from './use-roast-files';
+import { useSelection } from './use-selection';
+import { BeanLink } from './BeanLink';
 import { ALL, filterRoasts, MANUAL, NO_BEAN, NO_FILTER, profileOptions } from './roast-filter';
 import { inProgressId, roastRows, roastTitle, selectionAfterDelete } from './history-format';
 import { SavedRoastChart } from './SavedRoastChart';
@@ -46,6 +48,7 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
   const list = roasts ?? [];
   const liveId = inProgressId(list, livePhase);
   const listed = filterRoasts(list, filter);
+  const selection = useSelection(listed.map((r) => r.id));
   // The picked roast while it's listed, else the newest there.
   const selectedId = listed.some((r) => r.id === picked) ? picked : listed[0]?.id;
   const others = list.filter((r) => r.id !== selectedId);
@@ -86,9 +89,14 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
         <p className="text-body text-ink-muted">
           No roasts yet · each roast saves itself from charge
         </p>
-        <Button size="sm" onClick={files.importAlog}>
-          Import from Artisan
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" onClick={files.importRoasts}>
+            Import a Roastpilot file
+          </Button>
+          <Button size="sm" variant="ghost" onClick={files.importAlog}>
+            Import from Artisan
+          </Button>
+        </div>
         {fileMessage}
       </main>
     );
@@ -102,8 +110,21 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
         <Menu
           label="More for History"
           items={[
-            { label: 'Export CSV', onSelect: files.exportCsv },
+            {
+              label: 'Export all · Roastpilot file',
+              onSelect: () => {
+                files.exportRoasts({ format: 'roastpilot' });
+              },
+            },
+            {
+              label: 'Export all · CSV',
+              onSelect: () => {
+                files.exportRoasts({ format: 'csv' });
+              },
+            },
+            { label: 'Import a Roastpilot file', onSelect: files.importRoasts },
             { label: 'Import from Artisan', onSelect: files.importAlog },
+            { label: 'Select', onSelect: selection.start },
           ]}
         />
       }
@@ -157,6 +178,28 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
               }}
             />
           </div>
+          {selection.selecting ? (
+            // While selecting, the bar says how many and what can be done with them.
+            <div className="flex items-center gap-2" role="toolbar" aria-label="Selected roasts">
+              <span className="mr-auto text-label text-ink-muted" aria-live="polite">
+                {selection.checked.size} selected
+              </span>
+              <Menu
+                label="Export selected"
+                text="Export"
+                items={(['roastpilot', 'csv'] as const).map((format) => ({
+                  label: format === 'csv' ? 'CSV' : 'Roastpilot file',
+                  disabled: selection.checked.size === 0,
+                  onSelect: () => {
+                    files.exportRoasts({ format, ids: [...selection.checked] });
+                  },
+                }))}
+              />
+              <Button size="sm" variant="ghost" onClick={selection.done}>
+                Done
+              </Button>
+            </div>
+          ) : null}
           <RoastList
             label="Saved roasts"
             items={roastRows(listed, livePhase, {}, beans)}
@@ -165,6 +208,9 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
               setPicked(id);
               setDeleteError(undefined);
             }}
+            {...(selection.selecting
+              ? { checked: selection.checked, onCheck: selection.check }
+              : {})}
           />
         </>
       }
@@ -211,6 +257,18 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
                 label="More for this roast"
                 items={[
                   {
+                    label: 'Export · Roastpilot file',
+                    onSelect: () => {
+                      files.exportRoasts({ format: 'roastpilot', ids: [selectedId] });
+                    },
+                  },
+                  {
+                    label: 'Export · CSV',
+                    onSelect: () => {
+                      files.exportRoasts({ format: 'csv', ids: [selectedId] });
+                    },
+                  },
+                  {
                     label: 'Delete',
                     destructive: true,
                     onSelect: () => {
@@ -250,6 +308,7 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
         ) : selected.status === 'loaded' ? (
           <>
             <SavedRoastStats roast={selected.detail} />
+            {selectedId === liveId ? null : <BeanLink roast={selected.detail} beans={beans} />}
             <RoastResultForm key={selected.detail.id} roast={selected.detail} />
             <SavedRoastChart
               detail={selected.detail}
