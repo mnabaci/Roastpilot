@@ -1,5 +1,5 @@
 import type { RoastId } from '@roastpilot/shared';
-import { Button, EventTable, RoastList, SelectField } from '@roastpilot/ui';
+import { Button, cn, EventTable, RoastList, SelectField, SidebarLayout } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
@@ -71,59 +71,61 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
     );
 
   return (
-    <main className="grid min-h-0 flex-1 grid-cols-[auto_1fr] gap-6 p-6">
-      <div className="flex min-h-0 w-72 flex-col gap-3">
-        <div className="flex items-center justify-between gap-2">
-          <h1 className="text-title">History</h1>
+    <SidebarLayout
+      title="History"
+      contentLabel="Roast"
+      sidebar={
+        <>
+          <RoastFileActions canExport onImported={setPicked} />
           <Button
             size="sm"
             aria-pressed={filter.favourites}
-            className={filter.favourites ? 'bg-heat-tint text-heat' : undefined}
+            className={cn('self-start', filter.favourites && 'bg-heat-tint text-heat')}
             onClick={() => {
               setFilter({ ...filter, favourites: !filter.favourites });
             }}
           >
             Favourites
           </Button>
-        </div>
-        <RoastFileActions canExport onImported={setPicked} />
-        <div className="grid grid-cols-2 gap-2">
-          <SelectField
-            label="Bean"
-            value={filter.bean}
-            options={[
-              { value: ALL, label: 'All' },
-              { value: NO_BEAN, label: 'No bean' },
-              ...beans.map((b) => ({ value: String(b.id), label: b.name })),
-            ]}
-            onChange={(bean) => {
-              setFilter({ ...filter, bean });
+          <div className="grid grid-cols-2 gap-2">
+            <SelectField
+              label="Bean"
+              value={filter.bean}
+              options={[
+                { value: ALL, label: 'All' },
+                { value: NO_BEAN, label: 'No bean' },
+                ...beans.map((b) => ({ value: String(b.id), label: b.name })),
+              ]}
+              onChange={(bean) => {
+                setFilter({ ...filter, bean });
+              }}
+            />
+            <SelectField
+              label="Profile"
+              value={filter.profile}
+              options={[
+                { value: ALL, label: 'All' },
+                { value: MANUAL, label: 'Manual' },
+                ...profileOptions(list),
+              ]}
+              onChange={(profile) => {
+                setFilter({ ...filter, profile });
+              }}
+            />
+          </div>
+          <RoastList
+            label="Saved roasts"
+            items={roastRows(listed, livePhase, {}, beans)}
+            selectedId={selectedId}
+            onSelect={(id) => {
+              setPicked(id);
+              setDeleteError(undefined);
             }}
           />
-          <SelectField
-            label="Profile"
-            value={filter.profile}
-            options={[
-              { value: ALL, label: 'All' },
-              { value: MANUAL, label: 'Manual' },
-              ...profileOptions(list),
-            ]}
-            onChange={(profile) => {
-              setFilter({ ...filter, profile });
-            }}
-          />
-        </div>
-        <RoastList
-          label="Saved roasts"
-          items={roastRows(listed, livePhase, {}, beans)}
-          selectedId={selectedId}
-          onSelect={(id) => {
-            setPicked(id);
-            setDeleteError(undefined);
-          }}
-        />
-      </div>
-      <section aria-label="Roast" className="flex min-h-0 min-w-0 flex-col gap-5 overflow-y-auto">
+        </>
+      }
+    >
+      <div className="flex flex-col gap-5">
         <div className="flex flex-wrap items-end gap-4">
           <h2 className="mr-auto self-center text-heading">
             {selectedId === undefined
@@ -187,7 +189,7 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
         ) : (
           <p className="text-label text-ink-muted">Loading…</p>
         )}
-      </section>
-    </main>
+      </div>
+    </SidebarLayout>
   );
 }
