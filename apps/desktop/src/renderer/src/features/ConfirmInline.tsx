@@ -14,6 +14,8 @@ export interface ConfirmInlineProps {
   stacked?: boolean;
   /** How the asking button looks: quiet by default, `secondary` for the one normal stop. */
   variant?: 'ghost' | 'secondary';
+  /** Deletes something: both buttons get red text (`critical-text`), never a red fill. */
+  destructive?: boolean;
   className?: string;
 }
 
@@ -26,8 +28,10 @@ export function ConfirmInline({
   onConfirm,
   stacked = false,
   variant = 'ghost',
+  destructive = false,
   className,
 }: ConfirmInlineProps) {
+  const danger = destructive && 'text-critical-text';
   const [asking, setAsking] = useState(false);
   // In a panel, the same size as the flow buttons around it.
   const size = stacked ? 'md' : 'sm';
@@ -37,7 +41,7 @@ export function ConfirmInline({
         variant={variant}
         size={size}
         icon={icon}
-        className={cn(stacked && 'w-full', className)}
+        className={cn(stacked && 'w-full', danger, className)}
         onClick={() => {
           setAsking(true);
         }}
@@ -55,6 +59,7 @@ export function ConfirmInline({
       <div className={cn('flex gap-2', stacked && '*:flex-1')}>
         <Button
           size={size}
+          className={cn(danger)}
           onClick={() => {
             setAsking(false);
             onConfirm();

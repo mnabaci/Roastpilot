@@ -129,6 +129,7 @@ export function ProfileActions({
             {entry.builtIn || (active && locked) ? null : (
               <ConfirmInline
                 label="Delete"
+                destructive
                 question="Delete this profile? · saved roasts keep their copy"
                 confirmLabel="Delete"
                 onConfirm={remove}
