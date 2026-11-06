@@ -44,4 +44,16 @@ describe('safety store', () => {
     expect(state).toEqual({ locked: true, tripped: ['emergency-stop'] });
     expect(applySafetyEvent(state, { kind: 'unlocked', atMs: 2 })).toEqual(none);
   });
+
+  it('a computer-sleep stop also ends with the lock, so its banner never outlives Acknowledge', () => {
+    const sleep = {
+      kind: 'tripped',
+      rule: 'computer-sleep',
+      action: 'safe-stop',
+      atMs: 1,
+    } as const;
+    const state = applySafetyEvent(none, sleep);
+    expect(state).toEqual({ locked: true, tripped: ['computer-sleep'] });
+    expect(applySafetyEvent(state, { kind: 'unlocked', atMs: 2 })).toEqual(none);
+  });
 });
