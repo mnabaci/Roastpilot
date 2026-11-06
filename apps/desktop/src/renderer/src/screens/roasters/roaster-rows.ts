@@ -40,9 +40,9 @@ function rowFor(target: ConnectTarget, ports: readonly SerialPortInfo[]): Roaste
 }
 
 /**
- * Which roasters Settings lists (docs/spec/ui.md, Settings): only the one in use while connected;
- * the remembered one until you choose another; otherwise likely roasters and the Simulator, with
- * the other ports behind "Show all ports".
+ * Which ports a roaster's page lists (docs/spec/ui.md, Roasters screen): only the one in use while
+ * connected; the remembered one until you choose another; otherwise likely roasters, with the other
+ * ports behind "Show all ports", or every port when none looks like a roaster.
  */
 export function roasterRows(
   ports: readonly SerialPortInfo[],
@@ -70,7 +70,8 @@ export function roasterRows(
   if (view.inUse) return { ...base, rows: [rowFor(view.inUse, ports)], hidden: 0 };
   if (view.saved && !view.choosing)
     return { ...base, rows: [rowFor(view.saved, ports)], hidden: 0 };
-  const listed = view.showAll ? ports : ports.filter(isLikelyRoaster);
+  // With no likely roaster plugged in, a filtered list would be empty: show every port at once.
+  const listed = view.showAll || !anyRoaster ? ports : ports.filter(isLikelyRoaster);
   const rows = [...listed.map(portRow), SIMULATOR_ROW];
   // The remembered port stays on the list, marked Not found, so the pick is never invisible.
   if (saved && !rows.some((row) => sameTarget(saved, row.target)))
