@@ -40,9 +40,11 @@ describe('RoastersScreen', () => {
 
     it('Use this roaster makes it active without connecting', async () => {
       const { api } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
-      expect(screen.queryByRole('button', { name: 'Use this roaster' })).toBeNull();
+      // The active roaster has nothing to switch to, so no ⋯ at all.
+      expect(screen.queryByRole('button', { name: /^More for / })).toBeNull();
       await userEvent.click(sidebar().getByRole('button', { name: /^Simulator/ }));
-      await userEvent.click(screen.getByRole('button', { name: 'Use this roaster' }));
+      await userEvent.click(screen.getByRole('button', { name: 'More for Simulator' }));
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Use this roaster' }));
       expect(api.setActiveRoaster).toHaveBeenCalledWith(SIMULATOR.id);
       expect(api.connect).not.toHaveBeenCalled();
     });
@@ -50,7 +52,7 @@ describe('RoastersScreen', () => {
     it('offers no switch while a roaster is in use', async () => {
       renderApp(<RoastersScreen />, { connection: CONNECTED, roasters: roastersWith(PORT) });
       await userEvent.click(sidebar().getByRole('button', { name: /^Simulator/ }));
-      expect(screen.queryByRole('button', { name: 'Use this roaster' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'More for Simulator' })).toBeNull();
     });
 
     it('adds a roaster, then opens it', async () => {
@@ -233,7 +235,7 @@ describe('RoastersScreen', () => {
       expect(screen.getByText('Disconnect Skywalker to switch')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Connect' })).toBeNull();
       expect(screen.getByRole('textbox', { name: 'Max temp' })).toBeDisabled();
-      expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
+      expect(screen.queryByRole('button', { name: /^More for / })).toBeNull();
     });
   });
 
@@ -289,16 +291,28 @@ describe('RoastersScreen', () => {
       });
       renderApp(<RoastersScreen />, { roasters: roastersWith(null) }, api);
       await userEvent.click(sidebar().getByRole('button', { name: /^Simulator/ }));
-      await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
-      await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+      await userEvent.click(screen.getByRole('button', { name: 'More for Simulator' }));
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+      await userEvent.click(
+        within(screen.getByRole('alertdialog', { name: 'Delete this roaster?' })).getByRole(
+          'button',
+          { name: 'Delete' },
+        ),
+      );
       expect(await screen.findByRole('alert')).toHaveTextContent('saved roasts or profiles');
     });
 
     it('after a delete, opens the active roaster', async () => {
       renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
       await userEvent.click(sidebar().getByRole('button', { name: /^Simulator/ }));
-      await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
-      await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+      await userEvent.click(screen.getByRole('button', { name: 'More for Simulator' }));
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+      await userEvent.click(
+        within(screen.getByRole('alertdialog', { name: 'Delete this roaster?' })).getByRole(
+          'button',
+          { name: 'Delete' },
+        ),
+      );
       expect(
         await screen.findByRole('heading', { level: 2, name: 'Skywalker' }),
       ).toBeInTheDocument();

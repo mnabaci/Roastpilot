@@ -1,5 +1,5 @@
 import type { LogLevel, LogRecord } from '@roastpilot/shared';
-import { Badge, Button, TextField } from '@roastpilot/ui';
+import { Badge, FilterSelect, Menu, TextField } from '@roastpilot/ui';
 import { FolderOpen } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
@@ -53,21 +53,26 @@ export function LogsScreen() {
       <div className="flex items-center gap-3">
         <h1 className="text-title">Logs</h1>
         {day === today ? <Badge tone="air">Live</Badge> : null}
-        <Button
+        <Menu
+          label="More for Logs"
           className="ml-auto"
-          icon={<FolderOpen aria-hidden="true" />}
-          onClick={() => {
-            run('logs.open-folder-failed', () => api.openLogFolder());
-          }}
-        >
-          Open log folder
-        </Button>
+          items={[
+            {
+              label: 'Open log folder',
+              icon: <FolderOpen aria-hidden="true" />,
+              onSelect: () => {
+                run('logs.open-folder-failed', () => api.openLogFolder());
+              },
+            },
+          ]}
+        />
       </div>
-      <ChipGroup
+      <FilterSelect
         label="Day"
-        chips={days.map((d) => ({ id: d, label: dayLabel(d, today) }))}
-        isOn={(d) => d === day}
-        onToggle={(d) => {
+        className="self-start"
+        value={day}
+        options={days.map((d) => ({ value: d, label: dayLabel(d, today) }))}
+        onChange={(d) => {
           setDay(d);
           setScopes(new Set());
         }}

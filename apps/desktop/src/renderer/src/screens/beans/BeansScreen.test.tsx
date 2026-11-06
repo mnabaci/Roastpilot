@@ -1,4 +1,5 @@
 import {
+  err,
   ok,
   READY_ROAST,
   type AutoProfile,
@@ -107,7 +108,8 @@ describe('BeansScreen', () => {
   it('adjusts stock by hand', async () => {
     const user = userEvent.setup();
     const { api } = show();
-    await user.click(screen.getByRole('button', { name: 'Adjust stock' }));
+    await user.click(screen.getByRole('button', { name: `More for ${BEAN.name}` }));
+    await user.click(screen.getByRole('menuitem', { name: 'Adjust stock' }));
     const form = within(screen.getByRole('region', { name: 'Adjust stock' }));
     const green = form.getByLabelText('Green');
     await user.clear(green);
@@ -157,7 +159,8 @@ describe('BeansScreen', () => {
       },
       api,
     );
-    await user.click(screen.getByRole('button', { name: 'Make a profile for this bean' }));
+    await user.click(screen.getByRole('button', { name: `More for ${BEAN.name}` }));
+    await user.click(screen.getByRole('menuitem', { name: 'Make a profile' }));
     await waitFor(() => {
       expect(api.updateBean).toHaveBeenCalledWith(
         expect.objectContaining({ id: 1, profileId: 'custom-9' }),
@@ -179,18 +182,35 @@ describe('BeansScreen', () => {
     const user = userEvent.setup();
     const { api } = show(fakeApi(), [BEAN, { ...BEAN, id: 2, name: 'Old', archived: true }]);
     expect(screen.queryByTitle('Old')).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Show archived' }));
+    await user.click(screen.getByRole('button', { name: 'More for Beans' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Show archived' }));
     expect(screen.getByTitle('Old')).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: 'Archive' }));
+    await user.click(screen.getByRole('button', { name: `More for ${BEAN.name}` }));
+    await user.click(screen.getByRole('menuitem', { name: 'Archive' }));
     await waitFor(() => {
       expect(api.setBeanArchived).toHaveBeenCalledWith({ id: 1, archived: true });
     });
   });
 
+  it('says so when archiving fails', async () => {
+    const user = userEvent.setup();
+    show(
+      fakeApi({
+        setBeanArchived: vi.fn(() =>
+          Promise.resolve(err({ kind: 'storage-failed' as const, message: 'locked' })),
+        ),
+      }),
+    );
+    await user.click(screen.getByRole('button', { name: `More for ${BEAN.name}` }));
+    await user.click(screen.getByRole('menuitem', { name: 'Archive' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't change that");
+  });
+
   it('has the calculator on its own', async () => {
     const user = userEvent.setup();
     show();
-    await user.click(screen.getByRole('button', { name: 'Batch calculator' }));
+    await user.click(screen.getByRole('button', { name: 'More for Beans' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Batch calculator' }));
     await user.type(screen.getByLabelText('Order weight'), '1000');
     expect(screen.getByText('2 × 375 g + 250 g')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Pick' })).toBeNull();
