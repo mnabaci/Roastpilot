@@ -43,6 +43,7 @@ export default defineConfig(
       '!packages/ui/.storybook',
       'firmware/**',
       'packages/ui/src/styles/**',
+      '.remember/**',
     ],
   },
 
