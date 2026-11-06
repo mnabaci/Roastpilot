@@ -3,7 +3,7 @@ import { Button, NumberField, SelectField, TextField } from '@roastpilot/ui';
 import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
-import { Choice } from '../settings/Choice';
+import { Choice } from '../../features/Choice';
 import { fromBeanDraft, toBeanDraft, type BeanDraft } from './bean-draft';
 
 const PROCESSES: readonly { value: BeanProcess; label: string }[] = [
