@@ -1,0 +1,9 @@
+/** The Settings sections, in sidebar order (docs/spec/ui.md, Settings). */
+export const SETTINGS_SECTIONS = [
+  { id: 'controls', label: 'Controls' },
+  { id: 'roast', label: 'Roast' },
+  { id: 'auto', label: 'Auto' },
+  { id: 'chart', label: 'Chart' },
+] as const;
+
+export type SettingsSection = (typeof SETTINGS_SECTIONS)[number]['id'];

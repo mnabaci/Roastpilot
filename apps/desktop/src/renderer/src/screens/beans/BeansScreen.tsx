@@ -1,5 +1,6 @@
 import type { BeanId } from '@roastpilot/shared';
 import { Badge, Button, NavList, SidebarLayout } from '@roastpilot/ui';
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useBeans } from '../../stores/use-stores';
 import { useRoastList } from '../history/use-roast-list';
@@ -52,7 +53,10 @@ export function BeansScreen({
             onOpen={showBean}
           />
           <Button
+            variant="ghost"
             className="justify-start"
+            icon={<Plus aria-hidden="true" />}
+            aria-current={right.kind === 'add' ? 'true' : undefined}
             onClick={() => {
               setRight({ kind: 'add' });
             }}

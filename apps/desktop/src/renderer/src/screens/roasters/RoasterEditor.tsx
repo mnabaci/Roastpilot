@@ -55,11 +55,11 @@ const GROUPS: readonly {
 export function RoasterEditor({
   roaster,
   locked,
-  onClose,
+  onDeleted,
 }: {
   roaster: Roaster;
   locked: boolean;
-  onClose: () => void;
+  onDeleted: () => void;
 }) {
   const { api, logger } = useDeps();
   const run = useRun();
@@ -87,7 +87,7 @@ export function RoasterEditor({
     run('roasters.delete-failed', async () => {
       const result = await api.deleteRoaster(roaster.id);
       if (result.ok) {
-        onClose();
+        onDeleted();
         return;
       }
       logger.warn('roasters.refused', { ...result.error });
@@ -143,11 +143,7 @@ export function RoasterEditor({
           >
             Discard
           </Button>
-        ) : (
-          <Button variant="ghost" onClick={onClose}>
-            Close
-          </Button>
-        )}
+        ) : null}
         {roaster.active || locked ? null : (
           <ConfirmInline
             label="Delete"

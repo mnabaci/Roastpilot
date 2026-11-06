@@ -1,5 +1,5 @@
 import type { ConnectionState, Screen } from '@roastpilot/shared';
-import { Badge, Button, Mark } from '@roastpilot/ui';
+import { Button, cn, Mark } from '@roastpilot/ui';
 import { OctagonX } from 'lucide-react';
 import { useConnection, useRoast } from '../stores/use-stores';
 import { useDeps } from './app-context';
@@ -14,11 +14,20 @@ const CONNECTION_LABEL: Readonly<Record<ConnectionState['status'], string>> = {
   lost: 'Connection lost',
 };
 
+/** The Roasters tab's dot: grey off, cyan (air) connected, ember while connecting or lost. */
+const DOT: Readonly<Record<ConnectionState['status'], string>> = {
+  disconnected: 'bg-ink-muted',
+  connecting: 'bg-heat',
+  connected: 'bg-air',
+  lost: 'bg-heat',
+};
+
 const SCREENS: readonly { id: Screen; label: string }[] = [
   { id: 'roast', label: 'Roast' },
   { id: 'history', label: 'History' },
   { id: 'beans', label: 'Beans' },
   { id: 'profiles', label: 'Profiles' },
+  { id: 'roasters', label: 'Roasters' },
   { id: 'settings', label: 'Settings' },
   { id: 'logs', label: 'Logs' },
 ];
@@ -58,24 +67,27 @@ export function TopBar({
             }}
           >
             {label}
+            {id === 'roasters' ? (
+              <span
+                aria-hidden="true"
+                title={CONNECTION_LABEL[status]}
+                className={cn('size-2 rounded-full', DOT[status])}
+              />
+            ) : null}
           </Button>
         ))}
       </nav>
-      <p
-        className="flex items-center gap-2 text-label whitespace-nowrap text-ink-muted"
-        aria-live="polite"
-      >
-        <Badge tone={status === 'connected' ? 'air' : status === 'lost' ? 'heat' : 'neutral'}>
-          {CONNECTION_LABEL[status]}
-        </Badge>
-        {connection.status !== 'disconnected' ? (
-          // The badge says enough on a small window; six tabs leave no room for more.
-          <span className="hidden text-ink lg:inline">{targetLabel(connection.target)}</span>
-        ) : null}
-        {status === 'connected' ? (
-          <span className="hidden lg:inline">· {PHASE_LABEL[phase]}</span>
-        ) : null}
+      {/* The dot is for the eye; this says it to screen readers. */}
+      <p className="sr-only" aria-live="polite">
+        {CONNECTION_LABEL[status]}
       </p>
+      {connection.status !== 'disconnected' ? (
+        // On a wide window the roaster in use and the phase follow the tabs.
+        <p className="hidden items-center gap-2 text-label whitespace-nowrap text-ink-muted lg:flex">
+          <span className="text-ink">{targetLabel(connection.target)}</span>
+          {status === 'connected' ? <span>· {PHASE_LABEL[phase]}</span> : null}
+        </p>
+      ) : null}
       <Button
         variant="danger"
         className="ml-auto whitespace-nowrap"
