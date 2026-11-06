@@ -13,5 +13,6 @@ One file per decision: context, decision, consequences. Add one with the `plan-f
 - [One generic output method on RoasterDriver](0009-generic-driver-outputs.md)
 - [Node's built-in SQLite instead of better-sqlite3](0010-node-sqlite.md)
 - [Profiles as JSON documents, with Auto beside the flow](0011-built-in-profile-as-data.md)
+- [Radix primitives for menus and dialogs](0012-radix-for-menus-and-dialogs.md)
 
 Template: [template.md](template.md)
