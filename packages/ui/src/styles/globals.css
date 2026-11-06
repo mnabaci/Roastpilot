@@ -48,9 +48,21 @@
   --radius: var(--radius-md);
 }
 
+/* Native controls (and the scrollbar's corner) follow the theme, not the system. */
+:root,
+[data-theme='dark'] {
+  color-scheme: dark;
+}
+[data-theme='light'] {
+  color-scheme: light;
+}
+
 @layer base {
   * {
     border-color: var(--border);
+    /* Thin, quiet scrollbars in both themes, never the light system gutter. */
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
   }
   body {
     background: var(--bg);

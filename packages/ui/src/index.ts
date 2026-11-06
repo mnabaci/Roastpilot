@@ -17,3 +17,11 @@ export { Mark, type MarkProps } from './components/Mark';
 export { RoastStrip, type RoastStripNumber, type RoastStripProps } from './components/RoastStrip';
 export { SelectField, type SelectFieldProps } from './components/SelectField';
 export { NumberField, type NumberFieldProps } from './components/NumberField';
+export { Switch, type SwitchProps } from './components/Switch';
+export {
+  SegmentedControl,
+  type SegmentedControlProps,
+  type SegmentedOption,
+} from './components/SegmentedControl';
+export { NavList, type NavListItem, type NavListProps } from './components/NavList';
+export { SidebarLayout, type SidebarLayoutProps } from './components/SidebarLayout';
