@@ -44,8 +44,17 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 - **Hover:** pointing at the chart or the strip draws one dashed line through both and puts the values there in the legends: the time first, then each line's value (`7:42 · Temperature 198.4 °C · RoR 9.1 °C/min`, heater and fan in the strip's legend); a dash where a line has no value. Leaving the chart brings the names back. Same on History, the compared roast included.
 - **Gaps:** readings more than 3 s apart are drawn as a break in every line, never joined.
 - **Connection lost:** sliders show a dash instead of their last values, and the flow panel shows "Reconnecting… · check the cable" with no button until readings are back.
+- **Side panel follows the roast:** it shows only what the moment needs, top to bottom:
+
+  | State                       | Panel                                                                                   |
+  | --------------------------- | --------------------------------------------------------------------------------------- |
+  | Not connected or connecting | The next action (Connect a roaster), then the setup card. No outputs.                   |
+  | Ready, Done                 | The setup card, then the next action (Preheat), then the outputs.                       |
+  | Preheat to Cooling          | The next action, then the setup as one line with Change (ghost only), then the outputs. |
+
+- **Setup card:** Auto / Manual as a segmented control, then bean, batch, profile (Auto) and ghost. Once a roast runs it folds into one line: "Manual · Ethiopia Guji · 375 g · ghost Wed 4 Nov · 14:32", with Change opening the ghost (the only part that can change mid-roast).
 - **Mode switch:** Auto / Manual. In Manual, the coach card sits above the outputs.
-- **Outputs:** heater % and fan %, each with a slider and an Auto/Manual badge.
+- **Outputs:** heater % and fan %, each with a slider. The Auto / Manual badge and Resume auto show only while Auto drives the roast (Preheat until Drop); in a manual roast there is nothing to tell apart. Drum, filter fan and cooling are one row of three labelled switches. With the connection lost they stay, showing dashes.
 - **Buttons:** Preheat, Start (charge), First crack, Drop now, and a red Emergency stop that is always visible (disabled only while no roaster is connected).
 - **After cooling:** roasted weight, rating, star and notes inline in the flow panel, never a dialog, and all skippable; saved as you enter them. They stay until the next Preheat or Clear, and can be changed later in History.
 
