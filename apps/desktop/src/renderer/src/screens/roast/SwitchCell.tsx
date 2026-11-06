@@ -13,8 +13,8 @@ export function SwitchCell({
   onToggle: (on: boolean) => void;
 }) {
   return (
-    <div className="flex flex-col items-start gap-1 rounded-md bg-surface-raised px-3 py-2">
-      <span className="text-label text-ink-muted" aria-hidden="true">
+    <div className="flex flex-1 flex-col items-start gap-1 rounded-md bg-surface-raised px-3 py-2">
+      <span className="whitespace-nowrap text-label text-ink-muted" aria-hidden="true">
         {label}
       </span>
       <Switch aria-label={label} checked={on} disabled={disabled} onChange={onToggle} />
