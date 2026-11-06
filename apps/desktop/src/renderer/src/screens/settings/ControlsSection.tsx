@@ -8,9 +8,13 @@ const LEVELS: readonly { value: ControlsLevel; label: string; hint: string }[] =
   {
     value: 'guided',
     label: 'Guided',
-    hint: 'Heater from Preheat until Drop · the rest any time no roast runs',
+    hint: 'Heater only from Preheat to Drop · fan and cooling locked while the beans cool',
   },
-  { value: 'full', label: 'Full control', hint: 'Every output, any time, cooling switch included' },
+  {
+    value: 'full',
+    label: 'Full control',
+    hint: 'Heater, fan and cooling any time the roaster is connected',
+  },
 ];
 
 /** Guided or Full control (docs/spec/manual-mode.md). */
@@ -20,7 +24,7 @@ export function ControlsSection() {
   const current = LEVELS.find((l) => l.value === level);
   return (
     <SettingCard title="Controls">
-      <SettingRow name="Manual controls" hint={current?.hint ?? ''}>
+      <SettingRow name="When you can use the controls" hint={current?.hint ?? ''}>
         <SegmentedControl
           label="Controls"
           options={LEVELS}

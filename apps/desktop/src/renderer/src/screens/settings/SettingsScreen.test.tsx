@@ -89,7 +89,9 @@ describe('SettingsScreen', () => {
   it('switches between Guided and Full control', async () => {
     const { api, stores } = renderApp(<Settings />);
     expect(radio('Guided', 'Controls')).toBeChecked();
+    expect(screen.getByText(/fan and cooling locked while the beans cool/)).toBeInTheDocument();
     await userEvent.click(radio('Full control', 'Controls'));
+    expect(screen.getByText(/any time the roaster is connected/)).toBeInTheDocument();
     expect(stores.settings.getState().settings.controls).toBe('full');
     expect(api.setSettings).toHaveBeenCalledWith({
       ...DEFAULT_SETTINGS,
