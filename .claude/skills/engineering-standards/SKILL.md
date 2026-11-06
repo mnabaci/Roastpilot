@@ -38,7 +38,7 @@ Read this before touching code. It is the checklist `code-review` holds you to.
 
 - Build from `@roastpilot/ui` components; new ones via `add-component`.
 - Tokens only: Tailwind token classes (`bg-surface`, `text-ink-muted`) or CSS variables. No hex, no arbitrary sizes.
-- One primary action per state, numbers before sentences, one-line hints, no modals during a roast.
+- One primary action per state, numbers before sentences, one-line hints, no modals during a roast except the confirmation dialog (`ConfirmDialog`) after the user's own click.
 - Accessible: real `<button>`/`<input>` + `<label>`, focus ring, 44px targets.
 
 ## 5. Tests
