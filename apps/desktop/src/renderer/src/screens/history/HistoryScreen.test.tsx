@@ -11,6 +11,7 @@ import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { READY_ROAST } from '@roastpilot/shared';
+import { BEAN } from '../../test/beans';
 import { STEPS } from '../../test/profiles';
 import { fakeApi, renderApp } from '../../test/render-app';
 import { HistoryScreen } from './HistoryScreen';
@@ -36,6 +37,7 @@ const summary = (id: number, startedAt: string, over: Partial<RoastSummary> = {}
   notes: null,
   profileId: null,
   profileName: null,
+  imported: false,
   dropTemp: 205.5,
   ...over,
 });
@@ -249,16 +251,67 @@ describe('HistoryScreen', () => {
     expect(await screen.findByText(/Too little to go on/)).toBeInTheDocument();
   });
 
-  it('exports and imports from the ⋯ beside the title, saying how it went', async () => {
+  it('exports all and imports from the ⋯ beside the title, saying how it went', async () => {
     const { api } = setup();
-    api.exportRoastsCsv.mockResolvedValue(ok({ status: 'saved' as const, fileName: 'roasts.csv' }));
+    api.exportRoasts.mockResolvedValue(ok({ status: 'saved' as const, fileName: 'roasts.json' }));
+    api.importRoasts.mockResolvedValue(ok({ status: 'imported' as const, added: 12, skipped: 3 }));
     api.importArtisan.mockResolvedValue(err({ kind: 'not-artisan' as const }));
     await screen.findByRole('region', { name: 'Roast curve' });
-    await userEvent.click(screen.getByRole('button', { name: 'More for History' }));
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Export CSV' }));
-    expect(await screen.findByText('Saved roasts.csv')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'More for History' }));
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Import from Artisan' }));
+    const pick = async (item: string) => {
+      await userEvent.click(screen.getByRole('button', { name: 'More for History' }));
+      await userEvent.click(screen.getByRole('menuitem', { name: item }));
+    };
+    await pick('Export all · Roastpilot file');
+    expect(api.exportRoasts).toHaveBeenLastCalledWith({ format: 'roastpilot' });
+    expect(await screen.findByText('Saved roasts.json')).toBeInTheDocument();
+    await pick('Export all · CSV');
+    expect(api.exportRoasts).toHaveBeenLastCalledWith({ format: 'csv' });
+    await pick('Import a Roastpilot file');
+    expect(await screen.findByText('Imported 12 roasts · 3 were already here')).toBeInTheDocument();
+    await pick('Import from Artisan');
     expect(await screen.findByRole('alert')).toHaveTextContent("isn't an Artisan roast");
+  });
+
+  it('Select ticks roasts, Shift ticks a range, and exports just those', async () => {
+    const { api } = setup([NEWER, OLDER, summary(3, '2026-11-01T08:00:00.000Z')]);
+    await screen.findByRole('region', { name: 'Roast curve' });
+    await userEvent.click(screen.getByRole('button', { name: 'More for History' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Select' }));
+    const user = userEvent.setup();
+    const boxes = screen.getAllByRole('checkbox');
+    await user.click(nth(boxes, 0));
+    await user.keyboard('{Shift>}');
+    await user.click(nth(boxes, 2));
+    await user.keyboard('{/Shift}');
+    expect(screen.getByText('3 selected')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Export' }));
+    await user.click(screen.getByRole('menuitem', { name: 'CSV' }));
+    expect(api.exportRoasts).toHaveBeenCalledWith({ format: 'csv', ids: [2, 1, 3] });
+    await user.click(screen.getByRole('button', { name: 'Done' }));
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+  });
+
+  it('exports the open roast from its ⋯', async () => {
+    const { api } = setup();
+    await screen.findByRole('region', { name: 'Roast curve' });
+    await userEvent.click(screen.getByRole('button', { name: 'More for this roast' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Export · Roastpilot file' }));
+    expect(api.exportRoasts).toHaveBeenCalledWith({ format: 'roastpilot', ids: [NEWER.id] });
+  });
+
+  it('links the open roast to a bean', async () => {
+    const api = fakeApi({
+      listRoasts: vi.fn(() => Promise.resolve([NEWER])),
+      getRoast: vi.fn(() => Promise.resolve(ok(detail(NEWER)))),
+    });
+    renderApp(
+      <HistoryScreen onOpenProfile={vi.fn()} />,
+      { beans: [{ ...BEAN, id: 4, name: 'Ethiopia Guji' }] },
+      api,
+    );
+    await screen.findByRole('region', { name: 'Roast curve' });
+    const roast = within(screen.getByRole('region', { name: 'Roast' }));
+    await userEvent.selectOptions(roast.getByRole('combobox', { name: 'Bean' }), '4');
+    expect(api.setRoastBean).toHaveBeenCalledWith({ id: NEWER.id, beanId: 4 });
   });
 });

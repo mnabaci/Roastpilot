@@ -24,6 +24,7 @@ import {
 import { createAutoPilot, roastPlan } from './auto-wiring';
 import { BeanService } from './beans/bean-service';
 import { HistoryService } from './history/history-service';
+import { RoastFileService } from './history/roast-file-service';
 import { ProfileService } from './profiles/profile-service';
 import { RoasterService } from './roasters/roaster-service';
 import { startLoading } from './start-loading';
@@ -54,6 +55,7 @@ export interface AppServices {
   roast: ManualRoast;
   settings: SettingsService;
   history: HistoryService;
+  roastFiles: RoastFileService;
   recorder: RoastRecorder;
   pilot: ReturnType<typeof createAutoPilot>;
   profiles: ProfileService;
@@ -221,6 +223,18 @@ export function createAppServices({
     session,
     roast,
     settings,
+    roastFiles: new RoastFileService({
+      repository: roasts,
+      names: async () => ({
+        beans: new Map((await beans.list()).map((bean) => [bean.id, bean.name])),
+        roasters: new Map(roasters.all.map((roaster) => [roaster.id, roaster.name])),
+      }),
+      onAdded: (id) => {
+        publish(IPC_CHANNELS.roastsChanged, { id, deleted: false });
+      },
+      now: () => new Date(nowIso()),
+      logger: historyLogger,
+    }),
     history: new HistoryService({
       repository: roasts,
       beanNames: async () => new Map((await beans.list()).map((bean) => [bean.id, bean.name])),

@@ -80,8 +80,9 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 
 ## History screen
 
-- **Sidebar:** the title with "⋯" (Export CSV, Import from Artisan), then one row of filters: ★ (favourites only) and Bean ▾ / Profile ▾ chips that show their name until they filter, then the choice ("Ethiopia Guji ▾") in ember; then the list.
-- **The open roast:** one header row: its date and time as the title, Compare ▾, Make profile ▾ (Step profile, Curve profile) and "⋯" (Delete, asked in a dialog). The roast being roasted shows "Saving as it roasts" instead of the last two.
+- **Sidebar:** the title with "⋯" (Export all ▸ Roastpilot file / CSV, Import a Roastpilot file, Import from Artisan, Select), then one row of filters: ★ (favourites only) and Bean ▾ / Profile ▾ chips that show their name until they filter, then the choice ("Ethiopia Guji ▾") in ember; then the list.
+- **Select:** checkboxes appear on the rows (Shift-click ticks a range) and a bar sits over the list: "3 selected", Export ▾ (Roastpilot file, CSV) and Done. Clicking a row ticks it instead of opening it until Done.
+- **The open roast:** one header row: its date and time as the title, Compare ▾, Make profile ▾ (Step profile, Curve profile) and "⋯" (Export this roast as a Roastpilot file or CSV, then Delete, asked in a dialog). Beside the weights, Bean ▾ links the roast to a bean (stock as [data-model.md](data-model.md#roastpilot-roast-files) says). The roast being roasted shows "Saving as it roasts" instead of the last two.
 - List of roasts in the shared sidebar, newest first: date and time, total time (charge to drop), first crack time, drop temp; Unfinished when cooling never ended.
 - Open a roast to see its chart, stage times and events; under the chart, a small events table (secondary text): Event · Time · Temp · RoR · Heater · Fan for Charge, Turning point, First crack, Drop and Cool end (or End), with the values read from the saved samples at each event, so older roasts get it too. A dash where there is no value; Compare overlays one other roast, faded, aligned at charge.
 - Delete asks once ("Delete this roast? · can't be undone"), then the list moves to the next roast.
@@ -94,6 +95,8 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 - Bean detail: its info, all its roasts with stars, and its best favourite.
 - Actions: Add bean, Edit, Add stock (with the batch calculator), Adjust stock, Make a profile for this bean, Archive, Roast this bean.
 - List on the left (the shared sidebar), detail on the right; the two scroll separately.
+- **Sidebar:** "Beans ⋯" (Batch calculator, Show archived), the list, then + Add bean under it.
+- **A bean's header:** its name with Low stock and Archived badges; Roast this bean (main) and Add stock; then "⋯" with Adjust stock, Edit, Make a profile and Archive (Bring back when archived).
 
 ## Batch calculator
 
@@ -102,14 +105,15 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 ## Logs screen
 
 - Milestone 2: the log viewer from [errors-and-logging.md](errors-and-logging.md#viewer).
+- "Logs ⋯" beside the title holds Open log folder, like the other screens' title menus.
 
 ## Roasters screen
 
 - The sidebar lists the roaster records by name, the active one marked Active, and Add roaster under them. It opens on the roaster in use, else the active one.
-- **A roaster's page:** its name and model, then one primary action: Connect, or Disconnect for the one in use (Connecting… busy while it connects; a failure is one line under it). Connect makes this roaster the active one first; Use this roaster (quiet, by the name) makes it active without connecting, as Profiles and batch sizes follow it.
+- **A roaster's page:** its name and model, then one primary action: Connect, or Disconnect for the one in use (Connecting… busy while it connects; a failure is one line under it). Connect makes this roaster the active one first; its "⋯" by the name holds Use this roaster (makes it active without connecting, as Profiles and batch sizes follow it) and Delete (asked in a dialog).
 - **Port:** a Skywalker-type roaster shows its port, with Choose another to list likely roasters (USB serial adapters), the rest behind "Show all ports" (every port at once when none looks like a roaster), and Refresh. A Simulator has no port. When no port is plugged in, one hint: "No roaster found · plug it in, then Refresh".
 - **While a roaster is in use:** its page shows Disconnect and its status (Connected, Reconnecting…); every other page says "Disconnect <name> to switch", and records wait, as [roasters.md](roasters.md) says.
-- Under the action, the record: name, batch size (min, ideal, max), limits and calibration (max temp, max time, temp offset) and the preheat hold, then Save and Delete.
+- Under the action, the record: name, batch size (min, ideal, max), limits and calibration (max temp, max time, temp offset) and the preheat hold, then Save.
 - **Advanced tuning · for experts:** closed until opened, the PID gains in plain words, with one line above them: "Push (Kp): how hard the heater reacts to being off target · Catch-up (Ki): closes a gap that stays". Preheat (Push, Catch-up), Reaching step temperatures (Push, Catch-up, Most it may change %), Following a curve (Push, Catch-up). Each plain name carries the usual one in brackets ("Push (Kp)", "Most it may change (limit)"). Same numbers and limits as before.
 - **Add roaster:** a name and a model, then Add; the new roaster opens.
 - The app starts on Roasters until a roaster is connected; Connect on the Roast screen opens it too.

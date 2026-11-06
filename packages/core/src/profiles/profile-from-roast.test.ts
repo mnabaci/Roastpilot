@@ -32,6 +32,7 @@ const ROAST: RoastDetail = {
   notes: null,
   profileId: null,
   profileName: null,
+  imported: false,
   mode: 'manual',
   profile: null,
   samples: run(),
@@ -72,6 +73,11 @@ describe('profileFromRoast', () => {
       source: { kind: 'roast', roastId: 7 },
       name: 'Roast 7 · Steps',
     });
+  });
+
+  it('a profile from a roast made here needs no calibration; from an imported one it does', () => {
+    expect(make(ROAST)?.needsCalibration).toBe(false);
+    expect(make({ ...ROAST, imported: true })?.needsCalibration).toBe(true);
   });
 
   it('falls back on the roaster batch when the roast has none', () => {

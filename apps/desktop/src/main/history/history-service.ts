@@ -11,13 +11,22 @@ import {
   type RoastSummary,
   type StorageError,
 } from '@roastpilot/shared';
-import { parseArtisan, type ArtisanRoast } from './artisan-import';
+import { parseArtisan } from './artisan-import';
+import { fillRoast } from './fill-roast';
 import { roastsToCsv } from './roast-csv';
 
 export interface HistoryServiceDeps {
   repository: Pick<
     RoastRepository,
-    'list' | 'get' | 'delete' | 'saveResult' | 'create' | 'addSamples' | 'addEvent' | 'update'
+    | 'list'
+    | 'get'
+    | 'delete'
+    | 'saveResult'
+    | 'create'
+    | 'addSamples'
+    | 'addEvent'
+    | 'update'
+    | 'setBean'
   >;
   /** Bean names by id, for the CSV. */
   beanNames: () => Promise<ReadonlyMap<number, string>>;
@@ -78,13 +87,27 @@ export class HistoryService {
     return deleted;
   }
 
-  async exportCsv(): Promise<Result<string, StorageError>> {
+  /** Every roast as CSV, or only the ones named. */
+  async exportCsv(ids?: readonly RoastId[]): Promise<Result<string, StorageError>> {
     const listed = await this.#deps.repository.list();
     if (!listed.ok) {
       this.#deps.logger.warn('history.export-failed', { error: listed.error });
       return listed;
     }
-    return ok(roastsToCsv(listed.value, await this.#deps.beanNames()));
+    const chosen = ids ? listed.value.filter((r) => ids.includes(r.id)) : listed.value;
+    return ok(roastsToCsv(chosen, await this.#deps.beanNames()));
+  }
+
+  /** Links a saved roast to a bean, or none; stock as the repository says. */
+  async setBean(id: RoastId, beanId: number | null): Promise<Result<void, StorageError>> {
+    const set = await this.#deps.repository.setBean(id, beanId);
+    if (!set.ok) {
+      this.#deps.logger.warn('history.set-bean-failed', { id, error: set.error });
+      return set;
+    }
+    this.#deps.logger.info('history.bean-set', { id, beanId });
+    this.#deps.onResultSaved(id);
+    return set;
   }
 
   /** Saves the roast in an `.alog`'s text as a new one, or nothing at all if a write fails. */
@@ -104,13 +127,14 @@ export class HistoryService {
       beanId: null,
       batchG: roast.batchG,
       ghostRoastId: null,
+      imported: true,
     });
     if (!created.ok) {
       logger.warn('history.import-failed', { error: created.error });
       return created;
     }
     const id = created.value;
-    const filled = await this.#fillImported(id, roast);
+    const filled = await fillRoast(repository, id, roast);
     if (!filled.ok) {
       logger.warn('history.import-failed', { id, error: filled.error });
       await repository.delete(id);
@@ -119,30 +143,5 @@ export class HistoryService {
     logger.info('history.imported', { id, samples: roast.samples.length });
     this.#deps.onResultSaved(id);
     return ok(id);
-  }
-
-  async #fillImported(id: RoastId, roast: ArtisanRoast): Promise<Result<void, StorageError>> {
-    const { repository } = this.#deps;
-    const samples = await repository.addSamples(id, roast.samples);
-    if (!samples.ok) return samples;
-    for (const event of roast.events) {
-      const added = await repository.addEvent(id, event);
-      if (!added.ok) return added;
-    }
-    const updated = await repository.update(id, {
-      endedAt: roast.endedAt,
-      fcTimeS: roast.fcTimeS,
-      dropTimeS: roast.dropTimeS,
-      dropTemp: roast.dropTemp,
-    });
-    if (!updated.ok) return updated;
-    return repository.saveResult({
-      id,
-      batchG: roast.batchG,
-      roastedG: roast.roastedG,
-      rating: null,
-      isFavourite: false,
-      notes: roast.notes,
-    });
   }
 }

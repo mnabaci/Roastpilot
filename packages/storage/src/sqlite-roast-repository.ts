@@ -5,6 +5,7 @@ import {
   ok,
   SavedEventSchema,
   SavedSampleSchema,
+  type BeanId,
   type RoastResult,
   type Result,
   type RoastDetail,
@@ -46,6 +47,15 @@ const summaryColumns = {
   notes: roasts.notes,
   profileId: sql<string | null>`json_extract(${roasts.profile}, '$.id')`,
   profileName: sql<string | null>`json_extract(${roasts.profile}, '$.name')`,
+  imported: roasts.imported,
+};
+
+/** What stock changes need to know about a roast. */
+const stockColumns = {
+  beanId: roasts.beanId,
+  batchG: roasts.batchG,
+  roastedG: roasts.roastedG,
+  imported: roasts.imported,
 };
 
 /** Saved roasts in SQLite (docs/spec/data-model.md). Rows are checked on the way out. */
@@ -68,9 +78,10 @@ export class SqliteRoastRepository implements RoastRepository {
         beanId: roast.beanId,
         batchG: roast.batchG,
         ghostRoastId: roast.ghostRoastId,
+        imported: roast.imported ?? false,
       };
       const row = await this.#db.insert(roasts).values(values).returning({ id: roasts.id }).get();
-      if (roast.beanId !== null && roast.batchG !== null) {
+      if (!values.imported && roast.beanId !== null && roast.batchG !== null) {
         await this.#moveStock(roast.beanId, { greenG: -roast.batchG });
       }
       return row.id;
@@ -125,23 +136,38 @@ export class SqliteRoastRepository implements RoastRepository {
   /** Saves what you say about the roast; stock moves only by what changed. */
   async saveResult({ id, ...result }: RoastResult): Promise<Result<void, StorageError>> {
     const before = await attempt(() =>
-      this.#db
-        .select({ beanId: roasts.beanId, batchG: roasts.batchG, roastedG: roasts.roastedG })
-        .from(roasts)
-        .where(eq(roasts.id, id))
-        .get(),
+      this.#db.select(stockColumns).from(roasts).where(eq(roasts.id, id)).get(),
     );
     if (!before.ok) return before;
     const row = before.value;
     if (!row) return err({ kind: 'not-found', id });
     return attempt(async () => {
       await this.#db.update(roasts).set(result).where(eq(roasts.id, id)).run();
-      if (row.beanId !== null) {
+      if (row.beanId !== null && !row.imported) {
         await this.#moveStock(row.beanId, {
           greenG: (row.batchG ?? 0) - (result.batchG ?? 0),
           roastedG: (result.roastedG ?? 0) - (row.roastedG ?? 0),
         });
       }
+    });
+  }
+
+  async setBean(id: RoastId, beanId: BeanId | null): Promise<Result<void, StorageError>> {
+    const before = await attempt(() =>
+      this.#db.select(stockColumns).from(roasts).where(eq(roasts.id, id)).get(),
+    );
+    if (!before.ok) return before;
+    const row = before.value;
+    if (!row) return err({ kind: 'not-found', id });
+    return attempt(async () => {
+      await this.#db.update(roasts).set({ beanId }).where(eq(roasts.id, id)).run();
+      if (row.imported || row.beanId === beanId) return;
+      // The beans went from one bag to the other: give them back, then take them again.
+      const moved = { greenG: row.batchG ?? 0, roastedG: row.roastedG ?? 0 };
+      if (row.beanId !== null)
+        await this.#moveStock(row.beanId, { greenG: moved.greenG, roastedG: -moved.roastedG });
+      if (beanId !== null)
+        await this.#moveStock(beanId, { greenG: -moved.greenG, roastedG: moved.roastedG });
     });
   }
 

@@ -134,8 +134,9 @@ export function profileFromRoast({
     id,
     name: `Roast ${String(roast.id)} · ${style === 'curve' ? 'Curve' : 'Steps'}`,
     source: { kind: 'roast', roastId: roast.id },
-    // It ran on this roaster, so there is nothing to calibrate.
-    needsCalibration: false,
+    // A roast made here ran on this roaster, so there is nothing to calibrate. An imported one
+    // ran somewhere else (a matching roaster name proves nothing), so its heat needs checking.
+    needsCalibration: roast.imported,
     batchG: roast.batchG ?? roast.profile?.batchG ?? fallbackBatchG,
     chargeC,
     dryEndC: Math.round(dryEndC),

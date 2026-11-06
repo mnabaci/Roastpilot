@@ -1,6 +1,6 @@
 import { bestFavourite, beanHints, suggestProfile } from '@roastpilot/core';
 import { BeanFieldsSchema, type Bean, type RoastSummary } from '@roastpilot/shared';
-import { Badge, Button, formatNumber, RoastList, StatCard } from '@roastpilot/ui';
+import { Badge, Button, Menu, formatNumber, RoastList, StatCard } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
@@ -82,16 +82,63 @@ export function BeanDetail({
     });
   };
 
+  const archive = () => {
+    run('beans.archive-failed', async () => {
+      const done = await api.setBeanArchived({ id: bean.id, archived: !bean.archived });
+      setProblem(done.ok ? undefined : "Couldn't change that · see Logs");
+    });
+  };
+
   if (panel === 'edit') return <BeanEditor bean={bean} onDone={close} onAdded={close} />;
 
   const low = bean.greenG < bean.lowStockG;
   return (
     <section aria-label={bean.name} className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-heading">{bean.name}</h2>
+      {/* Everything for this bean in one row: the two you use most, the rest behind ⋯. */}
+      <header className="flex flex-wrap items-center gap-3">
+        <h2 className="min-w-0 truncate text-title">{bean.name}</h2>
         {low ? <Badge tone="heat">Low stock</Badge> : null}
         {bean.archived ? <Badge>Archived</Badge> : null}
-      </div>
+        <div className="ml-auto flex items-center gap-2">
+          <Button
+            // One primary at a time: an open form has its own.
+            variant={panel === 'none' ? 'primary' : 'secondary'}
+            disabled={bean.archived || roastRunning}
+            onClick={roastThis}
+          >
+            Roast this bean
+          </Button>
+          <Button
+            onClick={() => {
+              setPanel('add-stock');
+            }}
+          >
+            Add stock
+          </Button>
+          <Menu
+            label={`More for ${bean.name}`}
+            items={[
+              {
+                label: 'Adjust stock',
+                onSelect: () => {
+                  setPanel('adjust-stock');
+                },
+              },
+              {
+                label: 'Edit',
+                onSelect: () => {
+                  setPanel('edit');
+                },
+              },
+              {
+                label: bean.profileId === null ? 'Make a profile' : 'Make another profile',
+                onSelect: makeProfile,
+              },
+              { label: bean.archived ? 'Bring back' : 'Archive', onSelect: archive },
+            ]}
+          />
+        </div>
+      </header>
       <div className="grid grid-cols-3 gap-3">
         <StatCard
           label="Green"
@@ -106,50 +153,6 @@ export function BeanDetail({
           unit="%"
           context={bean.avgLossPct === null ? 'Assumes 15% for now' : 'Average of its roasts'}
         />
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <Button
-          // One primary at a time: an open form has its own.
-          variant={panel === 'none' ? 'primary' : 'secondary'}
-          disabled={bean.archived || roastRunning}
-          onClick={roastThis}
-        >
-          Roast this bean
-        </Button>
-        <Button
-          onClick={() => {
-            setPanel('add-stock');
-          }}
-        >
-          Add stock
-        </Button>
-        <Button
-          onClick={() => {
-            setPanel('adjust-stock');
-          }}
-        >
-          Adjust stock
-        </Button>
-        <Button
-          onClick={() => {
-            setPanel('edit');
-          }}
-        >
-          Edit
-        </Button>
-        <Button onClick={makeProfile}>
-          {bean.profileId === null ? 'Make a profile for this bean' : 'Make another profile'}
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={() => {
-            run('beans.archive-failed', async () => {
-              await api.setBeanArchived({ id: bean.id, archived: !bean.archived });
-            });
-          }}
-        >
-          {bean.archived ? 'Bring back' : 'Archive'}
-        </Button>
       </div>
       {problem ? (
         <p role="alert" className="text-label text-critical-text">

@@ -30,7 +30,8 @@ export function SidebarLayout({
   return (
     <main className={cn('flex min-h-0 flex-1 overflow-hidden', className)}>
       <nav aria-label={title} className="flex w-sidebar shrink-0 flex-col gap-3 py-6 pl-6">
-        <div className="flex items-center justify-between gap-2 pr-3">
+        {/* Always the height of the ⋯ button, so titles line up on every screen with or without one. */}
+        <div className="flex min-h-control-sm items-center justify-between gap-2 pr-3">
           <h1 className="text-title">{title}</h1>
           {titleAction}
         </div>

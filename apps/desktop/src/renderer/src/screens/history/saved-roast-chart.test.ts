@@ -16,6 +16,7 @@ const DETAIL: RoastDetail = {
   notes: null,
   profileId: null,
   profileName: null,
+  imported: false,
   startedAt: '2026-11-04T14:32:10.000Z',
   endedAt: '2026-11-04T14:46:00.000Z',
   fcTimeS: 2,

@@ -115,7 +115,10 @@ describe('LogsScreen', () => {
 
   it('another day reads that day and is not live', async () => {
     const { api } = setup();
-    await userEvent.click(await screen.findByRole('button', { name: 'Fri 30 Oct' }));
+    await userEvent.selectOptions(
+      await screen.findByRole('combobox', { name: 'Day' }),
+      '2026-10-30',
+    );
     expect(api.readLogDay).toHaveBeenLastCalledWith('2026-10-30');
     expect(screen.queryByText('Live')).not.toBeInTheDocument();
   });
@@ -144,7 +147,8 @@ describe('LogsScreen', () => {
 
   it('Open log folder asks main to open it', async () => {
     const { api } = setup();
-    await userEvent.click(screen.getByRole('button', { name: 'Open log folder' }));
+    await userEvent.click(screen.getByRole('button', { name: 'More for Logs' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Open log folder' }));
     expect(api.openLogFolder).toHaveBeenCalledOnce();
   });
 });

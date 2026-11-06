@@ -1,4 +1,4 @@
-import { Star } from 'lucide-react';
+import { Check, Star } from 'lucide-react';
 import type { KeyboardEvent } from 'react';
 import { cn } from '../lib/utils';
 import { Badge } from './Badge';
@@ -23,6 +23,9 @@ export interface RoastListProps {
   items: readonly RoastListItem[];
   selectedId: number | undefined;
   onSelect: (id: number) => void;
+  /** Select mode: rows are checkboxes; `onCheck` gets the row and whether Shift asked for a range. */
+  checked?: ReadonlySet<number> | undefined;
+  onCheck?: (id: number, range: boolean) => void;
   className?: string;
 }
 
@@ -40,7 +43,16 @@ function moveFocus(event: KeyboardEvent<HTMLButtonElement>): void {
 }
 
 /** Saved roasts, newest first, one selected (design system: RoastList). Scrolls inside. */
-export function RoastList({ label, items, selectedId, onSelect, className }: RoastListProps) {
+export function RoastList({
+  label,
+  items,
+  selectedId,
+  onSelect,
+  checked,
+  onCheck,
+  className,
+}: RoastListProps) {
+  const selecting = checked !== undefined && onCheck !== undefined;
   return (
     <ul
       aria-label={label}
@@ -51,22 +63,37 @@ export function RoastList({ label, items, selectedId, onSelect, className }: Roa
     >
       {items.map((item) => {
         const selected = item.id === selectedId;
+        const ticked = selecting && checked.has(item.id);
         return (
           <li key={item.id}>
             <button
               type="button"
-              aria-current={selected ? 'true' : undefined}
+              {...(selecting
+                ? { role: 'checkbox', 'aria-checked': ticked }
+                : { 'aria-current': selected ? ('true' as const) : undefined })}
               onKeyDown={moveFocus}
-              onClick={() => {
-                onSelect(item.id);
+              onClick={(event) => {
+                if (selecting) onCheck(item.id, event.shiftKey);
+                else onSelect(item.id);
               }}
               className={cn(
                 'flex min-h-control-sm w-full flex-col justify-center gap-0.5 px-4 py-3 text-left tabular-nums focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
-                selected ? 'bg-surface-raised' : 'hover:bg-surface-hover',
+                (selecting ? ticked : selected) ? 'bg-surface-raised' : 'hover:bg-surface-hover',
               )}
             >
               <span className="flex items-center justify-between gap-3">
                 <span className="flex min-w-0 items-center gap-1.5">
+                  {selecting ? (
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        'grid size-5 shrink-0 place-items-center rounded-sm border',
+                        ticked ? 'border-heat bg-heat-tint text-heat' : 'border-border-strong',
+                      )}
+                    >
+                      {ticked ? <Check className="size-4" /> : null}
+                    </span>
+                  ) : null}
                   <span className="truncate text-body font-semibold text-ink">{item.title}</span>
                   {item.favourite ? (
                     <Star

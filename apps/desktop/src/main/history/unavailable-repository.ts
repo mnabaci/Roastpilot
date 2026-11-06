@@ -20,6 +20,7 @@ export function unavailableRepository(message: string): RoastRepository {
     update: fail,
     list: fail,
     get: fail,
+    setBean: fail,
     delete: fail,
   };
 }

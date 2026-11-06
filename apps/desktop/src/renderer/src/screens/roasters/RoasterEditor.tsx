@@ -3,21 +3,12 @@ import { Button, NumberField, TextField } from '@roastpilot/ui';
 import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
-import { ConfirmButton } from '../../features/ConfirmButton';
 import { useRun } from '../../features/use-run';
 import { fromRoasterDraft, toRoasterDraft } from './roaster-draft';
 import { EVERYDAY_FIELDS, TUNING_FIELDS, TUNING_HINT, type FieldGroup } from './roaster-fields';
 
 /** One roaster's record (docs/spec/roasters.md). Locked while a roaster is connected. */
-export function RoasterEditor({
-  roaster,
-  locked,
-  onDeleted,
-}: {
-  roaster: Roaster;
-  locked: boolean;
-  onDeleted: () => void;
-}) {
+export function RoasterEditor({ roaster, locked }: { roaster: Roaster; locked: boolean }) {
   const { api, logger } = useDeps();
   const run = useRun();
   const saved = useMemo(() => toRoasterDraft(roaster), [roaster]);
@@ -37,21 +28,6 @@ export function RoasterEditor({
       logger.warn('roasters.refused', { ...result.error });
       setProblem(
         result.error.kind === 'in-use' ? 'Disconnect first' : "Couldn't save · see the log",
-      );
-    });
-  };
-  const remove = () => {
-    run('roasters.delete-failed', async () => {
-      const result = await api.deleteRoaster(roaster.id);
-      if (result.ok) {
-        onDeleted();
-        return;
-      }
-      logger.warn('roasters.refused', { ...result.error });
-      setProblem(
-        result.error.kind === 'has-roasts'
-          ? 'It has saved roasts or profiles · it stays'
-          : "Couldn't delete · see the log",
       );
     });
   };
@@ -128,15 +104,6 @@ export function RoasterEditor({
             Discard
           </Button>
         ) : null}
-        {roaster.active || locked ? null : (
-          <ConfirmButton
-            label="Delete"
-            destructive
-            question="Delete this roaster?"
-            confirmLabel="Delete"
-            onConfirm={remove}
-          />
-        )}
       </div>
       {problem ? (
         <p role="alert" className="text-label text-critical-text">

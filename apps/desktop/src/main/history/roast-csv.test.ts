@@ -19,6 +19,7 @@ const ROAST: RoastSummary = {
   notes: 'Sweet, "floral"\nnext time less fan',
   profileId: 'p',
   profileName: 'Light · Curve',
+  imported: false,
 };
 
 describe('roastsToCsv', () => {

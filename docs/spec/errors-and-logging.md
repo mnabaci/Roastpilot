@@ -42,7 +42,7 @@ A **Logs** screen in the app, next to Roast and Settings, so a trip or a failed 
 
 | Part   | What it does                                                                                                |
 | ------ | ----------------------------------------------------------------------------------------------------------- |
-| Day    | Today by default; any of the 7 kept days                                                                    |
+| Day    | Today by default; any of the 7 kept days, from one "Day ▾" chip                                             |
 | Levels | Error, Warning, Info, Debug chips; opens on Error and Warning                                               |
 | Scope  | A chip per scope in the day (`app.session`, `renderer`, ...); none picked means all                         |
 | Search | Text in the event, scope or context                                                                         |
