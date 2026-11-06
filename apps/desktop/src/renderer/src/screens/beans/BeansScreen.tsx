@@ -1,5 +1,5 @@
 import type { BeanId } from '@roastpilot/shared';
-import { Badge, Button, NavList, SidebarLayout } from '@roastpilot/ui';
+import { Badge, Button, Menu, NavList, SidebarLayout } from '@roastpilot/ui';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useBeans } from '../../stores/use-stores';
@@ -35,6 +35,29 @@ export function BeansScreen({
   return (
     <SidebarLayout
       title="Beans"
+      titleAction={
+        <Menu
+          label="More for Beans"
+          items={[
+            {
+              label: 'Batch calculator',
+              onSelect: () => {
+                setRight({ kind: 'calculator' });
+              },
+            },
+            ...(hasArchived
+              ? [
+                  {
+                    label: showArchived ? 'Hide archived' : 'Show archived',
+                    onSelect: () => {
+                      setShowArchived(!showArchived);
+                    },
+                  },
+                ]
+              : []),
+          ]}
+        />
+      }
       contentLabel={right.kind === 'calculator' ? 'Batch calculator' : 'Bean'}
       sidebar={
         <>
@@ -63,26 +86,6 @@ export function BeansScreen({
           >
             Add bean
           </Button>
-          <NavList
-            label="Tools"
-            items={[{ id: 'calculator', label: 'Batch calculator' }]}
-            openId={right.kind === 'calculator' ? 'calculator' : undefined}
-            onOpen={() => {
-              setRight({ kind: 'calculator' });
-            }}
-          />
-          {hasArchived ? (
-            <Button
-              variant="ghost"
-              aria-pressed={showArchived}
-              className="justify-start text-ink-muted hover:text-ink"
-              onClick={() => {
-                setShowArchived(!showArchived);
-              }}
-            >
-              {showArchived ? 'Hide archived' : 'Show archived'}
-            </Button>
-          ) : null}
         </>
       }
     >
