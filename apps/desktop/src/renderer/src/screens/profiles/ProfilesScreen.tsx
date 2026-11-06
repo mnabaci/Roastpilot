@@ -11,6 +11,8 @@ export function ProfilesScreen({ openFirst }: { openFirst?: string | undefined }
   const chosenId = useSettings((s) => s.settings.autoProfile);
   const [openId, setOpenId] = useState(openFirst);
   const open = profiles.find((e) => e.profile.id === openId) ?? activeEntry(profiles, chosenId);
+  // The one Auto runs, marked in the list so it shows without opening it.
+  const autoId = activeEntry(profiles, chosenId)?.profile.id;
   return (
     <SidebarLayout
       title="Profiles"
@@ -21,7 +23,13 @@ export function ProfilesScreen({ openFirst }: { openFirst?: string | undefined }
           items={profiles.map(({ profile }) => ({
             id: profile.id,
             label: profile.name,
-            badge: drafts[profile.id] ? <Badge tone="heat">Edited</Badge> : undefined,
+            badge:
+              drafts[profile.id] || profile.id === autoId ? (
+                <span className="flex shrink-0 gap-1">
+                  {profile.id === autoId ? <Badge tone="air">Auto</Badge> : null}
+                  {drafts[profile.id] ? <Badge tone="heat">Edited</Badge> : null}
+                </span>
+              ) : undefined,
           }))}
           openId={open?.profile.id}
           onOpen={setOpenId}
