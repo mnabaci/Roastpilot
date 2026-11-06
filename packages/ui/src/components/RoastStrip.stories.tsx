@@ -22,8 +22,8 @@ type Story = StoryObj<typeof meta>;
 export const Quiet: Story = {};
 export const NeedsYou: Story = {
   args: {
-    lead: 'Cooling · 0:02',
-    prompt: 'Dump beans · Cooling 3:58 left',
+    lead: 'Cooling beans 0:02 left',
+    prompt: 'Dump beans · Cooling beans 3:58 left',
     numbers: [{ label: 'Temp', value: '196.2 °C' }],
   },
 };

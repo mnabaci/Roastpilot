@@ -10,7 +10,7 @@ export interface RoastStripNumber {
 export interface RoastStripProps {
   /** The phase and its clock, e.g. "Roasting · 7:42". */
   lead: string;
-  /** A real prompt from the flow ("Dump beans · Cooling 3:58 left"); leads, highlighted. */
+  /** A real prompt from the flow ("Dump beans · Cooling beans 3:58 left"); leads, highlighted. */
   prompt?: string;
   numbers: readonly RoastStripNumber[];
   /** Opens the Roast screen. */

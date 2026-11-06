@@ -5,7 +5,11 @@ import { AlertBanner } from './AlertBanner';
 const meta = {
   title: 'Feedback/AlertBanner',
   component: AlertBanner,
-  args: { kind: 'critical', children: 'Emergency stop · heater off, cooling on', onDismiss: fn() },
+  args: {
+    kind: 'critical',
+    children: 'Emergency stop · heater off, fan and bean cooler on',
+    onDismiss: fn(),
+  },
 } satisfies Meta<typeof AlertBanner>;
 
 export default meta;
