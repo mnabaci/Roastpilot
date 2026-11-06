@@ -124,16 +124,16 @@ describe('RoastScreen', () => {
     ).toBeInTheDocument();
   });
 
-  describe('roaster cool-down', () => {
+  describe('drum cooling', () => {
     it.each(['ready', 'done'] as const)(
-      'in %s with a hot drum, offers Cool down roaster',
+      'in %s with a hot drum, offers Cool the drum',
       async (phase) => {
         const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
           ...connected,
           roast: roast(phase),
           readings: [reading({ bt: 92 })],
         });
-        await userEvent.click(screen.getByRole('button', { name: 'Cool down roaster' }));
+        await userEvent.click(screen.getByRole('button', { name: 'Cool the drum' }));
         expect(api.roastAction).toHaveBeenCalledWith('cool-roaster');
       },
     );
@@ -144,7 +144,7 @@ describe('RoastScreen', () => {
         roast: roast('done'),
         readings: [reading({ bt: 59 })],
       });
-      expect(screen.queryByRole('button', { name: 'Cool down roaster' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Cool the drum' })).not.toBeInTheDocument();
     });
 
     it('while it runs: the temperature it is heading to, and Stop', async () => {
@@ -153,8 +153,8 @@ describe('RoastScreen', () => {
         roast: { ...roast('done'), roasterCoolingSinceMs: 0, roasterCoolToC: 50 },
         readings: [reading({ bt: 92.4 })],
       });
-      expect(screen.getByText('Cooling the roaster · 92 °C → 50 °C')).toHaveRole('status');
-      expect(screen.queryByRole('button', { name: 'Cool down roaster' })).not.toBeInTheDocument();
+      expect(screen.getByText('Cooling the drum · 92 °C → 50 °C')).toHaveRole('status');
+      expect(screen.queryByRole('button', { name: 'Cool the drum' })).not.toBeInTheDocument();
       await userEvent.click(screen.getByRole('button', { name: 'Stop' }));
       expect(api.roastAction).toHaveBeenCalledWith('stop-cooling-roaster');
     });
@@ -170,15 +170,15 @@ describe('RoastScreen', () => {
     expect(
       screen.getByText('Dump the beans into the cooling tray. 3:00 left.'),
     ).toBeInTheDocument();
-    expect(screen.getByText('Cooling · heater off, fan at 100%')).toBeInTheDocument();
+    expect(screen.getByText('Cooling beans · heater off, fan at 100%')).toBeInTheDocument();
   });
 
   it.each([
-    ['preheat', 'End roast', 'End the roast?'],
-    ['roasting', 'End roast', 'End the roast?'],
-    ['development', 'End roast', 'End the roast?'],
-    ['cooling', 'Finish cooling now', 'Finish cooling?'],
-  ] as const)('%s: %s asks once, then ends', async (phase, label, question) => {
+    ['preheat', 'End roast', 'End the roast?', 'everything turns off'],
+    ['roasting', 'End roast', 'End the roast?', 'everything turns off'],
+    ['development', 'End roast', 'End the roast?', 'everything turns off'],
+    ['cooling', 'Finish cooling now', 'Finish cooling the beans?', 'the countdown ends now'],
+  ] as const)('%s: %s asks once, then ends', async (phase, label, question, what) => {
     const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
       ...connected,
       roast: roast(phase),
@@ -186,7 +186,7 @@ describe('RoastScreen', () => {
     await userEvent.click(screen.getByRole('button', { name: label }));
     expect(api.roastAction).not.toHaveBeenCalled();
     const dialog = screen.getByRole('alertdialog', { name: question });
-    expect(dialog).toHaveAccessibleDescription('everything turns off');
+    expect(dialog).toHaveAccessibleDescription(what);
     await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     expect(api.roastAction).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole('button', { name: label }));
@@ -257,14 +257,14 @@ describe('RoastScreen', () => {
         expect(screen.getByRole('slider', { name: 'Heater' })).toBeDisabled();
         expect(screen.getByRole('slider', { name: 'Fan' })).toBeEnabled();
         expect(screen.getByRole('switch', { name: 'Drum' })).toBeEnabled();
-        expect(screen.getByRole('switch', { name: 'Cooling' })).toBeEnabled();
+        expect(screen.getByRole('switch', { name: 'Bean cooler' })).toBeEnabled();
         expect(screen.getByText('Heater waits for Preheat')).toBeInTheDocument();
       },
     );
 
-    it('roasting hides the cooling switch, as Drop handles cooling', () => {
+    it('roasting hides the bean cooler switch, as Drop handles cooling', () => {
       renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast('roasting') });
-      expect(screen.queryByRole('switch', { name: 'Cooling' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('switch', { name: 'Bean cooler' })).not.toBeInTheDocument();
     });
 
     it('from Preheat the sliders are live', () => {
@@ -273,14 +273,14 @@ describe('RoastScreen', () => {
     });
   });
 
-  it('Full control: everything is live, cooling switch included', async () => {
+  it('Full control: everything is live, bean cooler switch included', async () => {
     const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
       ...connected,
       settings: { ...DEFAULT_SETTINGS, connection: null, controls: 'full', chartSmoothingS: 5 },
       readings: [reading({ cooling: 0 })],
     });
     expect(screen.getByRole('slider', { name: 'Heater' })).toBeEnabled();
-    await userEvent.click(screen.getByRole('switch', { name: 'Cooling' }));
+    await userEvent.click(screen.getByRole('switch', { name: 'Bean cooler' }));
     expect(api.setOutput).toHaveBeenCalledWith({ channel: 'cooling', value: 100 });
   });
 

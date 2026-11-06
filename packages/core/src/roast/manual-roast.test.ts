@@ -68,6 +68,8 @@ describe('ManualRoast', () => {
       'heater=0',
       'fan=100',
       'cooling=100',
+      'drum=1',
+      'filter=1',
     ]);
     expect(signals).toEqual(['new-roast', 'roast-started@180000', 'roast-ended']);
   });
@@ -254,8 +256,16 @@ describe('ManualRoast', () => {
     const { roast, sent, entries, act } = setup({ failOutputs: true });
     await act('start', 'drop');
     expect(roast.state.phase).toBe('cooling');
-    expect(sent).toEqual(['drum=1', 'filter=1', 'heater=0', 'fan=100', 'cooling=100']);
-    expect(entries.filter((e) => e.event === 'roast.output-failed')).toHaveLength(5);
+    expect(sent).toEqual([
+      'drum=1',
+      'filter=1',
+      'heater=0',
+      'fan=100',
+      'cooling=100',
+      'drum=1',
+      'filter=1',
+    ]);
+    expect(entries.filter((e) => e.event === 'roast.output-failed')).toHaveLength(7);
   });
 
   it('a cooling timer from an earlier roast never ends a later one', async () => {

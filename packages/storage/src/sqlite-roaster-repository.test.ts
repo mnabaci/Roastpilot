@@ -35,12 +35,14 @@ describe('SqliteRoasterRepository', () => {
       active: true,
       connection: null,
       batchIdealG: 375,
+      coolerHelpsDrum: true,
       tuning: { holdS: 150, target: { kp: 1.5 } },
     });
     expect(simulator).toMatchObject({
       id: 2,
       model: 'simulator',
       active: false,
+      coolerHelpsDrum: false,
       connection: { kind: 'simulator' },
     });
   });
@@ -51,9 +53,18 @@ describe('SqliteRoasterRepository', () => {
     if (!skywalker) throw new Error('no roaster');
     const { id, ...fields } = skywalker;
     expect(id).toBe(1);
-    const added = await repository.add({ ...fields, name: 'Second', active: false });
+    const added = await repository.add({
+      ...fields,
+      name: 'Second',
+      active: false,
+      coolerHelpsDrum: false,
+    });
     expect(added).toMatchObject({ ok: true, value: { id: 3, name: 'Second' } });
-    expect((await listed(repository)).at(-1)).toMatchObject({ id: 3, name: 'Second' });
+    expect((await listed(repository)).at(-1)).toMatchObject({
+      id: 3,
+      name: 'Second',
+      coolerHelpsDrum: false,
+    });
   });
 
   it('saves changes, the connection and gains included', async () => {

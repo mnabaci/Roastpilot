@@ -140,8 +140,6 @@ export { ScreenSchema, type Screen } from './screen';
 export {
   ChartSmoothingSchema,
   ControlsLevelSchema,
-  CoolingBelowSchema,
-  CoolingEndSchema,
   CoolingTimeSchema,
   RoasterCoolToSchema,
   RoastModeSchema,
@@ -151,8 +149,6 @@ export {
   SettingsWriteErrorSchema,
   type ChartSmoothing,
   type ControlsLevel,
-  type CoolingBelow,
-  type CoolingEnd,
   type CoolingTime,
   type RoasterCoolTo,
   type RoastMode,

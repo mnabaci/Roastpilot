@@ -6,6 +6,6 @@ export const PHASE_LABEL: Readonly<Record<RoastPhase, string>> = {
   preheat: 'Preheat',
   roasting: 'Roasting',
   development: 'Development',
-  cooling: 'Cooling',
+  cooling: 'Cooling beans',
   done: 'Done',
 };

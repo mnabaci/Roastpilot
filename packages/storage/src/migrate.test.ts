@@ -32,6 +32,7 @@ describe('migrate', () => {
           '0002_roasters',
           '0003_beans',
           '0004_roast_imported',
+          '0005_cooler_helps_drum',
         ],
       },
     });
@@ -56,7 +57,15 @@ describe('migrate', () => {
     db.exec(`INSERT INTO roasts (mode, started_at) VALUES ('manual', '2026-11-04T10:00:00.000Z')`);
     expect(migrate(db)).toEqual({
       ok: true,
-      value: { applied: ['0001_profiles', '0002_roasters', '0003_beans', '0004_roast_imported'] },
+      value: {
+        applied: [
+          '0001_profiles',
+          '0002_roasters',
+          '0003_beans',
+          '0004_roast_imported',
+          '0005_cooler_helps_drum',
+        ],
+      },
     });
     expect(db.prepare('SELECT mode, profile, roaster_id FROM roasts').all()).toEqual([
       { mode: 'manual', profile: null, roaster_id: 1 },
@@ -86,6 +95,21 @@ describe('migrate', () => {
     expect(db.prepare('SELECT roaster_id, imported FROM roasts ORDER BY id').all()).toEqual([
       { roaster_id: 1, imported: 0 },
       { roaster_id: null, imported: 1 },
+    ]);
+  });
+
+  it('the bean cooler helps cool the drum on Skywalkers only', () => {
+    const db = new DatabaseSync(':memory:');
+    migrate(db, MIGRATIONS.slice(0, 5));
+    db.exec(`INSERT INTO roasters (name, model, batch_min_g, batch_ideal_g, batch_max_g, max_temp,
+      max_time_s, temp_offset, pid, is_active)
+      SELECT 'Second', 'skywalker', batch_min_g, batch_ideal_g, batch_max_g, max_temp, max_time_s,
+      temp_offset, pid, 0 FROM roasters WHERE id = 1`);
+    migrate(db);
+    expect(db.prepare('SELECT model, cooler_helps_drum FROM roasters ORDER BY id').all()).toEqual([
+      { model: 'skywalker', cooler_helps_drum: 1 },
+      { model: 'simulator', cooler_helps_drum: 0 },
+      { model: 'skywalker', cooler_helps_drum: 1 },
     ]);
   });
 

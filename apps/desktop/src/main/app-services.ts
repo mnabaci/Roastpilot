@@ -177,9 +177,9 @@ export function createAppServices({
       return {
         findChargePoint: latest.findChargePoint,
         coolingMs: latest.coolingTimeMin * 60_000,
-        coolingBelowC: latest.coolingEnd === 'temperature' ? latest.coolingBelowC : null,
         coolRoasterAfter: latest.coolRoasterAfter,
         roasterCoolToC: latest.roasterCoolToC,
+        coolerHelpsDrum: roasters.active().coolerHelpsDrum,
       };
     },
     onChange: (state) => {

@@ -42,32 +42,37 @@ describe('roastStripData', () => {
       coolingEndsAtMs: 840_000,
     });
     const early = roastStripData(cooling, [reading(602_000, { bt: 196.2 })]);
-    expect(early?.prompt).toBe('Dump beans · Cooling 3:58 left');
+    expect(early?.prompt).toBe('Dump beans · Cooling beans 3:58 left');
     expect(early?.numbers).toEqual([{ label: 'Temp', value: '196.2 °C' }]);
     const later = roastStripData(cooling, [reading(600_000 + DUMP_PROMPT_MS, { bt: 120 })]);
     expect(later?.prompt).toBeUndefined();
-    expect(later?.lead).toBe('Cooling 3:00 left');
+    expect(later?.lead).toBe('Cooling beans 3:00 left');
   });
 
-  it('roaster cool-down after the roast: where the drum is heading', () => {
+  it('drum cooling after the beans: where the drum is heading', () => {
     const data = roastStripData(
       roast({ phase: 'done', roasterCoolingSinceMs: 0, roasterCoolToC: 50 }),
       [reading(1000, { bt: 92.4, fan: 100 })],
     );
-    expect(data?.lead).toBe('Cooling the roaster · 92 °C → 50 °C');
+    expect(data?.lead).toBe('Cooling the drum · 92 °C → 50 °C');
     expect(data?.numbers).toEqual([
       { label: 'Temp', value: '92.4 °C' },
       { label: 'Fan', value: '100 %' },
     ]);
   });
 
-  it('cooling by temperature: where the drum probe is heading instead of a countdown', () => {
+  it('while the beans cool, their countdown leads even with the drum cooling beside them', () => {
     const data = roastStripData(
-      roast({ phase: 'cooling', droppedAtMs: 0, coolingEndsAtMs: 600_000, coolingBelowC: 90 }),
+      roast({
+        phase: 'cooling',
+        droppedAtMs: 0,
+        coolingEndsAtMs: 240_000,
+        roasterCoolingSinceMs: 0,
+        roasterCoolToC: 50,
+      }),
       [reading(120_000, { bt: 112.4 })],
     );
-    expect(data?.lead).toBe('Cooling · 112 °C → 90 °C');
-    expect(data?.prompt).toBeUndefined();
+    expect(data?.lead).toBe('Cooling beans 2:00 left');
   });
 
   it('names the temperature as the connected roaster does', () => {

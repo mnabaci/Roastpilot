@@ -51,7 +51,7 @@ export function OutputsPanel() {
         ? 'Drum is off'
         : !access.heater && connected
           ? phase === 'cooling'
-            ? 'Cooling · heater off, fan at 100%'
+            ? 'Cooling beans · heater off, fan at 100%'
             : 'Heater waits for Preheat'
           : undefined;
   return (
@@ -102,7 +102,7 @@ export function OutputsPanel() {
         ) : null}
         {access.showCooling && has('cooling') ? (
           <SwitchCell
-            label="Cooling"
+            label="Bean cooler"
             on={connected && cooling.value > 0}
             disabled={!connected}
             onToggle={(on) => {

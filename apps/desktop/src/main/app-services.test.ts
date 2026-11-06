@@ -152,7 +152,26 @@ describe('createAppServices', () => {
     expect(services.roast.state.roasterCoolingSinceMs).toBeNull();
   });
 
-  it('disconnected during bean cooling: cool end starts no roaster cool-down', async () => {
+  it('on a Skywalker the bean cooler stays on while the drum cools after the beans', async () => {
+    const { clock, services, sim } = setup(undefined, { coolingTimeMin: 2 });
+    await services.settings.get();
+    await services.session.connect(sim, { kind: 'simulator' });
+    await services.session.setOutput('heater', 100);
+    await clock.runFor(4 * 60_000);
+    await services.roast.act('start');
+    await services.roast.act('drop');
+    await clock.runFor(2 * 60_000 + 2000);
+    expect(services.roast.state).toMatchObject({ phase: 'done' });
+    expect(services.roast.state.roasterCoolingSinceMs).not.toBeNull();
+    expect(services.snapshot().readings.at(-1)?.values).toMatchObject({
+      fan: 100,
+      cooling: 100,
+      drum: 1,
+      filter: 0,
+    });
+  });
+
+  it('disconnected during bean cooling: drum cooling ends and does not come back', async () => {
     const { clock, services, sim } = setup();
     await services.session.connect(sim, { kind: 'simulator' });
     await services.session.setOutput('heater', 100);

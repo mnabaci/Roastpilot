@@ -1,5 +1,5 @@
 import type { ConnectionState, RoastAction, RoastPhase, RoastState } from '@roastpilot/shared';
-import { formatClock, formatNumber } from '@roastpilot/ui';
+import { formatClock } from '@roastpilot/ui';
 
 export interface FlowButton {
   action: RoastAction;
@@ -55,7 +55,10 @@ const STEPS: Readonly<Record<RoastPhase, FlowStep>> = {
   },
   cooling: {
     quiet: { action: 'extend-cooling', label: '+1 min' },
-    stop: { label: 'Finish cooling now', question: 'Finish cooling? · everything turns off' },
+    stop: {
+      label: 'Finish cooling now',
+      question: 'Finish cooling the beans? · the countdown ends now',
+    },
     hint: 'Dump the beans into the cooling tray.',
   },
   done: {
@@ -64,27 +67,23 @@ const STEPS: Readonly<Record<RoastPhase, FlowStep>> = {
   },
 };
 
-/** The step for this roast; cooling by temperature has no +1 min. */
+/** The step for this roast. */
 export function flowStep(roast: RoastState): FlowStep {
-  const step = STEPS[roast.phase];
-  return roast.coolingBelowC === null ? step : { ...step, quiet: undefined };
+  return STEPS[roast.phase];
 }
 
 /** A charge point found at least this much before the press is worth saying. */
 const CHARGE_NOTE_MS = 1000;
 
 /**
- * The one-line hint under the primary action: while cooling, the countdown or the temperature
- * against its target; while roasting, how much earlier the charge point was found than the press
- * (docs/spec/manual-mode.md).
+ * The one-line hint under the primary action: while cooling, the beans' countdown; while roasting,
+ * how much earlier the charge point was found than the press (docs/spec/manual-mode.md).
  */
 export function flowHint(
   roast: RoastState,
-  { coolingLeftS, temp }: { coolingLeftS: number | undefined; temp: number | undefined },
+  { coolingLeftS }: { coolingLeftS: number | undefined },
 ): string {
   const { hint } = STEPS[roast.phase];
-  if (roast.phase === 'cooling' && roast.coolingBelowC !== null)
-    return `${hint} ${formatNumber(temp, 0) ?? '–'} °C → ${String(roast.coolingBelowC)} °C.`;
   if (roast.phase === 'cooling' && coolingLeftS !== undefined)
     return `${hint} ${formatClock(coolingLeftS)} left.`;
   const { chargedAtMs, startPressedAtMs } = roast;

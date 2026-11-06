@@ -3,9 +3,7 @@ import { DEFAULT_SETTINGS, SettingsSchema } from './settings';
 
 const ROAST_DEFAULTS = {
   findChargePoint: true,
-  coolingEnd: 'time',
   coolingTimeMin: 4,
-  coolingBelowC: 90,
   coolRoasterAfter: true,
   roasterCoolToC: 50,
   roastMode: 'manual',
@@ -48,9 +46,7 @@ describe('SettingsSchema', () => {
       controls: 'full',
       chartSmoothingS: 10,
       findChargePoint: false,
-      coolingEnd: 'temperature',
       coolingTimeMin: 6,
-      coolingBelowC: 70,
       coolRoasterAfter: false,
       roasterCoolToC: 40,
       roastMode: 'auto',
@@ -98,9 +94,18 @@ describe('SettingsSchema', () => {
     expect(SettingsSchema.parse({ coolingTimeMin: 2 }).coolingTimeMin).toBe(2);
   });
 
-  it('cools by time to 90 °C and the roaster to 50 °C unless set; odd values fall back', () => {
-    expect(
-      SettingsSchema.parse({ coolingEnd: 'colour', coolingBelowC: 85, roasterCoolToC: 20 }),
-    ).toMatchObject({ coolingEnd: 'time', coolingBelowC: 90, roasterCoolToC: 50 });
+  it('cools the drum to 50 °C unless set; an odd value falls back', () => {
+    expect(SettingsSchema.parse({ roasterCoolToC: 20 }).roasterCoolToC).toBe(50);
+  });
+
+  it('an older file that cooled the beans by temperature loads, cooling by time', () => {
+    const parsed = SettingsSchema.parse({
+      coolingEnd: 'temperature',
+      coolingBelowC: 80,
+      coolingTimeMin: 5,
+    });
+    expect(parsed.coolingTimeMin).toBe(5);
+    expect(parsed).not.toHaveProperty('coolingEnd');
+    expect(parsed).not.toHaveProperty('coolingBelowC');
   });
 });

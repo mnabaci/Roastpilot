@@ -13,6 +13,8 @@ export const roasters = sqliteTable('roasters', {
   maxTempC: real('max_temp').notNull(),
   maxTimeS: real('max_time_s').notNull(),
   tempOffsetC: real('temp_offset').notNull(),
+  /** The tray fan sits under the drum and helps cool it (0005). */
+  coolerHelpsDrum: integer('cooler_helps_drum', { mode: 'boolean' }).notNull().default(false),
   /** JSON AutoTuning: gains, correction limit, preheat hold. */
   pid: text('pid').notNull(),
   isActive: integer('is_active', { mode: 'boolean' }).notNull(),

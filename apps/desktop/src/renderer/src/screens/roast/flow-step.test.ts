@@ -2,35 +2,23 @@ import { READY_ROAST, type RoastState } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { flowHint, flowStep } from './flow-step';
 
-const cooling = (coolingBelowC: number | null): RoastState => ({
-  ...READY_ROAST,
-  phase: 'cooling',
-  coolingBelowC,
-});
+const COOLING: RoastState = { ...READY_ROAST, phase: 'cooling' };
 
 describe('flowStep', () => {
-  it('offers +1 min while cooling by time', () => {
-    expect(flowStep(cooling(null)).quiet?.label).toBe('+1 min');
-  });
-
-  it('has no +1 min while cooling by temperature', () => {
-    expect(flowStep(cooling(90)).quiet).toBeUndefined();
-    expect(flowStep(cooling(90)).stop?.label).toBe('Finish cooling now');
+  it('offers +1 min while the beans cool, and Finish cooling now ends only their countdown', () => {
+    expect(flowStep(COOLING).quiet).toEqual({ action: 'extend-cooling', label: '+1 min' });
+    expect(flowStep(COOLING).stop).toEqual({
+      label: 'Finish cooling now',
+      question: 'Finish cooling the beans? · the countdown ends now',
+    });
   });
 });
 
 describe('flowHint', () => {
-  it('counts down while cooling by time', () => {
-    expect(flowHint(cooling(null), { coolingLeftS: 95, temp: 140 })).toBe(
+  it('counts down while the beans cool', () => {
+    expect(flowHint(COOLING, { coolingLeftS: 95 })).toBe(
       'Dump the beans into the cooling tray. 1:35 left.',
     );
-  });
-
-  it('shows the temperature against its target while cooling by temperature', () => {
-    expect(flowHint(cooling(90), { coolingLeftS: 500, temp: 112.4 })).toBe(
-      'Dump the beans into the cooling tray. 112 °C → 90 °C.',
-    );
-    expect(flowHint(cooling(90), { coolingLeftS: 500, temp: undefined })).toContain('– °C → 90 °C');
   });
 
   it('says how much earlier the charge point was found', () => {
@@ -40,7 +28,7 @@ describe('flowHint', () => {
       chargedAtMs: 1000,
       startPressedAtMs: 8000,
     };
-    expect(flowHint(roast, { coolingLeftS: undefined, temp: 90 })).toBe(
+    expect(flowHint(roast, { coolingLeftS: undefined })).toBe(
       'Charge found 0:07 before you pressed · press at first crack.',
     );
   });

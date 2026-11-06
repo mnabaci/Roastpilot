@@ -13,7 +13,8 @@ import { silentLogger, type Logger } from '../logging/logger';
 import { guardListener } from '../logging/guard-listener';
 import { BeanCooling } from './bean-cooling';
 import type { ManualRoastDeps } from './manual-roast-deps';
-import { ALL_OFF, DROP_OUTPUTS, ROAST_ON, ROASTER_COOLING, type Outputs } from './roast-outputs';
+import { coolingOutputs } from './cooling-outputs';
+import { ALL_OFF, ROAST_ON, type Outputs } from './roast-outputs';
 import { ALLOWED_FROM, DEFAULT_OPTIONS, PHASE_OUTPUTS, type RoastOptions } from './roast-rules';
 import { RoasterCooling } from './roaster-cooling';
 import { chargeFor, turningPointEvent } from './roast-detections';
@@ -49,6 +50,7 @@ export class ManualRoast {
       },
       send: (outputs: Outputs) => this.#send(outputs),
       latestBt: () => deps.latestBt(),
+      coolingOutputs: () => this.#coolingOutputs(),
     };
     this.#cooling = new RoasterCooling(host, this.#logger);
     this.#beans = new BeanCooling(
@@ -81,12 +83,11 @@ export class ManualRoast {
   }
 
   /**
-   * Every reading, after it is kept: finds the turning point while roasting, and ends the
-   * roaster cool-down once the drum is cool (docs/spec/manual-mode.md).
+   * Every reading, after it is kept: finds the turning point while roasting, and ends drum
+   * cooling once the drum is cool (docs/spec/manual-mode.md).
    */
   async onReading(reading: Reading): Promise<void> {
     this.#markTurningPoint();
-    await this.#beans.onReading(reading);
     await this.#cooling.onReading(reading);
   }
 
@@ -96,14 +97,15 @@ export class ManualRoast {
    */
   async restoreOutputs(): Promise<void> {
     const { phase } = this.#state;
-    const outputs = this.#cooling.running ? ROASTER_COOLING : PHASE_OUTPUTS[phase];
+    const cooling = phase === 'cooling' || this.#cooling.running;
+    const outputs = cooling ? this.#coolingOutputs() : PHASE_OUTPUTS[phase];
     if (outputs.length === 0) return;
     this.#logger.info('roast.outputs-restored', { phase });
     await this.#send(outputs);
   }
 
   /**
-   * A safety stop or a disconnect ends the roaster cool-down. Sends nothing: the safe stop has
+   * A safety stop or a disconnect ends drum cooling. Sends nothing: the safe stop has
    * set the outputs, and without a roaster there is nothing to send to.
    */
   stopRoasterCooling(reason: 'safety-stop' | 'disconnected'): void {
@@ -111,7 +113,7 @@ export class ManualRoast {
   }
 
   /**
-   * Every output you ask for: turning the heater on ends a roaster cool-down, which would
+   * Every output you ask for: turning the heater on ends drum cooling, which would
    * otherwise fight it with the fan and later switch it off. Your outputs stay as you set them.
    */
   outputRequested(channel: string, value: number): void {
@@ -149,19 +151,18 @@ export class ManualRoast {
       this.#set(cracked(this.#state, this.#event('first-crack', nowMs)));
       return Promise.resolve();
     },
-    // Forgets the last roast's readings and events; sends nothing. A cool-down keeps running.
+    // Forgets the last roast's readings and events; sends nothing. Drum cooling keeps running.
     clear: () => {
       this.#deps.onNewRoast();
       this.#set(cleared(this.#state));
       return Promise.resolve();
     },
     drop: async (nowMs) => {
-      this.#beans.start(this.#event('drop', nowMs));
+      await this.#beans.start(this.#event('drop', nowMs));
       this.#deps.onRoastEnded();
-      await this.#send(DROP_OUTPUTS);
     },
     // In Preheat nothing has roasted: back to Ready, the preheat stays on the chart until Clear. In
-    // Cooling it finishes cooling now. In between it ends the roast where it is.
+    // Cooling it finishes bean cooling now. In between it ends the roast where it is.
     end: async (nowMs) => {
       this.#beans.cancel();
       if (this.#state.phase === 'cooling') {
@@ -196,18 +197,29 @@ export class ManualRoast {
     this.#deps.onTurningPoint?.(tp.atMs);
   }
 
-  /** A roast begins: a running cool-down ends, and its fan at 100 goes back to 0 (you set it). */
+  /** A roast begins: drum cooling ends, and its fan and bean cooler go back to 0 (you set them). */
   #endCoolingForRoast(reason: 'preheat' | 'roast-started'): Outputs {
-    return this.#cooling.stopWithoutOutputs(reason) ? [['fan', 0]] : [];
+    return this.#cooling.stopWithoutOutputs(reason)
+      ? [
+          ['fan', 0],
+          ['cooling', 0],
+        ]
+      : [];
+  }
+
+  /** Heater, fan, bean cooler, drum and filter for the coolings running now. */
+  #coolingOutputs(): Outputs {
+    return coolingOutputs({
+      beans: this.#state.phase === 'cooling',
+      drum: this.#cooling.running,
+      coolerHelpsDrum: this.#options().coolerHelpsDrum,
+    });
   }
 
   /** Actions the phase allows but the moment doesn't. */
   #refused(action: RoastAction): boolean {
-    // The roaster cool-down needs a roaster that can take it: connected, no safety stop.
-    if (action === 'cool-roaster') return !this.#canCoolRoaster();
-    // +1 min only counts when cooling ends by time.
-    if (action === 'extend-cooling') return this.#beans.byTemperature;
-    return false;
+    // Drum cooling needs a roaster that can take it: connected, no safety stop.
+    return action === 'cool-roaster' && !this.#canCoolRoaster();
   }
 
   /** Sends outputs in order. A failure is logged and the rest still go out; safety covers the roaster. */
