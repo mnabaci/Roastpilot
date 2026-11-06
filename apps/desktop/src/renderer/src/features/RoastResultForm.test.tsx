@@ -70,7 +70,7 @@ describe('RoastResultForm', () => {
     const user = userEvent.setup();
     const { api } = renderApp(<RoastResultForm roast={ROAST} />);
     await user.type(screen.getByLabelText('Roasted'), 'abc');
-    expect(screen.getByText('Enter a weight')).toBeTruthy();
+    expect(screen.getByText('Enter a weight above 0')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'Favourite' }));
     expect(api.saveRoastResult).toHaveBeenCalledWith({
       id: 3,
@@ -89,5 +89,14 @@ describe('RoastResultForm', () => {
     renderApp(<RoastResultForm roast={ROAST} />, {}, api);
     await user.click(screen.getByRole('button', { name: '5' }));
     expect(await screen.findByRole('alert')).toBeTruthy();
+  });
+
+  it('says roasted can not outweigh green, and saves nothing until it is fixed', async () => {
+    const user = userEvent.setup();
+    const { api } = renderApp(<RoastResultForm roast={ROAST} />);
+    await user.type(screen.getByLabelText('Roasted'), '450');
+    await user.tab();
+    expect(screen.getByText("Roasted can't be more than green")).toBeTruthy();
+    expect(api.saveRoastResult).not.toHaveBeenCalled();
   });
 });
