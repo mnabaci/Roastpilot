@@ -92,7 +92,8 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 - **A roaster's page:** its name and model, then one primary action: Connect, or Disconnect for the one in use (Connecting… busy while it connects; a failure is one line under it). Connect makes this roaster the active one first; Use this roaster (quiet, by the name) makes it active without connecting, as Profiles and batch sizes follow it.
 - **Port:** a Skywalker-type roaster shows its port, with Choose another to list likely roasters (USB serial adapters), the rest behind "Show all ports" (every port at once when none looks like a roaster), and Refresh. A Simulator has no port. When no port is plugged in, one hint: "No roaster found · plug it in, then Refresh".
 - **While a roaster is in use:** its page shows Disconnect and its status (Connected, Reconnecting…); every other page says "Disconnect <name> to switch", and records wait, as [roasters.md](roasters.md) says.
-- Under the action: the record's batch sizes, limits and calibration, preheat and PID gains (the roaster editor), and Delete.
+- Under the action, the record: name, batch size (min, ideal, max), limits and calibration (max temp, max time, temp offset) and the preheat hold, then Save and Delete.
+- **Advanced tuning · for experts:** closed until opened, the PID gains in plain words, with one line above them: "Push (Kp): how hard the heater reacts to being off target · Catch-up (Ki): closes a gap that stays". Preheat (Push, Catch-up), Reaching step temperatures (Push, Catch-up, Most it may change %), Following a curve (Push, Catch-up). Each plain name carries the usual one in brackets ("Push (Kp)", "Most it may change (limit)"). Same numbers and limits as before.
 - **Add roaster:** a name and a model, then Add; the new roaster opens.
 - The app starts on Roasters until a roaster is connected; Connect on the Roast screen opens it too.
 

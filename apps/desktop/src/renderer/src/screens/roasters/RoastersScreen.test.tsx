@@ -251,6 +251,36 @@ describe('RoastersScreen', () => {
       expect(api.saveRoaster).toHaveBeenCalledWith(expect.objectContaining({ maxTempC: 230 }));
     });
 
+    it('keeps the tuning closed, in plain words, until asked', async () => {
+      const { api } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
+      expect(screen.queryByRole('group', { name: 'Reaching step temperatures' })).toBeNull();
+      const toggle = screen.getByRole('button', { name: 'Advanced tuning · for experts' });
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      await userEvent.click(toggle);
+      expect(toggle).toHaveAttribute('aria-expanded', 'true');
+      expect(screen.getByText(/Push \(Kp\): how hard the heater reacts/)).toBeInTheDocument();
+      const steps = within(screen.getByRole('group', { name: 'Reaching step temperatures' }));
+      expect(
+        steps.getByRole('textbox', { name: 'Most it may change (limit)' }),
+      ).toBeInTheDocument();
+      const push = steps.getByRole('textbox', { name: 'Push (Kp)' });
+      await userEvent.clear(push);
+      await userEvent.type(push, '2');
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      expect(api.saveRoaster.mock.calls[0]?.[0].tuning.target.kp).toBe(2);
+    });
+
+    it('a tuning number with a problem keeps the section open', async () => {
+      renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
+      const toggle = screen.getByRole('button', { name: 'Advanced tuning · for experts' });
+      await userEvent.click(toggle);
+      const follow = within(screen.getByRole('group', { name: 'Following a curve' }));
+      await userEvent.clear(follow.getByRole('textbox', { name: 'Catch-up (Ki)' }));
+      await userEvent.click(toggle);
+      expect(screen.getByText('Enter a number')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    });
+
     it('says why a roaster with roasts stays', async () => {
       const api = fakeApi({
         deleteRoaster: vi.fn(() =>

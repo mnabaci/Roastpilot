@@ -1,55 +1,12 @@
 import type { Roaster } from '@roastpilot/shared';
 import { Button, NumberField, TextField } from '@roastpilot/ui';
+import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { ConfirmInline } from '../../features/ConfirmInline';
 import { useRun } from '../../features/use-run';
-import { fromRoasterDraft, toRoasterDraft, type RoasterDraft } from './roaster-draft';
-
-const GROUPS: readonly {
-  title: string;
-  cells: readonly { key: keyof RoasterDraft; label: string; unit?: string }[];
-}[] = [
-  {
-    title: 'Batch size',
-    cells: [
-      { key: 'batchMinG', label: 'Min', unit: 'g' },
-      { key: 'batchIdealG', label: 'Ideal', unit: 'g' },
-      { key: 'batchMaxG', label: 'Max', unit: 'g' },
-    ],
-  },
-  {
-    title: 'Limits and calibration',
-    cells: [
-      { key: 'maxTempC', label: 'Max temp', unit: '°C' },
-      { key: 'maxTimeMin', label: 'Max time', unit: 'min' },
-      { key: 'tempOffsetC', label: 'Temp offset', unit: '°C' },
-    ],
-  },
-  {
-    title: 'Preheat',
-    cells: [
-      { key: 'hold', label: 'Hold' },
-      { key: 'preheatKp', label: 'Kp' },
-      { key: 'preheatKi', label: 'Ki' },
-    ],
-  },
-  {
-    title: 'Step targets',
-    cells: [
-      { key: 'targetKp', label: 'Kp' },
-      { key: 'targetKi', label: 'Ki' },
-      { key: 'targetLimitPct', label: 'Correction', unit: '%' },
-    ],
-  },
-  {
-    title: 'Curve follow',
-    cells: [
-      { key: 'followKp', label: 'Kp' },
-      { key: 'followKi', label: 'Ki' },
-    ],
-  },
-];
+import { fromRoasterDraft, toRoasterDraft } from './roaster-draft';
+import { EVERYDAY_FIELDS, TUNING_FIELDS, TUNING_HINT, type FieldGroup } from './roaster-fields';
 
 /** One roaster's record (docs/spec/roasters.md). Locked while a roaster is connected. */
 export function RoasterEditor({
@@ -98,6 +55,31 @@ export function RoasterEditor({
       );
     });
   };
+  const [showTuning, setShowTuning] = useState(false);
+  // A problem in a tuning number opens the section, so a held-back Save is never unexplained.
+  const tuningShown =
+    showTuning || TUNING_FIELDS.some((g) => g.cells.some((c) => Boolean(errors[c.key])));
+  const fields = ({ title, cells }: FieldGroup) => (
+    <fieldset key={title} className="flex flex-col gap-2">
+      <legend className="pb-1 text-body font-semibold">{title}</legend>
+      <div className="grid grid-cols-3 items-start gap-3">
+        {cells.map(({ key, label, unit }) => (
+          <NumberField
+            key={key}
+            label={label}
+            value={draft[key]}
+            disabled={locked}
+            invalid={Boolean(errors[key])}
+            hint={errors[key]}
+            {...(unit ? { unit } : {})}
+            onChange={(value) => {
+              setDraft({ ...draft, [key]: value });
+            }}
+          />
+        ))}
+      </div>
+    </fieldset>
+  );
   return (
     <div className="flex flex-col gap-4 rounded-xl bg-surface px-5 py-4.5">
       <TextField
@@ -109,27 +91,29 @@ export function RoasterEditor({
         }}
       />
       {errors.name ? <p className="text-label text-critical-text">{errors.name}</p> : null}
-      {GROUPS.map(({ title, cells }) => (
-        <fieldset key={title} className="flex flex-col gap-2">
-          <legend className="pb-1 text-body font-semibold">{title}</legend>
-          <div className="grid grid-cols-3 items-start gap-3">
-            {cells.map(({ key, label, unit }) => (
-              <NumberField
-                key={key}
-                label={label}
-                value={draft[key]}
-                disabled={locked}
-                invalid={Boolean(errors[key])}
-                hint={errors[key]}
-                {...(unit ? { unit } : {})}
-                onChange={(value) => {
-                  setDraft({ ...draft, [key]: value });
-                }}
-              />
-            ))}
-          </div>
-        </fieldset>
-      ))}
+      {EVERYDAY_FIELDS.map(fields)}
+      <Button
+        variant="ghost"
+        className="self-start"
+        aria-expanded={tuningShown}
+        icon={
+          <ChevronDown
+            aria-hidden="true"
+            className={tuningShown ? 'rotate-180 transition-transform' : 'transition-transform'}
+          />
+        }
+        onClick={() => {
+          setShowTuning(!showTuning);
+        }}
+      >
+        Advanced tuning · for experts
+      </Button>
+      {tuningShown ? (
+        <div className="flex flex-col gap-4">
+          <p className="text-label text-ink-muted">{TUNING_HINT}</p>
+          {TUNING_FIELDS.map(fields)}
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="primary" disabled={locked || !edited || !checked.ok} onClick={save}>
           Save
