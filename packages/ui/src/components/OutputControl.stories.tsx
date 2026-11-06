@@ -52,5 +52,6 @@ type Story = StoryObj<typeof meta>;
 export const HeaterAuto: Story = {};
 export const HeaterManual: Story = { args: { mode: 'manual', value: 75 } };
 export const Fan: Story = { args: { label: 'Fan', tone: 'air', value: 30 } };
+export const ManualRoast: Story = { args: { mode: undefined, value: 60 } };
 export const Locked: Story = { args: { disabled: true, value: 0 } };
 export const NoReading: Story = { args: { mode: 'manual', value: undefined } };

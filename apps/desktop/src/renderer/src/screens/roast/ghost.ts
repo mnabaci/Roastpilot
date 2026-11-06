@@ -1,5 +1,6 @@
-import type { RoastDetail, SavedSample } from '@roastpilot/shared';
+import type { RoastDetail, RoastSummary, SavedSample } from '@roastpilot/shared';
 import { formatClock, type ChartLayer, type ChartMarker } from '@roastpilot/ui';
+import { roastTitle } from '../history/history-format';
 import { savedAsLive } from '../history/saved-roast-chart';
 import { roastChartData } from './roast-chart-data';
 
@@ -90,3 +91,7 @@ export function formatGhostDelta({ deltaC, aheadS }: GhostDelta): string {
   if (seconds === 0) return `${temp} · level`;
   return `${temp} · ${formatClock(Math.abs(seconds))} ${seconds > 0 ? 'ahead' : 'behind'}`;
 }
+
+/** A saved roast as the ghost picker and the setup line name it: date and time, starred if a favourite. */
+export const ghostLabel = (roast: RoastSummary): string =>
+  `${roast.isFavourite ? '★ ' : ''}${roastTitle(roast.startedAt)}`;

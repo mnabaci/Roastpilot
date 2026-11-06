@@ -33,6 +33,18 @@ describe('RoastResultForm', () => {
     expect(screen.getByText('15.0% weight loss')).toBeTruthy();
   });
 
+  it('says Saves as you go, then Saved once a save lands, until the next edit', async () => {
+    const user = userEvent.setup();
+    renderApp(<RoastResultForm roast={ROAST} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Saves as you go');
+    await user.click(screen.getByRole('button', { name: '4' }));
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent('Saved');
+    });
+    await user.type(screen.getByLabelText('Notes'), 'b');
+    expect(screen.getByRole('status')).toHaveTextContent('Saves as you go');
+  });
+
   it('a rating and the star save at once; tapping a rating again clears it', async () => {
     const user = userEvent.setup();
     const { api } = renderApp(<RoastResultForm roast={ROAST} />);

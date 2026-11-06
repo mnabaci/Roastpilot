@@ -6,6 +6,7 @@ export function DeleteRoast({ onDelete }: { onDelete: () => void }) {
   return (
     <ConfirmInline
       label="Delete"
+      destructive
       icon={<Trash2 aria-hidden="true" />}
       question="Delete this roast? · can't be undone"
       confirmLabel="Delete"

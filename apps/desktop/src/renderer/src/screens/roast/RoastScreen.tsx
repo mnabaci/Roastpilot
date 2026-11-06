@@ -4,10 +4,10 @@ import { useMemo, useState } from 'react';
 import { roastChartData } from './roast-chart-data';
 import { roastNumbers } from './roast-numbers';
 import { skippedSteps, stageTimes } from './stage-times';
-import { AutoPanel } from './AutoPanel';
 import { formatGhostDelta, ghostChart, ghostDelta } from './ghost';
 import { RoastSetupPanel } from './RoastSetupPanel';
 import { FlowPanel } from './FlowPanel';
+import { FinishedRoastCard } from './FinishedRoastCard';
 import { useRunningPlan } from './use-active-profile';
 import { OutputsPanel } from './OutputsPanel';
 import { RoastNumbersRow } from './RoastNumbersRow';
@@ -38,6 +38,7 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
   const { api, stores } = useDeps();
   const run = useRun();
   const connected = useConnection((s) => isConnected(s.connection));
+  const lost = useConnection((s) => s.connection.status === 'lost');
   // Clear resets the whole view (stepper, numbers, chart), so it sits above them. Needs no roaster.
   // Only with a roast (or a preheat) on screen: idle readings keep coming while connected.
   const roastOnScreen = roast.preheatAtMs !== null || roast.chargedAtMs !== null;
@@ -91,9 +92,16 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
     ghostDetail && roasting && shown.bt !== undefined && numbers.elapsedS !== undefined
       ? ghostDelta(ghostDetail.samples, ghostDetail.dropTimeS, numbers.elapsedS, shown.bt)
       : undefined;
+  // Connected, or lost and reconnecting: either way the outputs stay, with dashes while lost.
+  const hasRoaster = connected || lost;
+  const idle = roast.phase === 'ready' || roast.phase === 'done';
+  const flow = <FlowPanel coolingLeftS={numbers.coolingLeftS} onConnect={onConnect} />;
+  // A new key when a roast starts or ends, so a half-open Change never carries across.
+  const setupPanel = <RoastSetupPanel key={idle ? 'idle' : 'roasting'} />;
   return (
-    <main className="grid min-h-0 flex-1 grid-cols-[1fr_auto] content-start gap-6 overflow-y-auto p-6">
-      <div className="flex min-w-0 flex-col gap-5">
+    // The two columns scroll on their own, so the action and sliders never leave with the chart.
+    <main className="grid min-h-0 flex-1 grid-cols-[1fr_auto] gap-6 overflow-hidden p-6">
+      <div className="flex min-h-0 min-w-0 flex-col gap-5 overflow-y-auto">
         <div className="flex items-start justify-between gap-4">
           <PhaseStepper
             steps={STEPS}
@@ -152,18 +160,38 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
           tempName={temp.name}
           {...(delta ? { ghostLine: formatGhostDelta(delta) } : {})}
         />
+        <FinishedRoastCard />
         <RoastChart
           title="Roast curve"
           layers={[...(ghostLayers?.layers ?? []), ...chart.layers]}
           markers={[...(ghostLayers?.markers ?? []), ...chart.markers]}
         />
       </div>
-      <aside aria-label="Controls" className="flex w-80 flex-col gap-5">
-        <AutoPanel />
-        <RoastSetupPanel />
-        <FlowPanel coolingLeftS={numbers.coolingLeftS} onConnect={onConnect} />
-        <OutputsPanel />
-        <p className="text-label text-ink-muted">Stay with the roaster while it runs.</p>
+      {/* The panel shows what the moment needs (docs/spec/ui.md, Side panel follows the roast). */}
+      <aside aria-label="Controls" className="flex min-h-0 w-80 flex-col gap-5 overflow-y-auto">
+        {!hasRoaster ? (
+          <>
+            {flow}
+            {setupPanel}
+          </>
+        ) : roast.phase === 'ready' ? (
+          // Before a roast you fill the setup in, so it leads.
+          <>
+            {setupPanel}
+            {flow}
+            <OutputsPanel />
+          </>
+        ) : (
+          // During and after a roast the controls come right under the action.
+          <>
+            {flow}
+            <OutputsPanel />
+            {setupPanel}
+            {roast.phase === 'done' ? null : (
+              <p className="text-label text-ink-muted">Stay with the roaster while it runs.</p>
+            )}
+          </>
+        )}
       </aside>
     </main>
   );

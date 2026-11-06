@@ -8,7 +8,8 @@ export interface OutputControlProps {
   label: string;
   /** Current value in percent; undefined shows a dash (no roaster to report it). */
   value: number | undefined;
-  mode: 'auto' | 'manual';
+  /** Who drives it while Auto runs the roast; left out in a manual roast, so no badge shows. */
+  mode?: 'auto' | 'manual' | undefined;
   /**
    * Called once with the value you chose: when you let go of the slider, or 300 ms after the last
    * arrow key. The values in between only move the number (switches the output to manual).
@@ -29,7 +30,7 @@ export interface OutputControlProps {
 /** How long the keyboard has to rest before its value is sent. */
 export const KEYBOARD_COMMIT_MS = 300;
 
-/** A slider for one roaster output with its value and an Auto/Manual badge. */
+/** A slider for one roaster output with its value, and an Auto/Manual badge while Auto runs. */
 export function OutputControl({
   label,
   value,
@@ -53,7 +54,7 @@ export function OutputControl({
           {label}
         </label>
         <div className="flex items-center gap-2.5">
-          <Badge tone={manual ? 'heat' : 'air'}>{manual ? 'Manual' : 'Auto'}</Badge>
+          {mode ? <Badge tone={manual ? 'heat' : 'air'}>{manual ? 'Manual' : 'Auto'}</Badge> : null}
           <output htmlFor={id} className="min-w-14 text-right text-readout-lg tabular-nums">
             {shown === undefined ? '–' : `${String(shown)}%`}
           </output>

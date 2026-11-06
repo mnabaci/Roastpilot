@@ -131,6 +131,7 @@ export function RoasterEditor({
         {roaster.active || locked ? null : (
           <ConfirmInline
             label="Delete"
+            destructive
             question="Delete this roaster?"
             confirmLabel="Delete"
             onConfirm={remove}

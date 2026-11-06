@@ -11,6 +11,13 @@ describe('OutputControl', () => {
     expect(screen.getByText('Auto')).toBeInTheDocument();
   });
 
+  it('shows no badge and no Resume auto in a manual roast', () => {
+    render(<OutputControl label="Fan" value={30} onChange={vi.fn()} onResumeAuto={vi.fn()} />);
+    expect(screen.queryByText('Manual')).toBeNull();
+    expect(screen.queryByText('Auto')).toBeNull();
+    expect(screen.queryByRole('button', { name: /Resume auto/ })).toBeNull();
+  });
+
   it('shows a dash and locks the slider when there is no value', () => {
     render(<OutputControl label="Heater" value={undefined} mode="manual" onChange={vi.fn()} />);
     expect(screen.getByText('–')).toBeInTheDocument();
