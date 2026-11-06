@@ -4,6 +4,8 @@ import { cn } from '../lib/utils';
 export interface SidebarLayoutProps {
   /** The screen title, on top of the sidebar. */
   title: string;
+  /** Beside the title: the list's own actions, usually a "⋯" Menu. */
+  titleAction?: ReactNode;
   /** The list (a NavList or RoastList), plus anything that goes under it. */
   sidebar: ReactNode;
   /** Names the content area for screen readers. */
@@ -19,6 +21,7 @@ export interface SidebarLayoutProps {
  */
 export function SidebarLayout({
   title,
+  titleAction,
   sidebar,
   contentLabel,
   children,
@@ -27,7 +30,10 @@ export function SidebarLayout({
   return (
     <main className={cn('flex min-h-0 flex-1 overflow-hidden', className)}>
       <nav aria-label={title} className="flex w-sidebar shrink-0 flex-col gap-3 py-6 pl-6">
-        <h1 className="text-title">{title}</h1>
+        <div className="flex items-center justify-between gap-2 pr-3">
+          <h1 className="text-title">{title}</h1>
+          {titleAction}
+        </div>
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">{sidebar}</div>
       </nav>
       {/* Relative, so screen-reader-only labels inside scroll with the content. */}

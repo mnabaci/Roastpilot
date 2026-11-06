@@ -51,4 +51,12 @@ describe('Menu', () => {
       'true',
     );
   });
+
+  it('can be a worded button with a chevron', async () => {
+    const onDuplicate = vi.fn();
+    render(<Menu label="Make profile" text="Make profile" items={items(onDuplicate)} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Make profile' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Duplicate' }));
+    expect(onDuplicate).toHaveBeenCalledOnce();
+  });
 });

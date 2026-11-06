@@ -1,5 +1,4 @@
 import type { RoastId } from '@roastpilot/shared';
-import { Button } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
@@ -9,18 +8,20 @@ const IMPORT_PROBLEM: Readonly<Record<string, string>> = {
   'read-failed': "Couldn't read that file · see Logs",
 };
 
-/** Roasts in and out as files: CSV for spreadsheets, `.alog` from Artisan. */
-export function RoastFileActions({
-  canExport,
-  onImported,
-}: {
-  canExport: boolean;
-  onImported: (id: RoastId) => void;
-}) {
+export interface FileMessage {
+  text: string;
+  problem: boolean;
+}
+
+/** Roasts in and out as files: CSV for spreadsheets, `.alog` from Artisan; one line on how it went. */
+export function useRoastFiles(onImported: (id: RoastId) => void): {
+  exportCsv: () => void;
+  importAlog: () => void;
+  message: FileMessage | undefined;
+} {
   const { api } = useDeps();
   const run = useRun();
-  const [message, setMessage] = useState<{ text: string; problem: boolean }>();
-
+  const [message, setMessage] = useState<FileMessage>();
   const exportCsv = () => {
     setMessage(undefined);
     run('history.export-failed', async () => {
@@ -43,27 +44,5 @@ export function RoastFileActions({
       }
     });
   };
-
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex flex-wrap gap-2">
-        {canExport ? (
-          <Button size="sm" variant="ghost" onClick={exportCsv}>
-            Export CSV
-          </Button>
-        ) : null}
-        <Button size="sm" variant="ghost" onClick={importAlog}>
-          Import from Artisan
-        </Button>
-      </div>
-      {message ? (
-        <p
-          {...(message.problem ? { role: 'alert' } : {})}
-          className={`text-label ${message.problem ? 'text-critical-text' : 'text-ink-muted'}`}
-        >
-          {message.text}
-        </p>
-      ) : null}
-    </div>
-  );
+  return { exportCsv, importAlog, message };
 }
