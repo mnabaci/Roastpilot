@@ -28,6 +28,7 @@ const GHOST: RoastSummary = {
   notes: null,
   profileId: null,
   profileName: null,
+  imported: false,
   dropTemp: 205.5,
 };
 

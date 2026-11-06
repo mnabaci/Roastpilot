@@ -29,6 +29,8 @@ export interface RoastPlan {
 
 export interface NewRoast extends RoastPlan {
   startedAt: string;
+  /** From a file: no stock moves, now or later (docs/spec/data-model.md, Roastpilot roast files). */
+  imported?: boolean;
 }
 
 /** Saved roasts (docs/spec/data-model.md). Implemented in `storage`. */
@@ -43,6 +45,11 @@ export interface RoastRepository {
   /** Newest first. */
   list(): Promise<Result<RoastSummary[], StorageError>>;
   get(id: RoastId): Promise<Result<RoastDetail, StorageError>>;
+  /**
+   * Links the roast to another bean, or none. A roast made here moves its batch and roasted weight
+   * from the old bean's stock to the new one's; an imported roast only changes the link.
+   */
+  setBean(id: RoastId, beanId: BeanId | null): Promise<Result<void, StorageError>>;
   /** Removes the roast with its samples and events. */
   delete(id: RoastId): Promise<Result<void, StorageError>>;
 }

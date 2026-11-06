@@ -21,6 +21,7 @@ const ROAST: RoastSummary = {
   notes: null,
   profileId: null,
   profileName: null,
+  imported: false,
 };
 
 function setup(repository = unavailableRepository('disk gone')) {

@@ -70,6 +70,7 @@ describe('RoastScreen', () => {
       notes: null,
       profileId: null,
       profileName: null,
+      imported: false,
     };
     const api = fakeApi({ listRoasts: vi.fn(() => Promise.resolve([saved])) });
     const { stores } = renderApp(

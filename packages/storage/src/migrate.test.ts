@@ -25,7 +25,15 @@ describe('migrate', () => {
     const db = new DatabaseSync(':memory:');
     expect(migrate(db)).toEqual({
       ok: true,
-      value: { applied: ['0000_roasts', '0001_profiles', '0002_roasters', '0003_beans'] },
+      value: {
+        applied: [
+          '0000_roasts',
+          '0001_profiles',
+          '0002_roasters',
+          '0003_beans',
+          '0004_roast_imported',
+        ],
+      },
     });
     expect(tables(db)).toEqual(
       expect.arrayContaining([
@@ -48,7 +56,7 @@ describe('migrate', () => {
     db.exec(`INSERT INTO roasts (mode, started_at) VALUES ('manual', '2026-11-04T10:00:00.000Z')`);
     expect(migrate(db)).toEqual({
       ok: true,
-      value: { applied: ['0001_profiles', '0002_roasters', '0003_beans'] },
+      value: { applied: ['0001_profiles', '0002_roasters', '0003_beans', '0004_roast_imported'] },
     });
     expect(db.prepare('SELECT mode, profile, roaster_id FROM roasts').all()).toEqual([
       { mode: 'manual', profile: null, roaster_id: 1 },
@@ -66,6 +74,19 @@ describe('migrate', () => {
       { id: 2, name: 'Simulator', model: 'simulator', is_active: 0 },
     ]);
     expect(db.prepare('SELECT roaster_id FROM profiles').all()).toEqual([{ roaster_id: 1 }]);
+  });
+
+  it('marks roasts saved without a roaster as imported, and only those', () => {
+    const db = new DatabaseSync(':memory:');
+    migrate(db, MIGRATIONS.slice(0, 4));
+    db.exec(`INSERT INTO roasts (mode, started_at, roaster_id) VALUES
+      ('manual', '2026-11-04T10:00:00.000Z', 1),
+      ('manual', '2026-11-04T11:00:00.000Z', NULL)`);
+    migrate(db);
+    expect(db.prepare('SELECT roaster_id, imported FROM roasts ORDER BY id').all()).toEqual([
+      { roaster_id: 1, imported: 0 },
+      { roaster_id: null, imported: 1 },
+    ]);
   });
 
   it('applies only the migrations a database is missing, keeping its data', () => {
