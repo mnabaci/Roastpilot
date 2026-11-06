@@ -29,6 +29,15 @@ describe('RoastersScreen', () => {
       expect(api.setActiveRoaster).not.toHaveBeenCalled();
     });
 
+    it('says why a roaster could not be added', async () => {
+      // The default fake refuses an add as if a roaster were in use.
+      renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
+      await userEvent.click(screen.getByRole('button', { name: 'Add roaster' }));
+      await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Second');
+      await userEvent.click(screen.getByRole('button', { name: 'Add' }));
+      expect(await screen.findByRole('alert')).toHaveTextContent('Disconnect first');
+    });
+
     it('Use this roaster makes it active without connecting', async () => {
       const { api } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
       expect(screen.queryByRole('button', { name: 'Use this roaster' })).toBeNull();

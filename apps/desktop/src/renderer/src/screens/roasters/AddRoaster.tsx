@@ -13,11 +13,16 @@ export function AddRoaster({ onAdded }: { onAdded: (id: RoasterId) => void }) {
   const run = useRun();
   const [name, setName] = useState('');
   const [model, setModel] = useState<RoasterModel>('skywalker');
+  const [problem, setProblem] = useState<string>();
   const add = () => {
     run('roasters.add-failed', async () => {
       const added = await api.addRoaster({ name: name.trim(), model });
-      if (added.ok) onAdded(added.value.id);
-      else logger.warn('roasters.refused', { ...added.error });
+      if (added.ok) {
+        onAdded(added.value.id);
+        return;
+      }
+      logger.warn('roasters.refused', { ...added.error });
+      setProblem(added.error.kind === 'in-use' ? 'Disconnect first' : "Couldn't add · see the log");
     });
   };
   return (
@@ -36,6 +41,11 @@ export function AddRoaster({ onAdded }: { onAdded: (id: RoasterId) => void }) {
           Add
         </Button>
       </div>
+      {problem ? (
+        <p role="alert" className="text-label text-critical-text">
+          {problem}
+        </p>
+      ) : null}
     </section>
   );
 }

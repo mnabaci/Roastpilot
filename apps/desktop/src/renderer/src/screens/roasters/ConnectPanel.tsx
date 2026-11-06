@@ -1,50 +1,17 @@
 import type { ConnectTarget, Roaster, SerialPortInfo } from '@roastpilot/shared';
-import { Button, cn } from '@roastpilot/ui';
-import { LoaderCircle, RefreshCw } from 'lucide-react';
+import { Button } from '@roastpilot/ui';
+import { LoaderCircle } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { connectErrorText } from './connect-error';
 import { useRun } from '../../features/use-run';
 import { useDeps } from '../../app/app-context';
 import { activeRoaster } from '../../stores/roasters-store';
 import { useConnection, useRoasters } from '../../stores/use-stores';
-import { roasterRows, sameTarget } from './roaster-rows';
+import { PortPicker } from './PortPicker';
+import { roasterRows } from './roaster-rows';
 
 const SIMULATOR: ConnectTarget = { kind: 'simulator' };
 const STATE_TEXT = { connecting: 'Connecting…', connected: 'Connected', lost: 'Reconnecting…' };
-
-function PortRow({
-  label,
-  detail,
-  selected,
-  onSelect,
-  disabled,
-}: {
-  label: string;
-  detail?: string;
-  selected: boolean;
-  onSelect: () => void;
-  disabled: boolean;
-}) {
-  return (
-    <li>
-      <button
-        type="button"
-        aria-pressed={selected}
-        disabled={disabled}
-        onClick={onSelect}
-        className={cn(
-          // The marked row stays readable while the list is locked; the rest dim.
-          'flex min-h-control-sm w-full items-center justify-between gap-3 rounded-md px-4 text-left text-body',
-          !selected && 'disabled:opacity-50',
-          selected ? 'bg-heat-tint text-heat' : 'bg-surface-raised hover:bg-surface-hover',
-        )}
-      >
-        <span className="font-semibold">{label}</span>
-        {detail ? <span className="text-label text-ink-muted">{detail}</span> : null}
-      </button>
-    </li>
-  );
-}
 
 /**
  * Connect or disconnect one roaster, picking its port first if it has one
@@ -148,60 +115,22 @@ export function ConnectPanel({ roaster }: { roaster: Roaster }) {
         </p>
       ) : null}
       {isSimulator ? null : (
-        <>
-          <div className="flex items-center justify-between">
-            <h3 className="text-body font-semibold">Port</h3>
-            {inUse ? null : (
-              <Button
-                variant="ghost"
-                size="sm"
-                icon={<RefreshCw aria-hidden="true" />}
-                onClick={refresh}
-                disabled={!idle}
-              >
-                Refresh
-              </Button>
-            )}
-          </div>
-          <ul aria-label="Ports" className="flex flex-col gap-2 empty:hidden">
-            {rows.map((row) => (
-              <PortRow
-                key={row.target.kind === 'serial' ? row.target.path : 'simulator'}
-                label={row.label}
-                {...(row.detail ? { detail: row.detail } : {})}
-                selected={sameTarget(shownTarget, row.target)}
-                onSelect={() => {
-                  select(row.target);
-                }}
-                disabled={!idle}
-              />
-            ))}
-          </ul>
-          {view.hidden > 0 && choosing ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="self-start"
-              onClick={() => {
-                setShowAll(true);
-              }}
-            >
-              Show all ports ({view.hidden} more)
-            </Button>
-          ) : null}
-          {idle && !choosing && target ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="self-start"
-              onClick={() => {
-                setChoosing(true);
-              }}
-            >
-              Choose another
-            </Button>
-          ) : null}
-        </>
+        <PortPicker
+          rows={rows}
+          shown={shownTarget}
+          hidden={choosing ? view.hidden : 0}
+          canRefresh={!inUse}
+          idle={idle}
+          canChooseAnother={idle && !choosing && target !== null}
+          onSelect={select}
+          onRefresh={refresh}
+          onShowAll={() => {
+            setShowAll(true);
+          }}
+          onChooseAnother={() => {
+            setChoosing(true);
+          }}
+        />
       )}
       {idle || connecting ? (
         <Button
