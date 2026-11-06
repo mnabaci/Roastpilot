@@ -53,4 +53,30 @@ describe('RoastList', () => {
     expect(screen.getByText('Yirgacheffe · 4/5')).toBeTruthy();
     expect(screen.getByRole('img', { name: 'Favourite' })).toBeTruthy();
   });
+
+  it('in select mode the rows are checkboxes, and Shift asks for a range', async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    const onCheck = vi.fn();
+    render(
+      <RoastList
+        label="Saved roasts"
+        items={ITEMS}
+        selectedId={undefined}
+        onSelect={onSelect}
+        checked={new Set([ITEMS[0]?.id ?? 0])}
+        onCheck={onCheck}
+      />,
+    );
+    const boxes = screen.getAllByRole('checkbox');
+    expect(boxes[0]).toBeChecked();
+    expect(boxes[1]).not.toBeChecked();
+    await user.click(boxes[1]!);
+    expect(onCheck).toHaveBeenLastCalledWith(ITEMS[1]?.id, false);
+    await user.keyboard('{Shift>}');
+    await user.click(boxes[1]!);
+    await user.keyboard('{/Shift}');
+    expect(onCheck).toHaveBeenLastCalledWith(ITEMS[1]?.id, true);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
 });
