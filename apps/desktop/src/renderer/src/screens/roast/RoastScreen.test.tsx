@@ -14,7 +14,9 @@ const connected = { connection: CONNECTED };
 /** The setup card starts closed; Change opens the rest of it. */
 const openSetup = () =>
   userEvent.click(
-    within(screen.getByRole('region', { name: 'Setup' })).getByRole('button', { name: 'Change' }),
+    within(screen.getByRole('region', { name: 'Setup' })).getByRole('button', {
+      name: 'Change setup',
+    }),
   );
 const onConnect = () => undefined;
 
@@ -596,7 +598,7 @@ describe('RoastScreen', () => {
     it('stays Manual with no profile choice until you pick Auto', async () => {
       const { api } = renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, profiles });
       expect(screen.queryByLabelText('Profile')).toBeNull();
-      await userEvent.click(screen.getByRole('radio', { name: 'Auto' }));
+      await userEvent.click(screen.getByRole('switch', { name: 'Auto' }));
       expect(api.setSettings).toHaveBeenCalledWith(expect.objectContaining({ roastMode: 'auto' }));
       await openSetup();
       expect(screen.getByLabelText('Profile')).toHaveValue('light-steps');
@@ -619,8 +621,8 @@ describe('RoastScreen', () => {
         await openSetup();
         expect(screen.queryByLabelText('Profile')).toBeNull();
         expect(screen.getByRole('region', { name: 'Setup' })).toHaveTextContent('Light · Steps');
-        // The Auto / Manual switch itself stays live mid-roast.
-        expect(screen.getByRole('radio', { name: 'Manual' })).toBeEnabled();
+        // The Auto switch itself stays live mid-roast.
+        expect(screen.getByRole('switch', { name: 'Auto' })).toBeEnabled();
       },
     );
 
@@ -645,7 +647,8 @@ describe('RoastScreen', () => {
         auto('roasting', { fan: 'manual', phaseName: 'Yellowing', nextPhaseAtC: 165 }),
       );
       expect(screen.getByText('Yellowing · next at 165 °C')).toBeInTheDocument();
-      expect(screen.getByText('Auto', { selector: 'span' })).toBeInTheDocument();
+      const outputs = within(screen.getByRole('region', { name: 'Outputs' }));
+      expect(outputs.getByText('Auto', { selector: 'span' })).toBeInTheDocument();
       // getByRole fails on more than one: only the fan you took offers it.
       await userEvent.click(screen.getByRole('button', { name: 'Resume auto' }));
       expect(api.autoResume).toHaveBeenCalledOnce();

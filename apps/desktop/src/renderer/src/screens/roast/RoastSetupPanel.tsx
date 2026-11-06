@@ -1,5 +1,5 @@
 import type { RoastSetup } from '@roastpilot/shared';
-import { Button } from '@roastpilot/ui';
+import { cn, Switch } from '@roastpilot/ui';
 import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
@@ -9,7 +9,8 @@ import { useBeans, useRoast, useRoasters, useSettings } from '../../stores/use-s
 import { useRoastList } from '../history/use-roast-list';
 import { ghostLabel } from './ghost';
 import { GhostField } from './GhostField';
-import { ModeControl } from './ModeControl';
+import { ProfilePicker } from './ProfilePicker';
+import { useSaveSettings } from '../settings/use-save-settings';
 import { SetupForm } from './SetupForm';
 import { useActiveProfile, useProfileLocked } from './use-active-profile';
 
@@ -30,6 +31,7 @@ export function RoastSetupPanel() {
   // The profile can't change from Preheat until Drop; then its name sits in the line instead.
   const profileLocked = useProfileLocked();
   const roasts = useRoastList() ?? [];
+  const saveSettings = useSaveSettings();
   const [open, setOpen] = useState(false);
   const update = (next: RoastSetup) => {
     stores.beans.setState({ setup: next });
@@ -39,7 +41,7 @@ export function RoastSetupPanel() {
   const bean = beans.find((b) => b.id === setup.beanId);
   const ghost = roasts.find((r) => r.id === setup.ghostRoastId);
   const line = [
-    mode === 'auto' ? profile?.profile.name : undefined,
+    mode === 'auto' ? profile?.profile.name : 'Manual',
     bean?.name ?? 'No bean',
     setup.batchG === null ? undefined : `${String(setup.batchG)} g`,
     ghost ? `ghost ${ghostLabel(ghost)}` : undefined,
@@ -47,40 +49,54 @@ export function RoastSetupPanel() {
     .filter(Boolean)
     .join(' · ');
   return (
-    <section aria-label="Setup" className="flex flex-col gap-3 rounded-xl bg-surface px-5 py-4.5">
-      <ModeControl withProfile={open && !profileLocked} />
-      <div className="flex items-center justify-between gap-2">
-        <p title={line} className="min-w-0 truncate text-body">
-          {line}
-        </p>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="shrink-0"
+    <section aria-label="Setup" className="flex flex-col rounded-xl bg-surface">
+      <div className="flex items-center gap-3 py-2 pr-5 pl-2">
+        {/* The whole row opens the card; the Auto switch beside it stays live mid-roast. */}
+        <button
+          type="button"
           aria-expanded={open}
-          icon={
-            <ChevronDown
-              aria-hidden="true"
-              className={open ? 'rotate-180 transition-transform' : 'transition-transform'}
-            />
-          }
+          aria-label="Change setup"
+          title={line}
           onClick={() => {
             setOpen(!open);
           }}
+          className="flex min-h-control-sm min-w-0 flex-1 items-center gap-2 rounded-md px-3 text-left hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-focus"
         >
-          Change
-        </Button>
-      </div>
-      {open && idle ? (
-        <SetupForm
-          setup={setup}
-          beans={beans}
-          roaster={roaster}
-          roasts={roasts}
-          onChange={update}
+          <span className="min-w-0 truncate text-body">{line}</span>
+          <ChevronDown
+            aria-hidden="true"
+            className={cn(
+              'size-5 shrink-0 text-ink-muted transition-transform',
+              open && 'rotate-180',
+            )}
+          />
+        </button>
+        <span className="text-label text-ink-muted" aria-hidden="true">
+          Auto
+        </span>
+        <Switch
+          aria-label="Auto"
+          checked={mode === 'auto'}
+          onChange={(on) => {
+            saveSettings({ roastMode: on ? 'auto' : 'manual' });
+          }}
         />
+      </div>
+      {open ? (
+        <div className="flex flex-col gap-3 px-5 pb-4.5">
+          {mode === 'auto' && !profileLocked ? <ProfilePicker /> : null}
+          {idle ? (
+            <SetupForm
+              setup={setup}
+              beans={beans}
+              roaster={roaster}
+              roasts={roasts}
+              onChange={update}
+            />
+          ) : null}
+          <GhostField setup={setup} roasts={roasts} onChange={update} />
+        </div>
       ) : null}
-      {open ? <GhostField setup={setup} roasts={roasts} onChange={update} /> : null}
     </section>
   );
 }
