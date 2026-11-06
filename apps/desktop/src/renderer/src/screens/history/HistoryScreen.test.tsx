@@ -11,6 +11,7 @@ import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { READY_ROAST } from '@roastpilot/shared';
+import { STEPS } from '../../test/profiles';
 import { fakeApi, renderApp } from '../../test/render-app';
 import { HistoryScreen } from './HistoryScreen';
 
@@ -99,6 +100,15 @@ function nth(elements: HTMLElement[], i: number): HTMLElement {
   return element;
 }
 
+/** A profile of your own, as Make profile returns it. */
+const OWN = { profile: { ...STEPS, id: 'made-1', name: 'From a roast' }, builtIn: false };
+
+/** Opens the ⋯ menu of the roast on the right and picks Delete. */
+async function pickDelete() {
+  await userEvent.click(screen.getByRole('button', { name: 'More for this roast' }));
+  await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+}
+
 const chartLayers = () => screen.getByRole('region', { name: 'Roast curve' }).dataset.layers;
 
 describe('HistoryScreen', () => {
@@ -128,7 +138,7 @@ describe('HistoryScreen', () => {
     setup();
     await screen.findByRole('region', { name: 'Roast curve' });
     expect(chartLayers()).not.toContain('compare-bt');
-    const compare = screen.getByRole('combobox', { name: 'Compare with' });
+    const compare = screen.getByRole('combobox', { name: 'Compare' });
     await userEvent.selectOptions(compare, '1');
     await vi.waitFor(() => {
       expect(chartLayers()).toContain('compare-bt');
@@ -138,13 +148,13 @@ describe('HistoryScreen', () => {
   it('Delete asks once, then removes the roast and opens the next', async () => {
     const { api } = setup();
     await screen.findByRole('region', { name: 'Roast curve' });
-    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    await pickDelete();
     const confirm = screen.getByRole('alertdialog', { name: 'Delete this roast?' });
     expect(confirm).toHaveAccessibleDescription("can't be undone");
     await userEvent.click(within(confirm).getByRole('button', { name: 'Cancel' }));
     expect(api.deleteRoast).not.toHaveBeenCalled();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    await pickDelete();
     await userEvent.click(
       within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
     );
@@ -158,8 +168,10 @@ describe('HistoryScreen', () => {
     const { api } = setup();
     api.deleteRoast.mockResolvedValue(err({ kind: 'storage-failed', message: 'locked' }));
     await screen.findByRole('region', { name: 'Roast curve' });
-    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
-    await userEvent.click(nth(screen.getAllByRole('button', { name: 'Delete' }), 0));
+    await pickDelete();
+    await userEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
     expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't delete");
   });
 
@@ -182,7 +194,8 @@ describe('HistoryScreen', () => {
     const live = summary(3, '2026-11-05T08:00:00.000Z', { endedAt: null });
     renderWithPhase([live, NEWER], 'roasting');
     expect(await screen.findByText('Saving as it roasts')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'More for this roast' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Make profile' })).toBeNull();
   });
 
   it('does not read a roast again once it is deleted', async () => {
@@ -201,7 +214,51 @@ describe('HistoryScreen', () => {
       listRoasts: vi.fn(() => Promise.resolve([summary(1, '2026-11-04T10:00:00.000Z')])),
     });
     renderApp(<HistoryScreen onOpenProfile={() => undefined} />, {}, api);
-    await user.click(await screen.findByRole('button', { name: 'Favourites' }));
+    await user.click(await screen.findByRole('button', { name: 'Favourites only' }));
     expect(screen.getByText('No roasts match these filters')).toBeTruthy();
+  });
+
+  it('Make profile offers step and curve, then opens the new profile', async () => {
+    const opened = vi.fn();
+    const api = fakeApi({
+      listRoasts: vi.fn(() => Promise.resolve([NEWER])),
+      getRoast: vi.fn(() => Promise.resolve(ok(detail(NEWER)))),
+      makeProfileFromRoast: vi.fn(() => Promise.resolve(ok(OWN))),
+      listProfiles: vi.fn(() => Promise.resolve([OWN])),
+    });
+    renderApp(<HistoryScreen onOpenProfile={opened} />, {}, api);
+    await screen.findByRole('region', { name: 'Roast curve' });
+    await userEvent.click(screen.getByRole('button', { name: 'Make profile' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Curve profile' }));
+    expect(api.makeProfileFromRoast).toHaveBeenCalledWith({ roastId: NEWER.id, style: 'curve' });
+    await vi.waitFor(() => {
+      expect(opened).toHaveBeenCalledWith(OWN.profile.id);
+    });
+  });
+
+  it('says why a roast is too short to make a profile from', async () => {
+    const api = fakeApi({
+      listRoasts: vi.fn(() => Promise.resolve([NEWER])),
+      getRoast: vi.fn(() => Promise.resolve(ok(detail(NEWER)))),
+      makeProfileFromRoast: vi.fn(() => Promise.resolve(err({ kind: 'too-short' as const }))),
+    });
+    renderApp(<HistoryScreen onOpenProfile={vi.fn()} />, {}, api);
+    await screen.findByRole('region', { name: 'Roast curve' });
+    await userEvent.click(screen.getByRole('button', { name: 'Make profile' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Step profile' }));
+    expect(await screen.findByText(/Too little to go on/)).toBeInTheDocument();
+  });
+
+  it('exports and imports from the ⋯ beside the title, saying how it went', async () => {
+    const { api } = setup();
+    api.exportRoastsCsv.mockResolvedValue(ok({ status: 'saved' as const, fileName: 'roasts.csv' }));
+    api.importArtisan.mockResolvedValue(err({ kind: 'not-artisan' as const }));
+    await screen.findByRole('region', { name: 'Roast curve' });
+    await userEvent.click(screen.getByRole('button', { name: 'More for History' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Export CSV' }));
+    expect(await screen.findByText('Saved roasts.csv')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'More for History' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Import from Artisan' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent("isn't an Artisan roast");
   });
 });

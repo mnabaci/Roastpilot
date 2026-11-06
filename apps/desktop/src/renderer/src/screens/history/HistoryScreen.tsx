@@ -1,13 +1,22 @@
 import type { RoastId } from '@roastpilot/shared';
-import { Button, cn, EventTable, RoastList, SelectField, SidebarLayout } from '@roastpilot/ui';
+import {
+  Button,
+  cn,
+  ConfirmDialog,
+  EventTable,
+  FilterSelect,
+  Menu,
+  RoastList,
+  SidebarLayout,
+} from '@roastpilot/ui';
+import { Star } from 'lucide-react';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
 import { RoastResultForm } from '../../features/RoastResultForm';
 import { useBeans, useRoast, useSettings } from '../../stores/use-stores';
-import { DeleteRoast } from './DeleteRoast';
-import { MakeProfile } from './MakeProfile';
-import { RoastFileActions } from './RoastFileActions';
+import { useMakeProfile } from './use-make-profile';
+import { useRoastFiles } from './use-roast-files';
 import { ALL, filterRoasts, MANUAL, NO_BEAN, NO_FILTER, profileOptions } from './roast-filter';
 import { inProgressId, roastRows, roastTitle, selectionAfterDelete } from './history-format';
 import { SavedRoastChart } from './SavedRoastChart';
@@ -30,6 +39,9 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
   const [deleteError, setDeleteError] = useState<string>();
   const [filter, setFilter] = useState(NO_FILTER);
   const beans = useBeans((s) => s.beans);
+  const [deleting, setDeleting] = useState(false);
+  const files = useRoastFiles(setPicked);
+  const profileMaker = useMakeProfile(onOpenProfile);
 
   const list = roasts ?? [];
   const liveId = inProgressId(list, livePhase);
@@ -59,37 +71,67 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
   };
 
   if (roasts === undefined) return <main className="flex-1" />;
+  const fileMessage = files.message ? (
+    <p
+      {...(files.message.problem ? { role: 'alert' } : {})}
+      className={cn('text-label', files.message.problem ? 'text-critical-text' : 'text-ink-muted')}
+    >
+      {files.message.text}
+    </p>
+  ) : null;
   if (list.length === 0)
     return (
-      <main className="flex min-h-0 flex-1 flex-col gap-2 p-6">
+      <main className="flex min-h-0 flex-1 flex-col items-start gap-2 p-6">
         <h1 className="text-title">History</h1>
         <p className="text-body text-ink-muted">
           No roasts yet · each roast saves itself from charge
         </p>
-        <RoastFileActions canExport={false} onImported={setPicked} />
+        <Button size="sm" onClick={files.importAlog}>
+          Import from Artisan
+        </Button>
+        {fileMessage}
       </main>
     );
 
+  const selectedRoast = list.find((r) => r.id === selectedId);
+  const live = selectedId !== undefined && selectedId === liveId;
   return (
     <SidebarLayout
       title="History"
+      titleAction={
+        <Menu
+          label="More for History"
+          items={[
+            { label: 'Export CSV', onSelect: files.exportCsv },
+            { label: 'Import from Artisan', onSelect: files.importAlog },
+          ]}
+        />
+      }
       contentLabel="Roast"
       sidebar={
         <>
-          <RoastFileActions canExport onImported={setPicked} />
-          <Button
-            size="sm"
-            aria-pressed={filter.favourites}
-            className={cn('self-start', filter.favourites && 'bg-heat-tint text-heat')}
-            onClick={() => {
-              setFilter({ ...filter, favourites: !filter.favourites });
-            }}
-          >
-            Favourites
-          </Button>
-          <div className="grid grid-cols-2 gap-2">
-            <SelectField
+          {fileMessage}
+          {/* One row of filters; a chip turns ember while it filters. */}
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              aria-label="Favourites only"
+              aria-pressed={filter.favourites}
+              icon={
+                <Star
+                  aria-hidden="true"
+                  className={filter.favourites ? 'fill-current' : undefined}
+                />
+              }
+              className={cn('shrink-0', filter.favourites && 'bg-heat-tint text-heat')}
+              onClick={() => {
+                setFilter({ ...filter, favourites: !filter.favourites });
+              }}
+            />
+            <FilterSelect
               label="Bean"
+              className="flex-1"
+              allValue={ALL}
               value={filter.bean}
               options={[
                 { value: ALL, label: 'All' },
@@ -100,8 +142,10 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
                 setFilter({ ...filter, bean });
               }}
             />
-            <SelectField
+            <FilterSelect
               label="Profile"
+              className="flex-1"
+              allValue={ALL}
               value={filter.profile}
               options={[
                 { value: ALL, label: 'All' },
@@ -126,36 +170,74 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
       }
     >
       <div className="flex flex-col gap-5">
-        <div className="flex flex-wrap items-end gap-4">
-          <h2 className="mr-auto self-center text-heading">
-            {selectedId === undefined
-              ? ''
-              : roastTitle(list.find((r) => r.id === selectedId)?.startedAt ?? '')}
+        {/* Everything for this roast in one row at the top. */}
+        <header className="flex flex-wrap items-center gap-3">
+          <h2 className="mr-auto text-title">
+            {selectedRoast ? roastTitle(selectedRoast.startedAt) : ''}
           </h2>
-          <SelectField
-            label="Compare with"
+          <FilterSelect
+            label="Compare"
+            allValue={NONE}
             value={compareTo ? compareId : NONE}
             options={[
               { value: NONE, label: 'None' },
               ...others.map((r) => ({ value: String(r.id), label: roastTitle(r.startedAt) })),
             ]}
             onChange={setCompareId}
-            disabled={others.length === 0}
-            className="w-60"
           />
-          {selectedId === undefined ? null : selectedId === liveId ? (
-            <p className="flex h-control-sm items-center text-label text-ink-muted">
-              Saving as it roasts
-            </p>
+          {selectedId === undefined ? null : live ? (
+            <p className="text-label text-ink-muted">Saving as it roasts</p>
           ) : (
-            <DeleteRoast
-              key={selectedId}
-              onDelete={() => {
-                remove(selectedId);
-              }}
-            />
+            <>
+              <Menu
+                label="Make profile"
+                text="Make profile"
+                items={[
+                  {
+                    label: 'Step profile',
+                    onSelect: () => {
+                      profileMaker.make(selectedId, 'steps');
+                    },
+                  },
+                  {
+                    label: 'Curve profile',
+                    onSelect: () => {
+                      profileMaker.make(selectedId, 'curve');
+                    },
+                  },
+                ]}
+              />
+              <Menu
+                label="More for this roast"
+                items={[
+                  {
+                    label: 'Delete',
+                    destructive: true,
+                    onSelect: () => {
+                      setDeleting(true);
+                    },
+                  },
+                ]}
+              />
+              <ConfirmDialog
+                open={deleting}
+                onOpenChange={setDeleting}
+                question="Delete this roast?"
+                detail="can't be undone"
+                confirmLabel="Delete"
+                destructive
+                onConfirm={() => {
+                  remove(selectedId);
+                }}
+              />
+            </>
           )}
-        </div>
+        </header>
+        {profileMaker.note ? (
+          <p role="status" className="text-label text-ink-muted">
+            {profileMaker.note}
+          </p>
+        ) : null}
         {deleteError ? (
           <p role="alert" className="text-body text-critical-text">
             {deleteError}
@@ -176,13 +258,6 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
               smoothingS={smoothingS}
             />
             <EventTable rows={eventRows(selected.detail)} />
-            {selectedId === liveId ? null : (
-              <MakeProfile
-                key={selected.detail.id}
-                roastId={selected.detail.id}
-                onOpenProfile={onOpenProfile}
-              />
-            )}
           </>
         ) : selected.status === 'none' ? (
           <p className="text-body text-ink-muted">No roasts match these filters</p>

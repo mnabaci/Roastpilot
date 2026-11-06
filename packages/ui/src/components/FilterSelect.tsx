@@ -14,8 +14,9 @@ export interface FilterSelectProps<V extends string> {
 }
 
 /**
- * A compact filter chip, "Bean: All ▾", over a native select so keyboard and screen readers work
- * as usual (design system: FilterSelect). It turns ember while it filters something.
+ * A compact filter chip over a native select, so keyboard and screen readers work as usual (design
+ * system: FilterSelect). With `allValue` it reads "Bean ▾" until it filters, then the choice in
+ * ember ("Ethiopia Guji ▾"); without, "Compare: None ▾".
  */
 export function FilterSelect<V extends string>({
   label,
@@ -31,13 +32,22 @@ export function FilterSelect<V extends string>({
   return (
     <div
       className={cn(
-        'relative flex h-control-sm min-w-0 items-center gap-1 rounded-md px-3 text-label has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus',
+        'relative flex h-control-sm min-w-0 items-center justify-center gap-0.5 rounded-md px-2.5 text-label has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus',
         filtering ? 'bg-heat-tint text-heat' : 'bg-surface-raised text-ink hover:bg-surface-hover',
         className,
       )}
     >
-      <span aria-hidden="true" className="min-w-0 truncate">
-        <span className={filtering ? undefined : 'text-ink-muted'}>{label}:</span> {current}
+      {/* Narrow sidebars: the name while unfiltered, the choice while filtering. */}
+      <span aria-hidden="true" title={`${label}: ${current}`} className="min-w-0 truncate">
+        {allValue === undefined ? (
+          <>
+            <span className="text-ink-muted">{label}:</span> {current}
+          </>
+        ) : filtering ? (
+          current
+        ) : (
+          label
+        )}
       </span>
       <ChevronDown aria-hidden="true" className="size-4 shrink-0" />
       <select
