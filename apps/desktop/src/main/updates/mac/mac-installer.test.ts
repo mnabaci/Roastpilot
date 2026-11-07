@@ -278,9 +278,11 @@ describe('createMacInstaller: at launch', () => {
     const s = await setup();
     await s.installer.lastInstall;
     await mkdir(join(s.updates, '0.2.0', 'Roastpilot.app'), { recursive: true });
+    // The helper runs only on macOS, so its log always has Mac paths (the tests also run on Windows).
+    const staged = '/Users/me/Library/Application Support/Roastpilot/updates/0.2.0/Roastpilot.app';
     await writeFile(
       join(s.updates, 'install.log'),
-      `2026-11-07T14:02:01Z staged: ${s.stagedApp}\n2026-11-07T14:02:31Z result: failed timeout\n`,
+      `2026-11-07T14:02:01Z staged: ${staged}\n2026-11-07T14:02:31Z result: failed timeout\n`,
     );
     const next = s.relaunch();
     expect(await next.lastInstall).toEqual({ ok: false, version: '0.2.0', reason: 'timeout' });
