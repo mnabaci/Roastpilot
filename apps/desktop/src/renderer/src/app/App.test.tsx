@@ -136,4 +136,17 @@ describe('App', () => {
     });
     expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument();
   });
+
+  it('shows a failed action as a toast, which × dismisses', async () => {
+    const api = fakeApi({ openLogFolder: vi.fn(() => Promise.reject(new Error('ipc'))) });
+    renderApp(<App />, {}, api);
+    await userEvent.click(screen.getByRole('button', { name: 'Logs' }));
+    await userEvent.click(screen.getByRole('button', { name: 'More for Logs' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Open log folder' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "Couldn't open the log folder · try again",
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
 });

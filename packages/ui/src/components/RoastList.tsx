@@ -1,5 +1,5 @@
 import { Check, Star } from 'lucide-react';
-import type { KeyboardEvent } from 'react';
+import { moveFocusInList } from '../lib/list-focus';
 import { cn } from '../lib/utils';
 import { Badge } from './Badge';
 
@@ -27,19 +27,6 @@ export interface RoastListProps {
   checked?: ReadonlySet<number> | undefined;
   onCheck?: (id: number, range: boolean) => void;
   className?: string;
-}
-
-/** Up and Down move focus between rows. */
-function moveFocus(event: KeyboardEvent<HTMLButtonElement>): void {
-  const step = { ArrowDown: 1, ArrowUp: -1 }[event.key];
-  const list = event.currentTarget.closest('ul');
-  if (step === undefined || !list) return;
-  const rows = [...list.querySelectorAll('button')];
-  const at = rows.indexOf(event.currentTarget);
-  const next = rows[at + step];
-  if (at === -1 || !next) return;
-  event.preventDefault();
-  next.focus();
 }
 
 /** Saved roasts, newest first, one selected (design system: RoastList). Scrolls inside. */
@@ -71,7 +58,7 @@ export function RoastList({
               {...(selecting
                 ? { role: 'checkbox', 'aria-checked': ticked }
                 : { 'aria-current': selected ? ('true' as const) : undefined })}
-              onKeyDown={moveFocus}
+              onKeyDown={moveFocusInList}
               onClick={(event) => {
                 if (selecting) onCheck(item.id, event.shiftKey);
                 else onSelect(item.id);

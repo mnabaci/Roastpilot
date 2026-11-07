@@ -1,16 +1,20 @@
 import { createLogger } from '@roastpilot/core';
 import type { LogEntry } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import { createQuitGuard } from './quit-guard';
+import { createQuitGuard, type QuitStep } from './quit-guard';
 
-function setup(stop: () => Promise<void>) {
+function setup(stop: () => Promise<void>, more: readonly QuitStep[] = []) {
   const calls: string[] = [];
   const entries: LogEntry[] = [];
-  const guard = createQuitGuard({
-    stop: () => {
-      calls.push('stop');
-      return stop();
+  const step = (name: string, run: () => Promise<void> | void): QuitStep => ({
+    name,
+    run: () => {
+      calls.push(name);
+      return run();
     },
+  });
+  const guard = createQuitGuard({
+    steps: [step('stop', stop), ...more.map((s) => step(s.name, s.run))],
     quit: () => calls.push('quit'),
     logger: createLogger({ write: (e) => entries.push(e) }, 'app'),
   });
@@ -48,11 +52,40 @@ describe('createQuitGuard', () => {
     expect(calls).toEqual(['stop', 'quit']);
   });
 
-  it('quits anyway when the safe stop fails, and logs it', async () => {
-    const { guard, calls, entries, event } = setup(() => Promise.reject(new Error('port gone')));
+  it('runs the steps in order, each after the one before has settled', async () => {
+    let finish: () => void = () => undefined;
+    const { guard, calls, event } = setup(
+      () => new Promise<void>((resolve) => (finish = resolve)),
+      [{ name: 'save', run: () => undefined }],
+    );
     guard(event());
     await settle();
-    expect(calls).toEqual(['stop', 'quit']);
-    expect(entries.map((e) => e.event)).toEqual(['app.quitting', 'app.quit-stop-failed']);
+    expect(calls).toEqual(['stop']);
+    finish();
+    await settle();
+    expect(calls).toEqual(['stop', 'save', 'quit']);
+  });
+
+  it('a failing safe stop is logged, and the later steps still run before quitting', async () => {
+    const { guard, calls, entries, event } = setup(
+      () => Promise.reject(new Error('port gone')),
+      [
+        {
+          name: 'close-database',
+          run: () => {
+            throw new Error('busy');
+          },
+        },
+        { name: 'flush-logs', run: () => Promise.resolve() },
+      ],
+    );
+    guard(event());
+    await settle();
+    expect(calls).toEqual(['stop', 'close-database', 'flush-logs', 'quit']);
+    expect(entries.map((e) => [e.event, e.context?.step])).toEqual([
+      ['app.quitting', undefined],
+      ['app.quit-step-failed', 'stop'],
+      ['app.quit-step-failed', 'close-database'],
+    ]);
   });
 });

@@ -8,7 +8,7 @@ import {
   type RoastId,
   type StorageError,
 } from '@roastpilot/shared';
-import { fillRoast } from './fill-roast';
+import { fillOrRemove } from './fill-roast';
 import { idByName, parseRoastFile, toRoastFile, type Names } from './roast-file';
 
 export interface RoastFileServiceDeps {
@@ -52,16 +52,20 @@ export class RoastFileService {
     }
     const file = toRoastFile(details, await this.#deps.names(), this.#deps.now());
     logger.info('history.exported', { roasts: details.length });
-    return ok(JSON.stringify(file, null, 2));
+    // No indentation: a file is for Roastpilot to read back, and spaces tripled its size.
+    return ok(JSON.stringify(file));
   }
 
   /**
-   * Adds the file's roasts that aren't in History yet (same start time) and counts both. Each one
-   * goes in whole or not at all; a failure stops there, keeping those already added.
+   * Adds the file's roasts that aren't in History yet (same start time) and counts both, with the
+   * newest one added, for History to open. Each one goes in whole or not at all; a failure stops
+   * there, keeping those already added.
    */
   async importFile(
     text: string,
-  ): Promise<Result<{ added: number; skipped: number }, ImportRoastsError>> {
+  ): Promise<
+    Result<{ added: number; skipped: number; newestId: RoastId | null }, ImportRoastsError>
+  > {
     const { repository, logger } = this.#deps;
     const parsed = parseRoastFile(text);
     if (!parsed.ok) {
@@ -77,6 +81,7 @@ export class RoastFileService {
     const names = await this.#deps.names();
     let added = 0;
     let skipped = 0;
+    let newest: { id: RoastId; startedAt: string } | undefined;
     for (const roast of parsed.value) {
       if (here.has(roast.startedAt)) {
         skipped += 1;
@@ -97,17 +102,19 @@ export class RoastFileService {
         logger.warn('history.import-failed', { added, error: created.error });
         return created;
       }
-      const filled = await fillRoast(repository, created.value, roast);
+      const filled = await fillOrRemove(repository, created.value, roast, logger);
       if (!filled.ok) {
         logger.warn('history.import-failed', { added, error: filled.error });
-        await repository.delete(created.value);
         return filled;
       }
       here.add(roast.startedAt);
       added += 1;
+      if (!newest || roast.startedAt > newest.startedAt) {
+        newest = { id: created.value, startedAt: roast.startedAt };
+      }
       this.#deps.onAdded(created.value);
     }
     logger.info('history.imported', { added, skipped });
-    return ok({ added, skipped });
+    return ok({ added, skipped, newestId: newest?.id ?? null });
   }
 }

@@ -52,7 +52,7 @@ Each phase:
 | Maillard    | 180 °C  | 1:38     | 8–10      | 50%           | 65% | BT 180 °C (backup 11:00) |
 | Development | 191 °C  | 1:34     | 3–7       | 40%           | 80% | End rule                 |
 
-- Charge temp 180 °C. Dry end at BT 150 °C. Drop at 1:30 after first crack, or at BT 200 °C, whichever comes first.
+- Charge temp 180 °C. Dry end at BT 150 °C. Drop at 1:45 after first crack (about 15.5 % development; roast 7 dropped at 1:31, 13.8 %), or at BT 200 °C, whichever comes first.
 - Curve points, from roast 7 (2026-11-04): 0:00 180 °C, 1:04 92 °C (turning point), 2:34 110 °C, 5:05 150 °C, 6:19 165 °C, 7:57 180 °C, 9:18 190 °C, 11:03 197 °C.
 - Drum at 100% throughout to agitate the beans.
 - A step profile's dashed curve comes from its steps: charge, the turning point, each step's end at its planned time, then the BT cap at the planned drop.

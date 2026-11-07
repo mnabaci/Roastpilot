@@ -1,7 +1,10 @@
 import type { ComponentProps } from 'react';
 import { cn } from '../lib/utils';
 
-export interface SwitchProps extends Omit<ComponentProps<'button'>, 'onChange' | 'role'> {
+export interface SwitchProps extends Omit<
+  ComponentProps<'button'>,
+  'onChange' | 'onClick' | 'role'
+> {
   checked: boolean;
   onChange: (checked: boolean) => void;
   /** Names the switch for screen readers, usually the setting's name. */

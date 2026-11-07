@@ -41,50 +41,66 @@ export function ProfileActions({
   const save = () => {
     const { valid } = state;
     if (!valid) return;
-    run('profiles.save-failed', async () => {
-      const saved = await api.saveProfile(valid);
-      if (!saved.ok) {
-        refused(saved.error);
-        return;
-      }
-      setProblem(undefined);
-      await refresh();
-      state.discard();
-    });
+    run(
+      'profiles.save-failed',
+      async () => {
+        const saved = await api.saveProfile(valid);
+        if (!saved.ok) {
+          refused(saved.error);
+          return;
+        }
+        setProblem(undefined);
+        await refresh();
+        state.discard();
+      },
+      { failed: "Couldn't save the profile · try again" },
+    );
   };
   const duplicate = () => {
-    run('profiles.duplicate-failed', async () => {
-      const copy = await api.duplicateProfile(id);
-      if (!copy.ok) {
-        refused(copy.error);
-        return;
-      }
-      setProblem(undefined);
-      await refresh();
-      onSelect(copy.value.profile.id);
-    });
+    run(
+      'profiles.duplicate-failed',
+      async () => {
+        const copy = await api.duplicateProfile(id);
+        if (!copy.ok) {
+          refused(copy.error);
+          return;
+        }
+        setProblem(undefined);
+        await refresh();
+        onSelect(copy.value.profile.id);
+      },
+      { failed: "Couldn't duplicate the profile · try again" },
+    );
   };
   const copyTo = (roasterId: number, name: string) => {
-    run('profiles.copy-failed', async () => {
-      const copy = await api.copyProfile({ id, roasterId });
-      if (!copy.ok) {
-        refused(copy.error);
-        return;
-      }
-      setProblem(undefined);
-      onCopied(`Copied to ${name} · needs calibration there`);
-    });
+    run(
+      'profiles.copy-failed',
+      async () => {
+        const copy = await api.copyProfile({ id, roasterId });
+        if (!copy.ok) {
+          refused(copy.error);
+          return;
+        }
+        setProblem(undefined);
+        onCopied(`Copied to ${name} · needs calibration there`);
+      },
+      { failed: "Couldn't copy the profile · try again" },
+    );
   };
   const remove = () => {
-    run('profiles.delete-failed', async () => {
-      const deleted = await api.deleteProfile(id);
-      if (!deleted.ok) {
-        refused(deleted.error);
-        return;
-      }
-      state.discard();
-      await refresh();
-    });
+    run(
+      'profiles.delete-failed',
+      async () => {
+        const deleted = await api.deleteProfile(id);
+        if (!deleted.ok) {
+          refused(deleted.error);
+          return;
+        }
+        state.discard();
+        await refresh();
+      },
+      { failed: "Couldn't delete the profile · try again" },
+    );
   };
   const deletable = !entry.builtIn && !(active && locked);
   const more: MenuItem[] = [
@@ -115,7 +131,14 @@ export function ProfileActions({
             <Button variant="primary" disabled={!state.valid || (active && locked)} onClick={save}>
               Save
             </Button>
-            <Button variant="ghost" onClick={state.discard}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                // A refusal was about the edit going away with it.
+                setProblem(undefined);
+                state.discard();
+              }}
+            >
               Discard
             </Button>
           </>

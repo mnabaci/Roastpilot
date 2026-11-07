@@ -53,3 +53,51 @@ describe('BeanService', () => {
     expect(beans.setup).toEqual(chosen);
   });
 });
+
+describe('BeanService find and linkProfile', () => {
+  const FULL_FIELDS: BeanFields = {
+    name: 'Yirgacheffe',
+    origin: 'Ethiopia',
+    process: 'washed',
+    variety: null,
+    altitudeM: null,
+    densityGL: null,
+    moisturePct: null,
+    screen: null,
+    decaf: false,
+    supplier: null,
+    lowStockG: 0,
+    notes: null,
+  };
+  const FULL: Bean = {
+    ...FULL_FIELDS,
+    id: 1,
+    profileId: null,
+    greenG: 300,
+    roastedG: 0,
+    archived: false,
+    avgLossPct: null,
+    batchPlan: null,
+  };
+
+  it('finds a bean by id, archived ones too, and says when there is none', async () => {
+    const archived = { ...FULL, id: 2, archived: true };
+    const { beans } = setup({ list: () => Promise.resolve(ok([FULL, archived])) });
+    expect(await beans.find(2)).toEqual(ok(archived));
+    expect(await beans.find(9)).toEqual(err({ kind: 'not-found', id: 9 }));
+  });
+
+  it('passes on a list that cannot be read', async () => {
+    const failed = err({ kind: 'storage-failed' as const, message: 'x' });
+    const { beans } = setup({ list: () => Promise.resolve(failed) });
+    expect(await beans.find(1)).toEqual(failed);
+  });
+
+  it('links a profile keeping the bean as it is, then tells the windows', async () => {
+    const update = vi.fn(() => Promise.resolve(ok(undefined)));
+    const { beans, onChange } = setup({ update });
+    expect(await beans.linkProfile(FULL, 'custom-9')).toEqual(ok(undefined));
+    expect(update).toHaveBeenCalledWith(1, FULL_FIELDS, 'custom-9');
+    expect(onChange).toHaveBeenCalledTimes(1);
+  });
+});

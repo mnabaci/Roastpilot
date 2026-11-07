@@ -7,6 +7,7 @@ import {
   type SafetyEvent,
 } from '@roastpilot/shared';
 import type { Clock } from '../clock';
+import { guardListener } from '../logging/guard-listener';
 import { silentLogger, type Logger } from '../logging/logger';
 import { serializeError } from '../logging/serialize-error';
 import type { DriverError } from '../roaster-driver';
@@ -41,7 +42,6 @@ export class SafetyMonitor {
   readonly #onEvent: (event: SafetyEvent) => void;
   readonly #readLimits: () => SafetyLimits;
   readonly #logger: Logger;
-  readonly #historyMs: number;
   readonly #tripped = new Set<string>();
   #history: Reading[] = [];
   #armed = false;
@@ -53,13 +53,11 @@ export class SafetyMonitor {
   constructor(options: SafetyMonitorOptions) {
     this.#clock = options.clock;
     this.#safeStop = options.safeStop;
-    this.#onEvent = options.onEvent;
     const { limits = DEFAULT_SAFETY_LIMITS } = options;
     this.#readLimits = typeof limits === 'function' ? limits : () => limits;
     this.#logger = options.logger ?? silentLogger;
-    this.#historyMs =
-      Math.max(this.#readLimits().slowRise.windowMs, this.#readLimits().frozenReadingMs) +
-      HISTORY_MARGIN_MS;
+    // A listener that throws must never skip the safe stop or the lock that follow its event.
+    this.#onEvent = guardListener(this.#logger, 'safety.listener-failed', options.onEvent);
   }
 
   /** True after a safe-stop trip until acknowledged: heater commands above 0 are refused. */
@@ -188,8 +186,11 @@ export class SafetyMonitor {
     };
   }
 
+  /** Read from the current limits, so a roaster with longer windows still gets a full one. */
   #pruneHistory(): void {
-    const cutoffMs = this.#clock.now() - this.#historyMs;
+    const { slowRise, frozenReadingMs } = this.#readLimits();
+    const historyMs = Math.max(slowRise.windowMs, frozenReadingMs) + HISTORY_MARGIN_MS;
+    const cutoffMs = this.#clock.now() - historyMs;
     const firstKept = this.#history.findIndex((r) => r.atMs >= cutoffMs);
     if (firstKept > 0) this.#history = this.#history.slice(firstKept);
   }

@@ -59,6 +59,21 @@ async function roastIn(home: ReturnType<typeof history>, startedAt: string) {
 }
 
 describe('RoastFileService', () => {
+  it('names the newest roast it added, for History to open', async () => {
+    const home = history();
+    await roastIn(home, '2026-11-04T17:37:00.000Z');
+    await roastIn(home, '2026-11-04T17:00:00.000Z');
+    const text = await home.service.exportFile();
+    if (!text.ok) throw new Error('export failed');
+    const away = history();
+    const imported = await away.service.importFile(text.value);
+    const listed = await away.repository.list();
+    const newest = listed.ok
+      ? listed.value.find((r) => r.startedAt.startsWith('2026-11-04T17:37'))
+      : undefined;
+    expect(imported.ok && imported.value.newestId).toBe(newest?.id);
+  });
+
   it('moves roasts to another History whole, linked by exact name, without touching stock', async () => {
     const home = history();
     await roastIn(home, '2026-11-04T10:00:00.000Z');
@@ -67,9 +82,9 @@ describe('RoastFileService', () => {
 
     const away = history();
     const imported = await away.service.importFile(text.value);
-    expect(imported).toEqual({ ok: true, value: { added: 1, skipped: 0 } });
     const listed = await away.repository.list();
     const [roast] = listed.ok ? listed.value : [];
+    expect(imported).toEqual({ ok: true, value: { added: 1, skipped: 0, newestId: roast?.id } });
     expect(roast).toMatchObject({
       beanId: 1,
       roasterId: 1,
@@ -103,7 +118,7 @@ describe('RoastFileService', () => {
     if (!text.ok) throw new Error('export failed');
     expect(await home.service.importFile(text.value)).toEqual({
       ok: true,
-      value: { added: 0, skipped: 2 },
+      value: { added: 0, skipped: 2, newestId: null },
     });
   });
 

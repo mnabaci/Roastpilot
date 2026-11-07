@@ -139,8 +139,14 @@ describe('Tc4SkywalkerDriver', () => {
 
     it('reports a bad reply without throwing', async () => {
       const { transport, driver, run } = await connected();
-      transport.reply = () => 'garbage';
-      expect(await run(driver.read())).toEqual(err({ kind: 'bad-reply', line: 'garbage' }));
+      transport.reply = () => '0.00,garbage';
+      expect(await run(driver.read())).toEqual(err({ kind: 'bad-reply', line: '0.00,garbage' }));
+    });
+
+    it('does not take a line with no commas as the READ reply', async () => {
+      const { transport, driver, run } = await connected();
+      transport.reply = () => '1';
+      expect(await run(driver.read())).toEqual(err({ kind: 'no-reply', command: 'READ' }));
     });
 
     it('reports no reply after the timeout', async () => {
@@ -255,6 +261,29 @@ describe('Tc4SkywalkerDriver', () => {
       const { transport, driver, run } = await connected();
       transport.drop();
       await expect(run(driver.safeStop())).resolves.toBeUndefined();
+    });
+
+    it('logs an error when the ESTOP fallback fails too', async () => {
+      const entries: LogEntry[] = [];
+      const clock = new ManualClock();
+      const transport = new FakeTransport(clock);
+      transport.reply = sketch();
+      const driver = new Tc4SkywalkerDriver({
+        transport,
+        clock,
+        logger: createLogger({ write: (e) => entries.push(e) }, 'driver'),
+      });
+      const done = driver.connect();
+      await clock.runFor(5000);
+      await done;
+      transport.drop();
+      const stop = driver.safeStop();
+      await clock.runFor(5000);
+      await stop;
+      expect(entries.map((e) => [e.level, e.event])).toEqual([
+        ['warn', 'driver.safe-stop-incomplete'],
+        ['error', 'driver.estop-failed'],
+      ]);
     });
 
     it('waits behind a pending read instead of merging with it', async () => {

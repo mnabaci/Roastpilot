@@ -1,5 +1,5 @@
 import { AUTO_OFF, DEFAULT_SETTINGS, err, READY_ROAST, type Reading } from '@roastpilot/shared';
-import { act, fireEvent, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import type * as Ui from '@roastpilot/ui';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -96,14 +96,38 @@ describe('RoastScreen', () => {
     expect(api.roastAction).toHaveBeenCalledWith('drop');
   });
 
-  it('a refused action changes nothing on screen', async () => {
+  it('a refused action changes nothing on screen, and says so in a toast', async () => {
     const api = fakeApi({
       roastAction: () =>
         Promise.resolve(err({ kind: 'not-allowed', action: 'preheat', phase: 'roasting' })),
     });
-    renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast('ready') }, api);
+    const { stores } = renderApp(
+      <RoastScreen onConnect={onConnect} />,
+      { ...connected, roast: roast('ready') },
+      api,
+    );
     await userEvent.click(screen.getByRole('button', { name: 'Preheat' }));
     expect(screen.getByRole('button', { name: 'Preheat' })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(stores.toasts.getState().toasts.map((t) => t.text)).toEqual([
+        "Can't start preheat now · the roast has moved on",
+      ]);
+    });
+  });
+
+  it('a flow button whose call fails says so in a toast', async () => {
+    const api = fakeApi({ roastAction: () => Promise.reject(new Error('ipc')) });
+    const { stores } = renderApp(
+      <RoastScreen onConnect={onConnect} />,
+      { ...connected, roast: roast('ready') },
+      api,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Preheat' }));
+    await waitFor(() => {
+      expect(stores.toasts.getState().toasts.map((t) => t.text)).toEqual([
+        "Couldn't start preheat · try again",
+      ]);
+    });
   });
 
   it('cooling: +1 min adds a minute', async () => {
@@ -174,12 +198,26 @@ describe('RoastScreen', () => {
     expect(screen.getByText('Cooling beans · heater off, fan at 100%')).toBeInTheDocument();
   });
 
+  const OFF = 'Heater, fan, drum and filter off now';
+  const ENDED = `${OFF} No bean cooling · dump the beans yourself The roast is saved as it is`;
   it.each([
-    ['preheat', 'End roast', 'End the roast?', 'everything turns off'],
-    ['roasting', 'End roast', 'End the roast?', 'everything turns off'],
-    ['development', 'End roast', 'End the roast?', 'everything turns off'],
-    ['cooling', 'Finish cooling now', 'Finish cooling the beans?', 'the countdown ends now'],
-  ] as const)('%s: %s asks once, then ends', async (phase, label, question, what) => {
+    [
+      'preheat',
+      'End roast',
+      'End the roast?',
+      `${OFF} Back to Ready · the preheat isn't saved`,
+      'Keep roasting',
+    ],
+    ['roasting', 'End roast', 'End the roast?', ENDED, 'Keep roasting'],
+    ['development', 'End roast', 'End the roast?', ENDED, 'Keep roasting'],
+    [
+      'cooling',
+      'Finish cooling now',
+      'Finish cooling the beans?',
+      'the countdown ends now',
+      'Cancel',
+    ],
+  ] as const)('%s: %s asks once, then ends', async (phase, label, question, what, keep) => {
     const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
       ...connected,
       roast: roast(phase),
@@ -188,7 +226,7 @@ describe('RoastScreen', () => {
     expect(api.roastAction).not.toHaveBeenCalled();
     const dialog = screen.getByRole('alertdialog', { name: question });
     expect(dialog).toHaveAccessibleDescription(what);
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: keep }));
     expect(api.roastAction).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole('button', { name: label }));
     await userEvent.click(
@@ -462,6 +500,39 @@ describe('RoastScreen', () => {
     expect(drum).toBeChecked();
     await userEvent.click(drum);
     expect(api.setOutput).toHaveBeenCalledWith({ channel: 'drum', value: 0 });
+  });
+
+  it('a switch the roaster refuses or never gets says so in a toast; the safety lock does not', async () => {
+    const api = fakeApi({
+      setOutput: vi
+        .fn()
+        .mockResolvedValueOnce(err({ kind: 'no-reply' as const, command: 'DRUM' }))
+        .mockRejectedValueOnce(new Error('ipc'))
+        .mockResolvedValueOnce(err({ kind: 'safety-locked' as const, channel: 'filter' })),
+    });
+    const { stores } = renderApp(
+      <RoastScreen onConnect={onConnect} />,
+      { ...connected, roast: roast('roasting'), readings: [reading({ drum: 1, filter: 0 })] },
+      api,
+    );
+    const texts = () => stores.toasts.getState().toasts.map((t) => t.text);
+    await userEvent.click(screen.getByRole('switch', { name: 'Drum' }));
+    await waitFor(() => {
+      expect(texts()).toEqual(["Couldn't set the drum · try again"]);
+    });
+    await userEvent.click(screen.getByRole('switch', { name: 'Filter' }));
+    await waitFor(() => {
+      expect(texts()).toEqual([
+        "Couldn't set the drum · try again",
+        "Couldn't set the filter · try again",
+      ]);
+    });
+    stores.toasts.setState({ toasts: [] });
+    await userEvent.click(screen.getByRole('switch', { name: 'Filter' }));
+    await waitFor(() => {
+      expect(api.setOutput).toHaveBeenCalledTimes(3);
+    });
+    expect(texts()).toEqual([]);
   });
 
   it('a drum with a speed is a slider under the fan, sent when you let go', () => {

@@ -16,5 +16,6 @@ One file per decision: context, decision, consequences. Add one with the `plan-f
 - [Radix primitives for menus and dialogs](0012-radix-for-menus-and-dialogs.md)
 - [Roastpilot roast files, versioned JSON](0013-roastpilot-roast-files.md)
 - [Radix Popover and cmdk for dropdowns](0014-popover-and-cmdk-for-dropdowns.md)
+- [Compact Roastpilot roast files (version 2)](0015-compact-roast-files.md)
 
 Template: [template.md](template.md)

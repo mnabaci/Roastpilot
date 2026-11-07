@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
 import { fromRoasterDraft, toRoasterDraft } from './roaster-draft';
+import { refusalText } from './roaster-refusal';
 import {
   DRUM_FIELDS,
   EVERYDAY_FIELDS,
@@ -25,17 +26,19 @@ export function RoasterEditor({ roaster, locked }: { roaster: Roaster; locked: b
   const edited = JSON.stringify(draft) !== JSON.stringify(saved);
   const save = () => {
     if (!checked.ok) return;
-    run('roasters.save-failed', async () => {
-      const result = await api.saveRoaster(checked.value);
-      if (result.ok) {
-        setProblem(undefined);
-        return;
-      }
-      logger.warn('roasters.refused', { ...result.error });
-      setProblem(
-        result.error.kind === 'in-use' ? 'Disconnect first' : "Couldn't save · see the log",
-      );
-    });
+    run(
+      'roasters.save-failed',
+      async () => {
+        const result = await api.saveRoaster(checked.value);
+        if (result.ok) {
+          setProblem(undefined);
+          return;
+        }
+        logger.warn('roasters.refused', { ...result.error });
+        setProblem(refusalText(result.error, 'save'));
+      },
+      { failed: "Couldn't save the roaster · try again" },
+    );
   };
   const [showTuning, setShowTuning] = useState(false);
   // A problem in a tuning number opens the section, so a held-back Save is never unexplained.

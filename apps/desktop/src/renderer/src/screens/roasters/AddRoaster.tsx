@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
 import { MODEL_LABEL } from './roaster-model';
+import { refusalText } from './roaster-refusal';
 
 const MODELS = RoasterModelSchema.options.map((value) => ({ value, label: MODEL_LABEL[value] }));
 
@@ -15,15 +16,19 @@ export function AddRoaster({ onAdded }: { onAdded: (id: RoasterId) => void }) {
   const [model, setModel] = useState<RoasterModel>('skywalker');
   const [problem, setProblem] = useState<string>();
   const add = () => {
-    run('roasters.add-failed', async () => {
-      const added = await api.addRoaster({ name: name.trim(), model });
-      if (added.ok) {
-        onAdded(added.value.id);
-        return;
-      }
-      logger.warn('roasters.refused', { ...added.error });
-      setProblem(added.error.kind === 'in-use' ? 'Disconnect first' : "Couldn't add · see the log");
-    });
+    run(
+      'roasters.add-failed',
+      async () => {
+        const added = await api.addRoaster({ name: name.trim(), model });
+        if (added.ok) {
+          onAdded(added.value.id);
+          return;
+        }
+        logger.warn('roasters.refused', { ...added.error });
+        setProblem(refusalText(added.error, 'add'));
+      },
+      { failed: "Couldn't add the roaster · try again" },
+    );
   };
   return (
     <section aria-label="Add roaster" className="flex max-w-xl flex-col gap-4">

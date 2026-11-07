@@ -51,7 +51,8 @@ export function migrate(
       db.exec('COMMIT');
       applied.push(migration.tag);
     } catch (error) {
-      db.exec('ROLLBACK');
+      // SQLite rolls back by itself on some errors (disk full, I/O); a second ROLLBACK would throw.
+      if (db.isTransaction) db.exec('ROLLBACK');
       const message = error instanceof Error ? error.message : String(error);
       return err({ kind: 'storage-failed', message: `Migration ${migration.tag}: ${message}` });
     }

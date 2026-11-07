@@ -1,4 +1,4 @@
-import { err, type RoastSummary } from '@roastpilot/shared';
+import { err, ok, type RoastSummary } from '@roastpilot/shared';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -82,13 +82,41 @@ describe('RoastResultForm', () => {
     });
   });
 
-  it('says when it could not save', async () => {
+  it('a refused save shows a toast and says Not saved until a save lands', async () => {
     const user = userEvent.setup();
     const failed = err({ kind: 'storage-failed' as const, message: 'x' });
     const api = fakeApi({ saveRoastResult: vi.fn(() => Promise.resolve(failed)) });
-    renderApp(<RoastResultForm roast={ROAST} />, {}, api);
+    const { stores } = renderApp(<RoastResultForm roast={ROAST} />, {}, api);
     await user.click(screen.getByRole('button', { name: '5' }));
-    expect(await screen.findByRole('alert')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent('Not saved · try again');
+    });
+    expect(stores.toasts.getState().toasts).toEqual([
+      expect.objectContaining({ kind: 'error', text: "Couldn't save how it went · try again" }),
+    ]);
+    // Typing doesn't hide it; the next save that lands does.
+    await user.type(screen.getByLabelText('Notes'), 'b');
+    expect(screen.getByRole('status')).toHaveTextContent('Not saved · try again');
+    api.saveRoastResult.mockResolvedValue(ok(undefined));
+    await user.click(screen.getByRole('button', { name: '4' }));
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent('Saved');
+    });
+  });
+
+  it('a save that never reaches main shows the toast and Not saved too', async () => {
+    const user = userEvent.setup();
+    const api = fakeApi({ saveRoastResult: vi.fn(() => Promise.reject(new Error('ipc'))) });
+    const { stores } = renderApp(<RoastResultForm roast={ROAST} />, {}, api);
+    await user.click(screen.getByRole('button', { name: '5' }));
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent('Not saved · try again');
+    });
+    await waitFor(() => {
+      expect(stores.toasts.getState().toasts.map((t) => t.text)).toEqual([
+        "Couldn't save how it went · try again",
+      ]);
+    });
   });
 
   it('says roasted can not outweigh green, and saves nothing until it is fixed', async () => {

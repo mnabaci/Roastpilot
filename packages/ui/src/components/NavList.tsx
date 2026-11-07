@@ -1,4 +1,5 @@
-import type { KeyboardEvent, ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { moveFocusInList } from '../lib/list-focus';
 import { cn } from '../lib/utils';
 
 export interface NavListItem<T> {
@@ -19,18 +20,6 @@ export interface NavListProps<T> {
   className?: string;
 }
 
-/** Up and Down move focus between items. */
-function moveFocus(event: KeyboardEvent<HTMLButtonElement>): void {
-  const step = { ArrowDown: 1, ArrowUp: -1 }[event.key];
-  const list = event.currentTarget.closest('ul');
-  if (step === undefined || !list) return;
-  const items = [...list.querySelectorAll('button')];
-  const next = items[items.indexOf(event.currentTarget) + step];
-  if (!next) return;
-  event.preventDefault();
-  next.focus();
-}
-
 /** The things in a sidebar, one open, in grey (design system: NavList). */
 export function NavList<T extends string | number>({
   label,
@@ -49,7 +38,7 @@ export function NavList<T extends string | number>({
               type="button"
               title={item.label}
               aria-current={open ? 'true' : undefined}
-              onKeyDown={moveFocus}
+              onKeyDown={moveFocusInList}
               onClick={() => {
                 onOpen(item.id);
               }}

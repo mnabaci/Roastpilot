@@ -6,10 +6,10 @@ import { cn } from '../lib/utils';
 import { alignLayers } from './roast-chart/align-layers';
 import { readChartColors } from './roast-chart/chart-colors';
 import type { ChartLayer, ChartMarker } from './roast-chart/chart-layer';
+import { describeLayers, Legend } from './roast-chart/chart-legend';
 import type { ChartDrag, TimeRange } from './roast-chart/drag-handles';
 import { buildChartOptions, buildStripOptions } from './roast-chart/uplot-options';
 import { useUplot } from './roast-chart/use-uplot';
-import { formatLayerValue, valueAt } from './roast-chart/value-at';
 
 export interface RoastChartProps {
   title: string;
@@ -155,76 +155,13 @@ export function RoastChart({
           <Legend label="Legend" layers={main} at={hoverT} />
         </div>
       </div>
-      <div ref={plotRef} role="img" aria-label={describe(main)} className="w-full" />
+      <div ref={plotRef} role="img" aria-label={describeLayers(main)} className="w-full" />
       {strip.length > 0 ? (
         <>
           <Legend label="Outputs legend" layers={strip} at={hoverT} className="mt-1 self-end" />
-          <div ref={stripRef} role="img" aria-label={describe(strip)} className="w-full" />
+          <div ref={stripRef} role="img" aria-label={describeLayers(strip)} className="w-full" />
         </>
       ) : null}
     </section>
   );
-}
-
-/**
- * Each layer's line sample and name; the outputs strip has its own, under the chart. With `at`
- * (hovering), each name is followed by its value at that time.
- */
-function Legend({
-  label,
-  layers,
-  at,
-  className,
-}: {
-  label: string;
-  layers: readonly ChartLayer[];
-  at: number | undefined;
-  className?: string;
-}) {
-  return (
-    <ul
-      aria-label={label}
-      className={cn('flex flex-wrap gap-4 text-label text-ink-muted tabular-nums', className)}
-    >
-      {layers.map((layer) => (
-        <li key={layer.id} className="flex items-center gap-1.5">
-          <span
-            aria-hidden="true"
-            className={cn(
-              'w-4.5',
-              layer.dash ? 'border-t-2 border-dashed' : layer.width > 3 ? 'h-0.75' : 'h-0.5',
-              {
-                heat: layer.dash ? 'border-heat' : 'bg-heat',
-                air: layer.dash ? 'border-air' : 'bg-air',
-                target: layer.dash ? 'border-target' : 'bg-target',
-                ghost: layer.dash ? 'border-ghost' : 'bg-ghost',
-              }[layer.tone],
-            )}
-          />
-          {layer.label}
-          {at === undefined ? null : <LegendValue layer={layer} at={at} />}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function LegendValue({ layer, at }: { layer: ChartLayer; at: number }) {
-  const v = valueAt(layer, at);
-  return (
-    <span className="font-semibold text-ink">
-      {v === undefined ? '–' : formatLayerValue(layer.axis, v)}
-    </span>
-  );
-}
-
-/** A one-line text alternative: the latest value of each layer. */
-function describe(layers: readonly ChartLayer[]): string {
-  const parts = layers.flatMap((layer) => {
-    const v = layer.points.findLast((p) => p.v !== null)?.v ?? undefined;
-    if (v === undefined) return [];
-    const text = formatLayerValue(layer.axis, v);
-    return [`${layer.label} ${text}`];
-  });
-  return parts.length > 0 ? parts.join(', ') : 'No readings yet';
 }

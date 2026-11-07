@@ -95,6 +95,12 @@ describe('ProfilesScreen', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Heat on: Enter a number');
   });
 
+  it("says what is wrong with the soak's fan", async () => {
+    open();
+    await edit('Soak fan', '120');
+    expect(screen.getByRole('alert')).toHaveTextContent(/^Soak: /);
+  });
+
   it('Discard goes back to what is saved', async () => {
     open();
     await edit('BT cap', '205');
@@ -152,6 +158,20 @@ describe('ProfilesScreen', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Disk full');
     expect(screen.getByRole('textbox', { name: 'BT cap' })).toHaveValue('205');
+  });
+
+  it('Discard clears a refusal with the edit it was about', async () => {
+    const api = fakeApi({
+      saveProfile: vi.fn(() =>
+        Promise.resolve(err({ kind: 'storage-failed' as const, message: 'Disk full' })),
+      ),
+    });
+    open(api);
+    await edit('BT cap', '205');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Disk full');
+    await userEvent.click(screen.getByRole('button', { name: 'Discard' }));
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   describe('while Auto runs a profile', () => {

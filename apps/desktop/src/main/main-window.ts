@@ -3,6 +3,7 @@ import { serializeError } from '@roastpilot/core';
 import { app, BrowserWindow } from 'electron';
 import { join } from 'node:path';
 import { WINDOW_BACKGROUND } from './window-background';
+import { isAppNavigation, type AppPage } from './window-navigation';
 
 /**
  * The app icon (docs/spec/ui.md, Brand). Packaged builds get it from electron-builder; in
@@ -10,6 +11,14 @@ import { WINDOW_BACKGROUND } from './window-background';
  */
 export function devIcon(): string | undefined {
   return app.isPackaged ? undefined : join(app.getAppPath(), 'build', 'icon.png');
+}
+
+/** The app's own page: the dev server in development, the packaged `index.html` otherwise. */
+export function appPage(): AppPage {
+  return {
+    devUrl: process.env.ELECTRON_RENDERER_URL,
+    indexFile: join(import.meta.dirname, '../renderer/index.html'),
+  };
 }
 
 /** The one app window, locked down: sandboxed, no new windows, no navigating away. */
@@ -36,12 +45,12 @@ export function createMainWindow({
     },
   });
 
-  const devUrl = process.env.ELECTRON_RENDERER_URL;
+  const { devUrl, indexFile } = appPage();
 
   // Never open new windows or navigate away from the app's own pages.
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', (event, url) => {
-    if (!devUrl || !url.startsWith(devUrl)) {
+    if (!isAppNavigation(url, devUrl)) {
       logger.warn('window.navigation-blocked', { url });
       event.preventDefault();
     }
@@ -50,9 +59,7 @@ export function createMainWindow({
     logger.error('window.renderer-gone', { reason: details.reason, exitCode: details.exitCode });
   });
 
-  const loaded = devUrl
-    ? win.loadURL(devUrl)
-    : win.loadFile(join(import.meta.dirname, '../renderer/index.html'));
+  const loaded = devUrl ? win.loadURL(devUrl) : win.loadFile(indexFile);
   loaded.catch((error: unknown) => {
     logger.error('window.load-failed', { error: serializeError(error) });
   });

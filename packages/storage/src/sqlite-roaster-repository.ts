@@ -4,6 +4,7 @@ import {
   ConnectTargetSchema,
   err,
   ok,
+  RoasterModelSchema,
   type Result,
   type Roaster,
   type RoasterId,
@@ -15,6 +16,7 @@ import { attempt, parseJson } from './attempt';
 import { profiles } from './schema/profiles';
 import { roasters } from './schema/roasters';
 import { roasts } from './schema/roasts';
+import { transaction } from './transaction';
 
 type Row = typeof roasters.$inferSelect;
 
@@ -36,16 +38,21 @@ export class SqliteRoasterRepository implements RoasterRepository {
   }
 
   #toRoaster(row: Row): Roaster[] {
-    const { pid, connection, isActive, ...plain } = row;
+    const { pid, connection, isActive, model, ...plain } = row;
     const tuning = AutoTuningSchema.safeParse(parseJson(pid));
-    const target = ConnectTargetSchema.safeParse(connection && parseJson(connection));
-    if (!tuning.success) {
-      this.#logger.warn('storage.roaster-unreadable', { id: row.id });
+    // SQLite doesn't check the enum: a model from a newer app has no driver or limits here.
+    const knownModel = RoasterModelSchema.safeParse(model);
+    if (!tuning.success || !knownModel.success) {
+      this.#logger.warn('storage.roaster-unreadable', { id: row.id, model });
       return [];
     }
+    const target = ConnectTargetSchema.safeParse(connection && parseJson(connection));
+    // A lost connection only means picking the port again; the record itself stays.
+    if (!target.success) this.#logger.warn('storage.roaster-connection-unreadable', { id: row.id });
     return [
       {
         ...plain,
+        model: knownModel.data,
         tuning: tuning.data,
         connection: target.success ? target.data : null,
         active: isActive,
@@ -78,17 +85,18 @@ export class SqliteRoasterRepository implements RoasterRepository {
     });
   }
 
-  async setActive(id: RoasterId): Promise<Result<void, StorageError>> {
-    const known = await attempt(() =>
-      this.#db.select({ id: roasters.id }).from(roasters).where(eq(roasters.id, id)).all(),
-    );
-    if (!known.ok) return known;
-    if (known.value.length === 0) return err({ kind: 'not-found', id });
-    return attempt(async () => {
-      // Turn this one on first: a failure between the two leaves two active, which `list` shows,
-      // never none.
-      await this.#db.update(roasters).set({ isActive: true }).where(eq(roasters.id, id)).run();
-      await this.#db.update(roasters).set({ isActive: false }).where(ne(roasters.id, id)).run();
+  /** Makes this roaster the only active one, all or nothing. */
+  setActive(id: RoasterId): Promise<Result<void, StorageError>> {
+    return transaction(this.#db, async (tx) => {
+      const on = await tx
+        .update(roasters)
+        .set({ isActive: true })
+        .where(eq(roasters.id, id))
+        .returning({ id: roasters.id })
+        .all();
+      if (on.length === 0) return err({ kind: 'not-found', id });
+      await tx.update(roasters).set({ isActive: false }).where(ne(roasters.id, id)).run();
+      return ok(undefined);
     });
   }
 

@@ -92,7 +92,6 @@ export function formatGhostDelta({ deltaC, aheadS }: GhostDelta): string {
   return `${temp} · ${formatClock(Math.abs(seconds))} ${seconds > 0 ? 'ahead' : 'behind'}`;
 }
 
-/** A saved roast as the ghost picker and the setup line name it: date and time, starred if a favourite. */
 /** What helps you pick a ghost: its bean, stars and first crack ("Ethiopia Guji · ★★★★★ · FC 9:12"). */
 export function ghostDetail(roast: RoastSummary, beanName: string | undefined): string | undefined {
   const parts = [
@@ -103,5 +102,6 @@ export function ghostDetail(roast: RoastSummary, beanName: string | undefined): 
   return parts.length > 0 ? parts.join(' · ') : undefined;
 }
 
+/** A saved roast as the ghost picker and the setup line name it: date and time, starred if a favourite. */
 export const ghostLabel = (roast: RoastSummary): string =>
   `${roast.isFavourite ? '★ ' : ''}${roastTitle(roast.startedAt)}`;

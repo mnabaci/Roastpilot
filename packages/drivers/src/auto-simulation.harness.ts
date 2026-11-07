@@ -30,12 +30,10 @@ export interface SimulatedRow {
   phase: string | null;
 }
 
-/**
- * One whole Auto roast on the simulated Skywalker and a fake clock, through the same session,
- * flow and pilot the app runs: Preheat, Charge soon, beans in, Start, First crack, auto drop.
- */
-export async function simulateAutoRoast(options: SimulationOptions) {
-  const { profile, tuning, soakS = 60, firstCrackAtC, ambientC } = options;
+type Rig = ReturnType<typeof buildRig>;
+
+/** The simulated Skywalker on a fake clock, wired to the same session, roast and pilot as the app. */
+function buildRig({ profile, tuning, soakS = 60, ambientC }: SimulationOptions) {
   const clock = new ManualClock();
   const driver = new SimulatedDriver({
     clock,
@@ -44,7 +42,6 @@ export async function simulateAutoRoast(options: SimulationOptions) {
   const history = new ReadingHistory();
   const safety: SafetyEvent[] = [];
   const events: AutoEvent[] = [];
-  const rows: SimulatedRow[] = [];
   const failures: unknown[] = [];
   const failed = (error: unknown) => {
     failures.push(error);
@@ -101,68 +98,91 @@ export async function simulateAutoRoast(options: SimulationOptions) {
     onChange: () => undefined,
   });
   pilot.setEnabled(true);
+  return { clock, driver, history, session, roast, pilot, safety, events, failures, failed };
+}
 
-  await session.connect(driver, { kind: 'simulator' });
+/** Runs the clock a second at a time until `done`, or the limit; says whether it got there. */
+async function runUntil(rig: Rig, done: () => boolean, limitMs: number): Promise<boolean> {
+  const endMs = rig.clock.now() + limitMs;
+  while (!done() && rig.clock.now() < endMs) await rig.clock.runFor(1_000);
+  return done();
+}
+
+/** Preheat, Charge soon, beans in, Start: what the roaster does before the roast proper. */
+async function preheatAndCharge(rig: Rig) {
+  const { clock, driver, history, roast, pilot } = rig;
   await roast.act('preheat');
-
-  const runUntil = async (done: () => boolean, limitMs: number): Promise<boolean> => {
-    const endMs = clock.now() + limitMs;
-    while (!done() && clock.now() < endMs) await clock.runFor(1_000);
-    return done();
-  };
-
   const preheatStarted = clock.now();
   const reachedAddBeans = await runUntil(
+    rig,
     () => pilot.status.preheatStep === 'add-beans' || pilot.status.stopReason !== null,
     40 * 60_000,
   );
   const preheatMs = clock.now() - preheatStarted;
   const btAtAddBeans = history.latest()?.values.bt;
   pilot.chargeSoon(clock.now());
-  await runUntil(() => pilot.status.preheatStep === 'beans-in', 30_000);
+  await runUntil(rig, () => pilot.status.preheatStep === 'beans-in', 30_000);
   const btAtCharge = history.latest()?.values.bt;
   driver.chargeBeans();
   await clock.runFor(2_000);
   await roast.act('start');
+  return { reachedAddBeans, preheatMs, btAtAddBeans, btAtCharge };
+}
 
+/** Roasts until the drop, a row a second, pressing First crack at `firstCrackAtC`. */
+async function roastToDrop(rig: Rig, firstCrackAtC: number | undefined) {
+  const { history, roast, pilot } = rig;
+  const rows: SimulatedRow[] = [];
   let lastRowS = -1;
-  const roastEnded = await runUntil(() => {
-    const { phase, chargedAtMs } = roast.state;
-    const latest = history.latest();
-    const bt = latest?.values.bt;
-    if (latest && chargedAtMs !== null && bt !== undefined) {
-      const tS = (latest.atMs - chargedAtMs) / 1_000;
-      if (tS - lastRowS >= 1) {
-        lastRowS = tS;
-        rows.push({
-          tS,
-          bt,
-          ror: rateOfRise(history.all().filter((r) => r.atMs >= chargedAtMs)),
-          heater: latest.values.heater ?? 0,
-          fan: latest.values.fan ?? 0,
-          phase: pilot.status.phaseName,
-        });
+  const roastEnded = await runUntil(
+    rig,
+    () => {
+      const { phase, chargedAtMs } = roast.state;
+      const latest = history.latest();
+      const bt = latest?.values.bt;
+      if (latest && chargedAtMs !== null && bt !== undefined) {
+        const tS = (latest.atMs - chargedAtMs) / 1_000;
+        if (tS - lastRowS >= 1) {
+          lastRowS = tS;
+          rows.push({
+            tS,
+            bt,
+            ror: rateOfRise(history.all().filter((r) => r.atMs >= chargedAtMs)),
+            heater: latest.values.heater ?? 0,
+            fan: latest.values.fan ?? 0,
+            phase: pilot.status.phaseName,
+          });
+        }
+        if (phase === 'roasting' && firstCrackAtC !== undefined && bt >= firstCrackAtC) {
+          roast.act('first-crack').catch(rig.failed);
+        }
       }
-      if (phase === 'roasting' && firstCrackAtC !== undefined && bt >= firstCrackAtC) {
-        roast.act('first-crack').catch(failed);
-      }
-    }
-    return phase === 'cooling' || phase === 'done';
-  }, 25 * 60_000);
+      return phase === 'cooling' || phase === 'done';
+    },
+    25 * 60_000,
+  );
+  return { roastEnded, rows };
+}
 
-  const finalState = roast.state;
-  await session.disconnect();
+/**
+ * One whole Auto roast on the simulated Skywalker and a fake clock, through the same session,
+ * flow and pilot the app runs: Preheat, Charge soon, beans in, Start, First crack, auto drop.
+ */
+export async function simulateAutoRoast(options: SimulationOptions) {
+  const rig = buildRig(options);
+  await rig.session.connect(rig.driver, { kind: 'simulator' });
+  const charged = await preheatAndCharge(rig);
+  const { roastEnded, rows } = await roastToDrop(rig, options.firstCrackAtC);
+  const finalState = rig.roast.state;
+  await rig.session.disconnect();
   return {
-    reachedAddBeans,
-    preheatMs,
-    btAtAddBeans,
-    btAtCharge,
+    ...charged,
     roastEnded,
     rows,
-    events,
-    safety,
-    failures,
+    events: rig.events,
+    safety: rig.safety,
+    failures: rig.failures,
     finalState,
-    stopped: pilot.status.stopReason !== null,
+    stopped: rig.pilot.status.stopReason !== null,
   };
 }

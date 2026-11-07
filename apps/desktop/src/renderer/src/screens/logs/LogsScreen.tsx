@@ -4,10 +4,11 @@ import { FolderOpen } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
+import { useToast } from '../../features/use-toast';
 import { ChipGroup } from './ChipGroup';
 import { dayLabel, localDay, viewerDays } from './log-days';
 import { countLevels, DEFAULT_LEVELS, filterLogs, scopesOf } from './log-filter';
-import { LogRow } from './LogRow';
+import { LogEntries } from './LogEntries';
 import { useLogDay } from './use-log-day';
 import { useLogDays } from './use-log-days';
 
@@ -29,6 +30,7 @@ const toggle = <T,>(set: ReadonlySet<T>, id: T): Set<T> => {
 export function LogsScreen() {
   const { api } = useDeps();
   const run = useRun();
+  const toast = useToast();
   const today = localDay(new Date());
   const days = viewerDays(useLogDays(), today);
   const [day, setDay] = useState(today);
@@ -45,7 +47,14 @@ export function LogsScreen() {
   const counts = countLevels(records);
 
   const copy = (record: LogRecord) => {
-    run('logs.copy-failed', () => navigator.clipboard.writeText(JSON.stringify(record, null, 2)));
+    run(
+      'logs.copy-failed',
+      async () => {
+        await navigator.clipboard.writeText(JSON.stringify(record, null, 2));
+        toast('success', 'Copied');
+      },
+      { failed: "Couldn't copy the entry · try again" },
+    );
   };
 
   return (
@@ -61,7 +70,9 @@ export function LogsScreen() {
               label: 'Open log folder',
               icon: <FolderOpen aria-hidden="true" />,
               onSelect: () => {
-                run('logs.open-folder-failed', () => api.openLogFolder());
+                run('logs.open-folder-failed', () => api.openLogFolder(), {
+                  failed: "Couldn't open the log folder · try again",
+                });
               },
             },
           ]}
@@ -103,34 +114,7 @@ export function LogsScreen() {
           setScopes(toggle(scopes, s));
         }}
       />
-      {log.status === 'loaded' && (log.unreadable > 0 || log.truncated) ? (
-        <p className="text-label text-ink-muted">
-          {[
-            log.truncated ? 'Showing the newest 2,000 entries' : '',
-            log.unreadable > 0 ? `${String(log.unreadable)} lines unreadable` : '',
-          ]
-            .filter(Boolean)
-            .join(' · ')}
-        </p>
-      ) : null}
-      {log.status === 'failed' ? (
-        <p role="alert" className="text-body text-critical-text">
-          Couldn't read this day's log · Open log folder to see the file
-        </p>
-      ) : log.status === 'loading' ? (
-        <p className="text-label text-ink-muted">Loading…</p>
-      ) : shown.length === 0 ? (
-        <p className="text-label text-ink-muted">
-          {records.length === 0 ? 'Nothing logged this day' : 'No entries match · try more levels'}
-        </p>
-      ) : (
-        <ul aria-label="Log entries" className="min-h-0 overflow-y-auto rounded-xl bg-surface">
-          {shown.map((record, i) => (
-            // Counted from the oldest, so a live entry arriving on top keeps the others' keys (and open rows).
-            <LogRow key={shown.length - i} record={record} onCopy={copy} />
-          ))}
-        </ul>
-      )}
+      <LogEntries log={log} shown={shown} onCopy={copy} />
     </main>
   );
 }

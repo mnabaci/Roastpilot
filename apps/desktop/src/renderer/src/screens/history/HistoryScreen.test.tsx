@@ -61,7 +61,10 @@ function renderWithPhase(roasts: RoastSummary[], phase: RoastPhase) {
   );
 }
 
-function setup(roasts: RoastSummary[] = [NEWER, OLDER]) {
+function setup(
+  roasts: RoastSummary[] = [NEWER, OLDER],
+  seed: Parameters<typeof renderApp>[1] = {},
+) {
   const listeners = new Set<(change: { id: RoastId; deleted: boolean }) => void>();
   let list = roasts;
   const api = fakeApi({
@@ -79,9 +82,10 @@ function setup(roasts: RoastSummary[] = [NEWER, OLDER]) {
       return () => listeners.delete(listener);
     }),
   });
-  renderApp(<HistoryScreen onOpenProfile={() => undefined} />, {}, api);
+  const { stores } = renderApp(<HistoryScreen onOpenProfile={() => undefined} />, seed, api);
   return {
     api,
+    toasts: () => stores.toasts.getState().toasts.map((t) => [t.kind, t.text]),
     save: (roast: RoastSummary) => {
       list = [roast, ...list];
       act(() => {
@@ -164,6 +168,31 @@ describe('HistoryScreen', () => {
       within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
     );
     expect(api.deleteRoast).toHaveBeenCalledWith(2);
+    await vi.waitFor(() => {
+      expect(api.getRoast).toHaveBeenLastCalledWith(1);
+    });
+  });
+
+  it('after a delete opens the next roast the filters still show', async () => {
+    const guji = { ...BEAN, id: 7, name: 'Ethiopia Guji' };
+    const { api } = setup(
+      [
+        summary(4, '2026-11-04T10:00:00.000Z', { beanId: 7 }),
+        summary(3, '2026-11-03T10:00:00.000Z', { beanId: 7 }),
+        summary(2, '2026-11-02T10:00:00.000Z'),
+        summary(1, '2026-11-01T10:00:00.000Z', { beanId: 7 }),
+      ],
+      { beans: [guji] },
+    );
+    await screen.findByRole('region', { name: 'Roast curve' });
+    // The sidebar's filter comes first; the open roast's Bean field after it.
+    await pick(nth(screen.getAllByRole('button', { name: /^Bean/ }), 0), 'Ethiopia Guji');
+    await userEvent.click(nth(screen.getAllByRole('button', { name: /Nov/ }), 1));
+    await pickDelete();
+    await userEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
+    expect(api.deleteRoast).toHaveBeenCalledWith(3);
     await vi.waitFor(() => {
       expect(api.getRoast).toHaveBeenLastCalledWith(1);
     });
@@ -254,10 +283,23 @@ describe('HistoryScreen', () => {
     expect(await screen.findByText(/Too little to go on/)).toBeInTheDocument();
   });
 
-  it('exports all and imports from the ⋯ beside the title, saying how it went', async () => {
+  it('keeps a make-profile note with its roast', async () => {
     const { api } = setup();
+    api.makeProfileFromRoast.mockResolvedValue(err({ kind: 'too-short' as const }));
+    await screen.findByRole('region', { name: 'Roast curve' });
+    await userEvent.click(screen.getByRole('button', { name: 'Make profile' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Step profile' }));
+    expect(await screen.findByText(/Too little to go on/)).toBeInTheDocument();
+    await userEvent.click(nth(screen.getAllByRole('button', { name: /Nov/ }), 1));
+    expect(screen.queryByText(/Too little to go on/)).toBeNull();
+  });
+
+  it('exports all and imports from the ⋯ beside the title, saying how it went in a toast', async () => {
+    const { api, toasts } = setup();
     api.exportRoasts.mockResolvedValue(ok({ status: 'saved' as const, fileName: 'roasts.json' }));
-    api.importRoasts.mockResolvedValue(ok({ status: 'imported' as const, added: 12, skipped: 3 }));
+    api.importRoasts.mockResolvedValue(
+      ok({ status: 'imported' as const, added: 12, skipped: 3, newestId: OLDER.id }),
+    );
     api.importArtisan.mockResolvedValue(err({ kind: 'not-artisan' as const }));
     await screen.findByRole('region', { name: 'Roast curve' });
     const pick = async (item: string) => {
@@ -266,13 +308,21 @@ describe('HistoryScreen', () => {
     };
     await pick('Export all · Roastpilot file');
     expect(api.exportRoasts).toHaveBeenLastCalledWith({ format: 'roastpilot' });
-    expect(await screen.findByText('Saved roasts.json')).toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(toasts()).toContainEqual(['success', 'Saved roasts.json']);
+    });
     await pick('Export all · CSV');
     expect(api.exportRoasts).toHaveBeenLastCalledWith({ format: 'csv' });
     await pick('Import a Roastpilot file');
-    expect(await screen.findByText('Imported 12 roasts · 3 were already here')).toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(toasts()).toContainEqual(['success', 'Imported 12 roasts · 3 were already here']);
+    });
+    // The newest roast it added opens.
+    expect(api.getRoast).toHaveBeenLastCalledWith(OLDER.id);
     await pick('Import from Artisan');
-    expect(await screen.findByRole('alert')).toHaveTextContent("isn't an Artisan roast");
+    await vi.waitFor(() => {
+      expect(toasts()).toContainEqual(['error', "That file isn't an Artisan roast"]);
+    });
   });
 
   it('Select ticks roasts, Shift ticks a range, and exports just those', async () => {
@@ -292,6 +342,22 @@ describe('HistoryScreen', () => {
     expect(api.exportRoasts).toHaveBeenCalledWith({ format: 'csv', ids: [2, 1, 3] });
     await user.click(screen.getByRole('button', { name: 'Done' }));
     expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+  });
+
+  it('a deleted roast drops out of the selection', async () => {
+    const { api, deleted } = setup();
+    await screen.findByRole('region', { name: 'Roast curve' });
+    await userEvent.click(screen.getByRole('button', { name: 'More for History' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Select' }));
+    await userEvent.click(nth(screen.getAllByRole('checkbox'), 0));
+    expect(screen.getByText('1 selected')).toBeInTheDocument();
+    await pickDelete();
+    await userEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
+    expect(api.deleteRoast).toHaveBeenCalledWith(NEWER.id);
+    deleted(NEWER.id);
+    expect(await screen.findByText('0 selected')).toBeInTheDocument();
   });
 
   it('exports the open roast from its ⋯', async () => {

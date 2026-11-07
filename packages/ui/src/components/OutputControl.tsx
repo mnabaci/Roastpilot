@@ -6,7 +6,7 @@ import { Button } from './Button';
 export interface OutputControlProps {
   /** Output name, e.g. "Heater" or "Fan". */
   label: string;
-  /** Current value in percent; undefined shows a dash (no roaster to report it). */
+  /** Current value in percent; undefined (no roaster to report it) or NaN shows a dash. */
   value: number | undefined;
   /** Who drives it while Auto runs the roast; left out in a manual roast, so no badge shows. */
   mode?: 'auto' | 'manual' | undefined;
@@ -52,7 +52,9 @@ export function OutputControl({
 }: OutputControlProps) {
   const id = useId();
   const manual = mode === 'manual';
-  const { shown, draft, startDrag, commitNow } = useDraft(value, onChange);
+  // A reading that isn't a number shows a dash, like no reading at all.
+  const reading = value !== undefined && Number.isFinite(value) ? value : undefined;
+  const { shown, draft, startDrag, commitNow } = useDraft(reading, onChange);
   return (
     <div className={cn('flex flex-col gap-2.5', className)}>
       <div className="flex items-center justify-between gap-2">
@@ -73,7 +75,7 @@ export function OutputControl({
         max={max}
         step={step}
         value={shown ?? min}
-        disabled={disabled || value === undefined}
+        disabled={disabled || reading === undefined}
         onPointerDown={startDrag}
         onChange={(event) => {
           draft(Number(event.target.value));
@@ -92,16 +94,24 @@ export function OutputControl({
 
 /**
  * The value under your hand while you move the slider, sent once you are done: on letting go,
- * 300 ms after the last key, or when focus leaves.
+ * 300 ms after the last key, or when focus leaves. A send compares against the latest value and
+ * calls the latest `onChange`, not the ones from the render that started the timer.
  */
 function useDraft(value: number | undefined, onChange: (value: number) => void) {
   const [pending, setPending] = useState<number>();
   const latest = useRef<number | undefined>(undefined);
   const dragging = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const stopListening = useRef<(() => void) | undefined>(undefined);
+  const current = useRef({ value, onChange });
+  useEffect(() => {
+    current.current = { value, onChange };
+  });
+  // Gone mid-drag or mid-keys: nothing is sent, and the window stops listening.
   useEffect(
     () => () => {
       clearTimeout(timer.current);
+      stopListening.current?.();
     },
     [],
   );
@@ -111,7 +121,7 @@ function useDraft(value: number | undefined, onChange: (value: number) => void) 
     const next = latest.current;
     latest.current = undefined;
     setPending(undefined);
-    if (next !== undefined && next !== value) onChange(next);
+    if (next !== undefined && next !== current.current.value) current.current.onChange(next);
   };
   const endDrag = () => {
     if (!dragging.current) return;
@@ -129,12 +139,18 @@ function useDraft(value: number | undefined, onChange: (value: number) => void) 
     // Letting go may happen outside the slider, so the window listens; it bubbles there anyway.
     // A cancelled pointer (touch or pen taken over by the system) ends the drag the same way.
     startDrag: () => {
+      stopListening.current?.();
       dragging.current = true;
-      const release = () => {
+      const stop = () => {
         window.removeEventListener('pointerup', release);
         window.removeEventListener('pointercancel', release);
+        stopListening.current = undefined;
+      };
+      const release = () => {
+        stop();
         endDrag();
       };
+      stopListening.current = stop;
       window.addEventListener('pointerup', release);
       window.addEventListener('pointercancel', release);
     },

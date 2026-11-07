@@ -16,6 +16,12 @@ export interface ConfirmButtonProps {
   variant?: 'ghost' | 'secondary';
   /** Deletes something: both buttons in red text (`critical-text`), never a red fill. */
   destructive?: boolean;
+  /** Stops something normally (End roast): both buttons and the icon in amber, never red. */
+  caution?: boolean;
+  /** Up to 3 lines on what happens now, in place of the part after " · " in `question`. */
+  consequences?: readonly string[];
+  /** The dialog's keep-going answer: "Keep roasting". */
+  cancelLabel?: string;
   className?: string;
 }
 
@@ -29,6 +35,9 @@ export function ConfirmButton({
   stacked = false,
   variant = 'ghost',
   destructive = false,
+  caution = false,
+  consequences,
+  cancelLabel,
   className,
 }: ConfirmButtonProps) {
   const [asking, setAsking] = useState(false);
@@ -40,7 +49,12 @@ export function ConfirmButton({
         variant={variant}
         size={stacked ? 'md' : 'sm'}
         icon={icon}
-        className={cn(stacked && 'w-full', destructive && 'text-critical-text', className)}
+        className={cn(
+          stacked && 'w-full',
+          destructive && 'text-critical-text',
+          caution && 'text-warning',
+          className,
+        )}
         onClick={() => {
           setAsking(true);
         }}
@@ -54,6 +68,10 @@ export function ConfirmButton({
         detail={detail}
         confirmLabel={confirmLabel}
         destructive={destructive}
+        caution={caution}
+        icon={icon}
+        consequences={consequences}
+        {...(cancelLabel ? { cancelLabel } : {})}
         onConfirm={onConfirm}
       />
     </>

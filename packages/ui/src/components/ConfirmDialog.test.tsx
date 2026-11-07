@@ -28,6 +28,31 @@ describe('ConfirmDialog', () => {
     expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus();
   });
 
+  it('lists what happens, and starts on the keep-going answer', async () => {
+    const onConfirm = vi.fn();
+    render(
+      <ConfirmDialog
+        open
+        onOpenChange={vi.fn()}
+        question="End the roast?"
+        consequences={['Heater, fan, drum and filter off now', 'The roast is saved as it is']}
+        cancelLabel="Keep roasting"
+        confirmLabel="End roast"
+        caution
+        icon={<svg />}
+        onConfirm={onConfirm}
+      />,
+    );
+    const dialog = screen.getByRole('alertdialog', { name: 'End the roast?' });
+    expect(dialog).toHaveAccessibleDescription(
+      'Heater, fan, drum and filter off now The roast is saved as it is',
+    );
+    expect(screen.getAllByRole('listitem')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'Keep roasting' })).toHaveFocus();
+    await userEvent.click(screen.getByRole('button', { name: 'End roast' }));
+    expect(onConfirm).toHaveBeenCalledOnce();
+  });
+
   it('confirms and closes', async () => {
     const onConfirm = vi.fn();
     const onOpenChange = vi.fn();

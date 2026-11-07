@@ -88,6 +88,9 @@ export function fakeApi(overrides: Partial<RoastpilotApi> = {}): Mocked<Roastpil
     addStock: vi.fn(() => Promise.resolve(ok(undefined))),
     adjustStock: vi.fn(() => Promise.resolve(ok(undefined))),
     onBeans: vi.fn(() => unsubscribe),
+    makeBeanProfile: vi.fn((request: { beanId: number }) =>
+      Promise.resolve(err({ kind: 'bean-not-found' as const, id: request.beanId })),
+    ),
     setRoastSetup: vi.fn(() => Promise.resolve()),
     saveRoastResult: vi.fn(() => Promise.resolve(ok(undefined))),
     makeProfileFromRoast: vi.fn(() => Promise.resolve(err({ kind: 'too-short' as const }))),

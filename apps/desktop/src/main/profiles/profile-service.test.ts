@@ -92,6 +92,13 @@ describe('ProfileService', () => {
     expect(stored().map((p) => p.id)).toEqual(['custom-new']);
   });
 
+  it('a duplicate can take its name, in the same single write', async () => {
+    const { service, stored } = setup();
+    const copy = await service.duplicate('light-steps', 'Yirgacheffe');
+    expect(copy).toMatchObject({ ok: true, value: { profile: { name: 'Yirgacheffe' } } });
+    expect(stored().map((p) => [p.id, p.name])).toEqual([['custom-new', 'Yirgacheffe']]);
+  });
+
   it('makes a curve profile from milestones on the active roaster, named after the ones there', async () => {
     const { service, stored, useRoaster } = setup([{ ...MINE, name: 'Milestones' }]);
     await service.list();

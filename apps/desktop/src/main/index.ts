@@ -1,14 +1,6 @@
 // Composition root: wires core, drivers, logging and IPC (docs/spec/architecture.md).
 import { serializeError } from '@roastpilot/core';
 import { listSerialPorts } from '@roastpilot/drivers';
-import {
-  drizzleOn,
-  openDatabase,
-  SqliteProfileRepository,
-  SqliteBeanRepository,
-  SqliteRoasterRepository,
-  SqliteRoastRepository,
-} from '@roastpilot/storage';
 import { IPC_CHANNELS } from '@roastpilot/shared';
 import { app, BrowserWindow, dialog, Menu, powerMonitor, powerSaveBlocker, shell } from 'electron';
 import { randomUUID } from 'node:crypto';
@@ -19,24 +11,20 @@ import { createAppServices } from './app-services';
 import { installCrashHandlers } from './crash-handlers';
 import { createDriver } from './driver-factory';
 import { SimulatorBeans } from './simulator-beans';
-import {
-  unavailableBeans,
-  unavailableProfiles,
-  unavailableRepository,
-  unavailableRoasters,
-} from './history/unavailable-repository';
 import { createRoastFiles } from './history/roast-files';
 import { broadcast, registerIpcHandlers, registerIpcListener } from './ipc';
 import { createIpcHandlers, handleRendererLog, withErrorLogging } from './ipc-handlers';
-import { createMainWindow, devIcon } from './main-window';
+import { appPage, createMainWindow, devIcon } from './main-window';
 import { createAppLogger } from './logging/app-logger';
 import { listLogDays, readLogDay } from './logging/log-reader';
 import { pruneOldLogsLater } from './logging/prune';
 import { makeProfileFromRoast } from './profiles/make-profile';
-import { exportDialog, importDialog } from './history/roast-file-dialogs';
+import { pathChoosers } from './history/roast-file-dialogs';
+import { makeBeanProfile } from './beans/make-bean-profile';
 import { createPowerGuard } from './power-guard';
 import { createQuitGuard } from './quit-guard';
 import { JsonSettingsStore } from './settings/json-settings-store';
+import { openStores } from './storage-wiring';
 import { systemClock } from './system-clock';
 
 const logDir = app.getPath('logs');
@@ -61,30 +49,12 @@ async function openLogFolder(): Promise<void> {
   if (failure) throw new Error(`Couldn't open the log folder: ${failure}`);
 }
 
-// Saved roasts (docs/spec/data-model.md). Without a database the app still roasts; History says why.
-const storageLogger = logger.child('storage');
-const database = openDatabase(join(app.getPath('userData'), 'roastpilot.db'), storageLogger);
-const roasts = database.ok
-  ? new SqliteRoastRepository(drizzleOn(database.value), storageLogger)
-  : unavailableRepository(
-      database.error.kind === 'storage-failed' ? database.error.message : 'unavailable',
-    );
-const profileStore = database.ok
-  ? new SqliteProfileRepository(drizzleOn(database.value), systemClock, storageLogger)
-  : unavailableProfiles(
-      database.error.kind === 'storage-failed' ? database.error.message : 'unavailable',
-    );
-const roasterStore = database.ok
-  ? new SqliteRoasterRepository(drizzleOn(database.value), storageLogger)
-  : unavailableRoasters(
-      database.error.kind === 'storage-failed' ? database.error.message : 'unavailable',
-    );
-
-const beanStore = database.ok
-  ? new SqliteBeanRepository(drizzleOn(database.value))
-  : unavailableBeans(
-      database.error.kind === 'storage-failed' ? database.error.message : 'unavailable',
-    );
+// Saved data (docs/spec/data-model.md). Without a database the app still roasts; History says why.
+const stores = openStores(
+  join(app.getPath('userData'), 'roastpilot.db'),
+  systemClock,
+  logger.child('storage'),
+);
 
 // Asleep, nothing watches the roaster: stay awake while one is connected, and keep the screen on
 // during a roast (docs/spec/safety.md).
@@ -116,10 +86,10 @@ const {
   settingsStore: new JsonSettingsStore(join(app.getPath('userData'), 'settings.json'), {
     logger: logger.child('settings'),
   }),
-  roasts,
-  profileStore,
-  roasterStore,
-  beanStore,
+  roasts: stores.roasts,
+  profileStore: stores.profileStore,
+  roasterStore: stores.roasterStore,
+  beanStore: stores.beanStore,
   newProfileId: () => `custom-${randomUUID()}`,
   nowIso: () => new Date().toISOString(),
   onConnectionChange: (state) => {
@@ -132,14 +102,20 @@ const {
   publish: broadcast,
 });
 
+// Shared by quit and crash, in this order: safe stop first, then saving, logs last.
+const stopRoaster = () => session.disconnect();
+const saveRoast = () => recorder.flush();
+const flushLogs = () => logs.flush();
+
 installCrashHandlers({
   process,
   logger,
-  stopRoaster: () => session.disconnect(),
+  stopRoaster,
   emergencyStop: () => {
     session.emergencyStop();
   },
-  flushLogs: () => logs.flush(),
+  saveRoast,
+  flushLogs,
   exit: (code) => {
     app.exit(code);
   },
@@ -150,12 +126,12 @@ app.on(
   'before-quit',
   createQuitGuard({
     logger,
-    stop: async () => {
-      await session.disconnect();
-      await recorder.flush();
-      if (database.ok) database.value.close();
-      await logs.flush();
-    },
+    steps: [
+      { name: 'safe-stop', run: stopRoaster },
+      { name: 'save-roast', run: saveRoast },
+      { name: 'close-database', run: stores.close },
+      { name: 'flush-logs', run: flushLogs },
+    ],
     quit: () => {
       app.quit();
     },
@@ -171,6 +147,9 @@ app
   .whenReady()
   .then(() => {
     const ipcLogger = logger.child('ipc');
+    // Only the app's own page, in one of its windows, may call main (docs/spec/architecture.md).
+    const senderCheck = { page: appPage(), logger: ipcLogger };
+    const historyLogger = logger.child('history');
     registerIpcHandlers(
       withErrorLogging(
         createIpcHandlers({
@@ -181,22 +160,10 @@ app
           roastFiles: createRoastFiles({
             history,
             files: roastFileService,
-            chooseExportPath: async (format, count) => {
-              const { canceled, filePath } = await dialog.showSaveDialog(
-                exportDialog(format, count, new Date()),
-              );
-              return canceled ? undefined : filePath;
-            },
-            chooseImportPath: async (kind) => {
-              const { canceled, filePaths } = await dialog.showOpenDialog({
-                ...importDialog(kind),
-                properties: ['openFile'],
-              });
-              return canceled ? undefined : filePaths[0];
-            },
+            ...pathChoosers({ dialogs: dialog, now: () => new Date(), logger: historyLogger }),
             readText: (path) => readFile(path, 'utf8'),
             writeText: (path, text) => writeFile(path, text, 'utf8'),
-            logger: logger.child('history'),
+            logger: historyLogger,
           }),
           pilot,
           profiles,
@@ -209,6 +176,8 @@ app
               activeRoaster: () => roasters.active(),
               newId: () => `custom-${randomUUID()}`,
             }),
+          makeBeanProfile: (request) =>
+            makeBeanProfile(request, { beans, profiles, logger: logger.child('beans') }),
           nowMs: () => systemClock.now(),
           snapshot,
           listPorts: () => listSerialPorts(),
@@ -222,11 +191,16 @@ app
         }),
         ipcLogger,
       ),
+      senderCheck,
     );
     const rendererLogger = logger.child('renderer');
-    registerIpcListener(IPC_CHANNELS.log, (payload) => {
-      handleRendererLog(payload, rendererLogger);
-    });
+    registerIpcListener(
+      IPC_CHANNELS.log,
+      (payload) => {
+        handleRendererLog(payload, rendererLogger);
+      },
+      senderCheck,
+    );
     Menu.setApplicationMenu(
       Menu.buildFromTemplate(
         buildAppMenu({
