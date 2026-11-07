@@ -44,14 +44,20 @@ How the app's safety rules work: [docs/spec/safety.md](docs/spec/safety.md).
 
 ## Screenshots
 
-Coming soon. To take (saved under `docs/images/`):
+Auto mid-roast on the Simulator: following the Light · Curve plan, with a 5★ roast as the ghost.
 
-- [ ] `docs/images/roast-auto.png`: Roast screen mid-roast in Auto, with ghost and outputs strip
-- [ ] `docs/images/roast-manual.png`: Roast screen in Manual
-- [ ] `docs/images/profiles.png`: Profiles screen editing a step profile
-- [ ] `docs/images/history.png`: History comparing two roasts
-- [ ] `docs/images/beans.png`: Beans screen with stock and the batch calculator
-- [ ] `docs/images/roasters.png`: Roasters screen with the Simulator connected
+![Roast screen in Auto, mid-roast, with the ghost and the plan](docs/images/roast-auto.png)
+
+Manual: you drive heater and fan; the numbers say how you compare with the ghost.
+
+![Roast screen in Manual](docs/images/roast-manual.png)
+
+|                                                                        |                                                                |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------- |
+| ![Profiles: a step profile with its preview](docs/images/profiles.png) | ![History: two roasts compared](docs/images/history.png)       |
+| **Profiles:** steps by temperature, with a preview                     | **History:** compare any two roasts                            |
+| ![Beans: stock and the batch calculator](docs/images/beans.png)        | ![Roasters: the Simulator connected](docs/images/roasters.png) |
+| **Beans:** stock and the batch calculator                              | **Roasters:** connect a roaster, or the Simulator              |
 
 ## Supported roasters
 
