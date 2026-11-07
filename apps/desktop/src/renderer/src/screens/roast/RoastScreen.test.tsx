@@ -3,6 +3,7 @@ import { act, fireEvent, screen, within } from '@testing-library/react';
 import type * as Ui from '@roastpilot/ui';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { pick } from '../../test/pick';
 import { addReading } from '../../stores/roast-store';
 import { BUILT_INS as profiles } from '../../test/profiles';
 import { CONNECTED, fakeApi, renderApp } from '../../test/render-app';
@@ -626,14 +627,14 @@ describe('RoastScreen', () => {
       await userEvent.click(screen.getByRole('switch', { name: 'Auto' }));
       expect(api.setSettings).toHaveBeenCalledWith(expect.objectContaining({ roastMode: 'auto' }));
       await openSetup();
-      expect(screen.getByLabelText('Profile')).toHaveValue('light-steps');
+      expect(screen.getByLabelText('Profile')).toHaveTextContent('Light · Steps');
       expect(screen.getByText('Needs calibration · stay close.')).toBeInTheDocument();
     });
 
     it('picks a profile', async () => {
       const { api } = renderApp(<RoastScreen onConnect={onConnect} />, auto('ready'));
       await openSetup();
-      await userEvent.selectOptions(screen.getByLabelText('Profile'), 'light-curve');
+      await pick(screen.getByLabelText('Profile'), /^Light · Curve/);
       expect(api.setSettings).toHaveBeenCalledWith(
         expect.objectContaining({ autoProfile: 'light-curve' }),
       );

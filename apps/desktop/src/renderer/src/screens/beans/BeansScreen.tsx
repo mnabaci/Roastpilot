@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useBeans } from '../../stores/use-stores';
 import { useRoastList } from '../history/use-roast-list';
 import { BatchCalculator } from './BatchCalculator';
-import { formatGrams } from './batch-format';
+import { beanDetail } from './bean-detail';
 import { BeanDetail } from './BeanDetail';
 import { BeanEditor } from './BeanEditor';
 
@@ -66,7 +66,7 @@ export function BeansScreen({
             items={shown.map((bean) => ({
               id: bean.id,
               label: bean.name,
-              detail: `${formatGrams(bean.greenG)} · ${bean.origin} · ${bean.process}`,
+              detail: beanDetail(bean),
               badge:
                 bean.greenG < bean.lowStockG && !bean.archived ? (
                   <Badge tone="heat">Low</Badge>

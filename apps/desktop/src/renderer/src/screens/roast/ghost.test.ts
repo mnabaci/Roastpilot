@@ -1,6 +1,6 @@
-import type { RoastDetail, SavedSample } from '@roastpilot/shared';
+import type { RoastDetail, RoastSummary, SavedSample } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import { formatGhostDelta, ghostChart, ghostDelta } from './ghost';
+import { formatGhostDelta, ghostChart, ghostDelta, ghostDetail } from './ghost';
 
 /** Dips to 100 at 60 s, then climbs 0.2 °C/s. */
 const SAMPLES: SavedSample[] = Array.from({ length: 301 }, (_, i) => {
@@ -66,5 +66,18 @@ describe('formatGhostDelta', () => {
     expect(formatGhostDelta({ deltaC: -1.6, aheadS: -75 })).toBe('-2 °C vs ghost · 1:15 behind');
     expect(formatGhostDelta({ deltaC: 0, aheadS: 0.2 })).toBe('0 °C vs ghost · level');
     expect(formatGhostDelta({ deltaC: 5, aheadS: undefined })).toBe('+5 °C vs ghost');
+  });
+});
+
+describe('ghostDetail', () => {
+  const roast = { rating: 5, fcTimeS: 552 } as RoastSummary;
+
+  it('reads bean, stars and first crack', () => {
+    expect(ghostDetail(roast, 'Ethiopia Guji')).toBe('Ethiopia Guji · ★★★★★ · FC 9:12');
+  });
+
+  it('leaves out what the roast lacks, and is nothing when it lacks all', () => {
+    expect(ghostDetail({ ...roast, rating: null }, undefined)).toBe('FC 9:12');
+    expect(ghostDetail({ ...roast, rating: null, fcTimeS: null }, undefined)).toBeUndefined();
   });
 });

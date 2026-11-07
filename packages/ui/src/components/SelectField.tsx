@@ -1,55 +1,49 @@
 import { ChevronDown } from 'lucide-react';
-import { useId, type ComponentProps } from 'react';
+import { useId } from 'react';
 import { cn } from '../lib/utils';
+import { Select, type SelectOption } from './Select';
 
-export interface SelectFieldProps<V extends string> extends Omit<
-  ComponentProps<'select'>,
-  'value' | 'onChange' | 'id' | 'children'
-> {
+export interface SelectFieldProps<V extends string> {
   /** Always shown above the field. */
   label: string;
   value: V;
-  options: readonly { value: V; label: string }[];
+  options: readonly SelectOption<V>[];
   onChange: (value: V) => void;
+  disabled?: boolean;
+  className?: string;
 }
 
-/** A labelled drop-down over the native select (design system: SelectField). */
+/** A labelled drop-down that opens the app's own panel (design system: SelectField, Select). */
 export function SelectField<V extends string>({
   label,
   value,
   options,
   onChange,
+  disabled,
   className,
-  ...props
 }: SelectFieldProps<V>) {
   const id = useId();
+  const current = options.find((o) => o.value === value)?.label ?? '';
   return (
-    <div className={cn('flex flex-col gap-1.5', className)}>
+    <div className={cn('flex min-w-0 flex-col gap-1.5', className)}>
       <label htmlFor={id} className="text-label text-ink-muted">
         {label}
       </label>
-      <div className="relative flex items-center">
-        <select
-          id={id}
-          value={value}
-          onChange={(event) => {
-            // Only values from `options` can be picked.
-            onChange(event.target.value as V);
-          }}
-          className="h-control-sm w-full appearance-none truncate rounded-md border border-border bg-surface pr-10 pl-3.5 text-body text-ink hover:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50"
-          {...props}
-        >
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+      <Select
+        id={id}
+        label={label}
+        value={value}
+        options={options}
+        onChange={onChange}
+        disabled={disabled}
+        className="group flex h-control-sm w-full items-center gap-2 rounded-md border border-border bg-surface pr-3 pl-3.5 text-left text-body text-ink hover:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50 data-[state=open]:border-border-strong"
+      >
+        <span className="min-w-0 flex-1 truncate">{current}</span>
         <ChevronDown
           aria-hidden="true"
-          className="pointer-events-none absolute right-3 size-5 text-ink-muted"
+          className="size-5 shrink-0 text-ink-muted transition-transform group-data-[state=open]:rotate-180"
         />
-      </div>
+      </Select>
     </div>
   );
 }

@@ -15,6 +15,7 @@ export { RoastList, type RoastListItem, type RoastListProps } from './components
 export { EventTable, type EventRow } from './components/EventTable';
 export { Mark, type MarkProps } from './components/Mark';
 export { RoastStrip, type RoastStripNumber, type RoastStripProps } from './components/RoastStrip';
+export { Select, type SelectOption, type SelectProps } from './components/Select';
 export { SelectField, type SelectFieldProps } from './components/SelectField';
 export { NumberField, type NumberFieldProps } from './components/NumberField';
 export { Switch, type SwitchProps } from './components/Switch';
