@@ -37,6 +37,7 @@ import { JsonSettingsStore } from './settings/json-settings-store';
 import { openStores } from './storage-wiring';
 import { systemClock } from './system-clock';
 import electronUpdater from 'electron-updater';
+import { macEnvironment } from './updates/mac/mac-environment';
 import { createUpdates } from './updates/update-wiring';
 
 const logDir = app.getPath('logs');
@@ -147,6 +148,14 @@ const quitGuard = createQuitGuard({
     { name: 'safe-stop', run: stopRoaster },
     { name: 'save-roast', run: saveRoast },
     { name: 'close-database', run: stores.close },
+    // macOS: starts the installer once the app is shut down, if an update is ready (ADR 0018).
+    // Before the logs are flushed, so a helper that won't start is in the log.
+    {
+      name: 'install-update',
+      run: () => {
+        updates.installOnQuit();
+      },
+    },
     { name: 'flush-logs', run: flushLogs },
   ],
   quit: () => {
@@ -155,7 +164,7 @@ const quitGuard = createQuitGuard({
 });
 app.on('before-quit', quitGuard);
 
-// Updates never touch a roast: Restart to update waits for it to end (ADR 0017).
+// Updates never touch a roast: Restart to update waits for it to end (ADRs 0017, 0018).
 const updates = createUpdates({
   packaged: app.isPackaged,
   platform: process.platform,
@@ -175,6 +184,7 @@ const updates = createUpdates({
     app.quit();
   },
   openExternal: (url) => shell.openExternal(url),
+  mac: macEnvironment,
   logger: logger.child('updates'),
 });
 
