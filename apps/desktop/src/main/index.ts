@@ -101,14 +101,20 @@ const {
   publish: broadcast,
 });
 
+// Shared by quit and crash, in this order: safe stop first, then saving, logs last.
+const stopRoaster = () => session.disconnect();
+const saveRoast = () => recorder.flush();
+const flushLogs = () => logs.flush();
+
 installCrashHandlers({
   process,
   logger,
-  stopRoaster: () => session.disconnect(),
+  stopRoaster,
   emergencyStop: () => {
     session.emergencyStop();
   },
-  flushLogs: () => logs.flush(),
+  saveRoast,
+  flushLogs,
   exit: (code) => {
     app.exit(code);
   },
@@ -120,10 +126,10 @@ app.on(
   createQuitGuard({
     logger,
     steps: [
-      { name: 'safe-stop', run: () => session.disconnect() },
-      { name: 'save-roast', run: () => recorder.flush() },
+      { name: 'safe-stop', run: stopRoaster },
+      { name: 'save-roast', run: saveRoast },
       { name: 'close-database', run: stores.close },
-      { name: 'flush-logs', run: () => logs.flush() },
+      { name: 'flush-logs', run: flushLogs },
     ],
     quit: () => {
       app.quit();
