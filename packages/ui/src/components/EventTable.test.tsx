@@ -1,5 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { EventTable } from './EventTable';
 
 describe('EventTable', () => {
@@ -43,5 +43,21 @@ describe('EventTable', () => {
   it("heads the temperature column with the roaster's short name", () => {
     render(<EventTable rows={[]} tempLabel="BT" />);
     expect(screen.getByRole('columnheader', { name: 'BT' })).toBeInTheDocument();
+  });
+
+  it('keeps two events with the same name and no time apart', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const row = {
+      event: 'Note',
+      time: undefined,
+      bt: undefined,
+      ror: undefined,
+      heater: undefined,
+      fan: undefined,
+    };
+    render(<EventTable rows={[row, { ...row, bt: '150.0 °C' }]} />);
+    expect(screen.getAllByRole('row', { name: /Note/ })).toHaveLength(2);
+    expect(error).not.toHaveBeenCalled();
+    error.mockRestore();
   });
 });

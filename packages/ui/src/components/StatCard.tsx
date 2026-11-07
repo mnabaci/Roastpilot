@@ -12,7 +12,7 @@ const valueVariants = cva('text-readout-xl tabular-nums', {
 export interface StatCardProps
   extends Omit<ComponentProps<'section'>, 'children'>, VariantProps<typeof valueVariants> {
   label: string;
-  /** The live value. `null` or `undefined` shows an em dash, never 0. */
+  /** The live value. `null`, `undefined` or a non-finite number shows an em dash, never 0. */
   value: string | number | null | undefined;
   unit?: string;
   /** One line of context under the value, e.g. "Target 196 °C". */
@@ -29,7 +29,10 @@ export function StatCard({
   className,
   ...props
 }: StatCardProps) {
-  const hasValue = value !== null && value !== undefined && value !== '';
+  const hasValue =
+    typeof value === 'number'
+      ? Number.isFinite(value)
+      : value !== null && value !== undefined && value !== '';
   return (
     <section
       aria-label={label}

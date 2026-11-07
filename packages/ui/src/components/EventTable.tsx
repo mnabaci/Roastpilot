@@ -48,8 +48,9 @@ export function EventTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr key={`${row.event}-${row.time}`} className="border-t border-border text-ink">
+          {/* Rows are in time order and never reorder; two events can share a name and a time. */}
+          {rows.map((row, index) => (
+            <tr key={`${String(index)}-${row.event}`} className="border-t border-border text-ink">
               <th scope="row" className="py-2 text-left font-normal">
                 {row.event}
               </th>

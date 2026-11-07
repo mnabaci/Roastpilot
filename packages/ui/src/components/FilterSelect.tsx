@@ -31,7 +31,7 @@ export function FilterSelect<V extends string>({
   return (
     <Select
       label={label}
-      aria-label={`${label}: ${current}`}
+      aria-label={current ? `${label}: ${current}` : label}
       value={value}
       options={options}
       onChange={onChange}

@@ -4,6 +4,15 @@ import type { ChartColors } from './chart-colors';
 import type { ChartLayer, ChartMarker } from './chart-layer';
 import { attachDrag, drawDragHandles, type ChartDrag, type TimeRange } from './drag-handles';
 import { drawLatestDot, drawMarkers } from './draw-markers';
+import { hoverCursor } from './hover-cursor';
+import {
+  OUTPUT_RANGE,
+  OUTPUT_TICKS,
+  ROR_RANGE,
+  TEMPERATURE_RANGE,
+  TIME_STEPS_S,
+  xScale,
+} from './scales';
 
 /** uPlot's `Axis.Side` is an ambient const enum, which isolated modules can't read at runtime. */
 /* eslint-disable @typescript-eslint/no-unsafe-enum-assignment -- these are the enum's own values */
@@ -17,38 +26,6 @@ const SIDE = {
 /** Fixed axis gutters, so the chart and the outputs strip line up to the pixel. */
 const LEFT_AXIS_PX = 56;
 const RIGHT_AXIS_PX = 48;
-
-/** Time ticks land on whole steps (10 s up to 10 min), so labels never repeat. */
-export const TIME_STEPS_S = [10, 15, 30, 60, 120, 300, 600];
-/** At least a minute of time is shown, so the first seconds of a roast don't fill the width. */
-export const MIN_TIME_SPAN_S = 60;
-
-export const TIME_RANGE: uPlot.Range.Function = (_u, min, max) => {
-  // uPlot passes null-ish bounds before there is any data.
-  const start = Number.isFinite(min) ? Math.floor(min) : 0;
-  const end = Number.isFinite(max) ? Math.ceil(max) : start;
-  return [start, Math.max(end, start + MIN_TIME_SPAN_S)];
-};
-
-/** RoR's right axis shows at least 0–30 °C/min (design system), widened when RoR goes outside. */
-const ROR_RANGE: uPlot.Range.Function = (_u, min, max) => [
-  Math.min(0, Math.floor(min)),
-  Math.max(30, Math.ceil(max)),
-];
-
-/** The temperature axis is fixed at 0–250 °C (Artisan's default) and grows in 50 °C steps. */
-export const TEMPERATURE_MAX_C = 250;
-const TEMPERATURE_STEP_C = 50;
-export const TEMPERATURE_RANGE: uPlot.Range.Function = (_u, _min, max) => [
-  0,
-  Number.isFinite(max) && max > TEMPERATURE_MAX_C
-    ? Math.ceil(max / TEMPERATURE_STEP_C) * TEMPERATURE_STEP_C
-    : TEMPERATURE_MAX_C,
-];
-
-/** Outputs run 0–100 %; a little headroom keeps a line at 100 % from being cut in half. */
-const OUTPUT_RANGE: uPlot.Range.MinMax = [-4, 104];
-const OUTPUT_TICKS = [0, 50, 100];
 
 interface CommonInput {
   width: number;
@@ -64,29 +41,6 @@ interface CommonInput {
   onHover: (t: number | undefined) => void;
   /** Changes the time range that fits the data, read at draw time. */
   adjustTimeRange?: (fitted: TimeRange) => TimeRange;
-}
-
-/** One vertical hover line across the chart and the strip, reporting the time under it. */
-function hoverCursor(onHover: (t: number | undefined) => void): Pick<uPlot.Options, 'cursor'> & {
-  hooks: { setCursor: uPlot.Hooks.Defs['setCursor'][] };
-} {
-  return {
-    cursor: {
-      x: true,
-      y: false,
-      points: { show: false },
-      drag: { x: false, y: false, setScale: false },
-      sync: { key: 'roast-chart' },
-    },
-    hooks: {
-      setCursor: [
-        (u) => {
-          const left = u.cursor.left ?? -1;
-          onHover(left >= 0 ? u.posToVal(left, 'x') : undefined);
-        },
-      ],
-    },
-  };
 }
 
 export interface ChartOptionsInput extends CommonInput {
@@ -142,16 +96,6 @@ function series(
     })),
   ];
 }
-
-const xScale = (adjust: ((fitted: TimeRange) => TimeRange) | undefined): uPlot.Scale => ({
-  time: false,
-  range: adjust
-    ? (u, min, max, scale) => {
-        const [from, to] = adjust(TIME_RANGE(u, min, max, scale) as [number, number]);
-        return [from, to];
-      }
-    : TIME_RANGE,
-});
 
 /** With no RoR axis, both plots keep the same room for the last time label, so they still line up. */
 const NO_AXIS_RIGHT_PX = 24;
