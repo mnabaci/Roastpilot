@@ -133,13 +133,13 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 - **What:** short sounds through the computer's speakers when something needs you, so you can hear it over the roaster. Synthesised in the window with Web Audio (no files) through a compressor, played by the one main window, once per change (then repeated as set, below): never again on later readings.
 - **Steps and defaults:**
 
-| Step                   | Plays when                                                                         | Still waiting while                 | Default voice, volume | Repeat     |
-| ---------------------- | ---------------------------------------------------------------------------------- | ----------------------------------- | --------------------- | ---------- |
-| Charge soon            | Auto's preheat reaches Add beans                                                   | the preheat step is still Add beans | Chime, 80 %           | Until done |
-| Beans in               | Auto's preheat reaches Beans in                                                    | the preheat step is still Beans in  | Chime, 80 %           | Until done |
-| Listen for first crack | once per roast, while Roasting with no first-crack tap, BT reaches expected − 3 °C | Roasting with no first-crack tap    | Ping, 70 %            | Once       |
-| Dump beans             | the roast enters Cooling                                                           | the roast is Cooling                | Chime, 80 %           | 2 times    |
-| Auto stopped           | Auto hands you the outputs mid-run (Preheat to Development)                        | Auto is stopped (until Resume auto) | Alert, 90 %           | 3 times    |
+| Step                   | Plays when                                                                         | Still waiting while                           | Default voice, volume | Repeat     |
+| ---------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------- | --------------------- | ---------- |
+| Charge soon            | Auto's preheat reaches Add beans                                                   | the preheat step is still Add beans           | Chime, 80 %           | Until done |
+| Beans in               | Auto's preheat reaches Beans in                                                    | the preheat step is still Beans in            | Chime, 80 %           | Until done |
+| Listen for first crack | once per roast, while Roasting with no first-crack tap, BT reaches expected − 3 °C | Roasting with no first-crack tap              | Ping, 70 %            | Once       |
+| Dump beans             | the roast enters Cooling                                                           | the roast is Cooling                          | Chime, 80 %           | 2 times    |
+| Auto stopped           | Auto hands you the outputs mid-run (Preheat to Development)                        | Auto is stopped (until Resume auto or Manual) | Alert, 90 %           | 3 times    |
 
 - **Order:** the steps are listed in the order they happen in a roast; Auto stopped is last because it can happen at any point.
 - **Repeat:** Once, 2 times or 3 times play back to back, each a brief 0.3 s pause after the last ends; Until done plays every 10 s while the step is still waiting, for at most 1 minute (7 plays). Any repeat stops at once when its step stops waiting, Sounds is switched off or that step's setting changes; two plays of one step never overlap.

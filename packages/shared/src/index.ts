@@ -166,6 +166,7 @@ export {
 export {
   DEFAULT_SOUNDS,
   DEFAULT_STEP_SOUNDS,
+  sameStepSound,
   SoundsSchema,
   SoundRepeatSchema,
   SoundStepSchema,
