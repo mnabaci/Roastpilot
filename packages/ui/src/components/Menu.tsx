@@ -58,7 +58,7 @@ export function Menu({ label, text, items, className }: MenuProps) {
               onSelect={item.onSelect}
               className={cn(
                 DROPDOWN_ROW,
-                '[&_svg]:size-5',
+                'data-disabled:cursor-not-allowed data-disabled:opacity-50 [&_svg]:size-5',
                 item.destructive ? 'text-critical-text' : 'text-ink',
               )}
             >
