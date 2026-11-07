@@ -70,7 +70,7 @@ describe('MilestoneBuilder', () => {
     open();
     const table = await startBuilding();
     await retype(table.getByLabelText('First crack temperature'), '140');
-    expect(table.getByText('Warmer than 150 °C at 5:05')).toBeInTheDocument();
+    expect(table.getByText('Above 150 °C at 5:05')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create' })).toBeDisabled();
     await retype(table.getByLabelText('Drop time'), '10');
     expect(table.getByText('Enter a time like 1:30')).toBeInTheDocument();

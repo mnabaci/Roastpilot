@@ -38,7 +38,7 @@ describe('milestone draft', () => {
     const late = { ...draft, rows: { ...draft.rows, firstCrack: { time: '9:33', c: '140' } } };
     expect(fromMilestoneDraft(late)).toEqual({
       ok: false,
-      error: { 'firstCrack.c': 'Warmer than 150 °C at 5:05' },
+      error: { 'firstCrack.c': 'Above 150 °C at 5:05' },
     });
     const extra = addMilestonePoint(draft);
     const outside = { ...extra, extras: [{ time: '0:30', c: '120' }] };

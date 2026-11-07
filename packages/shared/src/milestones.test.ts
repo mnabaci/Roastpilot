@@ -31,7 +31,7 @@ describe('MilestonesSchema', () => {
       'turningPoint.tS: After 0:00',
     ]);
     expect(problems({ ...LIGHT, turningPoint: { tS: 64, c: 185 } })).toContain(
-      'turningPoint.c: Cooler than charge (180 °C)',
+      'turningPoint.c: Below charge, 180 °C',
     );
   });
 
@@ -46,7 +46,7 @@ describe('MilestonesSchema', () => {
 
   it('warms up after the turning point', () => {
     expect(problems({ ...LIGHT, firstCrack: { tS: 558, c: 140 } })).toEqual([
-      'firstCrack.c: Warmer than 150 °C at 5:05',
+      'firstCrack.c: Above 150 °C at 5:05',
     ]);
   });
 
@@ -78,10 +78,10 @@ describe('MilestonesSchema', () => {
 
   it('names the later point when your points break the warming', () => {
     expect(problems({ ...LIGHT, extras: [{ tS: 400, c: 140 }] })).toEqual([
-      'extras.0.c: Warmer than 150 °C at 5:05',
+      'extras.0.c: Above 150 °C at 5:05',
     ]);
     expect(problems({ ...LIGHT, extras: [{ tS: 200, c: 160 }] })).toEqual([
-      'dryEnd.c: Warmer than 160 °C at 3:20',
+      'dryEnd.c: Above 160 °C at 3:20',
     ]);
   });
 });

@@ -41,7 +41,7 @@ function limits(m: Milestones, ctx: Ctx) {
   }
   if (m.turningPoint.tS <= 0) issue(ctx, ['turningPoint', 'tS'], 'After 0:00');
   if (m.turningPoint.c >= m.chargeC) {
-    issue(ctx, ['turningPoint', 'c'], `Cooler than charge (${String(m.chargeC)} °C)`);
+    issue(ctx, ['turningPoint', 'c'], `Below charge, ${String(m.chargeC)} °C`);
   }
   const devS = m.drop.tS - m.firstCrack.tS;
   const dev = PROFILE_LIMITS.devTimeS;
@@ -83,7 +83,7 @@ function warming(m: Milestones, extras: Named[], ctx: Ctx) {
   named.slice(1).forEach((point, index) => {
     const before = named[index];
     if (before && point.c <= before.c) {
-      issue(ctx, [...point.path, 'c'], `Warmer than ${String(before.c)} °C at ${mmss(before.tS)}`);
+      issue(ctx, [...point.path, 'c'], `Above ${String(before.c)} °C at ${mmss(before.tS)}`);
     }
   });
 }

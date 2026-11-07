@@ -66,15 +66,18 @@ function PointRow({
           onChange({ ...point, c });
         }}
       />
-      {onRemove ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          aria-label={`Remove ${label.toLowerCase()}`}
-          icon={<X aria-hidden="true" />}
-          onClick={onRemove}
-        />
-      ) : null}
+      {/* Every row keeps the remove button's width, so the columns line up. */}
+      <div className="flex w-12 shrink-0 justify-center">
+        {onRemove ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={`Remove ${label.toLowerCase()}`}
+            icon={<X aria-hidden="true" />}
+            onClick={onRemove}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -153,67 +156,78 @@ export function MilestoneBuilder({
           ) : null}
         </div>
       </header>
-      <RoastChart title="Preview" height={200} layers={preview.layers} markers={preview.markers} />
-      <section aria-label="Milestones" className="flex max-w-lg flex-col gap-2">
-        <div className="flex items-start gap-2">
-          <span className="w-32 shrink-0 pt-2 text-body text-ink">Charge</span>
-          <span className="flex-1 pt-2 text-body text-ink-muted tabular-nums">
-            {formatClock(0)}
-          </span>
-          <NumberField
-            label="Charge temperature"
-            hideLabel
-            className="flex-1"
-            unit="°C"
-            value={draft.chargeC}
-            invalid={Boolean(errors.chargeC)}
-            hint={errors.chargeC}
-            onChange={(chargeC) => {
-              setDraft({ ...draft, chargeC });
+      {/* The table first; the chart beside it when there's room, else below it. */}
+      <div className="flex flex-wrap items-start gap-5">
+        <section aria-label="Milestones" className="flex min-w-96 max-w-lg flex-1 flex-col gap-2">
+          <div className="flex items-start gap-2">
+            <span className="w-32 shrink-0 pt-2 text-body text-ink">Charge</span>
+            <span className="flex-1 pt-2 text-body text-ink-muted tabular-nums">
+              {formatClock(0)}
+            </span>
+            <NumberField
+              label="Charge temperature"
+              hideLabel
+              className="flex-1"
+              unit="°C"
+              value={draft.chargeC}
+              invalid={Boolean(errors.chargeC)}
+              hint={errors.chargeC}
+              onChange={(chargeC) => {
+                setDraft({ ...draft, chargeC });
+              }}
+            />
+            <div className="w-12 shrink-0" />
+          </div>
+          {MILESTONE_ROWS.map((row) => (
+            <PointRow
+              key={row}
+              label={ROW_LABEL[row]}
+              cell={row}
+              point={draft.rows[row]}
+              errors={errors}
+              onChange={(point) => {
+                setDraft({ ...draft, rows: { ...draft.rows, [row]: point } });
+              }}
+            />
+          ))}
+          {draft.extras.map((point, index) => (
+            <PointRow
+              key={String(index)}
+              label={`Your point ${String(index + 1)}`}
+              cell={`extras.${String(index)}`}
+              point={point}
+              errors={errors}
+              onChange={(next) => {
+                setDraft({
+                  ...draft,
+                  extras: draft.extras.map((p, i) => (i === index ? next : p)),
+                });
+              }}
+              onRemove={() => {
+                setDraft(removeMilestonePoint(draft, index));
+              }}
+            />
+          ))}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="self-start"
+            onClick={() => {
+              setDraft(addMilestonePoint(draft));
             }}
+          >
+            Add point
+          </Button>
+        </section>
+        <div className="min-w-96 flex-1">
+          <RoastChart
+            title="Preview"
+            height={200}
+            layers={preview.layers}
+            markers={preview.markers}
           />
         </div>
-        {MILESTONE_ROWS.map((row) => (
-          <PointRow
-            key={row}
-            label={ROW_LABEL[row]}
-            cell={row}
-            point={draft.rows[row]}
-            errors={errors}
-            onChange={(point) => {
-              setDraft({ ...draft, rows: { ...draft.rows, [row]: point } });
-            }}
-          />
-        ))}
-        {draft.extras.map((point, index) => (
-          <PointRow
-            key={String(index)}
-            label={`Your point ${String(index + 1)}`}
-            cell={`extras.${String(index)}`}
-            point={point}
-            errors={errors}
-            onChange={(next) => {
-              setDraft({
-                ...draft,
-                extras: draft.extras.map((p, i) => (i === index ? next : p)),
-              });
-            }}
-            onRemove={() => {
-              setDraft(removeMilestonePoint(draft, index));
-            }}
-          />
-        ))}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="self-start"
-          onClick={() => {
-            setDraft(addMilestonePoint(draft));
-          }}
-        >
-          Add point
-        </Button>
-      </section>
+      </div>
     </div>
   );
 }
