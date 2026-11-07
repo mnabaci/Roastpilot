@@ -51,6 +51,8 @@ export type {
 export { RoastRecorder, type RoastRecorderDeps } from './history/roast-recorder';
 export { AutoPilot, type AutoPilotDeps } from './auto/auto-pilot';
 export type { AutoEvent } from './auto/roast-run';
+export { curveTargetC } from './auto/curve';
+export { STALL } from './auto/stall-guard';
 export { plannedCurve } from './auto/steps-curve';
 export { timeAtC } from './profiles/curve-time';
 export {

@@ -631,6 +631,27 @@ describe('RoastScreen', () => {
       expect(screen.getByText('Needs calibration · stay close.')).toBeInTheDocument();
     });
 
+    it('mid-roast shows how far the roast is from the plan, and the RoR the step aims for', () => {
+      renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...auto('roasting', { phaseName: 'Development' }),
+        roast: { ...roast('roasting'), chargedAtMs: 0 },
+        readings: [reading({ bt: 120 }, 450_000)],
+      });
+      expect(screen.getByText(/^−\d+ °C vs plan$/)).toBeInTheDocument();
+      // No first-crack tap yet: never below the stall guard's 5.
+      expect(screen.getByText('Aim 5–7')).toBeInTheDocument();
+    });
+
+    it('shows neither in a manual roast', () => {
+      renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...connected,
+        roast: { ...roast('roasting'), chargedAtMs: 0 },
+        readings: [reading({ bt: 120 }, 450_000)],
+      });
+      expect(screen.queryByText(/vs plan/)).toBeNull();
+      expect(screen.queryByText(/^Aim /)).toBeNull();
+    });
+
     it('says a profile needs calibration in the folded setup line', () => {
       renderApp(<RoastScreen onConnect={onConnect} />, auto('ready'));
       expect(screen.getByRole('button', { name: 'Change setup' })).toHaveTextContent(
