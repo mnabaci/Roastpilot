@@ -8,6 +8,14 @@ All notable changes to Roastpilot are listed here. The format follows
 
 ## [0.1.1] - 2026-11-07
 
+### Changed
+
+- **Resume auto** in a curve phase picks up from the heater as you left it and moves 5% per 10 s
+  to the phase's own value, instead of jumping to it.
+- **Settings › Sounds:** a compact Volume slider that lines up with Voice and Repeat.
+- **Edit menu:** only Undo, Redo, Cut, Copy, Paste and Select All; macOS's Dictation, Emoji and
+  AutoFill items are switched off.
+
 ### Fixed
 
 - **macOS:** the app opens again: 0.1.0 wasn't signed at all, so macOS called it damaged. 0.1.1 is
