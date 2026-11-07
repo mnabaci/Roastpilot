@@ -33,7 +33,7 @@ export function RoastHeader({
 }) {
   const [deleting, setDeleting] = useState(false);
   return (
-    <header className="flex flex-wrap items-center gap-3">
+    <header className="flex min-h-control-sm flex-wrap items-center gap-3">
       <h2 className="mr-auto text-title">{roast ? roastTitle(roast.startedAt) : ''}</h2>
       <FilterSelect
         label="Compare"

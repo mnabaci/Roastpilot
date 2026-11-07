@@ -82,15 +82,17 @@ export function MilestoneBuilder({
     <div className="flex min-w-0 flex-1 flex-col gap-5">
       <header className="flex flex-wrap items-start gap-3">
         <div className="flex min-w-60 flex-1 flex-col gap-1">
-          <h2 className="text-title text-ink">New from milestones</h2>
+          <h2 className="flex min-h-control-sm items-center text-title text-ink">
+            New from milestones
+          </h2>
           <p className="text-label text-ink-muted">Soak and fan steps from {base.name}</p>
         </div>
         <div className="flex flex-col items-end gap-1">
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={onCancel}>
+            <Button variant="ghost" size="sm" onClick={onCancel}>
               Cancel
             </Button>
-            <Button variant="primary" disabled={!valid || busy} onClick={create}>
+            <Button variant="primary" size="sm" disabled={!valid || busy} onClick={create}>
               Create
             </Button>
           </div>

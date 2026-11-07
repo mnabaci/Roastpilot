@@ -128,11 +128,17 @@ export function ProfileActions({
       <div className="flex items-center gap-2">
         {state.edited ? (
           <>
-            <Button variant="primary" disabled={!state.valid || (active && locked)} onClick={save}>
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={!state.valid || (active && locked)}
+              onClick={save}
+            >
               Save
             </Button>
             <Button
               variant="ghost"
+              size="sm"
               onClick={() => {
                 // A refusal was about the edit going away with it.
                 setProblem(undefined);
@@ -147,6 +153,7 @@ export function ProfileActions({
         ) : (
           <Button
             variant="primary"
+            size="sm"
             disabled={locked}
             onClick={() => {
               saveSettings({ autoProfile: id });

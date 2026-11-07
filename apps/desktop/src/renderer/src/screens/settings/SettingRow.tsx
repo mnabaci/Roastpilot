@@ -36,7 +36,8 @@ export function SettingRow({
 export function SettingCard({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section aria-label={title} className={cn('flex flex-col gap-3', PAGE_WIDTH)}>
-      <h2 className="text-heading">{title}</h2>
+      {/* The open section's name is its title, on the sidebar title's line, as on every screen. */}
+      <h2 className="flex min-h-control-sm items-center text-title">{title}</h2>
       <div className="flex flex-col rounded-xl bg-surface px-5">{children}</div>
     </section>
   );

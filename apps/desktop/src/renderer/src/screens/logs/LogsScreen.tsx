@@ -80,7 +80,8 @@ export function LogsScreen() {
       </div>
       <FilterSelect
         label="Day"
-        className="self-start"
+        // In this full-height column it would otherwise shrink below 44 px.
+        className="shrink-0 self-start"
         value={day}
         options={days.map((d) => ({ value: d, label: dayLabel(d, today) }))}
         onChange={(d) => {

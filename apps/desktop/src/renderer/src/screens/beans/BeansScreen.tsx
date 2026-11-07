@@ -113,7 +113,7 @@ export function BeansScreen({
           onOpenProfile={onOpenProfile}
         />
       ) : (
-        <p className="text-body text-ink-muted">
+        <p className="flex min-h-control-sm items-center text-body text-ink-muted">
           No beans yet · add one to track its stock and find its best roast
         </p>
       )}
