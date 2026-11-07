@@ -1,5 +1,5 @@
 import { Button, formatClock, NumberField } from '@roastpilot/ui';
-import { X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { addPoint, removePoint } from './draft-edits';
 import type { DraftErrors, ProfileDraft } from './profile-draft';
 
@@ -78,6 +78,7 @@ export function CurvePointsTable({
           variant="ghost"
           size="sm"
           className="self-start"
+          icon={<Plus aria-hidden="true" />}
           onClick={() => {
             onChange(addPoint(draft));
           }}

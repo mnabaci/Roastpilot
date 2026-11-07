@@ -1,5 +1,6 @@
 import { milestonesFrom, profileFromMilestones } from '@roastpilot/core';
 import type { AutoProfile } from '@roastpilot/shared';
+import { Plus } from 'lucide-react';
 import { Button, formatClock, NumberField, RoastChart } from '@roastpilot/ui';
 import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
@@ -162,6 +163,7 @@ export function MilestoneBuilder({
             variant="ghost"
             size="sm"
             className="self-start"
+            icon={<Plus aria-hidden="true" />}
             onClick={() => {
               setDraft(addMilestonePoint(draft));
             }}

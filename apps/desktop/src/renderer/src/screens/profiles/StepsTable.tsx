@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react';
 import { Button, cn, formatClock, NumberField } from '@roastpilot/ui';
 import type { ProfileDraft, StepDraft, DraftErrors } from './profile-draft';
 import { addStep, removeStep } from './draft-edits';
@@ -113,6 +114,7 @@ export function StepsTable({ draft, errors, steps, soakS, readOnly, onChange }: 
           variant="ghost"
           size="sm"
           className="self-start"
+          icon={<Plus aria-hidden="true" />}
           onClick={() => {
             onChange(addStep(draft));
           }}
