@@ -77,9 +77,14 @@ export class RoastRun {
     return this.#stallTripped;
   }
 
-  /** Resume auto: the phase's heat control starts over from the live reading. */
+  /**
+   * Resume auto: the phase's heat control starts over from the live reading. The heater worked out
+   * while stopped never reached the roaster, so no curve phase carries on from it.
+   */
   restartControl(): void {
     this.#control = undefined;
+    this.#lastHeaterPct = undefined;
+    this.#carryPct = undefined;
   }
 
   /**
