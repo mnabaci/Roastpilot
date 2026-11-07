@@ -1,5 +1,6 @@
 import {
   DEFAULT_TEMP_NAMES,
+  isRoastRunning,
   type AutoStatus,
   type Reading,
   type RoastPhase,
@@ -13,8 +14,6 @@ import { PHASE_LABEL } from './phase-label';
 
 /** Dump beans leads the strip for the first minute of cooling: the one prompt that can't wait. */
 export const DUMP_PROMPT_MS = 60_000;
-
-const RUNNING: readonly RoastPhase[] = ['preheat', 'roasting', 'development', 'cooling'];
 
 const clock = (s: number | undefined) => (s === undefined ? '–' : formatClock(s));
 const percent = (v: number | undefined) => (v === undefined ? undefined : `${String(v)} %`);
@@ -47,7 +46,7 @@ export function roastStripData(
   auto?: AutoStatus,
 ): Omit<RoastStripProps, 'onOpen' | 'className'> | undefined {
   const coolingRoaster = roast.roasterCoolToC !== null;
-  if (!RUNNING.includes(roast.phase) && !coolingRoaster) return undefined;
+  if (!isRoastRunning(roast)) return undefined;
   const n = roastNumbers(roast, readings);
   const latest = readings.at(-1)?.values;
   const bt = formatNumber(n.bt, 1);

@@ -78,6 +78,22 @@ export const READY_ROAST: RoastState = {
   roasterCoolToC: null,
 };
 
+/** Preheat to Cooling: the phases of a running roast. */
+const RUNNING_PHASES: ReadonlySet<z.infer<typeof RoastPhaseSchema>> = new Set([
+  'preheat',
+  'roasting',
+  'development',
+  'cooling',
+]);
+
+/**
+ * A roast runs: Preheat to Cooling, or drum cooling (docs/spec/ui.md, Roast strip). The screen
+ * stays on, the roast strip shows, and updates wait (docs/spec/install-and-update.md).
+ */
+export function isRoastRunning(roast: RoastState): boolean {
+  return RUNNING_PHASES.has(roast.phase) || roast.roasterCoolingSinceMs !== null;
+}
+
 export const RoastActionErrorSchema = z.object({
   kind: z.literal('not-allowed'),
   action: RoastActionSchema,

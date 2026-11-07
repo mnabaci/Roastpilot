@@ -1,5 +1,5 @@
 import { COMPUTER_SLEEP, type Logger } from '@roastpilot/core';
-import type { ConnectionState, RoastPhase, RoastState } from '@roastpilot/shared';
+import { isRoastRunning, type ConnectionState, type RoastState } from '@roastpilot/shared';
 
 /** Electron's powerSaveBlocker, narrowed to what the guard uses. */
 export interface SleepBlocker {
@@ -22,9 +22,6 @@ export interface PowerGuard {
   onSuspend(): void;
   onResume(): void;
 }
-
-/** Preheat to Cooling: a roast is running and you are watching it. */
-const ROAST_RUNNING: readonly RoastPhase[] = ['preheat', 'roasting', 'development', 'cooling'];
 
 /** One blocker of one kind, held while `on` is true; logs as it turns on and off. */
 function holdWhile(
@@ -61,7 +58,7 @@ export function createPowerGuard({ blocker, emergencyStop, logger }: PowerGuardD
       keepAwake(roasterInUse);
     },
     onRoast(state) {
-      keepScreenOn(ROAST_RUNNING.includes(state.phase) || state.roasterCoolingSinceMs !== null);
+      keepScreenOn(isRoastRunning(state));
     },
     onSuspend() {
       logger.warn('power.suspend', { roasterInUse });

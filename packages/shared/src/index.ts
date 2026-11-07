@@ -119,6 +119,7 @@ export {
   RoastPhaseSchema,
   RoastStateSchema,
   READY_ROAST,
+  isRoastRunning,
   type RoastAction,
   type RoastActionError,
   type RoastEvent,
