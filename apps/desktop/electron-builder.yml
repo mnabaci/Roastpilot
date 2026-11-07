@@ -8,11 +8,20 @@ files:
 npmRebuild: true
 mac:
   category: public.app-category.utilities
+  # The zip is what electron-updater reads (latest-mac.yml); the DMG is what people install.
   target:
     - dmg
+    - zip
 win:
   target:
     - nsis
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+# Releases and updates come from GitHub (ADR 0017). The macOS and Windows jobs upload into one
+# draft; the release workflow adds the changelog section and publishes it.
+publish:
+  provider: github
+  owner: mnabaci
+  repo: Roastpilot
+  releaseType: draft

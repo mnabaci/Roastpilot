@@ -1,0 +1,85 @@
+name: Release
+
+# One GitHub release per vX.Y.Z tag on main (docs/spec/install-and-update.md, Releases).
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      # Fails before anything is built when the tag doesn't match apps/desktop/package.json or
+      # CHANGELOG.md has no section for it.
+      - name: Tag, version and release notes
+        run: node scripts/release-notes.ts --tag "$GITHUB_REF_NAME" --out release-notes.md
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm check
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-notes
+          path: release-notes.md
+
+  build:
+    name: Build (${{ matrix.os }})
+    needs: verify
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: macos-latest
+            target: --mac
+          - os: windows-latest
+            target: --win
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      # Install scripts run here: Electron itself and the native modules the app ships.
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Package and upload to the draft release
+        run: pnpm --filter @roastpilot/desktop exec electron-builder ${{ matrix.target }} --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Unsigned for now (ADR 0017): don't look for a signing identity on the runner.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+  publish:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-notes
+      - name: Changelog section as the notes, then publish the draft
+        run: >-
+          gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY"
+          --title "$GITHUB_REF_NAME" --notes-file release-notes.md --draft=false --latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
