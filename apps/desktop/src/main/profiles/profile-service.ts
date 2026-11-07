@@ -78,13 +78,14 @@ export class ProfileService {
     ];
   }
 
-  async duplicate(id: ProfileId): Promise<Result<ProfileEntry, ProfileError>> {
+  /** A copy of your own, called `name` ("Light curve copy" without one), in one write. */
+  async duplicate(id: ProfileId, name?: string): Promise<Result<ProfileEntry, ProfileError>> {
     const source = [...this.#builtIns(), ...this.#ownHere()].find((p) => p.id === id);
     if (!source) return err({ kind: 'not-found', id });
     const copy = {
       ...source,
       id: this.#deps.newId(),
-      name: `${source.name} copy`,
+      name: name ?? `${source.name} copy`,
       source: { kind: 'profile' as const, profileId: source.id },
     };
     return this.#store(copy, this.#deps.activeRoaster().id);

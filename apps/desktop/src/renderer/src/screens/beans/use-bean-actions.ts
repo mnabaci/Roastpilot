@@ -1,5 +1,5 @@
 import { suggestProfile } from '@roastpilot/core';
-import { BeanFieldsSchema, type Bean, type RoastSummary } from '@roastpilot/shared';
+import type { Bean, RoastSummary } from '@roastpilot/shared';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
@@ -56,7 +56,10 @@ export function useBeanActions({
     );
   };
 
-  /** Duplicates the suggested profile, names it after the bean and opens it in the editor. */
+  /**
+   * The bean's own profile, in one call: main copies the suggested profile, names it after the
+   * bean and links it, all or nothing. Then it opens in the editor.
+   */
   const makeProfile = () => {
     const suggested = suggestProfile({
       bean,
@@ -69,19 +72,16 @@ export function useBeanActions({
     run(
       'beans.make-profile-failed',
       async () => {
-        const copy = await api.duplicateProfile(suggested.profileId);
-        const named =
-          copy.ok && (await api.saveProfile({ ...copy.value.profile, name: bean.name }));
-        const profileId = named && named.ok ? named.value.profile.id : undefined;
-        const linked =
-          profileId !== undefined &&
-          (await api.updateBean({ id: bean.id, fields: BeanFieldsSchema.parse(bean), profileId }));
-        if (profileId === undefined || !linked || !linked.ok) {
+        const made = await api.makeBeanProfile({
+          beanId: bean.id,
+          profileId: suggested.profileId,
+        });
+        if (!made.ok) {
           setProblem("Couldn't make the profile · see Logs");
           return;
         }
         stores.auto.setState({ profiles: await api.listProfiles() });
-        onOpenProfile(profileId);
+        onOpenProfile(made.value.profile.id);
       },
       { failed: "Couldn't make the profile · try again" },
     );

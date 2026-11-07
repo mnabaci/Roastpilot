@@ -150,18 +150,13 @@ describe('BeansScreen', () => {
     await user.click(screen.getByRole('button', { name: `More for ${BEAN.name}` }));
     const item = screen.getByRole('menuitem', { name: 'Make a profile' });
     expect(item).toHaveAttribute('aria-disabled', 'true');
-    expect(api.duplicateProfile).not.toHaveBeenCalled();
+    expect(api.makeBeanProfile).not.toHaveBeenCalled();
   });
 
-  it('makes a profile named after the bean, links it and opens it', async () => {
-    const user = userEvent.setup();
-    const profile = { id: 'custom-9', name: 'Light copy' };
-    const api = fakeApi({
-      duplicateProfile: vi.fn(() => Promise.resolve(ok({ profile, builtIn: false }))) as never,
-      saveProfile: vi.fn((p: AutoProfile) => Promise.resolve(ok({ profile: p, builtIn: false }))),
-    });
+  /** The Beans screen with one built-in profile to copy, and `api`. */
+  function showWithProfile(api: ReturnType<typeof fakeApi>) {
     const onOpenProfile = vi.fn();
-    renderApp(
+    const view = renderApp(
       <BeansScreen onRoast={() => undefined} onOpenProfile={onOpenProfile} />,
       {
         beans: [BEAN],
@@ -170,17 +165,57 @@ describe('BeansScreen', () => {
       },
       api,
     );
+    return { ...view, onOpenProfile };
+  }
+
+  async function pickMakeProfile() {
+    const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: `More for ${BEAN.name}` }));
     await user.click(screen.getByRole('menuitem', { name: 'Make a profile' }));
-    await waitFor(() => {
-      expect(api.updateBean).toHaveBeenCalledWith(
-        expect.objectContaining({ id: 1, profileId: 'custom-9' }),
-      );
+  }
+
+  it('makes a profile for the bean in one call, then opens it', async () => {
+    const profile = { id: 'custom-9', name: 'Yirgacheffe' } as AutoProfile;
+    const api = fakeApi({
+      makeBeanProfile: vi.fn(() => Promise.resolve(ok({ profile, builtIn: false }))),
     });
-    expect(api.saveProfile).toHaveBeenCalledWith(expect.objectContaining({ name: 'Yirgacheffe' }));
+    const { onOpenProfile } = showWithProfile(api);
+    await pickMakeProfile();
     await waitFor(() => {
       expect(onOpenProfile).toHaveBeenCalledWith('custom-9');
     });
+    expect(api.makeBeanProfile).toHaveBeenCalledTimes(1);
+    expect(api.makeBeanProfile).toHaveBeenCalledWith({ beanId: 1, profileId: 'light-steps' });
+    expect(api.duplicateProfile).not.toHaveBeenCalled();
+    expect(api.saveProfile).not.toHaveBeenCalled();
+    expect(api.updateBean).not.toHaveBeenCalled();
+    expect(api.listProfiles).toHaveBeenCalled();
+  });
+
+  it('says so in one line when main could not make it, and opens nothing', async () => {
+    const api = fakeApi({
+      makeBeanProfile: vi.fn(() =>
+        Promise.resolve(err({ kind: 'storage-failed' as const, message: 'locked' })),
+      ),
+    });
+    const { onOpenProfile } = showWithProfile(api);
+    await pickMakeProfile();
+    expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't make the profile");
+    expect(onOpenProfile).not.toHaveBeenCalled();
+  });
+
+  it('shows an error toast when the call itself fails', async () => {
+    const api = fakeApi({
+      makeBeanProfile: vi.fn(() => Promise.reject(new Error('main went away'))),
+    });
+    const { onOpenProfile, stores } = showWithProfile(api);
+    await pickMakeProfile();
+    await waitFor(() => {
+      expect(stores.toasts.getState().toasts).toEqual([
+        expect.objectContaining({ kind: 'error', text: "Couldn't make the profile · try again" }),
+      ]);
+    });
+    expect(onOpenProfile).not.toHaveBeenCalled();
   });
 
   it('shows its roasts with the best favourite', async () => {

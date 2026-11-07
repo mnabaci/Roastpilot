@@ -66,6 +66,7 @@ const api: RoastpilotApi = {
   addStock: (stock) => ipcRenderer.invoke(IPC_CHANNELS.addStock, stock),
   adjustStock: (stock) => ipcRenderer.invoke(IPC_CHANNELS.adjustStock, stock),
   onBeans: (listener) => subscribe(IPC_CHANNELS.beansChanged, listener),
+  makeBeanProfile: (request) => ipcRenderer.invoke(IPC_CHANNELS.makeBeanProfile, request),
   setRoastSetup: (setup) => ipcRenderer.invoke(IPC_CHANNELS.setRoastSetup, setup),
   saveRoastResult: (result) => ipcRenderer.invoke(IPC_CHANNELS.saveRoastResult, result),
   makeProfileFromRoast: (request) => ipcRenderer.invoke(IPC_CHANNELS.makeProfileFromRoast, request),

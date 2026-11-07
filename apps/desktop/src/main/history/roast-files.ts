@@ -13,6 +13,7 @@ import {
 } from '@roastpilot/shared';
 import { basename } from 'node:path';
 import type { HistoryService } from './history-service';
+import type { ChooseExportPath, ChooseImportPath, DialogParent } from './roast-file-dialogs';
 import type { RoastFileService } from './roast-file-service';
 
 export type ExportFormat = ExportRoastsRequest['format'];
@@ -21,20 +22,22 @@ export type ImportKind = 'roastpilot' | 'artisan';
 export interface RoastFilesDeps {
   history: Pick<HistoryService, 'exportCsv' | 'importArtisan'>;
   files: Pick<RoastFileService, 'exportFile' | 'importFile'>;
-  /** The file you picked; undefined if you cancelled. */
-  chooseExportPath: (format: ExportFormat, count: number | 'all') => Promise<string | undefined>;
-  chooseImportPath: (kind: ImportKind) => Promise<string | undefined>;
+  /** The file you picked, in a dialog on `parent`; undefined if you cancelled. */
+  chooseExportPath: ChooseExportPath;
+  chooseImportPath: ChooseImportPath;
   readText: (path: string) => Promise<string>;
   writeText: (path: string, text: string) => Promise<void>;
   logger: Logger;
 }
 
+/** Each opens its file dialog on `parent`, the window that asked. */
 export interface RoastFiles {
   exportRoasts: (
     request: ExportRoastsRequest,
+    parent: DialogParent,
   ) => Promise<Result<ExportRoastsResult, ExportRoastsError>>;
-  importRoasts: () => Promise<Result<ImportRoastsResult, ImportRoastsError>>;
-  importArtisan: () => Promise<Result<ImportArtisanResult, ImportArtisanError>>;
+  importRoasts: (parent: DialogParent) => Promise<Result<ImportRoastsResult, ImportRoastsError>>;
+  importArtisan: (parent: DialogParent) => Promise<Result<ImportArtisanResult, ImportArtisanError>>;
 }
 
 /** History's file actions: main picks the paths, so the renderer never names a file. */
@@ -43,8 +46,9 @@ export function createRoastFiles(deps: RoastFilesDeps): RoastFiles {
   /** The file's text, or why it couldn't be read; undefined when you cancelled. */
   const read = async (
     kind: ImportKind,
+    parent: DialogParent,
   ): Promise<Result<string, { kind: 'read-failed' }> | undefined> => {
-    const path = await chooseImportPath(kind);
+    const path = await chooseImportPath(kind, parent);
     if (path === undefined) return undefined;
     try {
       return ok(await readText(path));
@@ -54,8 +58,8 @@ export function createRoastFiles(deps: RoastFilesDeps): RoastFiles {
     }
   };
   return {
-    exportRoasts: async ({ format, ids }) => {
-      const path = await chooseExportPath(format, ids ? ids.length : 'all');
+    exportRoasts: async ({ format, ids }, parent) => {
+      const path = await chooseExportPath(format, ids ? ids.length : 'all', parent);
       if (path === undefined) return ok({ status: 'cancelled' });
       const text = format === 'csv' ? await history.exportCsv(ids) : await files.exportFile(ids);
       if (!text.ok) return text;
@@ -67,15 +71,15 @@ export function createRoastFiles(deps: RoastFilesDeps): RoastFiles {
       }
       return ok({ status: 'saved', fileName: basename(path) });
     },
-    importRoasts: async () => {
-      const text = await read('roastpilot');
+    importRoasts: async (parent) => {
+      const text = await read('roastpilot', parent);
       if (text === undefined) return ok({ status: 'cancelled' });
       if (!text.ok) return text;
       const imported = await files.importFile(text.value);
       return imported.ok ? ok({ status: 'imported', ...imported.value }) : imported;
     },
-    importArtisan: async () => {
-      const text = await read('artisan');
+    importArtisan: async (parent) => {
+      const text = await read('artisan', parent);
       if (text === undefined) return ok({ status: 'cancelled' });
       if (!text.ok) return text;
       const imported = await history.importArtisan(text.value);

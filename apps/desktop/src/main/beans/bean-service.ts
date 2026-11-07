@@ -1,11 +1,15 @@
 import type { BeanRepository, Logger } from '@roastpilot/core';
 import {
+  BeanFieldsSchema,
+  err,
+  ok,
   NO_ROAST_SETUP,
   type AddStock,
   type AdjustStock,
   type Bean,
   type BeanFields,
   type BeanId,
+  type ProfileId,
   type Result,
   type RoastSetup,
   type StorageError,
@@ -43,6 +47,26 @@ export class BeanService {
     if (listed.ok) return listed.value;
     this.#deps.logger.error('beans.list-failed', { error: listed.error });
     return [];
+  }
+
+  /** One bean, archived ones too; `not-found` when there's no such bean. */
+  async find(id: BeanId): Promise<Result<Bean, StorageError>> {
+    const listed = await this.#deps.repository.list();
+    if (!listed.ok) {
+      this.#deps.logger.warn('beans.read-failed', { id, error: listed.error });
+      return listed;
+    }
+    const bean = listed.value.find((b) => b.id === id);
+    return bean ? ok(bean) : err({ kind: 'not-found', id });
+  }
+
+  /** Makes `profileId` the bean's own profile, keeping everything else about it. */
+  async linkProfile(bean: Bean, profileId: ProfileId): Promise<Result<void, StorageError>> {
+    const fields = BeanFieldsSchema.parse(bean);
+    return this.#after(
+      'profile-linked',
+      await this.#deps.repository.update(bean.id, fields, profileId),
+    );
   }
 
   /** Stock moved outside this service: a roast started, or its result was saved. */

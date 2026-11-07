@@ -34,7 +34,7 @@ Before preheat, with Auto on, the app picks in this order, among the active roas
 
 ## A profile for a bean
 
-- A bean can have its own profile. "Make a profile for this bean" duplicates the suggested one, names it after the bean and opens it in the editor; from then on it is that bean's first suggestion, ahead of its favourites.
+- A bean can have its own profile. "Make a profile for this bean" duplicates the suggested one, names it after the bean and opens it in the editor; from then on it is that bean's first suggestion, ahead of its favourites. It is one step in main, all or nothing: if linking the copy to the bean fails, the copy is deleted again, so no unnamed profile is left behind; the bean shows "Couldn't make the profile · see Logs".
 - Choosing another profile before a roast doesn't change the bean's own.
 
 ## Hints

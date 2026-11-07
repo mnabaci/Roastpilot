@@ -14,12 +14,13 @@ import { SimulatorBeans } from './simulator-beans';
 import { createRoastFiles } from './history/roast-files';
 import { broadcast, registerIpcHandlers, registerIpcListener } from './ipc';
 import { createIpcHandlers, handleRendererLog, withErrorLogging } from './ipc-handlers';
-import { createMainWindow, devIcon } from './main-window';
+import { appPage, createMainWindow, devIcon } from './main-window';
 import { createAppLogger } from './logging/app-logger';
 import { listLogDays, readLogDay } from './logging/log-reader';
 import { pruneOldLogsLater } from './logging/prune';
 import { makeProfileFromRoast } from './profiles/make-profile';
-import { exportPathChooser, importPathChooser } from './history/roast-file-dialogs';
+import { pathChoosers } from './history/roast-file-dialogs';
+import { makeBeanProfile } from './beans/make-bean-profile';
 import { createPowerGuard } from './power-guard';
 import { createQuitGuard } from './quit-guard';
 import { JsonSettingsStore } from './settings/json-settings-store';
@@ -146,6 +147,9 @@ app
   .whenReady()
   .then(() => {
     const ipcLogger = logger.child('ipc');
+    // Only the app's own page, in one of its windows, may call main (docs/spec/architecture.md).
+    const senderCheck = { page: appPage(), logger: ipcLogger };
+    const historyLogger = logger.child('history');
     registerIpcHandlers(
       withErrorLogging(
         createIpcHandlers({
@@ -156,11 +160,10 @@ app
           roastFiles: createRoastFiles({
             history,
             files: roastFileService,
-            chooseExportPath: exportPathChooser(dialog, () => new Date()),
-            chooseImportPath: importPathChooser(dialog),
+            ...pathChoosers({ dialogs: dialog, now: () => new Date(), logger: historyLogger }),
             readText: (path) => readFile(path, 'utf8'),
             writeText: (path, text) => writeFile(path, text, 'utf8'),
-            logger: logger.child('history'),
+            logger: historyLogger,
           }),
           pilot,
           profiles,
@@ -173,6 +176,8 @@ app
               activeRoaster: () => roasters.active(),
               newId: () => `custom-${randomUUID()}`,
             }),
+          makeBeanProfile: (request) =>
+            makeBeanProfile(request, { beans, profiles, logger: logger.child('beans') }),
           nowMs: () => systemClock.now(),
           snapshot,
           listPorts: () => listSerialPorts(),
@@ -186,11 +191,16 @@ app
         }),
         ipcLogger,
       ),
+      senderCheck,
     );
     const rendererLogger = logger.child('renderer');
-    registerIpcListener(IPC_CHANNELS.log, (payload) => {
-      handleRendererLog(payload, rendererLogger);
-    });
+    registerIpcListener(
+      IPC_CHANNELS.log,
+      (payload) => {
+        handleRendererLog(payload, rendererLogger);
+      },
+      senderCheck,
+    );
     Menu.setApplicationMenu(
       Menu.buildFromTemplate(
         buildAppMenu({

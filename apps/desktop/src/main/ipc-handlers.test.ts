@@ -16,8 +16,25 @@ import {
   createIpcHandlers,
   handleRendererLog,
   withErrorLogging,
+  type IpcCaller,
   type IpcDeps,
+  type IpcHandler,
 } from './ipc-handlers';
+
+/** The app window a call came from (checked in ipc.ts); file dialogs open on it. */
+const CALLER: IpcCaller = { window: { id: 7 } as unknown as IpcCaller['window'] };
+
+/** Handlers called as if from the app's window, so a test passes only the payload. */
+function fromAppWindow(
+  handlers: Record<string, IpcHandler>,
+): Record<string, (payload?: unknown) => Promise<unknown>> {
+  return Object.fromEntries(
+    Object.entries(handlers).map(([channel, run]) => [
+      channel,
+      (payload?: unknown) => run(payload, CALLER),
+    ]),
+  );
+}
 
 const SNAPSHOT: Snapshot = {
   connection: { status: 'disconnected' },
@@ -83,12 +100,18 @@ function setup() {
       },
     },
     roastFiles: {
-      exportRoasts: (request) => {
-        calls.push(['exportRoasts', request]);
+      exportRoasts: (request, parent) => {
+        calls.push(['exportRoasts', request, parent]);
         return Promise.resolve(ok({ status: 'cancelled' }));
       },
-      importRoasts: () => Promise.resolve(ok({ status: 'cancelled' })),
-      importArtisan: () => Promise.resolve(ok({ status: 'cancelled' })),
+      importRoasts: (parent) => {
+        calls.push(['importRoasts', parent]);
+        return Promise.resolve(ok({ status: 'cancelled' }));
+      },
+      importArtisan: (parent) => {
+        calls.push(['importArtisan', parent]);
+        return Promise.resolve(ok({ status: 'cancelled' }));
+      },
     },
     pilot: {
       chargeSoon: (nowMs) => {
@@ -130,6 +153,10 @@ function setup() {
     makeProfile: (request) => {
       calls.push(['makeProfile', request]);
       return Promise.resolve(err({ kind: 'too-short' }));
+    },
+    makeBeanProfile: (request) => {
+      calls.push(['makeBeanProfile', request]);
+      return Promise.resolve(err({ kind: 'bean-not-found', id: request.beanId }));
     },
     roasters: {
       load: () => Promise.resolve([]),
@@ -196,17 +223,13 @@ function setup() {
       },
     },
   };
-  return { handlers: createIpcHandlers(deps), calls, driver };
+  return { handlers: fromAppWindow(createIpcHandlers(deps)), calls, driver };
 }
 
-const handle = (
-  handlers: ReturnType<typeof createIpcHandlers>,
-  channel: string,
-  payload?: unknown,
-) => {
+const handle = (handlers: Record<string, IpcHandler>, channel: string, payload?: unknown) => {
   const handler = handlers[channel];
   if (!handler) throw new Error(`no handler for ${channel}`);
-  return handler(payload);
+  return handler(payload, CALLER);
 };
 
 describe('createIpcHandlers', () => {
@@ -257,6 +280,7 @@ describe('createIpcHandlers', () => {
         IPC_CHANNELS.setRoastSetup,
         IPC_CHANNELS.saveRoastResult,
         IPC_CHANNELS.makeProfileFromRoast,
+        IPC_CHANNELS.makeBeanProfile,
       ].sort(),
     );
   });
@@ -479,6 +503,30 @@ describe('handleRendererLog', () => {
   );
 });
 
+describe('make a bean profile handler', () => {
+  it('passes a valid request on and returns its typed result', async () => {
+    const { handlers, calls } = setup();
+    const request = { beanId: 4, profileId: 'light-curve' };
+    expect(await handle(handlers, IPC_CHANNELS.makeBeanProfile, request)).toEqual(
+      err({ kind: 'bean-not-found', id: 4 }),
+    );
+    expect(calls).toEqual([['makeBeanProfile', request]]);
+  });
+
+  it.each([
+    { beanId: 0, profileId: 'light-curve' },
+    { beanId: 1.5, profileId: 'light-curve' },
+    { beanId: '4', profileId: 'light-curve' },
+    { beanId: 4, profileId: '' },
+    { beanId: 4 },
+    undefined,
+  ])('rejects %j and makes nothing', async (payload) => {
+    const { handlers, calls } = setup();
+    await expect(handle(handlers, IPC_CHANNELS.makeBeanProfile, payload)).rejects.toThrow();
+    expect(calls).toEqual([]);
+  });
+});
+
 describe('log viewer handlers', () => {
   it('lists days, reads a valid day and opens the folder', async () => {
     const { handlers, calls } = setup();
@@ -490,6 +538,18 @@ describe('log viewer handlers', () => {
 });
 
 describe('history handlers', () => {
+  it('opens export and import dialogs on the window that asked', async () => {
+    const { handlers, calls } = setup();
+    await handle(handlers, IPC_CHANNELS.exportRoasts, { format: 'csv' });
+    await handle(handlers, IPC_CHANNELS.importRoasts);
+    await handle(handlers, IPC_CHANNELS.importArtisan);
+    expect(calls).toEqual([
+      ['exportRoasts', { format: 'csv' }, CALLER.window],
+      ['importRoasts', CALLER.window],
+      ['importArtisan', CALLER.window],
+    ]);
+  });
+
   it('lists roasts, and gets or deletes one by a valid id', async () => {
     const { handlers, calls } = setup();
     expect(await handle(handlers, IPC_CHANNELS.listRoasts)).toEqual([]);
