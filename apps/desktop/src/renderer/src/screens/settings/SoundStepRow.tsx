@@ -8,7 +8,9 @@ import {
 } from '@roastpilot/shared';
 import { Button, cn, OutputControl, SelectField } from '@roastpilot/ui';
 import { Play, RotateCcw } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useDeps } from '../../app/app-context';
+import { createSoundRepeats } from '../../features/sound-repeats';
 import { LISTEN_BEFORE_C } from '../../features/sound-cues';
 import { VOICE_LABEL } from '../../features/voices';
 import { SettingRow } from './SettingRow';
@@ -58,6 +60,15 @@ export function SoundStepRow({
 }) {
   const { chime } = useDeps();
   const { name, hint } = STEP[step];
+  // Play previews the step as set, repeats too; leaving Settings or changing the step stops it.
+  const [preview] = useState(createSoundRepeats);
+  const { voice, volumePct, repeat } = sound;
+  useEffect(
+    () => () => {
+      preview.stopAll();
+    },
+    [preview, voice, volumePct, repeat],
+  );
   const fallback = DEFAULT_STEP_SOUNDS[step];
   const changed =
     sound.voice !== fallback.voice ||
@@ -98,7 +109,14 @@ export function SoundStepRow({
           aria-label={`Play ${name}`}
           icon={<Play aria-hidden="true" />}
           onClick={() => {
-            chime.play(sound.voice, sound.volumePct);
+            preview.start(
+              step,
+              repeat,
+              () => {
+                chime.play(voice, volumePct);
+              },
+              () => true,
+            );
           }}
         />
         {/* Always takes its place, so changing a value never reflows the row; hidden at default. */}

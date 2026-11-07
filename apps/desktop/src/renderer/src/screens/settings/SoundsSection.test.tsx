@@ -1,7 +1,7 @@
 import { DEFAULT_SETTINGS, DEFAULT_SOUNDS, type Sounds } from '@roastpilot/shared';
-import { fireEvent, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../test/render-app';
 import { SoundsSection } from './SoundsSection';
 
@@ -97,6 +97,48 @@ describe('SoundsSection', () => {
     });
     await userEvent.click(screen.getByRole('button', { name: 'Play Auto stopped' }));
     expect(chime.play).toHaveBeenCalledExactlyOnceWith('beep', 60);
+  });
+
+  describe('Play repeats as set', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('plays 3 times, 3 s apart, for 3 times; pressing again restarts, never overlaps', () => {
+      vi.useFakeTimers();
+      const { chime } = setup();
+      const play = screen.getByRole('button', { name: 'Play Auto stopped' });
+      fireEvent.click(play);
+      act(() => {
+        vi.advanceTimersByTime(1_000);
+      });
+      fireEvent.click(play);
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+      expect(chime.play).toHaveBeenCalledTimes(4);
+      expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('stops when the step changes or Settings closes', () => {
+      vi.useFakeTimers();
+      const { chime, unmount } = setup();
+      fireEvent.click(screen.getByRole('button', { name: 'Play Charge soon' }));
+      const volume = row('Charge soon').getByRole('slider', { name: 'Volume' });
+      fireEvent.change(volume, { target: { value: '45' } });
+      fireEvent.blur(volume);
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+      expect(chime.play).toHaveBeenCalledTimes(1);
+      fireEvent.click(screen.getByRole('button', { name: 'Play Dump beans' }));
+      unmount();
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+      expect(chime.play).toHaveBeenCalledTimes(2);
+      expect(vi.getTimerCount()).toBe(0);
+    });
   });
 
   it('Reset brings a changed step back to its default, repeat too, and goes away', async () => {
