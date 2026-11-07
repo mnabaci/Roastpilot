@@ -14,7 +14,7 @@ How Roastpilot gets onto a computer and stays current, without ever touching a r
 - A PR that changes the release workflow, `electron-builder.yml`, the app's `package.json` or the lockfile builds both installers too, without publishing, so a broken build shows before a tag.
 - Built by GitHub Actions only, never on a laptop, so every release comes from a tagged commit.
 - The release token is `GITHUB_TOKEN` with `contents: write`, only in the release workflow's publish job, which checks out and installs nothing; the build jobs, which run install scripts, are read-only. The workflow runs on tags (never on fork PRs) and pins every action to a commit.
-- No signing yet: macOS asks once to open an app from an unidentified developer (Control-click → Open, or System Settings → Privacy & Security → Open Anyway); Windows SmartScreen asks once (More info → Run anyway). The README says how.
+- No Apple Developer ID yet: the macOS app is ad-hoc signed (`identity: '-'`, no hardened runtime), because Apple silicon refuses an app with no signature at all as "damaged". macOS then asks once (System Settings → Privacy & Security → Open Anyway); Windows SmartScreen asks once (More info → Run anyway). The README says how.
 
 ## Updates
 

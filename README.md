@@ -74,8 +74,12 @@ drivers are plug-ins ([extensibility.md](docs/spec/extensibility.md)).
 Download the latest from [GitHub Releases](https://github.com/mnabaci/Roastpilot/releases): the
 `.dmg` for macOS, the `Setup .exe` for Windows. Builds aren't signed yet, so each system asks once:
 
-- **macOS:** Control-click Roastpilot in Applications → **Open** → **Open**. Or open it once, then
-  System Settings → Privacy & Security → **Open Anyway**.
+- **macOS:** drag Roastpilot to Applications and open it; macOS says it can't check it for
+  malware: **Done**. Then System Settings → Privacy & Security → **Open Anyway** (near the bottom)
+  → **Open Anyway** again. Only the first time.
+- **macOS 0.1.0 only** ("is damaged and can't be opened"): that build wasn't signed at all. Press
+  Cancel, then in Terminal run `xattr -cr /Applications/Roastpilot.app` and open it. From 0.1.1 on
+  the steps above work.
 - **Windows:** SmartScreen says "Windows protected your PC": **More info** → **Run anyway**.
 
 Updates (Settings › About shows where you are):

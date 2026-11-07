@@ -18,5 +18,5 @@ Roastpilot needs installers for macOS and Windows and a way to stay current with
 
 - Adds a runtime dependency (`electron-updater`) and a release workflow with write access, on tags only.
 - Mac updates are a manual download until signing; adding the certificate later turns on background updates with config only.
-- Unsigned builds ask once on first open (Gatekeeper, SmartScreen); the README explains it.
+- Builds without a certificate ask once on first open (Gatekeeper, SmartScreen); the README explains it. macOS builds are ad-hoc signed: Apple silicon calls an app with no signature at all "damaged" and offers no way past it (0.1.0 shipped like that).
 - Releases are tied to GitHub; moving elsewhere means a new updater provider.

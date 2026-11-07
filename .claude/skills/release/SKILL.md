@@ -29,10 +29,10 @@ Releases are built by GitHub Actions from a tag, never on a laptop
      (`git push origin :refs/tags/vX.Y.Z`), merge, and tag again. Never re-use a published
      version: bump instead.
 7. Smoke-test the downloaded installers, not local builds:
-   - macOS: install the DMG on a clean user, first open (Control-click → Open), Simulator roast,
+   - macOS: install the DMG on a clean user, first open (System Settings → Privacy & Security → Open Anyway; never "damaged"), Simulator roast,
      Settings › About shows the version; the previous version shows "Version X.Y.Z is out".
    - Windows: install, SmartScreen (More info → Run anyway), Simulator roast; the previous
      version downloads it and Restart to update installs it (refused mid-roast).
    - One real roast on the Skywalker.
-8. No signing yet: builds are unsigned (`CSC_IDENTITY_AUTO_DISCOVERY=false`). When an Apple
+8. No certificate yet: Windows builds are unsigned and macOS builds ad-hoc signed (`identity: '-'` in `electron-builder.yml`; `CSC_IDENTITY_AUTO_DISCOVERY=false`). The Build job's log must say `identityName=-`. When an Apple
    Developer ID or Windows certificate arrives, add it as repository secrets and update ADR 0017.
