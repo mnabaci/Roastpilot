@@ -16,10 +16,19 @@ import {
   type SafetyEvent,
 } from '@roastpilot/shared';
 
+export interface SessionHandlerDeps {
+  history: ReadingHistory;
+  recorder: Pick<RoastRecorder, 'onReading'>;
+  parts: () => { roast: ManualRoast; pilot: AutoPilot; coach: Coach };
+  publish: <C extends IpcEventChannel>(channel: C, payload: IpcEventPayloads[C]) => void;
+  onConnectionChange: (state: ConnectionState) => void;
+  logger: Logger;
+}
+
 /**
  * What the roaster session tells the rest of main: each reading, connection change and safety
- * event, passed to the windows, the roast flow, Auto, the coach and the recorder. `parts` is read late: the
- * roast and Auto are made after the session.
+ * event, passed to the windows, the roast flow, Auto, the coach and the recorder. `parts` is read
+ * late: the roast, Auto and the coach are made after the session.
  */
 export function sessionHandlers({
   history,
@@ -28,14 +37,7 @@ export function sessionHandlers({
   publish,
   onConnectionChange,
   logger,
-}: {
-  history: ReadingHistory;
-  recorder: Pick<RoastRecorder, 'onReading'>;
-  parts: () => { roast: ManualRoast; pilot: AutoPilot; coach: Coach };
-  publish: <C extends IpcEventChannel>(channel: C, payload: IpcEventPayloads[C]) => void;
-  onConnectionChange: (state: ConnectionState) => void;
-  logger: Logger;
-}) {
+}: SessionHandlerDeps) {
   return {
     onReading: (reading: Reading) => {
       const { roast, pilot, coach } = parts();
