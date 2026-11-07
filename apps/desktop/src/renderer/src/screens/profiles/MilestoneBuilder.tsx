@@ -1,7 +1,6 @@
 import { milestonesFrom, profileFromMilestones } from '@roastpilot/core';
 import type { AutoProfile } from '@roastpilot/shared';
 import { Button, formatClock, NumberField, RoastChart } from '@roastpilot/ui';
-import { X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
@@ -14,7 +13,7 @@ import {
   toMilestoneDraft,
   type MilestoneRow,
 } from './milestone-draft';
-import type { DraftErrors, PointDraft } from './profile-draft';
+import { MilestonePointRow } from './MilestonePointRow';
 import { profilePreview } from './profile-preview';
 
 const ROW_LABEL: Record<MilestoneRow, string> = {
@@ -23,64 +22,6 @@ const ROW_LABEL: Record<MilestoneRow, string> = {
   firstCrack: 'First crack',
   drop: 'Drop',
 };
-
-/** One row of the table: a name, then its time and temperature cells. */
-function PointRow({
-  label,
-  cell,
-  point,
-  errors,
-  onChange,
-  onRemove,
-}: {
-  label: string;
-  cell: string;
-  point: PointDraft;
-  errors: DraftErrors;
-  onChange: (next: PointDraft) => void;
-  onRemove?: () => void;
-}) {
-  return (
-    <div className="flex items-start gap-2">
-      <span className="w-32 shrink-0 pt-2 text-body text-ink">{label}</span>
-      <NumberField
-        label={`${label} time`}
-        hideLabel
-        className="flex-1"
-        value={point.time}
-        invalid={Boolean(errors[`${cell}.time`])}
-        hint={errors[`${cell}.time`]}
-        onChange={(time) => {
-          onChange({ ...point, time });
-        }}
-      />
-      <NumberField
-        label={`${label} temperature`}
-        hideLabel
-        className="flex-1"
-        unit="°C"
-        value={point.c}
-        invalid={Boolean(errors[`${cell}.c`])}
-        hint={errors[`${cell}.c`]}
-        onChange={(c) => {
-          onChange({ ...point, c });
-        }}
-      />
-      {/* Every row keeps the remove button's width, so the columns line up. */}
-      <div className="flex w-12 shrink-0 justify-center">
-        {onRemove ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label={`Remove ${label.toLowerCase()}`}
-            icon={<X aria-hidden="true" />}
-            onClick={onRemove}
-          />
-        ) : null}
-      </div>
-    </div>
-  );
-}
 
 /**
  * A new curve profile from a few milestones, with the soak and fan steps of `base`
@@ -179,7 +120,7 @@ export function MilestoneBuilder({
             <div className="w-12 shrink-0" />
           </div>
           {MILESTONE_ROWS.map((row) => (
-            <PointRow
+            <MilestonePointRow
               key={row}
               label={ROW_LABEL[row]}
               cell={row}
@@ -191,7 +132,7 @@ export function MilestoneBuilder({
             />
           ))}
           {draft.extras.map((point, index) => (
-            <PointRow
+            <MilestonePointRow
               key={String(index)}
               label={`Your point ${String(index + 1)}`}
               cell={`extras.${String(index)}`}
