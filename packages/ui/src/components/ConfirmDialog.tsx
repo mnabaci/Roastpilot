@@ -1,4 +1,5 @@
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
+import type { ReactNode } from 'react';
 import { cn } from '../lib/utils';
 import { Button } from './Button';
 
@@ -14,6 +15,14 @@ export interface ConfirmDialogProps {
   onConfirm: () => void;
   /** Deletes something: the verb in red text (`critical-text`), never a red fill. */
   destructive?: boolean;
+  /** Stops something normally, like End roast: the verb and icon in amber (`warning`), never red. */
+  caution?: boolean;
+  /** Before the question, in the tone's colour. */
+  icon?: ReactNode;
+  /** Up to 3 short lines on what happens now; they take the detail line's place. */
+  consequences?: readonly string[] | undefined;
+  /** The button that keeps things as they are: "Keep roasting". Focus starts on it. */
+  cancelLabel?: string;
   /** A second answer beside the verb, e.g. "Keep deducted" next to "Return to stock". */
   alternative?: { label: string; onSelect: () => void } | undefined;
 }
@@ -30,16 +39,36 @@ export function ConfirmDialog({
   confirmLabel,
   onConfirm,
   destructive = false,
+  caution = false,
+  icon,
+  consequences,
+  cancelLabel = 'Cancel',
   alternative,
 }: ConfirmDialogProps) {
+  const toneText = destructive ? 'text-critical-text' : caution ? 'text-warning' : undefined;
   return (
     <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
       <AlertDialog.Portal>
         <AlertDialog.Overlay className="fixed inset-0 z-50 bg-bg/70" />
         <AlertDialog.Content className="fixed top-1/2 left-1/2 z-50 flex w-full max-w-100 -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-xl border border-border-strong bg-surface p-5">
           <div className="flex flex-col gap-1">
-            <AlertDialog.Title className="text-heading">{question}</AlertDialog.Title>
-            {detail ? (
+            <AlertDialog.Title className="flex items-center gap-2 text-heading">
+              {icon ? (
+                <span aria-hidden="true" className={cn('flex [&_svg]:size-5', toneText)}>
+                  {icon}
+                </span>
+              ) : null}
+              {question}
+            </AlertDialog.Title>
+            {consequences && consequences.length > 0 ? (
+              <AlertDialog.Description asChild>
+                <ul className="flex list-disc flex-col gap-0.5 pl-5 text-body text-ink-muted">
+                  {consequences.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+              </AlertDialog.Description>
+            ) : detail ? (
               <AlertDialog.Description className="text-body text-ink-muted">
                 {detail}
               </AlertDialog.Description>
@@ -49,7 +78,7 @@ export function ConfirmDialog({
           </div>
           <div className="flex justify-end gap-2">
             <AlertDialog.Cancel asChild>
-              <Button variant="ghost">Cancel</Button>
+              <Button variant="ghost">{cancelLabel}</Button>
             </AlertDialog.Cancel>
             {alternative ? (
               <AlertDialog.Action asChild>
@@ -57,7 +86,7 @@ export function ConfirmDialog({
               </AlertDialog.Action>
             ) : null}
             <AlertDialog.Action asChild>
-              <Button className={cn(destructive && 'text-critical-text')} onClick={onConfirm}>
+              <Button icon={icon} className={toneText} onClick={onConfirm}>
                 {confirmLabel}
               </Button>
             </AlertDialog.Action>

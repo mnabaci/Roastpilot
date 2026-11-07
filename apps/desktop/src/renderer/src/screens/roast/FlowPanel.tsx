@@ -1,8 +1,9 @@
+import { CircleStop } from 'lucide-react';
 import type { RoastAction } from '@roastpilot/shared';
 import { Button } from '@roastpilot/ui';
 import { ConfirmButton } from '../../features/ConfirmButton';
 import { autoFlowStep } from './auto-flow';
-import { flowHint, flowStep, isConnected } from './flow-step';
+import { END_ROAST, endConsequences, flowHint, flowStep, isConnected } from './flow-step';
 import { useActiveProfile } from './use-active-profile';
 import { DrumCooling } from './DrumCooling';
 import { useRun } from '../../features/use-run';
@@ -122,7 +123,26 @@ export function FlowPanel({
           {step.quiet.label}
         </Button>
       ) : null}
-      {step.stop ? (
+      {step.stop === END_ROAST ? (
+        // The one normal stop: easy to find, amber and apart, never the red of Emergency stop.
+        <div className="mt-1 border-t border-border pt-3">
+          <ConfirmButton
+            key={phase}
+            variant="secondary"
+            icon={<CircleStop aria-hidden="true" />}
+            label={END_ROAST.label}
+            question="End the roast?"
+            consequences={endConsequences(phase)}
+            cancelLabel="Keep roasting"
+            confirmLabel={END_ROAST.label}
+            caution
+            onConfirm={() => {
+              act('end');
+            }}
+            stacked
+          />
+        </div>
+      ) : step.stop ? (
         <ConfirmButton
           key={phase}
           variant="secondary"

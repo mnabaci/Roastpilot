@@ -31,6 +31,14 @@ export const END_ROAST: FlowStop = {
   question: 'End the roast? · everything turns off',
 };
 
+/** What End roast does, in the dialog's words (docs/spec/manual-mode.md, End roast). */
+export function endConsequences(phase: RoastPhase): readonly string[] {
+  const off = 'Heater, fan, drum and filter off now';
+  return phase === 'preheat'
+    ? [off, "Back to Ready · the preheat isn't saved"]
+    : [off, 'No bean cooling · dump the beans yourself', 'The roast is saved as it is'];
+}
+
 /** The Guided flow from docs/spec/manual-mode.md: Connect → Preheat → Start → First crack → Drop. */
 const STEPS: Readonly<Record<RoastPhase, FlowStep>> = {
   ready: {
