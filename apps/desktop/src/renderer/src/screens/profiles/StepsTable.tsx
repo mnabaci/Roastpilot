@@ -1,10 +1,12 @@
-import { Button, formatClock, NumberField } from '@roastpilot/ui';
+import { Button, cn, formatClock, NumberField } from '@roastpilot/ui';
 import type { ProfileDraft, StepDraft, DraftErrors } from './profile-draft';
 import { addStep, removeStep } from './draft-edits';
 import { StepRow } from './StepRow';
 
-const HEAD = 'px-1 pb-1 text-left text-label font-normal text-ink-muted';
+const HEAD = 'px-1 pb-1 text-left text-label font-normal whitespace-nowrap text-ink-muted';
 const CELL = 'px-1 py-1 align-middle';
+/** A value you can't edit, its text in line with the text of the fields under it. */
+const FIXED = `${CELL} text-body text-ink-muted [&>span]:block [&>span]:border [&>span]:border-transparent [&>span]:px-2.5`;
 
 interface StepsTableProps {
   draft: ProfileDraft;
@@ -46,14 +48,22 @@ export function StepsTable({ draft, errors, steps, soakS, readOnly, onChange }: 
         </thead>
         <tbody>
           <tr>
-            <td className={`${CELL} text-body`}>Soak</td>
-            <td className={`${CELL} text-body text-ink-muted`}>–</td>
+            <td className={cn(FIXED, 'text-ink')}>
+              <span>Soak</span>
+            </td>
+            <td className={FIXED}>
+              <span>–</span>
+            </td>
             {steps ? (
-              <td className={`${CELL} text-body text-ink-muted`}>{formatClock(soakS)}</td>
+              <td className={FIXED}>
+                <span>{formatClock(soakS)}</span>
+              </td>
             ) : null}
             {steps ? <td className={CELL} /> : null}
             {steps ? <td className={CELL} /> : null}
-            <td className={`${CELL} text-body text-ink-muted`}>0</td>
+            <td className={FIXED}>
+              <span>0</span>
+            </td>
             <td className={CELL}>
               <NumberField
                 label="Soak fan"
