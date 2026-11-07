@@ -49,6 +49,19 @@ describe('RoastersScreen', () => {
       expect(api.connect).not.toHaveBeenCalled();
     });
 
+    it("says why a roaster can't be made active", async () => {
+      const api = fakeApi({
+        setActiveRoaster: vi.fn(() =>
+          Promise.resolve(err({ kind: 'storage-failed' as const, message: 'locked' })),
+        ),
+      });
+      renderApp(<RoastersScreen />, { roasters: roastersWith(null) }, api);
+      await userEvent.click(sidebar().getByRole('button', { name: /^Simulator/ }));
+      await userEvent.click(screen.getByRole('button', { name: 'More for Simulator' }));
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Use this roaster' }));
+      expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't switch roasters");
+    });
+
     it('offers no switch while a roaster is in use', async () => {
       renderApp(<RoastersScreen />, { connection: CONNECTED, roasters: roastersWith(PORT) });
       await userEvent.click(sidebar().getByRole('button', { name: /^Simulator/ }));
@@ -115,7 +128,7 @@ describe('RoastersScreen', () => {
       );
     });
 
-    it("doesn't connect when the roaster can't be made active", async () => {
+    it("doesn't connect when the roaster can't be made active, and says why", async () => {
       const roasters = [
         { ...SKYWALKER, active: false, connection: PORT },
         { ...SIMULATOR, active: true },
@@ -132,6 +145,7 @@ describe('RoastersScreen', () => {
         expect(screen.getByRole('button', { name: 'Connect' })).toBeEnabled();
       });
       expect(api.connect).not.toHaveBeenCalled();
+      expect(screen.getByRole('alert')).toHaveTextContent('Disconnect first');
     });
 
     it('says when there are no ports, and Refresh looks again', async () => {

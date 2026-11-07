@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
 import { MODEL_LABEL } from './roaster-model';
+import { refusalText } from './roaster-refusal';
 
 const MODELS = RoasterModelSchema.options.map((value) => ({ value, label: MODEL_LABEL[value] }));
 
@@ -22,7 +23,7 @@ export function AddRoaster({ onAdded }: { onAdded: (id: RoasterId) => void }) {
         return;
       }
       logger.warn('roasters.refused', { ...added.error });
-      setProblem(added.error.kind === 'in-use' ? 'Disconnect first' : "Couldn't add · see the log");
+      setProblem(refusalText(added.error, 'add'));
     });
   };
   return (

@@ -18,6 +18,7 @@ interface StepsTableProps {
 
 /** One row per step (docs/spec/ui.md, Profiles screen). Soak first and the last step are fixed. */
 export function StepsTable({ draft, errors, steps, soakS, readOnly, onChange }: StepsTableProps) {
+  const columns = steps ? 9 : 6;
   const setStep = (index: number, change: Partial<StepDraft>) => {
     onChange({
       ...draft,
@@ -68,6 +69,15 @@ export function StepsTable({ draft, errors, steps, soakS, readOnly, onChange }: 
             <td className={CELL} />
             <td className={CELL} />
           </tr>
+          {errors.soakFan ? (
+            <tr>
+              <td colSpan={columns} className="px-1 pb-1">
+                <p role="alert" className="text-label text-critical-text">
+                  Soak: {errors.soakFan}
+                </p>
+              </td>
+            </tr>
+          ) : null}
           {draft.steps.map((step, index) => (
             <StepRow
               key={String(index)}
@@ -76,7 +86,7 @@ export function StepsTable({ draft, errors, steps, soakS, readOnly, onChange }: 
               last={index === draft.steps.length - 1}
               errors={errors}
               steps={steps}
-              columns={steps ? 9 : 6}
+              columns={columns}
               readOnly={readOnly}
               onChange={(change) => {
                 setStep(index, change);
