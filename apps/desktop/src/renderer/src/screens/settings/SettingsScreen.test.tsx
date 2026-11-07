@@ -25,7 +25,7 @@ describe('SettingsScreen', () => {
       within(sections)
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['Controls', 'Roast', 'Auto', 'Sounds', 'Chart']);
+    ).toEqual(['Controls', 'Roast', 'Auto', 'Sounds', 'Chart', 'Appearance']);
     expect(within(sections).getByRole('button', { name: 'Controls' })).toHaveAttribute(
       'aria-current',
       'true',
@@ -102,6 +102,14 @@ describe('SettingsScreen', () => {
     await userEvent.click(radio('Off', 'Temperature smoothing'));
     expect(stores.settings.getState().settings.chartSmoothingS).toBe(0);
     expect(api.setSettings).toHaveBeenCalledWith(expect.objectContaining({ chartSmoothingS: 0 }));
+  });
+
+  it('picks the theme: Dark until you choose', async () => {
+    const { api, stores } = renderApp(<Settings first="appearance" />);
+    expect(radio('Dark', 'Theme')).toBeChecked();
+    await userEvent.click(radio('Match system', 'Theme'));
+    expect(stores.settings.getState().settings.theme).toBe('system');
+    expect(api.setSettings).toHaveBeenCalledWith(expect.objectContaining({ theme: 'system' }));
   });
 
   it('keeps the change for this session when saving fails', async () => {

@@ -16,6 +16,7 @@ import { useDeps } from './app-context';
 import { LiveRoastStrip } from './LiveRoastStrip';
 import { TopBar } from './TopBar';
 import { useSounds } from './use-sounds';
+import { useTheme } from './use-theme';
 import { AppToaster } from './AppToaster';
 import { ScreenError } from './ScreenError';
 import { ErrorBoundary } from '../features/ErrorBoundary';
@@ -42,6 +43,7 @@ export function App() {
   const saveSettings = useSaveSettings(SAFETY_NOTICE_NOT_SAVED);
   // Here, mounted once, so the chimes play once and in this window only.
   useSounds();
+  useTheme();
   // The app menu (Settings… ⌘,) opens screens too; opening one closes the safety notice.
   useEffect(
     () =>

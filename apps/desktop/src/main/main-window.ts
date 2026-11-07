@@ -2,7 +2,7 @@ import type { Logger } from '@roastpilot/core';
 import { serializeError } from '@roastpilot/core';
 import { app, BrowserWindow } from 'electron';
 import { join } from 'node:path';
-import { WINDOW_BACKGROUND } from './window-background';
+import { currentWindowBackground } from './window-theme';
 import { isAppNavigation, type AppPage } from './window-navigation';
 
 /**
@@ -36,7 +36,7 @@ export function createMainWindow({
     minHeight: 640,
     title: 'Roastpilot',
     icon,
-    backgroundColor: WINDOW_BACKGROUND,
+    backgroundColor: currentWindowBackground(),
     webPreferences: {
       preload: join(import.meta.dirname, '../preload/index.cjs'),
       contextIsolation: true,
