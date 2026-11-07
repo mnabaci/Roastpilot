@@ -167,6 +167,7 @@ export {
 export {
   CopyProfileRequestSchema,
   DRUM_SPEED,
+  MODEL_DRUM_SPEED,
   MODEL_LIMITS,
   NewRoasterSchema,
   RoasterErrorSchema,

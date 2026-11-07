@@ -463,6 +463,29 @@ describe('RoastScreen', () => {
     expect(api.setOutput).toHaveBeenCalledWith({ channel: 'drum', value: 0 });
   });
 
+  it('a drum with a speed is a slider under the fan, sent when you let go', () => {
+    const channels = CONNECTED.status === 'connected' ? CONNECTED.channels : [];
+    const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
+      connection: {
+        ...CONNECTED,
+        channels: channels.map((c) =>
+          c.id === 'drum' ? { ...c, unit: 'percent' as const, max: 100, step: 5 } : c,
+        ),
+      } as typeof CONNECTED,
+      roast: roast('roasting'),
+      readings: [reading({ drum: 60 })],
+    });
+    const outputs = within(screen.getByRole('region', { name: 'Outputs' }));
+    const drum = outputs.getByRole('slider', { name: 'Drum' });
+    expect(drum).toHaveValue('60');
+    expect(outputs.queryByRole('switch', { name: 'Drum' })).toBeNull();
+    expect(outputs.getByRole('switch', { name: 'Filter' })).toBeInTheDocument();
+    fireEvent.pointerDown(drum);
+    fireEvent.change(drum, { target: { value: '45' } });
+    fireEvent.pointerUp(window);
+    expect(api.setOutput).toHaveBeenCalledWith({ channel: 'drum', value: 45 });
+  });
+
   it('the filter fan switch shows the reading and overrides it', async () => {
     const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
       ...connected,

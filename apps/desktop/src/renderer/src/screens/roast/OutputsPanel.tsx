@@ -9,8 +9,8 @@ import { useAuto, useConnection, useRoast, useSafety, useSettings } from '../../
 import { SwitchCell } from './SwitchCell';
 
 /**
- * Heater and fan sliders, then one row of switches: drum, filter fan and cooling (Full control, or
- * with no roast running).
+ * Heater and fan sliders (and drum, when it has a speed), then one row of switches: drum, filter
+ * fan and cooling (Full control, or with no roast running).
  */
 export function OutputsPanel() {
   const level = useSettings((s) => s.settings.controls);
@@ -23,6 +23,10 @@ export function OutputsPanel() {
     s.connection.status === 'connected' ? s.connection.channels : undefined,
   );
   const has = (id: string) => !channels || channels.some((c) => c.id === id);
+  // A drum with a speed is a slider; an on/off drum stays a switch (docs/spec/ui.md, Outputs).
+  const drumChannel = channels?.find((c) => c.id === 'drum');
+  const drumSpeed =
+    drumChannel?.kind === 'output' && drumChannel.unit === 'percent' ? drumChannel : undefined;
   const { api, logger } = useDeps();
   const run = useRun();
   const auto = useAuto((s) => s.status);
@@ -79,9 +83,21 @@ export function OutputsPanel() {
           disabled={!access.fan}
         />
       ) : null}
+      {drumSpeed ? (
+        <OutputControl
+          label="Drum"
+          tone="neutral"
+          min={drumSpeed.min}
+          max={drumSpeed.max}
+          step={drumSpeed.step}
+          value={connected ? drum.value : undefined}
+          onChange={drum.set}
+          disabled={!access.switches}
+        />
+      ) : null}
       {/* Labels stay on one line: the cells share the width, and wrap to a new row before a word breaks. */}
       <div className="flex flex-wrap gap-2">
-        {has('drum') ? (
+        {has('drum') && !drumSpeed ? (
           <SwitchCell
             label="Drum"
             on={connected && drum.value > 0}

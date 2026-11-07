@@ -20,6 +20,14 @@ describe('roaster draft', () => {
     });
   });
 
+  it('reads the drum speed, held to 5–100 % in steps of 5', () => {
+    expect(fromRoasterDraft(draft({ drumSpeedPct: '45' }), SKYWALKER)).toMatchObject({
+      value: { drumSpeedPct: 45 },
+    });
+    expect(errorsOf({ drumSpeedPct: '42' })).toEqual({ drumSpeedPct: 'In steps of 5 %' });
+    expect(errorsOf({ drumSpeedPct: '' })).toEqual({ drumSpeedPct: 'Enter a number' });
+  });
+
   it('reads times, minutes and gains', () => {
     const result = fromRoasterDraft(
       draft({ hold: '1:30', maxTimeMin: '15', targetKp: '2' }),
