@@ -1,8 +1,15 @@
 import type { RoastId } from '@roastpilot/shared';
 import { useState } from 'react';
 
-/** Select mode on the roast list: ticks, with Shift ticking the range from the last one. */
-export function useSelection(order: readonly RoastId[]): {
+/**
+ * Select mode on the roast list: ticks, with Shift ticking the range from the last one. `order` is
+ * the list as shown; `existing` every saved roast, so a tick on a filtered-out roast stays, and one
+ * on a deleted roast goes.
+ */
+export function useSelection(
+  order: readonly RoastId[],
+  existing: readonly RoastId[],
+): {
   selecting: boolean;
   checked: ReadonlySet<RoastId>;
   start: () => void;
@@ -10,8 +17,10 @@ export function useSelection(order: readonly RoastId[]): {
   check: (id: RoastId, range: boolean) => void;
 } {
   const [selecting, setSelecting] = useState(false);
-  const [checked, setChecked] = useState<ReadonlySet<RoastId>>(new Set());
+  const [ticked, setTicked] = useState<ReadonlySet<RoastId>>(new Set());
   const [last, setLast] = useState<RoastId>();
+  const kept = [...ticked].filter((id) => existing.includes(id));
+  const checked: ReadonlySet<RoastId> = kept.length === ticked.size ? ticked : new Set(kept);
   const check = (id: RoastId, range: boolean) => {
     const next = new Set(checked);
     const [from, to] = [order.indexOf(last ?? id), order.indexOf(id)];
@@ -19,7 +28,7 @@ export function useSelection(order: readonly RoastId[]): {
       for (const each of order.slice(Math.min(from, to), Math.max(from, to) + 1)) next.add(each);
     } else if (next.has(id)) next.delete(id);
     else next.add(id);
-    setChecked(next);
+    setTicked(next);
     setLast(id);
   };
   return {
@@ -30,7 +39,7 @@ export function useSelection(order: readonly RoastId[]): {
     },
     done: () => {
       setSelecting(false);
-      setChecked(new Set());
+      setTicked(new Set());
       setLast(undefined);
     },
     check,

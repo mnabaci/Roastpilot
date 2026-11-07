@@ -5,8 +5,8 @@ import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
 import { BatchCalculator } from './BatchCalculator';
 import { formatGrams } from './batch-format';
+import { isPurchaseDate, today } from './purchase-date';
 
-const today = () => new Date().toISOString().slice(0, 10);
 const FAILED = "Couldn't save the stock · see Logs";
 
 /** New stock: its weight, the plan for it and the date. */
@@ -15,10 +15,11 @@ export function AddStockForm({ bean, onDone }: { bean: Bean; onDone: () => void 
   const run = useRun();
   const [orderG, setOrderG] = useState('');
   const [plan, setPlan] = useState<BatchPlan | null>(null);
-  const [purchasedAt, setPurchasedAt] = useState(today);
+  const [purchasedAt, setPurchasedAt] = useState(() => today());
   const [problem, setProblem] = useState<string>();
   const grams = Number(orderG);
-  const valid = grams > 0;
+  const dated = isPurchaseDate(purchasedAt);
+  const valid = grams > 0 && dated;
   return (
     <section aria-label="Add stock" className="flex flex-col gap-3">
       <h3 className="text-heading">Add stock</h3>
@@ -32,7 +33,18 @@ export function AddStockForm({ bean, onDone }: { bean: Bean; onDone: () => void 
         picked={plan}
         onPick={setPlan}
       />
-      <TextField label="Bought on" value={purchasedAt} onChange={setPurchasedAt} className="w-40" />
+      <div className="flex flex-col gap-1">
+        <TextField
+          label="Bought on"
+          value={purchasedAt}
+          onChange={setPurchasedAt}
+          aria-invalid={!dated || undefined}
+          className="w-40"
+        />
+        {dated ? null : (
+          <p className="text-label text-critical-text">Enter a date like {today()}</p>
+        )}
+      </div>
       {problem ? (
         <p role="alert" className="text-label text-critical-text">
           {problem}
@@ -44,13 +56,18 @@ export function AddStockForm({ bean, onDone }: { bean: Bean; onDone: () => void 
           disabled={!valid}
           onClick={() => {
             run('beans.add-stock-failed', async () => {
-              const added = await api.addStock({ beanId: bean.id, grams, purchasedAt, plan });
+              const added = await api.addStock({
+                beanId: bean.id,
+                grams,
+                purchasedAt: purchasedAt.trim(),
+                plan,
+              });
               if (added.ok) onDone();
               else setProblem(FAILED);
             });
           }}
         >
-          {valid ? `Add ${formatGrams(grams)}` : 'Add stock'}
+          {grams > 0 ? `Add ${formatGrams(grams)}` : 'Add stock'}
         </Button>
         <Button variant="ghost" onClick={onDone}>
           Cancel

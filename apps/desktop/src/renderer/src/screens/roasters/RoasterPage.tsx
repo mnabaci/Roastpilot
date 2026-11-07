@@ -7,6 +7,7 @@ import { useConnection } from '../../stores/use-stores';
 import { ConnectPanel } from './ConnectPanel';
 import { RoasterEditor } from './RoasterEditor';
 import { modelNote } from './roaster-model';
+import { refusalText } from './roaster-refusal';
 
 /** One roaster: connect it, then its record (docs/spec/ui.md, Roasters screen). */
 export function RoasterPage({ roaster, onDeleted }: { roaster: Roaster; onDeleted: () => void }) {
@@ -18,12 +19,16 @@ export function RoasterPage({ roaster, onDeleted }: { roaster: Roaster; onDelete
   const [deleting, setDeleting] = useState(false);
   const [problem, setProblem] = useState<string>();
   const use = () => {
+    setProblem(undefined);
     run('roasters.activate-failed', async () => {
       const set = await api.setActiveRoaster(roaster.id);
-      if (!set.ok) logger.warn('roasters.refused', { ...set.error });
+      if (set.ok) return;
+      logger.warn('roasters.refused', { ...set.error });
+      setProblem(refusalText(set.error, 'switch roasters'));
     });
   };
   const remove = () => {
+    setProblem(undefined);
     run('roasters.delete-failed', async () => {
       const result = await api.deleteRoaster(roaster.id);
       if (result.ok) {
@@ -34,7 +39,7 @@ export function RoasterPage({ roaster, onDeleted }: { roaster: Roaster; onDelete
       setProblem(
         result.error.kind === 'has-roasts'
           ? 'It has saved roasts or profiles · it stays'
-          : "Couldn't delete · see the log",
+          : refusalText(result.error, 'delete'),
       );
     });
   };

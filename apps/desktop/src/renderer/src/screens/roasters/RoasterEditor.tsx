@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
 import { fromRoasterDraft, toRoasterDraft } from './roaster-draft';
+import { refusalText } from './roaster-refusal';
 import {
   DRUM_FIELDS,
   EVERYDAY_FIELDS,
@@ -32,9 +33,7 @@ export function RoasterEditor({ roaster, locked }: { roaster: Roaster; locked: b
         return;
       }
       logger.warn('roasters.refused', { ...result.error });
-      setProblem(
-        result.error.kind === 'in-use' ? 'Disconnect first' : "Couldn't save · see the log",
-      );
+      setProblem(refusalText(result.error, 'save'));
     });
   };
   const [showTuning, setShowTuning] = useState(false);

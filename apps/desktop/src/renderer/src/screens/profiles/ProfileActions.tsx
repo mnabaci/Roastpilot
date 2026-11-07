@@ -115,7 +115,14 @@ export function ProfileActions({
             <Button variant="primary" disabled={!state.valid || (active && locked)} onClick={save}>
               Save
             </Button>
-            <Button variant="ghost" onClick={state.discard}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                // A refusal was about the edit going away with it.
+                setProblem(undefined);
+                state.discard();
+              }}
+            >
               Discard
             </Button>
           </>

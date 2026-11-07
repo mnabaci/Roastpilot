@@ -8,6 +8,7 @@ import { useDeps } from '../../app/app-context';
 import { activeRoaster } from '../../stores/roasters-store';
 import { useConnection, useRoasters } from '../../stores/use-stores';
 import { PortPicker } from './PortPicker';
+import { refusalText } from './roaster-refusal';
 import { roasterRows } from './roaster-rows';
 
 const SIMULATOR: ConnectTarget = { kind: 'simulator' };
@@ -50,8 +51,10 @@ export function ConnectPanel({ roaster }: { roaster: Roaster }) {
   const makeActive = async (): Promise<boolean> => {
     if (roaster.active) return true;
     const set = await api.setActiveRoaster(roaster.id);
-    if (!set.ok) logger.warn('roasters.refused', { ...set.error });
-    return set.ok;
+    if (set.ok) return true;
+    logger.warn('roasters.refused', { ...set.error });
+    setError(refusalText(set.error, 'switch roasters'));
+    return false;
   };
   const connect = (to: ConnectTarget) => {
     setError(undefined);
@@ -73,6 +76,7 @@ export function ConnectPanel({ roaster }: { roaster: Roaster }) {
       const chosen = await api.chooseConnection(to);
       if (!chosen.ok) {
         logger.warn('roasters.refused', { ...chosen.error });
+        setError(refusalText(chosen.error, 'save the port'));
         return;
       }
       stores.roasters.setState({ roasters: await api.listRoasters() });

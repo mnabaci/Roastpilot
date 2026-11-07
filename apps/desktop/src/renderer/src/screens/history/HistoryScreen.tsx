@@ -1,33 +1,21 @@
 import type { RoastId } from '@roastpilot/shared';
-import {
-  Button,
-  cn,
-  ConfirmDialog,
-  EventTable,
-  FilterSelect,
-  Menu,
-  RoastList,
-  SidebarLayout,
-} from '@roastpilot/ui';
-import { Star } from 'lucide-react';
+import { Button, Menu, RoastList, SidebarLayout } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
-import { RoastResultForm } from '../../features/RoastResultForm';
 import { useBeans, useRoast, useSettings } from '../../stores/use-stores';
+import { FileNote } from './FileNote';
+import { inProgressId, roastRows, roastTitle, selectionAfterDelete } from './history-format';
+import { OpenRoast } from './OpenRoast';
+import { filterRoasts, NO_FILTER } from './roast-filter';
+import { RoastFilters } from './RoastFilters';
+import { RoastHeader } from './RoastHeader';
+import { SelectionBar } from './SelectionBar';
 import { useMakeProfile } from './use-make-profile';
 import { useRoastFiles } from './use-roast-files';
-import { useSelection } from './use-selection';
-import { BeanLink } from './BeanLink';
-import { ALL, filterRoasts, MANUAL, NO_BEAN, NO_FILTER, profileOptions } from './roast-filter';
-import { inProgressId, roastRows, roastTitle, selectionAfterDelete } from './history-format';
-import { SavedRoastChart } from './SavedRoastChart';
-import { SavedRoastStats } from './SavedRoastStats';
-import { eventRows } from './event-rows';
 import { useRoastList } from './use-roast-list';
 import { useSavedRoast } from './use-saved-roast';
-
-const NONE = 'none';
+import { useSelection } from './use-selection';
 
 /** Saved roasts: pick one, see its numbers and chart, compare with another, delete (docs/spec/ui.md). */
 export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) => void }) {
@@ -36,26 +24,28 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
   const roasts = useRoastList();
   const livePhase = useRoast((s) => s.roast.phase);
   const smoothingS = useSettings((s) => s.settings.chartSmoothingS);
+  const beans = useBeans((s) => s.beans);
   const [picked, setPicked] = useState<RoastId>();
-  const [compareId, setCompareId] = useState<string>(NONE);
+  const [compareId, setCompareId] = useState<RoastId>();
   const [deleteError, setDeleteError] = useState<string>();
   const [filter, setFilter] = useState(NO_FILTER);
-  const beans = useBeans((s) => s.beans);
-  const [deleting, setDeleting] = useState(false);
   const files = useRoastFiles(setPicked);
   const profileMaker = useMakeProfile(onOpenProfile);
 
   const list = roasts ?? [];
   const liveId = inProgressId(list, livePhase);
   const listed = filterRoasts(list, filter);
-  const selection = useSelection(listed.map((r) => r.id));
+  const selection = useSelection(
+    listed.map((r) => r.id),
+    list.map((r) => r.id),
+  );
   // The picked roast while it's listed, else the newest there.
-  const selectedId = listed.some((r) => r.id === picked) ? picked : listed[0]?.id;
+  const selectedRoast = listed.find((r) => r.id === picked) ?? listed[0];
+  const selectedId = selectedRoast?.id;
   const others = list.filter((r) => r.id !== selectedId);
-  const compareTo = others.find((r) => String(r.id) === compareId);
+  const compareTo = others.find((r) => r.id === compareId);
   const selected = useSavedRoast(selectedId);
   const compared = useSavedRoast(compareTo?.id);
-  const compareLabel = compareTo ? roastTitle(compareTo.startedAt) : '';
 
   const remove = (id: RoastId) => {
     setDeleteError(undefined);
@@ -69,19 +59,12 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
         );
         return;
       }
-      setPicked(selectionAfterDelete(list, id));
+      // The next one down the list as filtered, so the pick stays on screen.
+      setPicked(selectionAfterDelete(listed, id));
     });
   };
 
   if (roasts === undefined) return <main className="flex-1" />;
-  const fileMessage = files.message ? (
-    <p
-      {...(files.message.problem ? { role: 'alert' } : {})}
-      className={cn('text-label', files.message.problem ? 'text-critical-text' : 'text-ink-muted')}
-    >
-      {files.message.text}
-    </p>
-  ) : null;
   if (list.length === 0)
     return (
       <main className="flex min-h-0 flex-1 flex-col items-start gap-2 p-6">
@@ -97,12 +80,12 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
             Import from Artisan
           </Button>
         </div>
-        {fileMessage}
+        <FileNote message={files.message} />
       </main>
     );
 
-  const selectedRoast = list.find((r) => r.id === selectedId);
   const live = selectedId !== undefined && selectedId === liveId;
+  const note = profileMaker.noteFor(selectedId);
   return (
     <SidebarLayout
       title="History"
@@ -131,74 +114,14 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
       contentLabel="Roast"
       sidebar={
         <>
-          {fileMessage}
-          {/* One row of filters; a chip turns ember while it filters. */}
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              aria-label="Favourites only"
-              aria-pressed={filter.favourites}
-              icon={
-                <Star
-                  aria-hidden="true"
-                  className={filter.favourites ? 'fill-current' : undefined}
-                />
-              }
-              className={cn('shrink-0', filter.favourites && 'bg-heat-tint text-heat')}
-              onClick={() => {
-                setFilter({ ...filter, favourites: !filter.favourites });
-              }}
-            />
-            <FilterSelect
-              label="Bean"
-              className="flex-1"
-              allValue={ALL}
-              value={filter.bean}
-              options={[
-                { value: ALL, label: 'All' },
-                { value: NO_BEAN, label: 'No bean' },
-                ...beans.map((b) => ({ value: String(b.id), label: b.name })),
-              ]}
-              onChange={(bean) => {
-                setFilter({ ...filter, bean });
-              }}
-            />
-            <FilterSelect
-              label="Profile"
-              className="flex-1"
-              allValue={ALL}
-              value={filter.profile}
-              options={[
-                { value: ALL, label: 'All' },
-                { value: MANUAL, label: 'Manual' },
-                ...profileOptions(list),
-              ]}
-              onChange={(profile) => {
-                setFilter({ ...filter, profile });
-              }}
-            />
-          </div>
+          <FileNote message={files.message} />
+          <RoastFilters filter={filter} onChange={setFilter} beans={beans} roasts={list} />
           {selection.selecting ? (
-            // While selecting, the bar says how many and what can be done with them.
-            <div className="flex items-center gap-2" role="toolbar" aria-label="Selected roasts">
-              <span className="mr-auto text-label text-ink-muted" aria-live="polite">
-                {selection.checked.size} selected
-              </span>
-              <Menu
-                label="Export selected"
-                text="Export"
-                items={(['roastpilot', 'csv'] as const).map((format) => ({
-                  label: format === 'csv' ? 'CSV' : 'Roastpilot file',
-                  disabled: selection.checked.size === 0,
-                  onSelect: () => {
-                    files.exportRoasts({ format, ids: [...selection.checked] });
-                  },
-                }))}
-              />
-              <Button size="sm" variant="ghost" onClick={selection.done}>
-                Done
-              </Button>
-            </div>
+            <SelectionBar
+              checked={selection.checked}
+              onExport={files.exportRoasts}
+              onDone={selection.done}
+            />
           ) : null}
           <RoastList
             label="Saved roasts"
@@ -216,84 +139,21 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
       }
     >
       <div className="flex flex-col gap-5">
-        {/* Everything for this roast in one row at the top. */}
-        <header className="flex flex-wrap items-center gap-3">
-          <h2 className="mr-auto text-title">
-            {selectedRoast ? roastTitle(selectedRoast.startedAt) : ''}
-          </h2>
-          <FilterSelect
-            label="Compare"
-            allValue={NONE}
-            value={compareTo ? compareId : NONE}
-            options={[
-              { value: NONE, label: 'None' },
-              ...others.map((r) => ({ value: String(r.id), label: roastTitle(r.startedAt) })),
-            ]}
-            onChange={setCompareId}
-          />
-          {selectedId === undefined ? null : live ? (
-            <p className="text-label text-ink-muted">Saving as it roasts</p>
-          ) : (
-            <>
-              <Menu
-                label="Make profile"
-                text="Make profile"
-                items={[
-                  {
-                    label: 'Step profile',
-                    onSelect: () => {
-                      profileMaker.make(selectedId, 'steps');
-                    },
-                  },
-                  {
-                    label: 'Curve profile',
-                    onSelect: () => {
-                      profileMaker.make(selectedId, 'curve');
-                    },
-                  },
-                ]}
-              />
-              <Menu
-                label="More for this roast"
-                items={[
-                  {
-                    label: 'Export · Roastpilot file',
-                    onSelect: () => {
-                      files.exportRoasts({ format: 'roastpilot', ids: [selectedId] });
-                    },
-                  },
-                  {
-                    label: 'Export · CSV',
-                    onSelect: () => {
-                      files.exportRoasts({ format: 'csv', ids: [selectedId] });
-                    },
-                  },
-                  {
-                    label: 'Delete',
-                    destructive: true,
-                    onSelect: () => {
-                      setDeleting(true);
-                    },
-                  },
-                ]}
-              />
-              <ConfirmDialog
-                open={deleting}
-                onOpenChange={setDeleting}
-                question="Delete this roast?"
-                detail="can't be undone"
-                confirmLabel="Delete"
-                destructive
-                onConfirm={() => {
-                  remove(selectedId);
-                }}
-              />
-            </>
-          )}
-        </header>
-        {profileMaker.note ? (
+        <RoastHeader
+          roast={selectedRoast}
+          others={others}
+          compareId={compareTo?.id}
+          onCompare={setCompareId}
+          live={live}
+          onMakeProfile={profileMaker.make}
+          onExport={(id, format) => {
+            files.exportRoasts({ format, ids: [id] });
+          }}
+          onDelete={remove}
+        />
+        {note ? (
           <p role="status" className="text-label text-ink-muted">
-            {profileMaker.note}
+            {note}
           </p>
         ) : null}
         {deleteError ? (
@@ -301,28 +161,14 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
             {deleteError}
           </p>
         ) : null}
-        {selected.status === 'failed' ? (
-          <p role="alert" className="text-body text-critical-text">
-            Couldn't open this roast · see Logs
-          </p>
-        ) : selected.status === 'loaded' ? (
-          <>
-            <SavedRoastStats roast={selected.detail} />
-            {selectedId === liveId ? null : <BeanLink roast={selected.detail} beans={beans} />}
-            <RoastResultForm key={selected.detail.id} roast={selected.detail} />
-            <SavedRoastChart
-              detail={selected.detail}
-              compare={compared.status === 'loaded' ? compared.detail : undefined}
-              compareLabel={compareLabel}
-              smoothingS={smoothingS}
-            />
-            <EventTable rows={eventRows(selected.detail)} />
-          </>
-        ) : selected.status === 'none' ? (
-          <p className="text-body text-ink-muted">No roasts match these filters</p>
-        ) : (
-          <p className="text-label text-ink-muted">Loading…</p>
-        )}
+        <OpenRoast
+          selected={selected}
+          compared={compared}
+          compareLabel={compareTo ? roastTitle(compareTo.startedAt) : ''}
+          live={live}
+          beans={beans}
+          smoothingS={smoothingS}
+        />
       </div>
     </SidebarLayout>
   );
