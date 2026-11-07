@@ -1,7 +1,6 @@
 import type {
   Reading,
   Result,
-  RoastEvent,
   RoastId,
   RoastState,
   SavedSample,
@@ -10,16 +9,8 @@ import type {
 import { FailureStreak } from '../logging/failure-streak';
 import { serializeError } from '../logging/serialize-error';
 import { silentLogger, type Logger } from '../logging/logger';
-import type { RoastPlan, RoastRepository, RoastSummaryPatch } from './roast-repository';
-
-const MANUAL_PLAN: RoastPlan = {
-  mode: 'manual',
-  profile: null,
-  roasterId: null,
-  beanId: null,
-  batchG: null,
-  ghostRoastId: null,
-};
+import type { RoastPlan, RoastRepository } from './roast-repository';
+import { MANUAL_PLAN, SUMMARY_FROM_EVENT, toSeconds } from './roast-summary';
 
 export interface RoastRecorderDeps {
   repository: RoastRepository;
@@ -42,39 +33,6 @@ interface Recording {
   savedId?: RoastId;
   eventsSaved: number;
 }
-
-const toSeconds = (ms: number) => Math.round(ms) / 1000;
-
-/** What each event adds to the roast's summary row. */
-interface PatchContext {
-  nowIso: string;
-  plan: () => RoastPlan;
-}
-
-const SUMMARY_FROM_EVENT: Readonly<
-  Record<
-    RoastEvent['kind'],
-    (tS: number, event: RoastEvent, ctx: PatchContext) => RoastSummaryPatch
-  >
-> = {
-  charge: () => ({}),
-  'turning-point': () => ({}),
-  'dry-end': () => ({}),
-  phase: () => ({}),
-  override: () => ({}),
-  'stall-guard': () => ({}),
-  'first-crack': (tS) => ({ fcTimeS: tS }),
-  drop: (tS, event) => ({ dropTimeS: tS, dropTemp: event.bt }),
-  'cool-end': (_tS, _event, { nowIso }) => ({ endedAt: nowIso }),
-  // Auto turned on mid-roast: saved as an Auto roast, with the profile it ran. Turned off, the
-  // roast keeps what it was, since Auto ran part of it.
-  mode: (_tS, event, { plan }) => {
-    if (event.detail !== 'auto') return {};
-    const { mode, profile } = plan();
-    return mode === 'auto' ? { mode, profile } : {};
-  },
-  end: (_tS, _event, { nowIso }) => ({ endedAt: nowIso }),
-};
 
 /**
  * Saves every roast as it happens (docs/spec/data-model.md, Saving a roast): the row at charge with
@@ -125,7 +83,6 @@ export class RoastRecorder {
       );
   }
 
-  /** Whether `id` is the roast being saved right now (it can't be deleted until it ends). */
   /** The roast on screen, once its row exists, until Clear or the next charge. */
   get currentId(): RoastId | null {
     return this.#currentId;
@@ -136,6 +93,7 @@ export class RoastRecorder {
     if (this.#currentId === id) this.#currentId = null;
   }
 
+  /** Whether `id` is the roast being saved right now (it can't be deleted until it ends). */
   isRecording(id: RoastId): boolean {
     return this.#recording?.savedId === id;
   }
@@ -151,7 +109,7 @@ export class RoastRecorder {
     // A charge point found before the press moves the start back with it.
     const earlierMs = state.startPressedAtMs === null ? 0 : state.startPressedAtMs - chargedAtMs;
     const startedAt = new Date(Date.parse(this.#deps.nowIso()) - earlierMs).toISOString();
-    const plan = this.#deps.plan?.() ?? MANUAL_PLAN;
+    const plan = this.#plan();
     const created = this.#enqueue(() => this.#deps.repository.create({ startedAt, ...plan }));
     this.#currentId = null;
     const recording: Recording = { chargedAtMs, id: created, eventsSaved: 0 };
@@ -176,7 +134,7 @@ export class RoastRecorder {
       const tS = toSeconds(event.atMs - recording.chargedAtMs);
       const patch = SUMMARY_FROM_EVENT[event.kind](tS, event, {
         nowIso: this.#deps.nowIso(),
-        plan: () => this.#deps.plan?.() ?? MANUAL_PLAN,
+        plan: () => this.#plan(),
       });
       this.#write(recording, async (id) => {
         const added = await this.#deps.repository.addEvent(id, {
@@ -193,6 +151,10 @@ export class RoastRecorder {
       });
     }
     recording.eventsSaved = state.events.length;
+  }
+
+  #plan(): RoastPlan {
+    return this.#deps.plan?.() ?? MANUAL_PLAN;
   }
 
   #sample(recording: Recording, reading: Reading): SavedSample {

@@ -128,7 +128,13 @@ export class AutoDrive {
     if (tick.endRule && !this.#dropping) {
       this.#dropping = true;
       logger.info('auto.drop', { rule: tick.endRule.id, bt: btC });
-      await deps.drop();
+      try {
+        await deps.drop();
+      } catch (error) {
+        // Refused: after Resume auto the end rule must drop again, not heat on past it.
+        this.#dropping = false;
+        throw error;
+      }
       // Drop sends heater 0 itself; this one keeps trying through cooling if that write failed.
       await this.cutHeater('drop');
       return;

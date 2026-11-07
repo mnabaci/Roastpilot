@@ -88,7 +88,9 @@ export class RoasterSession {
 
   /** Disconnects any current roaster, then connects to this one (`target` names it) and starts polling. */
   async connect(driver: RoasterDriver, target: ConnectTarget): Promise<Result<void, DriverError>> {
-    await this.disconnect();
+    // A connect that came in while this one waited has set its driver: close that one too, or its
+    // port stays open with nothing polling or safe-stopping it.
+    while (this.#driver) await this.disconnect();
     const generation = ++this.#generation;
     this.#inner = driver;
     this.#driver = new SafetyGuardedDriver(driver, this.#monitor);
