@@ -1,0 +1,79 @@
+name: Bug report
+description: Something in Roastpilot doesn't work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. **Can the heater stay on, or a safety rule be bypassed?** Don't file it here: report it privately, as [SECURITY.md](https://github.com/mnabaci/Roastpilot/blob/main/SECURITY.md) says.
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: The release you run, or the commit if you run from source.
+      placeholder: 0.1.0 or a1b2c3d
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Windows
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: os-version
+    attributes:
+      label: OS version
+      placeholder: macOS 26.1, Windows 11 24H2
+  - type: dropdown
+    id: roaster
+    attributes:
+      label: Roaster
+      options:
+        - Skywalker (TC4 / SkyCommand sketch)
+        - Simulator
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Connect the Simulator
+        2. Switch to Auto and press Preheat
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log excerpt
+      description: From the Logs screen (or the app menu's Open log folder), around the time it happened.
+      render: text
+  - type: dropdown
+    id: safety
+    attributes:
+      label: Safety related?
+      description: Did the heater do something you didn't ask for, or a safety stop not happen?
+      options:
+        - 'No'
+        - 'Yes'
+    validations:
+      required: true
