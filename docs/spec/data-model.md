@@ -4,15 +4,15 @@ One SQLite file in the app's user-data folder, accessed with `node:sqlite` + Dri
 main process (ADR 0010). Seven tables when complete; each milestone adds the tables and columns it
 writes, in a new migration.
 
-| Table            | Key columns                                                                                                                                                                              | Notes                                                                                                  |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `roasters`       | id, name, model, driver, connection, capabilities, batch_min_g, batch_ideal_g, batch_max_g, max_temp, max_time_s, pid, trim_limit_pct, temp_offset, hold_s, cooler_helps_drum, is_active | JSON for connection, capabilities, pid                                                                 |
-| `profiles`       | id, doc, updated_at                                                                                                                                                                      | Your own profiles, one JSON document each; built-ins are data in code                                  |
-| `beans`          | id, name, origin, process, variety, altitude_m, density_g_l, moisture_pct, screen, decaf, supplier, profile_id, green_g, roasted_g, low_stock_g, archived, notes                         | Optional fields nullable                                                                               |
-| `bean_purchases` | id, bean_id, purchased_at, grams, batch_plan                                                                                                                                             | The chosen calculator plan as JSON                                                                     |
-| `roasts`         | id, roaster_id, bean_id, ghost_roast_id, mode, batch_g, roasted_g, started_at, ended_at, drop_temp, fc_time_s, rating, is_favourite, notes, imported                                     | Profile also copied as JSON                                                                            |
-| `roast_samples`  | roast_id, t_s, values                                                                                                                                                                    | One row per second; values = JSON map of every channel                                                 |
-| `roast_events`   | roast_id, t_s, type, detail                                                                                                                                                              | charge, turning_point, dry_end, first_crack, drop, cool_end, end, override, coach_applied, safety_trip |
+| Table            | Key columns                                                                                                                                                                                              | Notes                                                                                                  |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `roasters`       | id, name, model, driver, connection, capabilities, batch_min_g, batch_ideal_g, batch_max_g, max_temp, max_time_s, pid, trim_limit_pct, temp_offset, hold_s, cooler_helps_drum, drum_speed_pct, is_active | JSON for connection, capabilities, pid                                                                 |
+| `profiles`       | id, doc, updated_at                                                                                                                                                                                      | Your own profiles, one JSON document each; built-ins are data in code                                  |
+| `beans`          | id, name, origin, process, variety, altitude_m, density_g_l, moisture_pct, screen, decaf, supplier, profile_id, green_g, roasted_g, low_stock_g, archived, notes                                         | Optional fields nullable                                                                               |
+| `bean_purchases` | id, bean_id, purchased_at, grams, batch_plan                                                                                                                                                             | The chosen calculator plan as JSON                                                                     |
+| `roasts`         | id, roaster_id, bean_id, ghost_roast_id, mode, batch_g, roasted_g, started_at, ended_at, drop_temp, fc_time_s, rating, is_favourite, notes, imported                                                     | Profile also copied as JSON                                                                            |
+| `roast_samples`  | roast_id, t_s, values                                                                                                                                                                                    | One row per second; values = JSON map of every channel                                                 |
+| `roast_events`   | roast_id, t_s, type, detail                                                                                                                                                                              | charge, turning_point, dry_end, first_crack, drop, cool_end, end, override, coach_applied, safety_trip |
 
 A 12-minute roast is about 720 sample rows, so the file stays small for years.
 
@@ -64,3 +64,8 @@ One migration per milestone.
 ## Bean and drum cooling
 
 - **Migration 0005:** `roasters.cooler_helps_drum` (0 or 1, default 0); existing Skywalker roasters get 1 ([manual-mode.md](manual-mode.md), Bean cooler helps cool the drum).
+
+## Drum speed
+
+- **Migration 0006:** `roasters.drum_speed_pct` (5–100, default 60), the usual speed of a drum that has one ([roasters.md](roasters.md), Drum speed). Kept on every record; an on/off drum ignores it.
+- A roast sample's `drum` is what was sent: 0 or 1 on an on/off drum, the % on a drum with a speed.
