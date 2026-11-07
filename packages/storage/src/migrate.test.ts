@@ -146,6 +146,14 @@ describe('migrate', () => {
     expect(version(db)).toBe(0);
   });
 
+  it('returns the error, not a throw, when the transaction is already gone', () => {
+    const db = new DatabaseSync(':memory:');
+    // Ending the transaction early stands in for SQLite's own rollback on disk-full or I/O errors.
+    const result = migrate(db, [{ tag: 'gone', sql: 'COMMIT; NOT SQL;' }]);
+    expect(result).toMatchObject({ ok: false, error: { kind: 'storage-failed' } });
+    expect(db.isTransaction).toBe(false);
+  });
+
   it('refuses a database from a newer app', () => {
     const db = new DatabaseSync(':memory:');
     db.exec('PRAGMA user_version = 99');

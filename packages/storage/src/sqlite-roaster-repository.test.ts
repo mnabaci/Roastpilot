@@ -127,4 +127,22 @@ describe('SqliteRoasterRepository', () => {
     expect((await listed(repository)).map((r) => r.id)).toEqual([1]);
     expect(entries.map((e) => e.event)).toContain('storage.roaster-unreadable');
   });
+
+  it('skips and logs a roaster of a model this version has no driver for', async () => {
+    const { repository, sqlite, entries } = setup();
+    sqlite.exec(`UPDATE roasters SET model = 'behmor' WHERE id = 2`);
+    expect((await listed(repository)).map((r) => r.id)).toEqual([1]);
+    expect(entries.find((e) => e.event === 'storage.roaster-unreadable')?.context).toMatchObject({
+      id: 2,
+      model: 'behmor',
+    });
+  });
+
+  it('keeps a roaster whose connection no longer parses, without one, and logs it', async () => {
+    const { repository, sqlite, entries } = setup();
+    sqlite.exec(`UPDATE roasters SET connection = '{"kind":"usb"' WHERE id = 1`);
+    const [skywalker] = await listed(repository);
+    expect(skywalker).toMatchObject({ id: 1, connection: null });
+    expect(entries.map((e) => e.event)).toContain('storage.roaster-connection-unreadable');
+  });
 });

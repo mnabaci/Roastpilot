@@ -4,6 +4,7 @@ import {
   ConnectTargetSchema,
   err,
   ok,
+  RoasterModelSchema,
   type Result,
   type Roaster,
   type RoasterId,
@@ -36,16 +37,21 @@ export class SqliteRoasterRepository implements RoasterRepository {
   }
 
   #toRoaster(row: Row): Roaster[] {
-    const { pid, connection, isActive, ...plain } = row;
+    const { pid, connection, isActive, model, ...plain } = row;
     const tuning = AutoTuningSchema.safeParse(parseJson(pid));
-    const target = ConnectTargetSchema.safeParse(connection && parseJson(connection));
-    if (!tuning.success) {
-      this.#logger.warn('storage.roaster-unreadable', { id: row.id });
+    // SQLite doesn't check the enum: a model from a newer app has no driver or limits here.
+    const knownModel = RoasterModelSchema.safeParse(model);
+    if (!tuning.success || !knownModel.success) {
+      this.#logger.warn('storage.roaster-unreadable', { id: row.id, model });
       return [];
     }
+    const target = ConnectTargetSchema.safeParse(connection && parseJson(connection));
+    // A lost connection only means picking the port again; the record itself stays.
+    if (!target.success) this.#logger.warn('storage.roaster-connection-unreadable', { id: row.id });
     return [
       {
         ...plain,
+        model: knownModel.data,
         tuning: tuning.data,
         connection: target.success ? target.data : null,
         active: isActive,
