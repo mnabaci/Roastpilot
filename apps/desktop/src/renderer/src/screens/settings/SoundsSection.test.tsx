@@ -172,5 +172,7 @@ describe('SoundsSection', () => {
       repeat: 'once',
     });
     expect(screen.queryByRole('button', { name: /^Reset/ })).toBeNull();
+    // Reset hides itself, so focus goes to the row's Play rather than being lost.
+    expect(screen.getByRole('button', { name: 'Play Listen for first crack' })).toHaveFocus();
   });
 });

@@ -9,6 +9,7 @@ import {
 } from '@roastpilot/shared';
 import { Button, cn, OutputControl, SelectField } from '@roastpilot/ui';
 import { Play, RotateCcw, Square } from 'lucide-react';
+import { useRef } from 'react';
 import { LISTEN_BEFORE_C } from '../../features/sound-cues';
 import { VOICE_LABEL } from '../../features/voices';
 import { SettingRow } from './SettingRow';
@@ -59,6 +60,7 @@ export function SoundStepRow({
 }) {
   const { name, hint } = STEP[step];
   const preview = useSoundPreview(step, sound);
+  const play = useRef<HTMLButtonElement>(null);
   const change = (next: StepSound) => {
     preview.stop();
     onChange(next);
@@ -97,6 +99,7 @@ export function SoundStepRow({
         />
         {/* One button that turns into Stop while repeats are still to come, so focus stays on it. */}
         <Button
+          ref={play}
           size="sm"
           aria-label={`${preview.previewing ? 'Stop' : 'Play'} ${name}`}
           icon={preview.previewing ? <Square aria-hidden="true" /> : <Play aria-hidden="true" />}
@@ -115,6 +118,8 @@ export function SoundStepRow({
           className={cn(!changed && 'invisible')}
           onClick={() => {
             change({ ...fallback });
+            // Reset hides itself: focus moves to Play rather than being lost.
+            play.current?.focus();
           }}
         />
       </div>
