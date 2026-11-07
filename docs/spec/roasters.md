@@ -11,6 +11,7 @@ and never move between roasters on their own (see [roast-control.md](roast-contr
 | Batch size min / ideal / max (g) | 250 / 375 / 400                                                                  |
 | Safety limits                    | 240 °C, 20 min                                                                   |
 | PID gains, correction limit      | Tuned on real roasts; ±20%                                                       |
+| Curve following                  | Look ahead 30 s, pull 0.3 °C/min per °C, heater at most 5% per 10 s, ±20%        |
 | Temperature offset               | 0 °C                                                                             |
 | Preheat hold                     | 2:30 hold at charge temp                                                         |
 | Bean cooler helps cool the drum  | On (the tray fan sits under the drum)                                            |
