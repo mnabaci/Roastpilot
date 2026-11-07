@@ -8,6 +8,7 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 - The top bar and safety banners are fixed: they never scroll away, so Emergency stop is always on screen.
 - Each screen scrolls inside its own area; on Logs only the list of entries scrolls.
 - Nothing scrolls sideways or gets clipped from the minimum window (960 × 640) up to full screen: long text truncates, numbers fit their cards, rows wrap.
+- **First launch:** the safety notice fills the window until you accept it ([safety.md](safety.md#safety-notice)).
 - **Top bar:** the mark, the tabs Roast, History, Beans, Profiles, Roasters, Settings and Logs, then Emergency stop. The Roasters tab carries the connection as a dot (grey not connected, cyan connected, ember connecting or reconnecting) and says it to screen readers; on a wide window the connected roaster's name and the phase follow the tabs. It fits 960 × 640.
 - **Sidebar:** History, Beans, Profiles, Roasters and Settings share one layout: a fixed-width column on the left (the `sidebar` size token) with the screen title on top and the list under it, the chosen item on the right. The list and the right side scroll separately. The chosen item has a grey highlight (`surface-raised`): it shows where you are, not a setting. The Roast screen's controls panel is not a sidebar.
 - **Page width:** the chosen item on the right (a Settings section, a roaster, the bean editor, the batch calculator, Add roaster) is at most 1152 px wide on every screen, so rows stay readable and controls stay near their labels on very wide windows.
@@ -34,7 +35,7 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 | File                    | macOS: Close window. Windows: Settings… (Ctrl+,), Quit                   |
 | Edit                    | Undo, Redo, Cut, Copy, Paste, Select all                                 |
 | View                    | Zoom, Full screen. Reload and developer tools only in development builds |
-| Window, Help            | Standard window items; Help → Open log folder                            |
+| Window, Help            | Standard window items; Help → Safety notice, Open log folder             |
 
 - Quit always goes through the safe stop first (docs/spec/safety.md), whichever way it is chosen.
 - Settings… opens the Settings screen, even mid-roast; the roast keeps running in main.
