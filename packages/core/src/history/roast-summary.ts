@@ -33,6 +33,7 @@ export const SUMMARY_FROM_EVENT: Readonly<
   phase: () => ({}),
   override: () => ({}),
   'stall-guard': () => ({}),
+  'coach-applied': () => ({}),
   'first-crack': (tS) => ({ fcTimeS: tS }),
   drop: (tS, event) => ({ dropTimeS: tS, dropTemp: event.bt }),
   'cool-end': (_tS, _event, { nowIso }) => ({ endedAt: nowIso }),

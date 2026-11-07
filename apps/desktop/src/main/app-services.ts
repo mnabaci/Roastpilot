@@ -14,6 +14,7 @@ import {
   type SettingsStore,
 } from '@roastpilot/core';
 import {
+  COACH_QUIET,
   IPC_CHANNELS,
   type ConnectionState,
   type RoastState,
@@ -181,6 +182,8 @@ export function createAppServices({
     readings: [...history.all()],
     safety: session.safetyStatus,
     auto: pilot.status,
+    // The coach is wired in beside Auto in a later step.
+    coach: COACH_QUIET,
     setup: beans.setup,
     currentRoastId: recorder.currentId,
   });

@@ -2,6 +2,7 @@ import { createLogger, type RoasterDriver } from '@roastpilot/core';
 import { BUILT_IN_ROASTERS, SKYWALKER_PROFILES } from '@roastpilot/drivers';
 import {
   AUTO_OFF,
+  COACH_QUIET,
   NO_ROAST_SETUP,
   DEFAULT_SETTINGS,
   err,
@@ -42,6 +43,7 @@ const SNAPSHOT: Snapshot = {
   readings: [],
   safety: { locked: false, tripped: [] },
   auto: AUTO_OFF,
+  coach: COACH_QUIET,
   setup: NO_ROAST_SETUP,
   currentRoastId: null,
 };

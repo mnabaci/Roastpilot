@@ -14,6 +14,23 @@ export {
   type PreheatStep,
 } from './auto-status';
 export {
+  CoachAdviceSchema,
+  CoachApplyErrorSchema,
+  CoachChangeSchema,
+  CoachOutputSchema,
+  CoachRequestSchema,
+  CoachStatusSchema,
+  COACH_QUIET,
+  coachAppliedDetail,
+  type CoachAdvice,
+  type CoachApplyError,
+  type CoachChange,
+  type CoachOutput,
+  type CoachRequest,
+  type CoachSetting,
+  type CoachStatus,
+} from './coach';
+export {
   ChannelSchema,
   OutputChannelSchema,
   ReadingSchema,
@@ -48,6 +65,7 @@ export type {
   AppApi,
   AutoApi,
   BeansApi,
+  CoachApi,
   RoastersApi,
   ProfilesApi,
   HistoryApi,

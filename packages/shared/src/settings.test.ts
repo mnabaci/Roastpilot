@@ -9,6 +9,7 @@ import { DEFAULT_SOUNDS } from './sounds';
 
 const ROAST_DEFAULTS = {
   findChargePoint: true,
+  coachInManual: true,
   coolingTimeMin: 4,
   coolRoasterAfter: true,
   roasterCoolToC: 50,
@@ -75,6 +76,7 @@ describe('SettingsSchema', () => {
       controls: 'full',
       chartSmoothingS: 10,
       findChargePoint: false,
+      coachInManual: false,
       coolingTimeMin: 6,
       coolRoasterAfter: false,
       roasterCoolToC: 40,
@@ -130,6 +132,12 @@ describe('SettingsSchema', () => {
       ROAST_DEFAULTS,
     );
     expect(SettingsSchema.parse({ coolingTimeMin: 2 }).coolingTimeMin).toBe(2);
+  });
+
+  it('coaches manual roasts unless you turn it off, and reads an older file as on', () => {
+    expect(SettingsSchema.parse({ controls: 'full' }).coachInManual).toBe(true);
+    expect(SettingsSchema.parse({ coachInManual: 'no' }).coachInManual).toBe(true);
+    expect(SettingsSchema.parse({ coachInManual: false }).coachInManual).toBe(false);
   });
 
   it('an older file without sounds plays the default sound for each step', () => {
