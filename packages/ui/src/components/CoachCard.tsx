@@ -2,7 +2,7 @@ import { cn } from '../lib/utils';
 import { Button } from './Button';
 
 interface CoachCardBase {
-  /** A line under the label, e.g. "Light · Steps needs calibration". */
+  /** Said after the label, e.g. "needs calibration". */
   note?: string;
   onDismiss: () => void;
   className?: string;

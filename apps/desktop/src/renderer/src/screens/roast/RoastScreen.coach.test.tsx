@@ -54,7 +54,7 @@ describe('RoastScreen coach card', () => {
   it('names a profile that needs calibration after the label', () => {
     show({ ...SUGGESTION, needsCalibration: 'Light · Steps' });
     expect(screen.getByRole('region', { name: 'Coach suggestion' })).toHaveTextContent(
-      'Coach suggests · Light · Steps needs calibration',
+      'Coach suggests · needs calibration',
     );
   });
 
@@ -151,7 +151,7 @@ describe('RoastScreen coach card', () => {
       needsCalibration: 'Light · Steps',
     });
     const card = screen.getByRole('region', { name: 'Coach heads-up' });
-    expect(card).toHaveTextContent('Heads-up · Light · Steps needs calibration');
+    expect(card).toHaveTextContent('Heads-up · needs calibration');
     expect(card).toHaveTextContent('First crack in ~45 s · listen');
     expect(within(card).queryByRole('button', { name: 'Apply' })).toBeNull();
     await userEvent.click(within(card).getByRole('button', { name: 'Dismiss' }));

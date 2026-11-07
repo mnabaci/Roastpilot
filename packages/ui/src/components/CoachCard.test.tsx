@@ -31,14 +31,12 @@ describe('CoachCard', () => {
       <CoachCard
         changes={['Heater 65% → 75%']}
         reason="Maillard from 150 °C"
-        note="Light · Steps needs calibration"
+        note="needs calibration"
         onApply={vi.fn()}
         onDismiss={vi.fn()}
       />,
     );
-    expect(
-      screen.getByText('Coach suggests · Light · Steps needs calibration'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Coach suggests · needs calibration')).toBeInTheDocument();
   });
 
   it('a heads-up has its line and Dismiss, and nothing to apply', async () => {

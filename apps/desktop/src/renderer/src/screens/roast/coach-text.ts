@@ -25,6 +25,6 @@ export function headsUpLine(advice: Exclude<CoachAdvice, CoachSetting>): string 
   }
 }
 
-/** "Light · Steps needs calibration", or undefined for a profile that doesn't. */
+/** "needs calibration" (the setup card names the profile), or undefined for one that doesn't. */
 export const calibrationNote = ({ needsCalibration }: CoachStatus): string | undefined =>
-  needsCalibration === null ? undefined : `${needsCalibration} needs calibration`;
+  needsCalibration === null ? undefined : 'needs calibration';

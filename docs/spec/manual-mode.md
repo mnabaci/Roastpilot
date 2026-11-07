@@ -22,7 +22,7 @@ In a manual roast, a card above the heater and fan sliders suggests what Auto wo
   - "First crack in ~45 s · listen": in Roasting with no first-crack tap, once BT is within 60 s of the expected first crack at the current RoR. Expected first crack is the same as for the Listen for first crack sound ([ui.md](ui.md#sounds)); without one, no heads-up.
   - "Drop in ~30 s · 1:45 development": in Development, 30 s before the profile's development time; or "BT cap 225 °C in ~30 s" when BT will reach the cap first at the current RoR.
   - Seconds count down in steps of 5 s. With RoR at 0 or below there is no first-crack or cap heads-up; once BT reaches the expected first crack, or the development time has passed, the heads-up goes.
-- **Needs calibration:** with a profile that needs calibration, the card's first line says so ("Coach suggests · Light · Steps needs calibration"), so you weigh its advice.
+- **Needs calibration:** with a profile that needs calibration, the card's label says so in one line ("Coach suggests · needs calibration"; the setup card names the profile), so you weigh its advice.
 - **Off:** a setting, Settings › Roast "Coach in manual roasts", on by default. Off, Manual looks as it does without a coach.
 - **Gone:** at Drop, a switch to Auto, a disconnect or a safety stop the card disappears at once.
 

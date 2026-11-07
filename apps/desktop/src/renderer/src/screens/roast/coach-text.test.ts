@@ -25,7 +25,7 @@ describe('coach text', () => {
 
   it('notes a profile that needs calibration', () => {
     expect(calibrationNote({ advice: null, needsCalibration: 'Light · Steps' })).toBe(
-      'Light · Steps needs calibration',
+      'needs calibration',
     );
     expect(calibrationNote({ advice: null, needsCalibration: null })).toBeUndefined();
   });

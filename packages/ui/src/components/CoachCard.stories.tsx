@@ -44,7 +44,7 @@ const headsUp = (line: string, note?: string): Story => ({
   ),
 });
 
-const CALIBRATE = 'Light · Steps needs calibration';
+const CALIBRATE = 'needs calibration';
 
 export const HeatSuggestion = suggestion(['Heater 65% → 75%'], '4 °C below target, RoR falling');
 export const BothOutputs = suggestion(
