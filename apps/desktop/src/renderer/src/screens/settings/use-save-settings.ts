@@ -1,24 +1,36 @@
 import type { Settings } from '@roastpilot/shared';
 import { useCallback } from 'react';
 import { useRun } from '../../features/use-run';
+import { useToast } from '../../features/use-toast';
 import { useDeps } from '../../app/app-context';
+
+const NOT_SAVED = "Couldn't save settings · kept until you quit";
 
 /** Saves a change to the settings and keeps what main actually saved. */
 export function useSaveSettings(): (change: Partial<Settings>) => void {
   const { api, stores, logger } = useDeps();
   const store = stores.settings;
   const run = useRun();
+  const toast = useToast();
   return useCallback(
     (change) => {
       const next = { ...store.getState().settings, ...change };
       store.setState({ settings: next });
-      run('settings.save-failed', async () => {
-        const saved = await api.setSettings(next);
-        if (saved.ok) store.setState({ settings: saved.value });
-        // Kept in memory for this session; the file write is what failed.
-        else logger.warn('settings.not-saved', { error: saved.error });
-      });
+      run(
+        'settings.save-failed',
+        async () => {
+          const saved = await api.setSettings(next);
+          if (saved.ok) {
+            store.setState({ settings: saved.value });
+            return;
+          }
+          // Kept in memory for this session; the file write is what failed.
+          logger.warn('settings.not-saved', { error: saved.error });
+          toast('error', NOT_SAVED);
+        },
+        { failed: NOT_SAVED },
+      );
     },
-    [api, store, logger, run],
+    [api, store, logger, run, toast],
   );
 }

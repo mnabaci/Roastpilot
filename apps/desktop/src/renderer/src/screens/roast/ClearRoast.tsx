@@ -2,6 +2,8 @@ import { Button, ConfirmDialog } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
+import { useToast } from '../../features/use-toast';
+import { roastActionRefused } from './roast-action-failed';
 import { clearReadings } from '../../stores/roast-store';
 import { useBeans, useRoast } from '../../stores/use-stores';
 
@@ -13,6 +15,7 @@ import { useBeans, useRoast } from '../../stores/use-stores';
 export function ClearRoast() {
   const { api, stores, logger } = useDeps();
   const run = useRun();
+  const toast = useToast();
   const roast = useRoast((s) => s.roast);
   const setup = useBeans((s) => s.setup);
   const beanName = useBeans((s) => s.beans.find((b) => b.id === setup.beanId)?.name);
@@ -24,21 +27,29 @@ export function ClearRoast() {
   const deducted = roast.phase === 'done' && beanId !== null && batchG !== null;
 
   const clear = (returnStock: boolean) => {
-    run('roast.clear-failed', async () => {
-      if (returnStock && beanId !== null && batchG !== null) {
-        const returned = await api.adjustStock({ beanId, greenG: batchG, roastedG: 0 });
-        // Keep the roast on screen, so Clear can be tried again or the stock kept deducted.
-        if (!returned.ok) {
-          logger.warn('roast.stock-return-failed', { beanId, batchG, error: returned.error });
+    run(
+      'roast.clear-failed',
+      async () => {
+        if (returnStock && beanId !== null && batchG !== null) {
+          const returned = await api.adjustStock({ beanId, greenG: batchG, roastedG: 0 });
+          // Keep the roast on screen, so Clear can be tried again or the stock kept deducted.
+          if (!returned.ok) {
+            logger.warn('roast.stock-return-failed', { beanId, batchG, error: returned.error });
+            toast('error', "Couldn't return the beans to stock · try again");
+            return;
+          }
+        }
+        const cleared = await api.roastAction('clear');
+        if (cleared.ok) {
+          setAsking(false);
+          stores.roast.setState(clearReadings);
           return;
         }
-      }
-      const cleared = await api.roastAction('clear');
-      if (cleared.ok) {
-        setAsking(false);
-        stores.roast.setState(clearReadings);
-      }
-    });
+        logger.info('roast.action-refused', { ...cleared.error });
+        toast('error', roastActionRefused('clear'));
+      },
+      { failed: "Couldn't clear the roast · try again" },
+    );
   };
 
   return (

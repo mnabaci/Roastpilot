@@ -59,20 +59,24 @@ export function MilestoneBuilder({
   const create = () => {
     if (!valid) return;
     setBusy(true);
-    run('profiles.milestones-failed', async () => {
-      try {
-        const saved = await api.makeProfileFromMilestones(valid);
-        if (!saved.ok) {
-          logger.warn('profiles.refused', { ...saved.error });
-          setProblem("Couldn't save that · see the log");
-          return;
+    run(
+      'profiles.milestones-failed',
+      async () => {
+        try {
+          const saved = await api.makeProfileFromMilestones(valid);
+          if (!saved.ok) {
+            logger.warn('profiles.refused', { ...saved.error });
+            setProblem("Couldn't save that · see the log");
+            return;
+          }
+          stores.auto.setState({ profiles: await api.listProfiles() });
+          onCreated(saved.value.profile.id);
+        } finally {
+          setBusy(false);
         }
-        stores.auto.setState({ profiles: await api.listProfiles() });
-        onCreated(saved.value.profile.id);
-      } finally {
-        setBusy(false);
-      }
-    });
+      },
+      { failed: "Couldn't create the profile · try again" },
+    );
   };
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-5">

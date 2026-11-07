@@ -5,17 +5,18 @@ happens, returned as a typed error, or logged with enough context to explain it 
 
 ## Errors
 
-| Kind                                | Example                                 | How                                                                       |
-| ----------------------------------- | --------------------------------------- | ------------------------------------------------------------------------- |
-| Expected failure                    | Port missing, no reply, safety lock     | Typed `Result` (`DriverError`, `AcknowledgeError`), handled by the caller |
-| Bad input at a boundary             | IPC payload, serial line, DB row        | Validated (zod, parsers); IPC rejects and logs, serial gives `bad-reply`  |
-| Programmer error                    | Impossible state, contract broken       | Throw; caught and logged at the top level                                 |
-| Anything unexpected in main         | Uncaught exception, unhandled rejection | Logged, then safe stop; an uncaught exception also exits the app          |
-| Anything unexpected in the renderer | Script error, unhandled rejection       | Sent to main's log through `window.roastpilot.log`                        |
-| A screen fails to draw              | A render error in one screen            | That screen shows its error page; logged as `renderer.screen-failed`      |
-| The app frame fails to draw         | A render error outside the screens      | The whole-window error page; logged as `renderer.app-failed`              |
+| Kind                                | Example                                 | How                                                                                                                     |
+| ----------------------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Expected failure                    | Port missing, no reply, safety lock     | Typed `Result` (`DriverError`, `AcknowledgeError`), handled by the caller                                               |
+| Bad input at a boundary             | IPC payload, serial line, DB row        | Validated (zod, parsers); IPC rejects and logs, serial gives `bad-reply`                                                |
+| Programmer error                    | Impossible state, contract broken       | Throw; caught and logged at the top level                                                                               |
+| Anything unexpected in main         | Uncaught exception, unhandled rejection | Logged, then safe stop; an uncaught exception also tries to save the roast in progress (within 2 s), then exits the app |
+| Anything unexpected in the renderer | Script error, unhandled rejection       | Sent to main's log through `window.roastpilot.log`                                                                      |
+| A screen fails to draw              | A render error in one screen            | That screen shows its error page; logged as `renderer.screen-failed`                                                    |
+| The app frame fails to draw         | A render error outside the screens      | The whole-window error page; logged as `renderer.app-failed`                                                            |
 
 - **Never hidden.** No empty `catch`. A fire-and-forget promise always has a `.catch` that logs (ESLint: `no-floating-promises` without the `void` escape).
+- **Seen, not just logged.** A user action that fails or is refused where the screen shows nothing (a click whose IPC call rejects, a save main refused) shows an error toast as well as being logged ([ui.md](ui.md), Toasts); one the screen already explains inline isn't toasted twice.
 - **Safety wins.** A safety rule that throws is logged and treated as tripped, so a bug in safety code stops the roaster instead of crashing the caller. A crashed poll loop is logged, and the lost-connection rule still safe-stops.
 - **Listeners can't break the core.** A listener that throws (a window closing mid-send) is logged; polling and safety carry on.
 - **Edge cases are tested:** timeouts, disconnects mid-call, bad or missing input, calls during other calls, quitting at any moment.

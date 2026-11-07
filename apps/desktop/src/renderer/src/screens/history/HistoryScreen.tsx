@@ -49,19 +49,23 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
 
   const remove = (id: RoastId) => {
     setDeleteError(undefined);
-    run('history.delete-failed', async () => {
-      const deleted = await api.deleteRoast(id);
-      if (!deleted.ok) {
-        setDeleteError(
-          deleted.error.kind === 'in-progress'
-            ? 'Still roasting · delete it once it ends'
-            : "Couldn't delete this roast · see Logs",
-        );
-        return;
-      }
-      // The next one down the list as filtered, so the pick stays on screen.
-      setPicked(selectionAfterDelete(listed, id));
-    });
+    run(
+      'history.delete-failed',
+      async () => {
+        const deleted = await api.deleteRoast(id);
+        if (!deleted.ok) {
+          setDeleteError(
+            deleted.error.kind === 'in-progress'
+              ? 'Still roasting · delete it once it ends'
+              : "Couldn't delete this roast · see Logs",
+          );
+          return;
+        }
+        // The next one down the list as filtered, so the pick stays on screen.
+        setPicked(selectionAfterDelete(listed, id));
+      },
+      { failed: "Couldn't delete the roast · try again" },
+    );
   };
 
   if (roasts === undefined) return <main className="flex-1" />;

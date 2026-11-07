@@ -4,6 +4,7 @@ import { FolderOpen } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
+import { useToast } from '../../features/use-toast';
 import { ChipGroup } from './ChipGroup';
 import { dayLabel, localDay, viewerDays } from './log-days';
 import { countLevels, DEFAULT_LEVELS, filterLogs, scopesOf } from './log-filter';
@@ -29,6 +30,7 @@ const toggle = <T,>(set: ReadonlySet<T>, id: T): Set<T> => {
 export function LogsScreen() {
   const { api } = useDeps();
   const run = useRun();
+  const toast = useToast();
   const today = localDay(new Date());
   const days = viewerDays(useLogDays(), today);
   const [day, setDay] = useState(today);
@@ -45,7 +47,14 @@ export function LogsScreen() {
   const counts = countLevels(records);
 
   const copy = (record: LogRecord) => {
-    run('logs.copy-failed', () => navigator.clipboard.writeText(JSON.stringify(record, null, 2)));
+    run(
+      'logs.copy-failed',
+      async () => {
+        await navigator.clipboard.writeText(JSON.stringify(record, null, 2));
+        toast('success', 'Copied');
+      },
+      { failed: "Couldn't copy the entry · try again" },
+    );
   };
 
   return (
@@ -61,7 +70,9 @@ export function LogsScreen() {
               label: 'Open log folder',
               icon: <FolderOpen aria-hidden="true" />,
               onSelect: () => {
-                run('logs.open-folder-failed', () => api.openLogFolder());
+                run('logs.open-folder-failed', () => api.openLogFolder(), {
+                  failed: "Couldn't open the log folder · try again",
+                });
               },
             },
           ]}

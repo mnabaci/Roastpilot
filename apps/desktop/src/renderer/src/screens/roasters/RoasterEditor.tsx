@@ -26,15 +26,19 @@ export function RoasterEditor({ roaster, locked }: { roaster: Roaster; locked: b
   const edited = JSON.stringify(draft) !== JSON.stringify(saved);
   const save = () => {
     if (!checked.ok) return;
-    run('roasters.save-failed', async () => {
-      const result = await api.saveRoaster(checked.value);
-      if (result.ok) {
-        setProblem(undefined);
-        return;
-      }
-      logger.warn('roasters.refused', { ...result.error });
-      setProblem(refusalText(result.error, 'save'));
-    });
+    run(
+      'roasters.save-failed',
+      async () => {
+        const result = await api.saveRoaster(checked.value);
+        if (result.ok) {
+          setProblem(undefined);
+          return;
+        }
+        logger.warn('roasters.refused', { ...result.error });
+        setProblem(refusalText(result.error, 'save'));
+      },
+      { failed: "Couldn't save the roaster · try again" },
+    );
   };
   const [showTuning, setShowTuning] = useState(false);
   // A problem in a tuning number opens the section, so a held-back Save is never unexplained.

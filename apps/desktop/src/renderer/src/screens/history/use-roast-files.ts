@@ -41,35 +41,47 @@ export function useRoastFiles(onImported: (id: RoastId) => void): {
   };
   const exportRoasts = (request: ExportRoastsRequest) => {
     setMessage(undefined);
-    run('history.export-failed', async () => {
-      const saved = await api.exportRoasts(request);
-      if (!saved.ok) setMessage({ text: "Couldn't export · see Logs", problem: true });
-      else if (saved.value.status === 'saved')
-        setMessage({ text: `Saved ${saved.value.fileName}`, problem: false });
-    });
+    run(
+      'history.export-failed',
+      async () => {
+        const saved = await api.exportRoasts(request);
+        if (!saved.ok) setMessage({ text: "Couldn't export · see Logs", problem: true });
+        else if (saved.value.status === 'saved')
+          setMessage({ text: `Saved ${saved.value.fileName}`, problem: false });
+      },
+      { failed: "Couldn't export · try again" },
+    );
   };
   const importRoasts = () => {
     setMessage(undefined);
-    run('history.import-failed', async () => {
-      const imported = await api.importRoasts();
-      if (!imported.ok) problem(imported.error.kind);
-      else if (imported.value.status === 'imported')
-        setMessage({
-          text: importedText(imported.value.added, imported.value.skipped),
-          problem: false,
-        });
-    });
+    run(
+      'history.import-failed',
+      async () => {
+        const imported = await api.importRoasts();
+        if (!imported.ok) problem(imported.error.kind);
+        else if (imported.value.status === 'imported')
+          setMessage({
+            text: importedText(imported.value.added, imported.value.skipped),
+            problem: false,
+          });
+      },
+      { failed: "Couldn't import · try again" },
+    );
   };
   const importAlog = () => {
     setMessage(undefined);
-    run('history.import-failed', async () => {
-      const imported = await api.importArtisan();
-      if (!imported.ok) problem(imported.error.kind);
-      else if (imported.value.status === 'imported') {
-        setMessage({ text: 'Roast imported', problem: false });
-        onImported(imported.value.id);
-      }
-    });
+    run(
+      'history.import-failed',
+      async () => {
+        const imported = await api.importArtisan();
+        if (!imported.ok) problem(imported.error.kind);
+        else if (imported.value.status === 'imported') {
+          setMessage({ text: 'Roast imported', problem: false });
+          onImported(imported.value.id);
+        }
+      },
+      { failed: "Couldn't import · try again" },
+    );
   };
   return { exportRoasts, importRoasts, importAlog, message };
 }

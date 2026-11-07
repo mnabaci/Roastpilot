@@ -17,6 +17,7 @@ import { createRoastStore, type RoastStore } from './roast-store';
 import { createSafetyStore, type SafetyState, type SafetyStore } from './safety-store';
 import { createSettingsStore, type SettingsStore } from './settings-store';
 import { createSyncStore, type SyncStore } from './sync-store';
+import { createToastsStore, type ToastsStore } from './toasts-store';
 
 /** One small store per concern, all fed by window.roastpilot events (app/sync-with-main.ts). */
 export interface Stores {
@@ -28,6 +29,8 @@ export interface Stores {
   auto: AutoStore;
   roasters: RoastersStore;
   beans: BeansStore;
+  /** One-line notes for actions that failed where the screen shows nothing. */
+  toasts: ToastsStore;
 }
 
 /** Starting values, mostly for tests. */
@@ -59,5 +62,6 @@ export function createStores(seed: StoresSeed = {}): Stores {
     auto: createAutoStore(seed.auto, seed.profiles),
     roasters: createRoastersStore(seed.roasters),
     beans: createBeansStore(seed.beans, seed.setup, seed.currentRoastId),
+    toasts: createToastsStore(),
   };
 }

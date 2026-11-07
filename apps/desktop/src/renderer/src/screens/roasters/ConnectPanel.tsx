@@ -41,9 +41,13 @@ export function ConnectPanel({ roaster }: { roaster: Roaster }) {
 
   const refresh = useCallback(() => {
     if (isSimulator) return;
-    run('ports.list-failed', async () => {
-      setPorts(await api.listPorts());
-    });
+    run(
+      'ports.list-failed',
+      async () => {
+        setPorts(await api.listPorts());
+      },
+      { failed: "Couldn't list the ports · try Refresh" },
+    );
   }, [api, run, isSimulator]);
   useEffect(refresh, [refresh]);
 
@@ -59,28 +63,36 @@ export function ConnectPanel({ roaster }: { roaster: Roaster }) {
   const connect = (to: ConnectTarget) => {
     setError(undefined);
     setBusy(true);
-    run('connect.failed', async () => {
-      try {
-        if (!(await makeActive())) return;
-        const result = await api.connect(to);
-        if (!result.ok) setError(connectErrorText(result.error));
-      } finally {
-        setBusy(false);
-      }
-    });
+    run(
+      'connect.failed',
+      async () => {
+        try {
+          if (!(await makeActive())) return;
+          const result = await api.connect(to);
+          if (!result.ok) setError(connectErrorText(result.error));
+        } finally {
+          setBusy(false);
+        }
+      },
+      { failed: "Couldn't connect · try again" },
+    );
   };
   const select = (to: ConnectTarget) => {
     setError(undefined);
-    run('roasters.choose-failed', async () => {
-      if (!(await makeActive())) return;
-      const chosen = await api.chooseConnection(to);
-      if (!chosen.ok) {
-        logger.warn('roasters.refused', { ...chosen.error });
-        setError(refusalText(chosen.error, 'save the port'));
-        return;
-      }
-      stores.roasters.setState({ roasters: await api.listRoasters() });
-    });
+    run(
+      'roasters.choose-failed',
+      async () => {
+        if (!(await makeActive())) return;
+        const chosen = await api.chooseConnection(to);
+        if (!chosen.ok) {
+          logger.warn('roasters.refused', { ...chosen.error });
+          setError(refusalText(chosen.error, 'save the port'));
+          return;
+        }
+        stores.roasters.setState({ roasters: await api.listRoasters() });
+      },
+      { failed: "Couldn't save the port · try again" },
+    );
     setChoosing(false);
     setShowAll(false);
   };
@@ -157,7 +169,9 @@ export function ConnectPanel({ roaster }: { roaster: Roaster }) {
         <Button
           size="lg"
           onClick={() => {
-            run('disconnect.failed', () => api.disconnect());
+            run('disconnect.failed', () => api.disconnect(), {
+              failed: "Couldn't disconnect · try again",
+            });
           }}
         >
           Disconnect

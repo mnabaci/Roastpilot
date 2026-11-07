@@ -13,6 +13,7 @@ import { SafetyBanners } from './SafetyBanners';
 import { useDeps } from './app-context';
 import { LiveRoastStrip } from './LiveRoastStrip';
 import { TopBar } from './TopBar';
+import { AppToaster } from './AppToaster';
 import { ScreenError } from './ScreenError';
 import { ErrorBoundary } from '../features/ErrorBoundary';
 import { serializeError } from '@roastpilot/core';
@@ -100,6 +101,7 @@ export function App() {
           {ready ? screens[shown]() : null}
         </ErrorBoundary>
       </div>
+      <AppToaster screen={shown} />
     </div>
   );
 }
