@@ -93,6 +93,8 @@ const {
   roastFiles: roastFileService,
   recorder,
   pilot,
+  coachActions,
+  setOutputByHand,
   profiles,
   roasters,
   beans,
@@ -205,6 +207,8 @@ app
         createIpcHandlers({
           session,
           roast,
+          setOutputByHand,
+          coach: coachActions,
           settings,
           history,
           roastFiles: createRoastFiles({

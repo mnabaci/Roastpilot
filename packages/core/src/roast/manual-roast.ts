@@ -131,8 +131,14 @@ export class ManualRoast {
     if (channel === 'heater' && value > 0) this.#cooling.stopWithoutOutputs('heater-on');
   }
 
-  /** Adds what Auto did to the roast's events, so it is saved like any other (data-model.md). */
-  note(kind: 'dry-end' | 'phase' | 'override' | 'stall-guard' | 'mode', detail?: string): void {
+  /**
+   * Adds what Auto or the coach did to the roast's events, so it is saved like any other
+   * (data-model.md).
+   */
+  note(
+    kind: 'dry-end' | 'phase' | 'override' | 'stall-guard' | 'mode' | 'coach-applied',
+    detail?: string,
+  ): void {
     const event = this.#event(kind, this.#deps.clock.now());
     const noted = detail === undefined ? event : { ...event, detail };
     this.#set({ ...this.#state, events: [...this.#state.events, noted] });

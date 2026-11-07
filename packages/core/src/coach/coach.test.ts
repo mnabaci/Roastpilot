@@ -11,9 +11,9 @@ import { ManualClock } from '../clock';
 import { Coach } from './coach';
 import { COACH_PROFILE, COACH_TUNING } from './coach.harness';
 import type { CoachRule } from './coach-rule';
-import { COACH_RULES } from './coach-rules';
 import { dropSoonRule } from './drop-soon-rule';
 import { firstCrackSoonRule } from './first-crack-soon-rule';
+import { autoSettingRule } from './setting-rule';
 
 /** BT of the test roast: down to 95 °C at 1:00, 150 °C at 5:00 (Maillard), then 10 °C/min. */
 function btAt(s: number): number {
@@ -28,6 +28,9 @@ const ROASTING: RoastState = {
   chargedAtMs: 0,
   startPressedAtMs: 0,
 };
+
+/** The rules as main registers them. */
+const COACH_RULES: readonly CoachRule[] = [autoSettingRule, firstCrackSoonRule, dropSoonRule];
 
 function setup({
   profile = COACH_PROFILE,
@@ -216,6 +219,17 @@ describe('Coach', () => {
       expect(advice()).toBeNull();
       expect(statuses.at(-1)?.advice).toBeNull();
       expect(logged('coach.stopped')).toHaveLength(1);
+    });
+
+    it('at once on a safe stop, before the lock is in place', () => {
+      const { coach, world, feed, advice } = setup();
+      world.outputs = { heater: 70, fan: 30 };
+      feed(0);
+      coach.stop();
+      expect(advice()).toBeNull();
+      world.locked = true;
+      feed(1, 5);
+      expect(advice()).toBeNull();
     });
 
     it('and keeps what you dismissed when it comes back in the same roast', () => {

@@ -80,6 +80,12 @@ export class Coach {
     this.#publish();
   }
 
+  /** A safe stop: the card goes at once, before the lock that follows it is in place. */
+  stop(): void {
+    this.#stop('heater-locked');
+    this.#publish();
+  }
+
   /** You set an output (slider or Apply): Auto's heat control starts again from your heater. */
   outputRequested(channel: string, value: number): void {
     if (channel !== 'heater' && channel !== 'fan') return;

@@ -7,7 +7,7 @@ import {
 } from '@roastpilot/core';
 import { SimulatedDriver } from '@roastpilot/drivers';
 import { drizzleOn, openDatabase, SqliteRoastRepository } from '@roastpilot/storage';
-import { DEFAULT_SETTINGS, IPC_CHANNELS, ok, type Settings } from '@roastpilot/shared';
+import { DEFAULT_SETTINGS, err, IPC_CHANNELS, ok, type Settings } from '@roastpilot/shared';
 import { describe, expect, it, vi } from 'vitest';
 import { createAppServices } from './app-services';
 import {
@@ -58,8 +58,55 @@ describe('createAppServices', () => {
         IPC_CHANNELS.reading,
         IPC_CHANNELS.roast,
         IPC_CHANNELS.autoStatus,
+        IPC_CHANNELS.coachStatus,
       ]),
     );
+  });
+
+  describe('the coach in a manual roast', () => {
+    const suggesting = async () => {
+      const kit = setup();
+      await kit.services.settings.get();
+      await kit.services.session.connect(kit.sim, { kind: 'simulator' });
+      await kit.services.roast.act('start');
+      // The soak keeps the heater at 0 and the fan at 30 %; you set heater 80 %.
+      await kit.services.setOutputByHand('fan', 30);
+      await kit.services.setOutputByHand('heater', 80);
+      // Past the 15 s a suggestion made before you set them waits for.
+      await kit.clock.runFor(16_000);
+      const advice = kit.services.coach.status.advice;
+      expect(advice).toMatchObject({ kind: 'setting', heater: { from: 80, to: 0 } });
+      return { ...kit, id: advice?.id ?? 0 };
+    };
+
+    it('Apply sets the heater as the slider does and records it on the roast', async () => {
+      const { clock, services, id } = await suggesting();
+      expect(await services.coachActions.apply(id)).toEqual(ok(undefined));
+      await clock.runFor(2000);
+      expect(services.snapshot().readings.at(-1)?.values.heater).toBe(0);
+      expect(services.roast.state.events.at(-1)).toMatchObject({
+        kind: 'coach-applied',
+        detail: 'heater 80→0',
+      });
+      expect(services.snapshot().coach.advice).toBeNull();
+    });
+
+    it('the card goes at once with a safety stop, and Apply is refused', async () => {
+      const { services, published, id } = await suggesting();
+      services.session.emergencyStop();
+      expect(services.coach.status.advice).toBeNull();
+      expect(published.filter(([c]) => c === IPC_CHANNELS.coachStatus).at(-1)?.[1]).toEqual({
+        advice: null,
+        needsCalibration: null,
+      });
+      expect(await services.coachActions.apply(id)).toEqual(err({ kind: 'not-now' }));
+    });
+
+    it('the card goes at once when you turn the coach off', async () => {
+      const { services } = await suggesting();
+      await services.settings.set({ ...DEFAULT_SETTINGS, coachInManual: false });
+      expect(services.coach.status.advice).toBeNull();
+    });
   });
 
   it('gives a reloading window everything it needs', async () => {

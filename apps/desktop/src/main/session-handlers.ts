@@ -1,6 +1,7 @@
 import {
   serializeError,
   type AutoPilot,
+  type Coach,
   type Logger,
   type ManualRoast,
   type ReadingHistory,
@@ -17,7 +18,7 @@ import {
 
 /**
  * What the roaster session tells the rest of main: each reading, connection change and safety
- * event, passed to the windows, the roast flow, Auto and the recorder. `parts` is read late: the
+ * event, passed to the windows, the roast flow, Auto, the coach and the recorder. `parts` is read late: the
  * roast and Auto are made after the session.
  */
 export function sessionHandlers({
@@ -30,14 +31,14 @@ export function sessionHandlers({
 }: {
   history: ReadingHistory;
   recorder: Pick<RoastRecorder, 'onReading'>;
-  parts: () => { roast: ManualRoast; pilot: AutoPilot };
+  parts: () => { roast: ManualRoast; pilot: AutoPilot; coach: Coach };
   publish: <C extends IpcEventChannel>(channel: C, payload: IpcEventPayloads[C]) => void;
   onConnectionChange: (state: ConnectionState) => void;
   logger: Logger;
 }) {
   return {
     onReading: (reading: Reading) => {
-      const { roast, pilot } = parts();
+      const { roast, pilot, coach } = parts();
       history.add(reading);
       recorder.onReading(reading);
       publish(IPC_CHANNELS.reading, reading);
@@ -48,9 +49,11 @@ export function sessionHandlers({
       pilot.onReading(reading).catch((error: unknown) => {
         logger.error('auto.reading-failed', { error: serializeError(error) });
       });
+      // It never sends anything, and logs its own failures.
+      coach.onReading(reading);
     },
     onConnection: (state: ConnectionState) => {
-      const { roast, pilot } = parts();
+      const { roast, pilot, coach } = parts();
       onConnectionChange(state);
       publish(IPC_CHANNELS.connection, state);
       // A fresh connection starts with the outputs off: a running roast puts its own back.
@@ -60,13 +63,15 @@ export function sessionHandlers({
         });
       } else if (state.status === 'disconnected') roast.stopRoasterCooling('disconnected');
       if (state.status === 'disconnected' || state.status === 'lost') pilot.stop(state.status);
+      coach.sync();
     },
     onSafetyEvent: (event: SafetyEvent) => {
-      const { roast, pilot } = parts();
+      const { roast, pilot, coach } = parts();
       publish(IPC_CHANNELS.safetyEvent, event);
       if (event.kind === 'tripped' && event.action === 'safe-stop') {
         roast.stopRoasterCooling('safety-stop');
         pilot.stop('safety-stop');
+        coach.stop();
       }
     },
   };

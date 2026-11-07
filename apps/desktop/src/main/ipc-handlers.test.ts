@@ -61,10 +61,6 @@ function setup() {
         calls.push(['disconnect']);
         return Promise.resolve();
       },
-      setOutput: (channel, value) => {
-        calls.push(['setOutput', channel, value]);
-        return Promise.resolve(ok(undefined));
-      },
       emergencyStop: () => calls.push(['emergencyStop']),
       acknowledgeSafety: () => ok(undefined),
     },
@@ -73,7 +69,17 @@ function setup() {
         calls.push(['roast', action]);
         return Promise.resolve(ok(undefined));
       },
-      outputRequested: (channel, value) => calls.push(['outputRequested', channel, value]),
+    },
+    setOutputByHand: (channel, value) => {
+      calls.push(['setOutput', channel, value]);
+      return Promise.resolve(ok(undefined));
+    },
+    coach: {
+      apply: (id) => {
+        calls.push(['coachApply', id]);
+        return Promise.resolve(err({ kind: 'stale' }));
+      },
+      dismiss: (id) => calls.push(['coachDismiss', id]),
     },
     settings: {
       get: () => Promise.resolve(DEFAULT_SETTINGS),
@@ -120,7 +126,6 @@ function setup() {
         calls.push(['chargeSoon', nowMs]);
         return ok(undefined);
       },
-      outputRequested: (channel, value) => calls.push(['pilotOutput', channel, value]),
       resume: () => {
         calls.push(['resume']);
         return err({ kind: 'safety-locked' });
@@ -258,6 +263,8 @@ describe('createIpcHandlers', () => {
         IPC_CHANNELS.connect,
         IPC_CHANNELS.disconnect,
         IPC_CHANNELS.setOutput,
+        IPC_CHANNELS.coachApply,
+        IPC_CHANNELS.coachDismiss,
         IPC_CHANNELS.emergencyStop,
         IPC_CHANNELS.acknowledgeSafety,
         IPC_CHANNELS.getSnapshot,
@@ -355,6 +362,8 @@ describe('createIpcHandlers', () => {
     [IPC_CHANNELS.connect, undefined],
     [IPC_CHANNELS.setOutput, { channel: 'heater', value: '100' }],
     [IPC_CHANNELS.setOutput, { channel: 'heater', value: Number.NaN }],
+    [IPC_CHANNELS.coachApply, { id: '3' }],
+    [IPC_CHANNELS.coachDismiss, undefined],
     [IPC_CHANNELS.roastAction, 'charge-now'],
     [IPC_CHANNELS.roastAction, undefined],
     [IPC_CHANNELS.setSettings, 'full'],
@@ -366,24 +375,26 @@ describe('createIpcHandlers', () => {
     expect(calls).toEqual([]);
   });
 
-  it('passes a valid output through, telling the roast first (the heater ends a cool-down)', async () => {
+  it("passes a valid output through the sliders' path", async () => {
     const { handlers, calls } = setup();
     await handle(handlers, IPC_CHANNELS.setOutput, { channel: 'fan', value: 40 });
+    expect(calls).toEqual([['setOutput', 'fan', 40]]);
+  });
+
+  it("passes the coach card's id to Apply and Dismiss", async () => {
+    const { handlers, calls } = setup();
+    expect(await handle(handlers, IPC_CHANNELS.coachApply, { id: 3 })).toEqual(
+      err({ kind: 'stale' }),
+    );
+    await handle(handlers, IPC_CHANNELS.coachDismiss, { id: 4 });
     expect(calls).toEqual([
-      ['outputRequested', 'fan', 40],
-      ['pilotOutput', 'fan', 40],
-      ['setOutput', 'fan', 40],
+      ['coachApply', 3],
+      ['coachDismiss', 4],
     ]);
   });
 });
 
 describe('roast, snapshot and settings handlers', () => {
-  it('tells Auto about your output too, so it stays yours until Resume auto', async () => {
-    const { handlers, calls } = setup();
-    await handlers[IPC_CHANNELS.setOutput]?.({ channel: 'heater', value: 50 });
-    expect(calls).toContainEqual(['pilotOutput', 'heater', 50]);
-  });
-
   it('checks roaster requests at the boundary', async () => {
     const { handlers, calls } = setup();
     const roaster = BUILT_IN_ROASTERS[0];

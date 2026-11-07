@@ -25,6 +25,7 @@ import {
   SetRoastBeanRequestSchema,
   SetOutputRequestSchema,
   SettingsSchema,
+  CoachRequestSchema,
 } from '@roastpilot/shared';
 import type { IpcCaller, IpcDeps, IpcHandler } from './ipc-deps';
 
@@ -43,6 +44,8 @@ function handler(fn: (payload: unknown, caller: IpcCaller) => unknown): IpcHandl
 export function createIpcHandlers({
   session,
   roast,
+  setOutputByHand,
+  coach,
   settings,
   history,
   roastFiles,
@@ -68,9 +71,7 @@ export function createIpcHandlers({
     [IPC_CHANNELS.disconnect]: handler(() => session.disconnect()),
     [IPC_CHANNELS.setOutput]: handler((payload) => {
       const { channel, value } = SetOutputRequestSchema.parse(payload);
-      roast.outputRequested(channel, value);
-      pilot.outputRequested(channel, value);
-      return session.setOutput(channel, value);
+      return setOutputByHand(channel, value);
     }),
     [IPC_CHANNELS.emergencyStop]: handler(() => {
       session.emergencyStop();
@@ -99,6 +100,12 @@ export function createIpcHandlers({
     ),
     [IPC_CHANNELS.autoChargeSoon]: handler(() => pilot.chargeSoon(nowMs())),
     [IPC_CHANNELS.autoResume]: handler(() => pilot.resume()),
+    [IPC_CHANNELS.coachApply]: handler((payload) =>
+      coach.apply(CoachRequestSchema.parse(payload).id),
+    ),
+    [IPC_CHANNELS.coachDismiss]: handler((payload) => {
+      coach.dismiss(CoachRequestSchema.parse(payload).id);
+    }),
     [IPC_CHANNELS.listProfiles]: handler(() => profiles.list()),
     [IPC_CHANNELS.duplicateProfile]: handler((payload) =>
       profiles.duplicate(ProfileIdSchema.parse(payload)),

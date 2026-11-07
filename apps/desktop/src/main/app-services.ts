@@ -5,6 +5,7 @@ import {
   RoastRecorder,
   serializeError,
   type Clock,
+  type Coach,
   type Logger,
   type ManualRoast,
   type BeanRepository,
@@ -14,7 +15,6 @@ import {
   type SettingsStore,
 } from '@roastpilot/core';
 import {
-  COACH_QUIET,
   IPC_CHANNELS,
   type ConnectionState,
   type RoastState,
@@ -25,6 +25,9 @@ import {
 } from '@roastpilot/shared';
 import { autoProfile, createAutoPilot, roastPlan } from './auto-wiring';
 import { BeanService } from './beans/bean-service';
+import { coachActions, type CoachActions } from './coach-apply';
+import { createCoach } from './coach-wiring';
+import { handOutput, type HandOutput } from './hand-output';
 import { createHistory } from './history-wiring';
 import type { HistoryService } from './history/history-service';
 import type { RoastFileService } from './history/roast-file-service';
@@ -65,6 +68,10 @@ export interface AppServices {
   roastFiles: RoastFileService;
   recorder: RoastRecorder;
   pilot: ReturnType<typeof createAutoPilot>;
+  coach: Coach;
+  coachActions: CoachActions;
+  /** The sliders' path to the roaster, which the coach's Apply takes too. */
+  setOutputByHand: HandOutput;
   profiles: ProfileService;
   roasters: RoasterService;
   beans: BeanService;
@@ -134,7 +141,7 @@ export function createAppServices({
     ...sessionHandlers({
       history,
       recorder,
-      parts: () => ({ roast, pilot }),
+      parts: () => ({ roast, pilot, coach }),
       publish,
       onConnectionChange,
       logger: roastLogger,
@@ -142,6 +149,7 @@ export function createAppServices({
   });
   const settings = new SettingsService(settingsStore, (latest) => {
     pilot.setEnabled(latest.roastMode === 'auto');
+    coach.sync();
     onSettingsChange(latest);
   });
   const profiles = new ProfileService({
@@ -153,6 +161,16 @@ export function createAppServices({
   });
   // Before the first roast, so a chosen profile of your own is there without opening a window.
   startLoading({ settings, roasters, profiles, logger });
+  const saved = createHistory({
+    roasts,
+    beans,
+    roasters,
+    recorder,
+    nowIso,
+    refreshBeans,
+    publish,
+    logger: historyLogger,
+  });
   const roast = createManualRoast({
     clock,
     logger: roastLogger,
@@ -162,6 +180,7 @@ export function createAppServices({
     roasters,
     onChange: (state) => {
       recorder.onRoastChange(state);
+      coaching.onRoastChange(state);
       onRoastChange(state);
       publish(IPC_CHANNELS.roast, state);
     },
@@ -176,14 +195,27 @@ export function createAppServices({
     publish,
     logger,
   });
+  const coaching = createCoach({
+    clock,
+    session,
+    roast,
+    settings,
+    profiles,
+    roasters,
+    readings: () => history.all(),
+    history: saved.history,
+    publish,
+    logger,
+  });
+  const { coach } = coaching;
+  const setOutputByHand = handOutput({ session, roast, pilot, coach });
   const snapshot = (): Snapshot => ({
     connection: session.connection,
     roast: roast.state,
     readings: [...history.all()],
     safety: session.safetyStatus,
     auto: pilot.status,
-    // The coach is wired in beside Auto in a later step.
-    coach: COACH_QUIET,
+    coach: coach.status,
     setup: beans.setup,
     currentRoastId: recorder.currentId,
   });
@@ -191,18 +223,17 @@ export function createAppServices({
     session,
     roast,
     settings,
-    ...createHistory({
-      roasts,
-      beans,
-      roasters,
-      recorder,
-      nowIso,
-      refreshBeans,
-      publish,
-      logger: historyLogger,
-    }),
+    ...saved,
     recorder,
     pilot,
+    coach,
+    coachActions: coachActions({
+      coach,
+      setOutput: setOutputByHand,
+      roast,
+      logger: logger.child('coach'),
+    }),
+    setOutputByHand,
     profiles,
     roasters,
     beans,

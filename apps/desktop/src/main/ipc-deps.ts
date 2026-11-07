@@ -13,6 +13,8 @@ import type {
   Snapshot,
 } from '@roastpilot/shared';
 import type { BeanService } from './beans/bean-service';
+import type { CoachActions } from './coach-apply';
+import type { HandOutput } from './hand-output';
 import type { HistoryService } from './history/history-service';
 import type { DialogParent } from './history/roast-file-dialogs';
 import type { RoastFiles } from './history/roast-files';
@@ -23,15 +25,15 @@ import type { Updates } from './updates/update-wiring';
 
 /** What the IPC handlers reach in main: the services each channel calls. */
 export interface IpcDeps {
-  session: Pick<
-    RoasterSession,
-    'connect' | 'disconnect' | 'setOutput' | 'emergencyStop' | 'acknowledgeSafety'
-  >;
-  roast: Pick<ManualRoast, 'act' | 'outputRequested'>;
+  session: Pick<RoasterSession, 'connect' | 'disconnect' | 'emergencyStop' | 'acknowledgeSafety'>;
+  roast: Pick<ManualRoast, 'act'>;
+  /** The sliders' path to the roaster (hand-output.ts). */
+  setOutputByHand: HandOutput;
+  coach: CoachActions;
   settings: Pick<SettingsService, 'get' | 'set'>;
   history: Pick<HistoryService, 'list' | 'get' | 'delete' | 'saveResult' | 'setBean'>;
   roastFiles: RoastFiles;
-  pilot: Pick<AutoPilot, 'chargeSoon' | 'outputRequested' | 'resume'>;
+  pilot: Pick<AutoPilot, 'chargeSoon' | 'resume'>;
   profiles: Pick<
     ProfileService,
     'list' | 'duplicate' | 'copyTo' | 'save' | 'delete' | 'fromMilestones'
