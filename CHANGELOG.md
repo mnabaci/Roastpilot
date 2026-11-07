@@ -6,6 +6,15 @@ All notable changes to Roastpilot are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-07
+
+### Fixed
+
+- **macOS:** the app opens again: 0.1.0 wasn't signed at all, so macOS called it damaged. 0.1.1 is
+  ad-hoc signed; macOS asks once, then Privacy & Security → Open Anyway.
+- **Security:** build tools updated for three security alerts (esbuild, glob, minimatch). Nothing
+  changes in the app.
+
 ## [0.1.0] - 2026-11-07
 
 The first release.

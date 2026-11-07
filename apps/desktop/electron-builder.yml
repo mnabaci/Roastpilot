@@ -8,6 +8,12 @@ files:
 npmRebuild: true
 mac:
   category: public.app-category.utilities
+  # Ad-hoc signed until there is an Apple Developer ID (ADR 0017). Apple silicon refuses an app with
+  # no signature at all ("damaged"); ad-hoc lets macOS offer Open Anyway instead. Hardened runtime
+  # would reject Electron's own frameworks under an ad-hoc signature, and only matters for
+  # notarisation.
+  identity: '-'
+  hardenedRuntime: false
   # The zip is what electron-updater reads (latest-mac.yml); the DMG is what people install.
   target:
     - dmg
