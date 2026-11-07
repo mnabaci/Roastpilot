@@ -22,6 +22,11 @@ function cAtS(curve: readonly CurvePoint[], tS: number): number {
   return from.c + ((tS - from.tS) / (to.tS - from.tS)) * (to.c - from.c);
 }
 
+/** The profile the builder starts from: the first curve profile, which follows a BT curve. */
+export function builderBase(profiles: readonly AutoProfile[]): AutoProfile | undefined {
+  return profiles.find((p) => p.phases.some((phase) => phase.heat.mode === 'follow'));
+}
+
 /** A curve profile's milestones, for the builder to start from. */
 export function milestonesFrom(profile: AutoProfile): Milestones {
   const { curve } = profile;

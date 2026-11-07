@@ -18,6 +18,7 @@ import {
   UpdateBeanSchema,
   ConnectTargetSchema,
   CopyProfileRequestSchema,
+  MilestonesSchema,
   IPC_CHANNELS,
   LogDaySchema,
   NewRoasterSchema,
@@ -58,7 +59,10 @@ export interface IpcDeps {
   history: Pick<HistoryService, 'list' | 'get' | 'delete' | 'saveResult' | 'setBean'>;
   roastFiles: RoastFiles;
   pilot: Pick<AutoPilot, 'chargeSoon' | 'outputRequested' | 'resume'>;
-  profiles: Pick<ProfileService, 'list' | 'duplicate' | 'copyTo' | 'save' | 'delete'>;
+  profiles: Pick<
+    ProfileService,
+    'list' | 'duplicate' | 'copyTo' | 'save' | 'delete' | 'fromMilestones'
+  >;
   roasters: Pick<
     RoasterService,
     'load' | 'add' | 'save' | 'delete' | 'setActive' | 'chooseConnection'
@@ -160,6 +164,9 @@ export function createIpcHandlers({
       const { id, roasterId } = CopyProfileRequestSchema.parse(payload);
       return profiles.copyTo(id, roasterId);
     }),
+    [IPC_CHANNELS.makeProfileFromMilestones]: handler((payload) =>
+      profiles.fromMilestones(MilestonesSchema.parse(payload)),
+    ),
     [IPC_CHANNELS.listBeans]: handler(() => beans.list()),
     [IPC_CHANNELS.addBean]: handler((payload) => beans.add(BeanFieldsSchema.parse(payload))),
     [IPC_CHANNELS.updateBean]: handler((payload) => beans.update(UpdateBeanSchema.parse(payload))),

@@ -57,6 +57,8 @@ const api: RoastpilotApi = {
   saveProfile: (profile) => ipcRenderer.invoke(IPC_CHANNELS.saveProfile, profile),
   deleteProfile: (id) => ipcRenderer.invoke(IPC_CHANNELS.deleteProfile, id),
   copyProfile: (request) => ipcRenderer.invoke(IPC_CHANNELS.copyProfile, request),
+  makeProfileFromMilestones: (milestones) =>
+    ipcRenderer.invoke(IPC_CHANNELS.makeProfileFromMilestones, milestones),
   listBeans: () => ipcRenderer.invoke(IPC_CHANNELS.listBeans),
   addBean: (fields) => ipcRenderer.invoke(IPC_CHANNELS.addBean, fields),
   updateBean: (update) => ipcRenderer.invoke(IPC_CHANNELS.updateBean, update),

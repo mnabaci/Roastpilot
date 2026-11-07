@@ -160,6 +160,10 @@ function setup() {
         return Promise.resolve(err({ kind: 'not-found', id }));
       },
       list: () => Promise.resolve([]),
+      fromMilestones: (milestones) => {
+        calls.push(['fromMilestones', milestones.chargeC]);
+        return Promise.resolve(err({ kind: 'storage-failed', message: 'x' }));
+      },
       duplicate: (id) => {
         calls.push(['duplicate', id]);
         return Promise.resolve(err({ kind: 'not-found', id }));
@@ -237,6 +241,7 @@ describe('createIpcHandlers', () => {
         IPC_CHANNELS.saveProfile,
         IPC_CHANNELS.deleteProfile,
         IPC_CHANNELS.copyProfile,
+        IPC_CHANNELS.makeProfileFromMilestones,
         IPC_CHANNELS.listRoasters,
         IPC_CHANNELS.addRoaster,
         IPC_CHANNELS.saveRoaster,
@@ -321,6 +326,27 @@ describe('roast, snapshot and settings handlers', () => {
       ['setActive', 2],
       ['copy', 'custom-1', 2],
     ]);
+  });
+
+  it('checks milestones at the boundary', async () => {
+    const { handlers, calls } = setup();
+    const milestones = {
+      chargeC: 180,
+      turningPoint: { tS: 64, c: 92 },
+      dryEnd: { tS: 305, c: 150 },
+      firstCrack: { tS: 573, c: 191 },
+      drop: { tS: 663, c: 197 },
+      extras: [],
+    };
+    await expect(
+      handlers[IPC_CHANNELS.makeProfileFromMilestones]?.({
+        ...milestones,
+        drop: { tS: 60, c: 197 },
+      }),
+    ).rejects.toThrow();
+    expect(calls).toEqual([]);
+    await handlers[IPC_CHANNELS.makeProfileFromMilestones]?.(milestones);
+    expect(calls).toEqual([['fromMilestones', 180]]);
   });
 
   it('checks bean requests at the boundary', async () => {

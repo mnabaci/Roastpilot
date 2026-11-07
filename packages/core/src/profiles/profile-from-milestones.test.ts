@@ -1,6 +1,6 @@
 import { PROFILE_SCHEMA_VERSION, type AutoProfile, type Milestones } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import { milestonesFrom, profileFromMilestones } from './profile-from-milestones';
+import { builderBase, milestonesFrom, profileFromMilestones } from './profile-from-milestones';
 
 const follow = (name: string, fanPct: number, next: AutoProfile['phases'][number]['next']) => ({
   name,
@@ -39,6 +39,18 @@ const BASE: AutoProfile = {
 
 const make = (milestones: Milestones) =>
   profileFromMilestones({ milestones, base: BASE, id: 'custom-1', name: 'Milestones' });
+
+describe('builderBase', () => {
+  it('starts from the first curve profile, skipping step profiles', () => {
+    const steps: AutoProfile = {
+      ...BASE,
+      id: 'light-steps',
+      phases: [{ name: 'Run', heat: { mode: 'fixed', pct: 60 }, fanPct: 30, next: { on: 'end' } }],
+    };
+    expect(builderBase([steps, BASE])?.id).toBe('light-curve');
+    expect(builderBase([steps])).toBeUndefined();
+  });
+});
 
 describe('milestonesFrom', () => {
   it('reads the milestones off a curve profile, to start from', () => {

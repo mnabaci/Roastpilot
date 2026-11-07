@@ -1,9 +1,15 @@
-import type { Logger, ProfileRepository } from '@roastpilot/core';
+import {
+  builderBase,
+  profileFromMilestones,
+  type Logger,
+  type ProfileRepository,
+} from '@roastpilot/core';
 import { ROASTER_MODELS } from '@roastpilot/drivers';
 import {
   err,
   ok,
   type AutoProfile,
+  type Milestones,
   type ProfileEntry,
   type ProfileError,
   type ProfileId,
@@ -21,6 +27,9 @@ export interface ProfileServiceDeps {
   activeRoaster: () => Pick<Roaster, 'id' | 'model'>;
   logger: Logger;
 }
+
+/** What the milestone builder calls its profiles: "Milestones", "Milestones 2" and so on. */
+const MILESTONES_NAME = 'Milestones';
 
 interface OwnProfile {
   profile: AutoProfile;
@@ -79,6 +88,17 @@ export class ProfileService {
       source: { kind: 'profile' as const, profileId: source.id },
     };
     return this.#store(copy, this.#deps.activeRoaster().id);
+  }
+
+  /** A new curve profile from the milestone builder (docs/spec/roast-control.md). */
+  fromMilestones(milestones: Milestones): Promise<Result<ProfileEntry, ProfileError>> {
+    const base = builderBase(this.#builtIns());
+    if (!base) throw new Error('A roaster model must ship a curve profile');
+    const taken = new Set(this.#ownHere().map((p) => p.name));
+    let name = MILESTONES_NAME;
+    for (let n = 2; taken.has(name); n++) name = `${MILESTONES_NAME} ${String(n)}`;
+    const profile = profileFromMilestones({ milestones, base, id: this.#deps.newId(), name });
+    return this.#store(profile, this.#deps.activeRoaster().id);
   }
 
   /** A copy on another roaster, which hasn't been roasted there yet. */
