@@ -9,6 +9,7 @@ import { RoastSetupPanel } from './RoastSetupPanel';
 import { FlowPanel } from './FlowPanel';
 import { FinishedRoastCard } from './FinishedRoastCard';
 import { useRunningPlan } from './use-active-profile';
+import { usePlanLines } from './use-plan-lines';
 import { OutputsPanel } from './OutputsPanel';
 import { RoastNumbersRow } from './RoastNumbersRow';
 import { useSensorNames } from '../../features/use-sensor-names';
@@ -92,6 +93,7 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
     ghostDetail && roasting && shown.bt !== undefined && numbers.elapsedS !== undefined
       ? ghostDelta(ghostDetail.samples, ghostDetail.dropTimeS, numbers.elapsedS, shown.bt)
       : undefined;
+  const planLines = usePlanLines(shown.bt, numbers.elapsedS);
   // Connected, or lost and reconnecting: either way the outputs stay, with dashes while lost.
   const hasRoaster = connected || lost;
   const idle = roast.phase === 'ready' || roast.phase === 'done';
@@ -156,7 +158,9 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
         <RoastNumbersRow
           numbers={shown}
           tempName={temp.name}
-          {...(delta ? { ghostLine: formatGhostDelta(delta) } : {})}
+          // In Auto the plan is what's followed, so it takes the ghost's place.
+          tempLine={planLines.temp ?? (delta ? formatGhostDelta(delta) : undefined)}
+          rorLine={planLines.ror}
         />
         <FinishedRoastCard />
         <RoastChart

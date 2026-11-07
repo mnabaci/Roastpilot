@@ -9,13 +9,16 @@ const clock = (s: number | undefined) =>
 export function RoastNumbersRow({
   numbers,
   tempName,
-  ghostLine,
+  tempLine,
+  rorLine,
 }: {
   numbers: RoastNumbers;
   /** The connected roaster's name for its temperature. */
   tempName: string;
-  /** How today compares with the ghost. */
-  ghostLine?: string;
+  /** How today compares with the plan in Auto, or else with the ghost. */
+  tempLine?: string | undefined;
+  /** The RoR the running Auto step aims for. */
+  rorLine?: string | undefined;
 }) {
   return (
     <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -24,13 +27,14 @@ export function RoastNumbersRow({
         value={numbers.bt === undefined ? undefined : formatNumber(numbers.bt, 1)}
         unit="°C"
         tone="heat"
-        {...(ghostLine ? { context: ghostLine } : {})}
+        {...(tempLine ? { context: tempLine } : {})}
       />
       <StatCard
         label="RoR"
         value={numbers.ror === undefined ? undefined : formatNumber(numbers.ror, 1)}
         unit="°C/min"
         tone="air"
+        {...(rorLine ? { context: rorLine } : {})}
       />
       <StatCard
         label="Time"
