@@ -257,6 +257,29 @@ describe('Tc4SkywalkerDriver', () => {
       await expect(run(driver.safeStop())).resolves.toBeUndefined();
     });
 
+    it('logs an error when the ESTOP fallback fails too', async () => {
+      const entries: LogEntry[] = [];
+      const clock = new ManualClock();
+      const transport = new FakeTransport(clock);
+      transport.reply = sketch();
+      const driver = new Tc4SkywalkerDriver({
+        transport,
+        clock,
+        logger: createLogger({ write: (e) => entries.push(e) }, 'driver'),
+      });
+      const done = driver.connect();
+      await clock.runFor(5000);
+      await done;
+      transport.drop();
+      const stop = driver.safeStop();
+      await clock.runFor(5000);
+      await stop;
+      expect(entries.map((e) => [e.level, e.event])).toEqual([
+        ['warn', 'driver.safe-stop-incomplete'],
+        ['error', 'driver.estop-failed'],
+      ]);
+    });
+
     it('waits behind a pending read instead of merging with it', async () => {
       const { transport, driver, run } = await connected();
       const reading = driver.read();

@@ -1,6 +1,6 @@
 import { ManualClock } from '@roastpilot/core';
 import { describe, expect, it } from 'vitest';
-import { COMMAND_GAP_MS, CommandQueue, REPLY_TIMEOUT_MS } from './command-queue';
+import { COMMAND_GAP_MS, CommandQueue, REPLY_TIMEOUT_MS, WRITE_TIMEOUT_MS } from './command-queue';
 import { FakeTransport } from './fake-transport';
 
 async function setup() {
@@ -38,6 +38,20 @@ describe('CommandQueue', () => {
     expect(await version).toEqual({ ok: false, error: { kind: 'no-reply', command: 'VERSION' } });
     await next;
     expect(transport.sent[1]?.atMs).toBe(REPLY_TIMEOUT_MS + COMMAND_GAP_MS);
+  });
+
+  it('gives up on a write the port never finishes, so later commands still go out', async () => {
+    const { clock, transport, queue } = await setup();
+    const write = transport.write.bind(transport);
+    let hang = true;
+    transport.write = (line) => (hang ? new Promise(() => undefined) : write(line));
+    const stuck = queue.send('OT1;100');
+    await clock.runFor(WRITE_TIMEOUT_MS);
+    expect(await stuck).toEqual({ ok: false, error: { kind: 'disconnected' } });
+    hang = false;
+    const next = queue.send('OT1;0');
+    await clock.runFor(100);
+    expect(await next).toEqual({ ok: true, value: undefined });
   });
 
   it('ignores lines nobody asked for', async () => {

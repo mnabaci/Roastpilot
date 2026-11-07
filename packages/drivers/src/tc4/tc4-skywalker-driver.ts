@@ -113,6 +113,9 @@ export class Tc4SkywalkerDriver implements RoasterDriver {
         if (estop.ok) {
           this.#sent.set('heater', 0);
           this.#sent.set('fan', 100);
+        } else {
+          // Only the sketch's 10 s watchdog can switch the heater off now.
+          this.#logger.error('driver.estop-failed', { error: estop.error });
         }
       }
     } catch (error) {

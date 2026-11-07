@@ -5,6 +5,8 @@ import { err, ok, type Result } from '@roastpilot/shared';
 export const COMMAND_GAP_MS = 20;
 /** Measured replies take under 150 ms; worst case ~750 ms when the roaster is silent. Inside the 3 s lost-connection rule. */
 export const REPLY_TIMEOUT_MS = 1500;
+/** A write the port never finishes counts as a lost connection, so it can't hold up a safe stop. */
+export const WRITE_TIMEOUT_MS = 1000;
 
 type ReplyListener = (line: string | null) => void;
 
@@ -79,8 +81,9 @@ export class CommandQueue {
   }
 
   async #writeNow(command: string): Promise<Result<void, DriverError>> {
-    const written = await this.#transport.write(command);
-    return written.ok ? ok(undefined) : err({ kind: 'disconnected' });
+    const timeout = this.#clock.delay(WRITE_TIMEOUT_MS).then(() => 'timeout' as const);
+    const written = await Promise.race([this.#transport.write(command), timeout]);
+    return written !== 'timeout' && written.ok ? ok(undefined) : err({ kind: 'disconnected' });
   }
 
   #takeReply(line: string | null): void {

@@ -1,6 +1,6 @@
 # packages/storage
 
-SQLite persistence: Drizzle schema, migrations and repositories (better-sqlite3).
+SQLite persistence: Drizzle schema, migrations and repositories, on Node's built-in `node:sqlite` (ADR 0010).
 
 May import: `core`, `shared`.
 
