@@ -5,3 +5,4 @@ coverage
 firmware
 **/storybook-static
 .remember
+.claude/worktrees
