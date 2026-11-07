@@ -32,6 +32,7 @@ export function Legend({
               {
                 heat: layer.dash ? 'border-heat' : 'bg-heat',
                 air: layer.dash ? 'border-air' : 'bg-air',
+                neutral: layer.dash ? 'border-ink-muted' : 'bg-ink-muted',
                 target: layer.dash ? 'border-target' : 'bg-target',
                 ghost: layer.dash ? 'border-ghost' : 'bg-ghost',
               }[layer.tone],
