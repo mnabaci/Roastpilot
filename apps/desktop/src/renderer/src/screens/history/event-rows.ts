@@ -10,6 +10,7 @@ const EVENT_LABEL: Readonly<Record<SavedEvent['kind'], string>> = {
   phase: 'Step',
   override: 'Override',
   'stall-guard': 'Stall guard',
+  mode: 'Mode',
   'first-crack': 'First crack',
   drop: 'Drop',
   'cool-end': 'Cool end',

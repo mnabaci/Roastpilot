@@ -631,6 +631,13 @@ describe('RoastScreen', () => {
       expect(screen.getByText('Needs calibration · stay close.')).toBeInTheDocument();
     });
 
+    it('says a profile needs calibration in the folded setup line', () => {
+      renderApp(<RoastScreen onConnect={onConnect} />, auto('ready'));
+      expect(screen.getByRole('button', { name: 'Change setup' })).toHaveTextContent(
+        /^Light · Steps · needs calibration · /,
+      );
+    });
+
     it('picks a profile', async () => {
       const { api } = renderApp(<RoastScreen onConnect={onConnect} />, auto('ready'));
       await openSetup();

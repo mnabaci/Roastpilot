@@ -1,4 +1,4 @@
-import { READY_ROAST, type Reading, type RoastState } from '@roastpilot/shared';
+import { AUTO_OFF, READY_ROAST, type Reading, type RoastState } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { DUMP_PROMPT_MS, roastStripData } from './roast-strip-data';
 
@@ -82,5 +82,37 @@ describe('roastStripData', () => {
       'BT',
     );
     expect(data?.numbers[0]).toEqual({ label: 'BT', value: '150.0 °C' });
+  });
+
+  describe('Auto', () => {
+    const preheat = roast({ phase: 'preheat', preheatAtMs: 0 });
+    const on = { ...AUTO_OFF, enabled: true };
+
+    it.each([
+      ['add-beans', null, 'Add beans · then Charge soon'],
+      ['charge-cut', 4, 'Heater off · beans in 0:04'],
+      ['beans-in', null, 'Beans in now · press Start'],
+    ] as const)(
+      'leads with the %s prompt, which waits for you',
+      (preheatStep, preheatLeftS, prompt) => {
+        const auto = { ...on, preheatStep, preheatLeftS };
+        expect(roastStripData(preheat, [], undefined, auto)?.prompt).toBe(prompt);
+      },
+    );
+
+    it('stays quiet while Auto climbs or holds, and with Auto off', () => {
+      expect(
+        roastStripData(preheat, [], undefined, { ...on, preheatStep: 'hold' })?.prompt,
+      ).toBeUndefined();
+      expect(roastStripData(preheat, [], undefined, AUTO_OFF)?.prompt).toBeUndefined();
+    });
+
+    it('says why Auto stopped while a roast runs', () => {
+      const roasting = roast({ phase: 'roasting', chargedAtMs: 0 });
+      const stopped = { ...on, stopReason: 'safety-stop' } as const;
+      expect(roastStripData(roasting, [], undefined, stopped)?.prompt).toBe(
+        'Safety stop · Auto stopped',
+      );
+    });
   });
 });
