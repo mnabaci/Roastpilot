@@ -66,6 +66,8 @@ describe('AboutSection', () => {
   it('in development there is no What’s new: there is no release', () => {
     renderApp(<AboutSection />, { version: '0.0.0', update: { state: 'off' } });
     expect(screen.queryByRole('button', { name: "What's new" })).toBeNull();
+    expect(screen.getByText('Development build')).toBeInTheDocument();
+    expect(screen.queryByText('Release notes on GitHub')).toBeNull();
   });
 
   it('Check for updates asks main; it is disabled while checking', async () => {

@@ -16,6 +16,8 @@ export function AboutSection() {
   const status = useUpdates((s) => s.status);
   const roasting = useRoast((s) => isRoastRunning(s.roast));
   const { line, action, busy = false } = updateCopy(status);
+  // A development build has no release page; neither does a version not yet known.
+  const notes = version !== null && status?.state !== 'off';
 
   const openPage = (page: ReleasePage) => {
     run(
@@ -55,10 +57,10 @@ export function AboutSection() {
 
   return (
     <SettingCard title="About">
-      <SettingRow name="Version" hint="Release notes on GitHub">
+      <SettingRow name="Version" hint={notes ? 'Release notes on GitHub' : 'Development build'}>
         <div className="flex items-center gap-3">
           <span className="text-body font-semibold tabular-nums">{version ?? '–'}</span>
-          {version !== null && status?.state !== 'off' ? (
+          {notes ? (
             <Button
               variant="ghost"
               size="sm"
