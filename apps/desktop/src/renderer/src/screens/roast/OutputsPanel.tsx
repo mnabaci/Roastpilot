@@ -7,6 +7,8 @@ import { useRun } from '../../features/use-run';
 import { useDeps } from '../../app/app-context';
 import { useAuto, useConnection, useRoast, useSafety, useSettings } from '../../stores/use-stores';
 import { SwitchCell } from './SwitchCell';
+import { outputsHint } from './outputs-hint';
+import { isAutoDriven } from '../../lib/roast-phases';
 
 /**
  * Heater and fan sliders (and drum, when it has a speed), then one row of switches: drum, filter
@@ -31,7 +33,7 @@ export function OutputsPanel() {
   const run = useRun();
   const auto = useAuto((s) => s.status);
   // Auto drives both outputs from Preheat until Drop; outside that the sliders are simply yours.
-  const driving = auto.enabled && ['preheat', 'roasting', 'development'].includes(phase);
+  const driving = auto.enabled && isAutoDriven(phase);
   const resume = () => {
     run('auto.resume-failed', async () => {
       const result = await api.autoResume();
@@ -47,17 +49,15 @@ export function OutputsPanel() {
   const drum = useOutput('drum');
   const filter = useOutput('filter');
   const cooling = useOutput('cooling');
-  const hint = locked
-    ? 'Heater locked · acknowledge above'
-    : driving && auto.stopReason !== null
-      ? 'Auto stopped · heater and fan are yours'
-      : heater.value > 0 && drum.value === 0
-        ? 'Drum is off'
-        : !access.heater && connected
-          ? phase === 'cooling'
-            ? 'Cooling beans · heater off, fan at 100%'
-            : 'Heater waits for Preheat'
-          : undefined;
+  const hint = outputsHint({
+    locked,
+    connected,
+    autoStopped: driving && auto.stopReason !== null,
+    phase,
+    access,
+    heaterPct: heater.value,
+    drumPct: drum.value,
+  });
   return (
     <section aria-label="Outputs" className="flex flex-col gap-5 rounded-xl bg-surface px-5 py-4.5">
       {has('heater') ? (

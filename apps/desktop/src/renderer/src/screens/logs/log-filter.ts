@@ -10,11 +10,9 @@ export interface LogFilter {
 /** The viewer opens on problems (docs/spec/errors-and-logging.md, Viewer). */
 export const DEFAULT_LEVELS: ReadonlySet<LogLevel> = new Set(['error', 'warn']);
 
-const contextText = (record: LogRecord) =>
+/** One line of context for the list, and what the search looks through. */
+export const contextLine = (record: LogRecord): string =>
   record.context === undefined ? '' : JSON.stringify(record.context);
-
-/** One line of context for the list. */
-export const contextLine = contextText;
 
 /** The records that pass the filter, newest first. */
 export function filterLogs(records: readonly LogRecord[], filter: LogFilter): LogRecord[] {
@@ -24,7 +22,7 @@ export function filterLogs(records: readonly LogRecord[], filter: LogFilter): Lo
       (r) =>
         filter.levels.has(r.level) &&
         (filter.scopes.size === 0 || filter.scopes.has(r.scope)) &&
-        (text === '' || `${r.event} ${r.scope} ${contextText(r)}`.toLowerCase().includes(text)),
+        (text === '' || `${r.event} ${r.scope} ${contextLine(r)}`.toLowerCase().includes(text)),
     )
     .reverse();
 }

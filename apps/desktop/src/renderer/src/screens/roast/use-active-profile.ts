@@ -1,6 +1,7 @@
 import { plannedCurve, withSoakTime } from '@roastpilot/core';
 import type { CurvePoint, ProfileEntry } from '@roastpilot/shared';
 import { useMemo } from 'react';
+import { isAutoDriven } from '../../lib/roast-phases';
 import { useAuto, useRoast, useSettings } from '../../stores/use-stores';
 
 /** The chosen profile, or the first one when it is gone; undefined before main has listed them. */
@@ -20,7 +21,7 @@ export function useActiveProfile(): ProfileEntry | undefined {
 /** Auto is running a profile, Preheat to Drop: it stays the one you started with. */
 export function useProfileLocked(): boolean {
   const auto = useAuto((s) => s.status.enabled);
-  const driving = useRoast((s) => ['preheat', 'roasting', 'development'].includes(s.roast.phase));
+  const driving = useRoast((s) => isAutoDriven(s.roast.phase));
   return auto && driving;
 }
 

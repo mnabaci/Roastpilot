@@ -2,6 +2,7 @@ import type { Logger } from '@roastpilot/core';
 import { type Reading, DEFAULT_SETTINGS, READY_ROAST } from '@roastpilot/shared';
 import { describe, expect, it, vi } from 'vitest';
 import { fakeApi } from '../test/render-app';
+import { BUILT_INS } from '../test/profiles';
 import { createStores } from '../stores/stores';
 import { syncWithMain } from './sync-with-main';
 
@@ -118,5 +119,32 @@ describe('syncWithMain', () => {
     changed({ id: 9, deleted: false, current: true });
     roast(READY_ROAST);
     expect(current()).toBeNull();
+  });
+
+  it('keeps the newest profile list when an older answer arrives late', async () => {
+    let roastersChanged: (roasters: never[]) => void = () => undefined;
+    const answers: ((profiles: typeof BUILT_INS) => void)[] = [];
+    const api = fakeApi({
+      onRoasters: vi.fn((listener: typeof roastersChanged) => {
+        roastersChanged = listener;
+        return () => undefined;
+      }),
+      listProfiles: vi.fn(
+        () =>
+          new Promise<typeof BUILT_INS>((resolve) => {
+            answers.push(resolve);
+          }),
+      ),
+    });
+    const stores = createStores();
+    syncWithMain(api, stores, logger());
+    roastersChanged([]);
+    // The newer list (after the roaster switch) lands first, then the snapshot's older one.
+    answers[1]?.(BUILT_INS.slice(1));
+    answers[0]?.(BUILT_INS);
+    await vi.waitFor(() => {
+      expect(stores.sync.getState().ready).toBe(true);
+    });
+    expect(stores.auto.getState().profiles).toEqual(BUILT_INS.slice(1));
   });
 });

@@ -26,6 +26,8 @@ type SyncApi = Pick<
  * happens in between is lost (the snapshot already includes it).
  */
 export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsubscribe {
+  // Counts profile lists asked for, so an answer that arrives after a newer one is dropped.
+  let profilesAsked = 0;
   const stops = [
     api.onReading((reading) => {
       stores.roast.setState((data) => addReading(data, reading));
@@ -57,10 +59,11 @@ export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsu
     api.onRoasters((roasters) => {
       stores.roasters.setState({ roasters });
       // Profiles belong to a roaster, so the list follows the active one.
+      const asked = ++profilesAsked;
       api
         .listProfiles()
         .then((profiles) => {
-          stores.auto.setState({ profiles });
+          if (asked === profilesAsked) stores.auto.setState({ profiles });
         })
         .catch((error: unknown) => {
           logger.error('sync.profiles-failed', { error: serializeError(error) });
@@ -79,7 +82,10 @@ export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsu
       stores.roast.setState({ roast: snapshot.roast, readings: [...snapshot.readings] });
       stores.safety.setState(snapshot.safety, true);
       stores.settings.setState({ settings });
-      stores.auto.setState({ status: snapshot.auto, profiles });
+      // A roaster switched meanwhile has asked for its own list; this one would be stale.
+      stores.auto.setState(
+        profilesAsked === 0 ? { status: snapshot.auto, profiles } : { status: snapshot.auto },
+      );
       stores.roasters.setState({ roasters });
       stores.beans.setState({
         beans,
