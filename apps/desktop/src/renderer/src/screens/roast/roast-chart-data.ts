@@ -140,7 +140,7 @@ export function roastChartData(
     points: withBreaks(rorPoints(roastingReadings(roast, readings), toT), breaks),
   };
   // The outputs strip (docs/spec/ui.md): what you set, as steps under the curve.
-  const output = (id: string, label: string, tone: 'heat' | 'air'): ChartLayer => ({
+  const output = (id: string, label: string, tone: 'heat' | 'air' | 'neutral'): ChartLayer => ({
     id,
     label,
     axis: 'output',
@@ -149,6 +149,7 @@ export function roastChartData(
     step: true,
     points: withBreaks(channelPoints(readings, id, toT), breaks),
   });
+  const drum = output('drum', 'Drum', 'neutral');
   const markers = roast.events.flatMap((event): ChartMarker[] => {
     const label = MARKER_LABELS[event.kind];
     return label ? [{ id: event.kind, label, t: toT(event.atMs), tone: 'ink' }] : [];
@@ -175,7 +176,17 @@ export function roastChartData(
       ror,
       output('heater', 'Heater', 'heat'),
       output('fan', 'Fan', 'air'),
+      // A drum that only goes on and off reads 1 for on: drawn at 100%, like a full-speed drum.
+      ...(drum.points.some((p) => p.v !== null) ? [onOffAsPercent(drum)] : []),
     ],
     markers,
   };
+}
+
+/** An on/off output (every value 0 or 1) on the 0–100% axis; a speed in % stays as it is. */
+function onOffAsPercent(layer: ChartLayer): ChartLayer {
+  const onOff = layer.points.every((p) => p.v === null || p.v === 0 || p.v === 1);
+  return onOff
+    ? { ...layer, points: layer.points.map((p) => (p.v === null ? p : { ...p, v: p.v * 100 })) }
+    : layer;
 }

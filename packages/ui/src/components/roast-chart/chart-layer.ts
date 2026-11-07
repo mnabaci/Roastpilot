@@ -16,7 +16,8 @@ export interface ChartLayer {
   label: string;
   /** Left axis in °C, the right axis in °C/min, or `output` (0–100 %) in the strip under the chart. */
   axis: 'temperature' | 'ror' | 'output';
-  tone: 'heat' | 'air' | 'target' | 'ghost';
+  /** `neutral`: the drum, neither heat nor air (docs/spec/ui.md, Outputs). */
+  tone: 'heat' | 'air' | 'neutral' | 'target' | 'ghost';
   /** Line width in px (design system: live 3.5, others 2). */
   width: number;
   /** Dash pattern in px, e.g. [6, 6] for the target. */
@@ -38,6 +39,7 @@ export interface ChartMarker {
 export const TONE_TOKEN: Readonly<Record<ChartLayer['tone'] | ChartMarker['tone'], string>> = {
   heat: '--heat',
   air: '--air',
+  neutral: '--ink-muted',
   target: '--target',
   ghost: '--ghost',
   ink: '--ink',
