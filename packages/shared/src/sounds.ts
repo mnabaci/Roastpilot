@@ -48,6 +48,11 @@ export const DEFAULT_STEP_SOUNDS: Readonly<Record<SoundStep, StepSound>> = {
   'auto-stopped': { voice: 'alert', volumePct: 90, repeat: 'thrice' },
 };
 
+/** Whether two step sounds are set the same: voice, volume and repeat. */
+export function sameStepSound(a: StepSound, b: StepSound): boolean {
+  return a.voice === b.voice && a.volumePct === b.volumePct && a.repeat === b.repeat;
+}
+
 /** One step's sound; a bad voice, volume or repeat falls back to that step's default on its own. */
 const stepSound = (step: SoundStep) => {
   const fallback = DEFAULT_STEP_SOUNDS[step];
