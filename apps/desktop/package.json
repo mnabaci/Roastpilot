@@ -5,6 +5,7 @@
   "private": true,
   "type": "module",
   "description": "The Roastpilot Electron app (main, preload, renderer).",
+  "license": "GPL-3.0-or-later",
   "scripts": {
     "postinstall": "install-electron",
     "predev": "electron-builder install-app-deps",

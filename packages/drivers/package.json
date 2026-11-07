@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "RoasterDriver and Transport implementations: Skywalker TC4 adapter, simulator, serial transport.",
+  "license": "GPL-3.0-or-later",
   "exports": {
     ".": "./src/index.ts"
   },

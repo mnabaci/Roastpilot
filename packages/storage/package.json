@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "SQLite persistence: Drizzle schema, migrations and repositories (node:sqlite).",
+  "license": "GPL-3.0-or-later",
   "exports": {
     ".": "./src/index.ts"
   },
