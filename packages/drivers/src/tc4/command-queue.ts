@@ -1,4 +1,10 @@
-import type { Clock, DriverError, Transport } from '@roastpilot/core';
+import {
+  silentLogger,
+  type Clock,
+  type DriverError,
+  type Logger,
+  type Transport,
+} from '@roastpilot/core';
 import { err, ok, type Result } from '@roastpilot/shared';
 
 /** The sketch keeps every line; a short gap just keeps writes apart (docs/spec/hardware.md). */
@@ -8,7 +14,15 @@ export const REPLY_TIMEOUT_MS = 1500;
 /** A write the port never finishes counts as a lost connection, so it can't hold up a safe stop. */
 export const WRITE_TIMEOUT_MS = 1000;
 
-type ReplyListener = (line: string | null) => void;
+/** Says whether a line is the reply to the request waiting for it. */
+export type ReplyMatcher = (line: string) => boolean;
+
+interface PendingRequest {
+  command: string;
+  accepts: ReplyMatcher;
+  /** A matching line, or null when the port closed. */
+  resolve: (line: string | null) => void;
+}
 
 /**
  * Sends one command at a time: the next goes out only after the gap, or as soon as the previous
@@ -19,11 +33,13 @@ export class CommandQueue {
   readonly #clock: Clock;
   #tail: Promise<unknown> = Promise.resolve();
   #nextWriteAtMs = Number.NEGATIVE_INFINITY;
-  #awaitingReply: ReplyListener | undefined;
+  readonly #logger: Logger;
+  #pending: PendingRequest | undefined;
 
-  constructor(transport: Transport, clock: Clock) {
+  constructor(transport: Transport, clock: Clock, logger: Logger = silentLogger) {
     this.#transport = transport;
     this.#clock = clock;
+    this.#logger = logger;
     transport.onLine((line) => {
       this.#takeReply(line);
     });
@@ -42,24 +58,30 @@ export class CommandQueue {
     });
   }
 
-  /** Sends a command and resolves with its one-line reply. */
-  request(command: string): Promise<Result<string, DriverError>> {
+  /**
+   * Sends a command and resolves with the first line `accepts` takes as its reply. Other lines
+   * (another command's late reply, noise) are dropped and the request keeps waiting until its
+   * own reply or the timeout.
+   */
+  request(command: string, accepts: ReplyMatcher): Promise<Result<string, DriverError>> {
     return this.#enqueue(async () => {
       await this.#waitForGap();
       // Listen only from the moment of writing, so a stray line during the gap isn't taken as the reply.
       const reply = new Promise<string | null>((resolve) => {
-        this.#awaitingReply = resolve;
+        this.#pending = { command, accepts, resolve };
       });
       const written = await this.#writeNow(command);
       if (!written.ok) {
-        this.#awaitingReply = undefined;
+        this.#pending = undefined;
         return written;
       }
       const timeout = this.#clock.delay(REPLY_TIMEOUT_MS).then(() => 'timeout' as const);
       const outcome = await Promise.race([reply, timeout]);
-      this.#awaitingReply = undefined;
+      this.#pending = undefined;
       if (outcome === 'timeout') {
-        // The sketch may still be busy; keep the gap so a late reply can't merge with the next command.
+        // The gap after a timeout is also a quarantine: nobody listens, so a late reply landing in
+        // it is dropped. The matcher can't tell a late READ reply from the next READ's own (same
+        // shape), so this gap is the only guard for a repeat of the same command.
         this.#nextWriteAtMs = this.#clock.now() + COMMAND_GAP_MS;
         return err({ kind: 'no-reply', command });
       }
@@ -87,9 +109,23 @@ export class CommandQueue {
   }
 
   #takeReply(line: string | null): void {
-    const listener = this.#awaitingReply;
-    this.#awaitingReply = undefined;
-    // Lines nobody asked for (startup noise, late replies) are dropped.
-    listener?.(line);
+    const pending = this.#pending;
+    if (line === null) {
+      this.#pending = undefined;
+      pending?.resolve(null);
+      return;
+    }
+    if (!pending) {
+      // Startup noise, or a late reply arriving between requests.
+      this.#logger.debug('driver.unrequested-line-dropped', { line });
+      return;
+    }
+    if (!pending.accepts(line)) {
+      // Another command's late reply: taking it would hand this request the wrong data.
+      this.#logger.debug('driver.unmatched-line-dropped', { command: pending.command, line });
+      return;
+    }
+    this.#pending = undefined;
+    pending.resolve(line);
   }
 }

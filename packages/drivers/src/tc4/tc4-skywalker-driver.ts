@@ -18,7 +18,13 @@ import {
 } from '@roastpilot/shared';
 import { SKYWALKER_CHANNELS, SKYWALKER_PROTOCOL_VERSION, SKYWALKER_SAFE_STOP } from '../skywalker';
 import { CommandQueue } from './command-queue';
-import { parseReadReply, parseVersionReply, type ReadReply } from './replies';
+import {
+  isReadReplyShape,
+  isVersionReplyShape,
+  parseReadReply,
+  parseVersionReply,
+  type ReadReply,
+} from './replies';
 
 /** Sketch command for each output channel (docs/spec/hardware.md, Commands). */
 const OUTPUT_COMMANDS: Readonly<Record<string, string>> = {
@@ -53,8 +59,8 @@ export class Tc4SkywalkerDriver implements RoasterDriver {
   constructor(options: Tc4SkywalkerDriverOptions) {
     this.#transport = options.transport;
     this.#clock = options.clock;
-    this.#queue = new CommandQueue(options.transport, options.clock);
     this.#logger = options.logger ?? silentLogger;
+    this.#queue = new CommandQueue(options.transport, options.clock, this.#logger);
     for (const channel of this.channels) {
       if (channel.kind === 'output') {
         this.#outputs.set(channel.id, channel);
@@ -133,7 +139,7 @@ export class Tc4SkywalkerDriver implements RoasterDriver {
     const units = await this.#queue.send('UNITS;C');
     if (!units.ok) return units;
 
-    const version = await this.#queue.request('VERSION');
+    const version = await this.#queue.request('VERSION', isVersionReplyShape);
     if (!version.ok) {
       return version.error.kind === 'no-reply'
         ? err({ kind: 'version-mismatch', expected: SKYWALKER_PROTOCOL_VERSION, actual: null })
@@ -154,7 +160,7 @@ export class Tc4SkywalkerDriver implements RoasterDriver {
   }
 
   async #readOnce(): Promise<Result<{ reply: ReadReply; line: string }, DriverError>> {
-    const answer = await this.#queue.request('READ');
+    const answer = await this.#queue.request('READ', isReadReplyShape);
     if (!answer.ok) return answer;
     const parsed = parseReadReply(answer.value);
     return parsed.ok ? ok({ reply: parsed.value, line: answer.value }) : parsed;

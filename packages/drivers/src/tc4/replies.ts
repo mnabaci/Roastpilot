@@ -29,3 +29,11 @@ export function parseVersionReply(line: string): Result<number, DriverError> {
   const text = line.trim();
   return /^\d+$/.test(text) ? ok(Number(text)) : err({ kind: 'bad-reply', line });
 }
+
+/**
+ * Which lines answer which request. Loose on purpose: a garbled reply of the right shape still
+ * reaches its parser and becomes a `bad-reply`; only another command's reply is turned away.
+ * READ replies always hold commas, VERSION replies never do.
+ */
+export const isReadReplyShape = (line: string): boolean => line.includes(',');
+export const isVersionReplyShape = (line: string): boolean => !line.includes(',');
