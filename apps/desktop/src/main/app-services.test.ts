@@ -304,7 +304,7 @@ describe('createAppServices', () => {
       await clock.runFor(3000);
       services.session.emergencyStop();
       await clock.runFor(1000);
-      expect(services.snapshot().auto.stopped).toBe(true);
+      expect(services.snapshot().auto.stopReason).toBe('safety-stop');
       const sent = outputs(sim);
       await clock.runFor(5000);
       expect(sent()).not.toContain('heater');
@@ -318,7 +318,7 @@ describe('createAppServices', () => {
       await services.roast.act('preheat');
       await clock.runFor(2000);
       await services.session.disconnect();
-      expect(services.snapshot().auto.stopped).toBe(true);
+      expect(services.snapshot().auto.stopReason).toBe('disconnected');
     });
   });
 

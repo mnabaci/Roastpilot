@@ -121,7 +121,7 @@ export class ManualRoast {
   }
 
   /** Adds what Auto did to the roast's events, so it is saved like any other (data-model.md). */
-  note(kind: 'dry-end' | 'phase' | 'override' | 'stall-guard', detail?: string): void {
+  note(kind: 'dry-end' | 'phase' | 'override' | 'stall-guard' | 'mode', detail?: string): void {
     const event = this.#event(kind, this.#deps.clock.now());
     const noted = detail === undefined ? event : { ...event, detail };
     this.#set({ ...this.#state, events: [...this.#state.events, noted] });

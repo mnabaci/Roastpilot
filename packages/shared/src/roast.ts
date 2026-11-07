@@ -36,6 +36,8 @@ export const RoastEventSchema = z.object({
     'phase',
     'override',
     'stall-guard',
+    // Auto turned on or off mid-roast; `detail` is auto or manual.
+    'mode',
   ]),
   atMs: z.number(),
   /** Bean temperature when it happened; null if there was no reading yet. */

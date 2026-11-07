@@ -1,10 +1,12 @@
 import {
   DEFAULT_TEMP_NAMES,
+  type AutoStatus,
   type Reading,
   type RoastPhase,
   type RoastState,
 } from '@roastpilot/shared';
 import { formatClock, formatNumber, type RoastStripProps } from '@roastpilot/ui';
+import { STOP_REASON } from '../screens/roast/auto-flow';
 import { roastNumbers } from '../screens/roast/roast-numbers';
 import { PHASE_LABEL } from './phase-label';
 
@@ -16,6 +18,25 @@ const RUNNING: readonly RoastPhase[] = ['preheat', 'roasting', 'development', 'c
 const clock = (s: number | undefined) => (s === undefined ? '–' : formatClock(s));
 const percent = (v: number | undefined) => (v === undefined ? undefined : `${String(v)} %`);
 
+const DRIVEN: readonly RoastPhase[] = ['preheat', 'roasting', 'development'];
+
+/** Auto's steps that wait for you lead the strip, like Dump beans: the hold's limit is running. */
+function autoPrompt(phase: RoastPhase, auto: AutoStatus | undefined): string | undefined {
+  if (!auto?.enabled || !DRIVEN.includes(phase)) return undefined;
+  if (auto.stopReason !== null) return `${STOP_REASON[auto.stopReason]} · Auto stopped`;
+  if (phase !== 'preheat') return undefined;
+  switch (auto.preheatStep) {
+    case 'add-beans':
+      return 'Add beans · then Charge soon';
+    case 'charge-cut':
+      return `Heater off · beans in ${clock(auto.preheatLeftS ?? undefined)}`;
+    case 'beans-in':
+      return 'Beans in now · press Start';
+    default:
+      return undefined;
+  }
+}
+
 /**
  * What the roast strip shows on the other screens (docs/spec/ui.md, Roast strip), or undefined
  * when no roast is running and the drum isn't cooling.
@@ -24,6 +45,7 @@ export function roastStripData(
   roast: RoastState,
   readings: readonly Reading[],
   tempShort: string = DEFAULT_TEMP_NAMES.short,
+  auto?: AutoStatus,
 ): Omit<RoastStripProps, 'onOpen' | 'className'> | undefined {
   const coolingRoaster = roast.roasterCoolToC !== null;
   if (!RUNNING.includes(roast.phase) && !coolingRoaster) return undefined;
@@ -58,5 +80,9 @@ export function roastStripData(
       numbers: [temp, fan],
     };
   const time = roast.phase === 'preheat' ? n.preheatS : n.elapsedS;
-  return { lead: `${PHASE_LABEL[roast.phase]} · ${clock(time)}`, numbers };
+  return {
+    lead: `${PHASE_LABEL[roast.phase]} · ${clock(time)}`,
+    prompt: autoPrompt(roast.phase, auto),
+    numbers,
+  };
 }

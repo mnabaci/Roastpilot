@@ -14,7 +14,8 @@ import type {
 
 /** What a saved roast row holds besides its samples and events; set as the roast goes on. */
 export type RoastSummaryPatch = Partial<
-  Pick<RoastSummary, 'endedAt' | 'fcTimeS' | 'dropTimeS' | 'dropTemp'>
+  Pick<RoastSummary, 'endedAt' | 'fcTimeS' | 'dropTimeS' | 'dropTemp'> &
+    Pick<RoastPlan, 'mode' | 'profile'>
 >;
 
 /** How a roast runs, read at charge. */

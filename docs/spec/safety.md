@@ -19,15 +19,17 @@ The app never claims it can be left alone. The roast screen says to stay with th
 
 Auto goes through the same `SafetyGuardedDriver` as every other command, so it can't get past the rules or the heater lock.
 
-| When                                           | Auto does                                                                                                   |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Any safe stop: a rule, Emergency stop or sleep | Hands heater and fan to manual at once and sends nothing more. After you acknowledge, you press Resume auto |
-| Lost connection, or a disconnect               | The same. Readings coming back restore the phase's outputs (heater 0), not Auto                             |
-| Auto itself fails: an error, or Drop refused   | Sets a heater it owns to 0 once, then the same: both outputs manual, until Resume auto                      |
-| Stalled temperature (alarm only)               | Keeps running; you decide                                                                                   |
-| A heater or fan command fails                  | Logged, tried again at the next change or second; the lost-connection rule covers a roaster that stopped    |
-| You touch heater or fan                        | That output goes manual, the other stays on Auto, until Resume auto                                         |
-| Resume auto                                    | Refused while the heater is locked; otherwise picks up the current phase from the live reading              |
+| When                                                              | Auto does                                                                                                                             |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Any safe stop: a rule, Emergency stop or sleep                    | Hands heater and fan to manual at once and sends nothing more. After you acknowledge, you press Resume auto                           |
+| Lost connection, or a disconnect                                  | The same. Readings coming back restore the phase's outputs (heater 0), not Auto                                                       |
+| Auto itself fails: an error, or Drop refused                      | Sets a heater it owns to 0, then the same: both outputs manual, until Resume auto                                                     |
+| Heater 0 from Auto fails (Drop, a preheat limit, its own failure) | Sent again on every reading until the roaster takes it, or you set the heater yourself                                                |
+| A command never answers                                           | Later readings are skipped (one at a time), and logged once after 5 s; the driver's reply timeout and the lost-connection rule end it |
+| Stalled temperature (alarm only)                                  | Keeps running; you decide                                                                                                             |
+| A heater or fan command fails                                     | Logged, tried again at the next change or second; the lost-connection rule covers a roaster that stopped                              |
+| You touch heater or fan                                           | That output goes manual, the other stays on Auto, until Resume auto                                                                   |
+| Resume auto                                                       | Refused while the heater is locked; otherwise picks up the current phase from the live reading                                        |
 
 Auto never turns the heater back on by itself after a stop. Time limits on the preheat are in [roast-control.md](roast-control.md). The app still never claims it can be left alone: the roast screen says to stay with the roaster in Auto too.
 

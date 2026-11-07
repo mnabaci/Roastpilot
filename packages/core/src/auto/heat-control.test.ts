@@ -32,6 +32,7 @@ const ON_COURSE: HeatInput = {
   btC: 150,
   ror: 12,
   stallTripped: false,
+  firstCracked: false,
 };
 
 describe('neededRor', () => {
@@ -103,6 +104,45 @@ describe('target', () => {
     const control = heatControlFor(TARGET, TUNING, CURVE);
     expect(control.next({ ...ON_COURSE, ror: -40, stallTripped: true })).toBe(95);
     expect(control.next({ ...ON_COURSE, ror: 80, stallTripped: true })).toBe(45);
+  });
+
+  it('aims for at least the stall guard RoR until your first-crack tap', () => {
+    // Development, 188 °C with 50 s left: the step alone would aim for 3.6 °C/min.
+    const development = {
+      mode: 'target',
+      pct: 40,
+      endC: 191,
+      durationS: 94,
+      rorMin: 3,
+      rorMax: 7,
+    } as const;
+    const late = { ...ON_COURSE, btC: 188, phaseElapsedS: 44, ror: 5 };
+    expect(heatControlFor(development, TUNING, CURVE).next(late)).toBe(40);
+    const afterTap = heatControlFor(development, TUNING, CURVE);
+    expect(afterTap.next({ ...late, firstCracked: true })).toBeCloseTo(40 + 2 * (3.6 - 5));
+  });
+
+  it('is maxed only at its correction limit or full heat', () => {
+    const control = heatControlFor(TARGET, TUNING, CURVE);
+    control.next(ON_COURSE);
+    expect(control.maxed).toBe(false);
+    control.next({ ...ON_COURSE, ror: -40 });
+    expect(control.maxed).toBe(true);
+    control.next({ ...ON_COURSE, ror: -40, stallTripped: true });
+    expect(control.maxed).toBe(true);
+    const hot = heatControlFor({ ...TARGET, pct: 95 }, TUNING, CURVE);
+    hot.next(ON_COURSE);
+    hot.next({ ...ON_COURSE, ror: 9 });
+    expect(hot.maxed).toBe(true);
+  });
+
+  it('a fixed step has no heat to add; a follow phase is maxed at 100%', () => {
+    expect(heatControlFor({ mode: 'fixed', pct: 50 }, TUNING, CURVE).maxed).toBe(true);
+    const follow = heatControlFor({ mode: 'follow', pct: 60 }, TUNING, CURVE);
+    follow.next({ ...ON_COURSE, elapsedS: 300, btC: 250 });
+    expect(follow.maxed).toBe(false);
+    follow.next({ ...ON_COURSE, elapsedS: 300, btC: 100 });
+    expect(follow.maxed).toBe(true);
   });
 
   it('holds its last value with no RoR or temperature', () => {

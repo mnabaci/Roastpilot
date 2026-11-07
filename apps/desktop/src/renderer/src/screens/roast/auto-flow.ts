@@ -1,8 +1,64 @@
-import type { AutoProfile, AutoStatus, PreheatStep, RoastState } from '@roastpilot/shared';
+import type {
+  AutoProfile,
+  AutoStatus,
+  AutoStopReason,
+  PreheatStep,
+  RoastState,
+} from '@roastpilot/shared';
 import { formatClock } from '@roastpilot/ui';
 import { END_ROAST, type FlowButton, type FlowStep } from './flow-step';
 
 const START: FlowButton = { action: 'start', label: 'Beans in · Start' };
+const FIRST_CRACK: FlowButton = { action: 'first-crack', label: 'First crack' };
+const DROP: FlowButton = { action: 'drop', label: 'Drop now' };
+
+/** Why Auto stopped, in a few words (docs/spec/roast-control.md, Auto mode). */
+export const STOP_REASON: Readonly<Record<AutoStopReason, string>> = {
+  'preheat-limit': 'Preheat ran out',
+  'heater-locked': 'Heater locked',
+  'safety-stop': 'Safety stop',
+  lost: 'Connection lost',
+  disconnected: 'Roaster disconnected',
+  'tick-failed': 'Auto failed',
+};
+
+/** What the screen knows that Auto's status doesn't: the clock and the heater. */
+export interface AutoFlowLive {
+  /** Seconds since your first-crack tap. */
+  developmentS?: number | undefined;
+  heaterPct?: number | undefined;
+}
+
+const DRIVEN: readonly RoastState['phase'][] = ['preheat', 'roasting', 'development'];
+
+/** Auto stopped: why, and what is yours now. Never Start after a preheat ran out: the drum cools. */
+function stoppedStep(roast: RoastState, reason: AutoStopReason): FlowStep | undefined {
+  const why = STOP_REASON[reason];
+  if (roast.phase === 'preheat') {
+    return reason === 'preheat-limit'
+      ? { stop: END_ROAST, hint: `${why} · heater off · end, then Preheat again.` }
+      : { secondary: START, stop: END_ROAST, hint: `${why} · heater and fan are yours.` };
+  }
+  if (roast.phase === 'roasting') {
+    return { primary: FIRST_CRACK, secondary: DROP, stop: END_ROAST, hint: `${why} · you drop.` };
+  }
+  if (roast.phase === 'development') {
+    return { primary: DROP, stop: END_ROAST, hint: `${why} · you drop.` };
+  }
+  return undefined;
+}
+
+/** Auto turned off mid-roast: the heater stays where it was, and Drop is yours. */
+function switchedOffStep(roast: RoastState, heaterPct: number | undefined): FlowStep | undefined {
+  const lastMode = roast.events.findLast((e) => e.kind === 'mode');
+  if (lastMode?.detail !== 'manual') return undefined;
+  const heater = heaterPct === undefined ? 'heater stays' : `heater stays ${String(heaterPct)} %`;
+  const hint = `Manual · ${heater} · you drop.`;
+  if (roast.phase === 'roasting') {
+    return { primary: FIRST_CRACK, secondary: DROP, stop: END_ROAST, hint };
+  }
+  return roast.phase === 'development' ? { primary: DROP, stop: END_ROAST, hint } : undefined;
+}
 
 /** What each preheat step asks of you; Start stays reachable, so you can always go early. */
 function preheatStep(step: PreheatStep, leftS: number | null, chargeC: number): FlowStep {
@@ -34,11 +90,12 @@ function preheatStep(step: PreheatStep, leftS: number | null, chargeC: number): 
 }
 
 /** One line on what the running step does, in the flow's hint place. */
-function roastHint(status: AutoStatus, profile: AutoProfile, developing: boolean): string {
+function roastHint(status: AutoStatus, profile: AutoProfile, developmentS?: number): string {
   const name = status.phaseName ?? 'Auto';
-  if (status.stallTripped) return `${name} · RoR low · fan held`;
-  if (developing) {
-    return `${name} · drops at ${formatClock(profile.devTimeS)} or ${String(profile.capC)} °C`;
+  if (status.stallTripped) return `${name} · RoR low · more heat`;
+  if (developmentS !== undefined) {
+    const leftS = Math.max(0, profile.devTimeS - developmentS);
+    return `${name} · drops in ${formatClock(leftS)} or at ${String(profile.capC)} °C`;
   }
   return status.nextPhaseAtC === null
     ? name
@@ -46,15 +103,21 @@ function roastHint(status: AutoStatus, profile: AutoProfile, developing: boolean
 }
 
 /**
- * The flow panel while Auto drives (docs/spec/roast-control.md, Auto mode); undefined when the
- * normal step applies: Auto off or stopped, or cooling, which Auto leaves alone.
+ * The flow panel while Auto drives, has stopped, or was turned off mid-roast (docs/spec/
+ * roast-control.md, Auto mode); undefined when the normal step applies: a manual roast, or
+ * cooling, which Auto leaves alone.
  */
 export function autoFlowStep(
   roast: RoastState,
   status: AutoStatus,
   profile: AutoProfile | undefined,
+  live: AutoFlowLive = {},
 ): FlowStep | undefined {
-  if (!status.enabled || status.stopped || !profile) return undefined;
+  if (!status.enabled) return switchedOffStep(roast, live.heaterPct);
+  if (status.stopReason !== null && DRIVEN.includes(roast.phase)) {
+    return stoppedStep(roast, status.stopReason);
+  }
+  if (!profile) return undefined;
   if (roast.phase === 'ready' || roast.phase === 'done') {
     return {
       primary: { action: 'preheat', label: 'Preheat' },
@@ -68,17 +131,17 @@ export function autoFlowStep(
   }
   if (roast.phase === 'roasting') {
     return {
-      primary: { action: 'first-crack', label: 'First crack' },
-      secondary: { action: 'drop', label: 'Drop now' },
+      primary: FIRST_CRACK,
+      secondary: DROP,
       stop: END_ROAST,
-      hint: roastHint(status, profile, false),
+      hint: roastHint(status, profile),
     };
   }
   if (roast.phase === 'development') {
     return {
-      primary: { action: 'drop', label: 'Drop now' },
+      primary: DROP,
       stop: END_ROAST,
-      hint: roastHint(status, profile, true),
+      hint: roastHint(status, profile, live.developmentS ?? 0),
     };
   }
   return undefined;

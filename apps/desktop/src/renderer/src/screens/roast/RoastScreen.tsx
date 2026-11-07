@@ -95,7 +95,14 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
   // Connected, or lost and reconnecting: either way the outputs stay, with dashes while lost.
   const hasRoaster = connected || lost;
   const idle = roast.phase === 'ready' || roast.phase === 'done';
-  const flow = <FlowPanel coolingLeftS={numbers.coolingLeftS} onConnect={onConnect} />;
+  const flow = (
+    <FlowPanel
+      coolingLeftS={numbers.coolingLeftS}
+      developmentS={numbers.developmentS}
+      heaterPct={readings.at(-1)?.values.heater}
+      onConnect={onConnect}
+    />
+  );
   // A new key when a roast starts or ends, so a half-open Change never carries across.
   const setupPanel = <RoastSetupPanel key={idle ? 'idle' : 'roasting'} />;
   return (

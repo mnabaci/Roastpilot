@@ -108,6 +108,7 @@ describe('profileFromMilestones', () => {
   it('drops a phase that would start at or above the cap; the one before runs to the end', () => {
     const low = {
       ...light,
+      chargeC: 175,
       firstCrack: { tS: 520, c: 170 },
       drop: { tS: 600, c: 176 },
     };

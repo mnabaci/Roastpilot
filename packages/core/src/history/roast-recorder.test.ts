@@ -282,6 +282,38 @@ describe('RoastRecorder', () => {
     });
   });
 
+  it('saves a roast as Auto, with its profile, when Auto comes on mid-roast', async () => {
+    const repository = new FakeRepository();
+    const profile = { name: 'copy' } as unknown as AutoProfile;
+    let mode: 'manual' | 'auto' = 'manual';
+    const recorder = new RoastRecorder({
+      repository,
+      nowIso: () => '2026-11-04T10:00:00.000Z',
+      readingsSoFar: () => [],
+      onSaved: () => undefined,
+      plan: () => ({
+        mode,
+        profile: mode === 'auto' ? profile : null,
+        roasterId: 2,
+        beanId: null,
+        batchG: null,
+        ghostRoastId: null,
+      }),
+    });
+    recorder.onRoastChange(PREHEAT);
+    recorder.onRoastChange(CHARGED);
+    mode = 'auto';
+    const switched = { kind: 'mode', atMs: 300_000, bt: 150, detail: 'auto' } as const;
+    recorder.onRoastChange({ ...CHARGED, events: [...CHARGED.events, switched] });
+    await recorder.flush();
+    expect(repository.roasts.get(1)).toMatchObject({ mode: 'auto', profile });
+    mode = 'manual';
+    const back = { kind: 'mode', atMs: 400_000, bt: 170, detail: 'manual' } as const;
+    recorder.onRoastChange({ ...CHARGED, events: [...CHARGED.events, switched, back] });
+    await recorder.flush();
+    expect(repository.roasts.get(1)).toMatchObject({ mode: 'auto', profile });
+  });
+
   it('a roast cut short stays unfinished', async () => {
     const { recorder, repository } = setup();
     recorder.onRoastChange(CHARGED);

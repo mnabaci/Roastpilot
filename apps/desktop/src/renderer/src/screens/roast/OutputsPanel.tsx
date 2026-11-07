@@ -49,7 +49,7 @@ export function OutputsPanel() {
   const cooling = useOutput('cooling');
   const hint = locked
     ? 'Heater locked · acknowledge above'
-    : driving && auto.stopped
+    : driving && auto.stopReason !== null
       ? 'Auto stopped · heater and fan are yours'
       : heater.value > 0 && drum.value === 0
         ? 'Drum is off'

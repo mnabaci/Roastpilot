@@ -55,6 +55,8 @@ describe('MilestonesSchema', () => {
       'drop.tS: Between 0:30 and 10:00 after first crack',
     ]);
     expect(problems({ ...LIGHT, drop: { tS: 663, c: 233 } })).toEqual(['drop.c: At most 232 °C']);
+    // The cap, 3 °C above drop, has to clear charge or the roast would drop as it starts.
+    expect(problems({ ...LIGHT, chargeC: 200 })).toEqual(['drop.c: Above 197 °C']);
     const late = { ...LIGHT, firstCrack: { tS: 1000, c: 190 }, drop: { tS: 1090, c: 197 } };
     expect(problems(late)).toEqual(['drop.tS: At most 18:00']);
   });

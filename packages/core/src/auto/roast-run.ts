@@ -1,15 +1,24 @@
-import type { AutoProfile, AutoTuning } from '@roastpilot/shared';
+import type { AutoProfile, AutoTuning, Reading } from '@roastpilot/shared';
+import { BEAN_TEMP } from '../safety/safety-rule';
 import { dueEndRule, type EndRule } from './end-rules';
 import { heatControlFor, type OutputController } from './heat-control';
 import { advancePhase, dryEndReached } from './phase-plan';
+import { SettledBt } from './settled-bt';
 import { StallGuard } from './stall-guard';
+
+/**
+ * The longest time step the heat control is given. Readings come every second; a longer gap
+ * (Auto stopped, readings lost) must not land on the integral all at once.
+ */
+export const MAX_STEP_S = 3;
 
 /** What Auto records about a roast (docs/spec/data-model.md, Auto mode). */
 export type AutoEvent =
   | { kind: 'phase'; name: string }
   | { kind: 'dry-end' }
   | { kind: 'stall-guard'; tripped: boolean }
-  | { kind: 'override'; channel: string; value: number };
+  | { kind: 'override'; channel: string; value: number }
+  | { kind: 'mode'; auto: boolean };
 
 export interface RoastTickInput {
   nowMs: number;
@@ -32,6 +41,7 @@ export class RoastRun {
   readonly #tuning: AutoTuning;
   readonly #chargedAtMs: number;
   readonly #guard = new StallGuard();
+  readonly #bt = new SettledBt();
   #index = 0;
   #phaseStartedS = 0;
   #control: OutputController | undefined;
@@ -68,11 +78,31 @@ export class RoastRun {
     this.#control = undefined;
   }
 
-  tick({ nowMs, btC, ror, firstCrackAtMs }: RoastTickInput): RoastTick {
+  /**
+   * Auto turned on mid-roast: replays the readings since charge, quietly, so the run starts in the
+   * phase the roast has reached, timed from when it really began, and nothing is sent or recorded.
+   */
+  catchUp(readings: readonly { atMs: number; btC: number | undefined }[]): void {
+    for (const { atMs, btC: rawBtC } of readings) {
+      const elapsedS = (atMs - this.#chargedAtMs) / 1_000;
+      const btC = this.#bt.next(rawBtC);
+      const nextIndex = advancePhase(this.#profile, this.#index, { elapsedS, btC });
+      if (nextIndex !== this.#index) {
+        this.#index = nextIndex;
+        this.#phaseStartedS = elapsedS;
+      }
+      if (dryEndReached(this.#profile, this.#index, btC)) this.#dryEnd = true;
+      this.#lastMs = atMs;
+    }
+  }
+
+  tick({ nowMs, btC: rawBtC, ror, firstCrackAtMs }: RoastTickInput): RoastTick {
     const events: AutoEvent[] = [];
     const elapsedS = (nowMs - this.#chargedAtMs) / 1_000;
-    const dtS = (nowMs - this.#lastMs) / 1_000;
+    const dtS = Math.min(MAX_STEP_S, (nowMs - this.#lastMs) / 1_000);
     this.#lastMs = nowMs;
+    const btC = this.#bt.next(rawBtC);
+    const firstCracked = firstCrackAtMs !== null;
 
     const nextIndex = advancePhase(this.#profile, this.#index, { elapsedS, btC });
     if (nextIndex !== this.#index) {
@@ -95,7 +125,9 @@ export class RoastRun {
             elapsedS,
             ror,
             plannedFanPct,
-            firstCracked: firstCrackAtMs !== null,
+            firstCracked,
+            // How the heat control ended the last reading: heat goes first, the fan last.
+            heaterMaxed: this.#control?.maxed ?? false,
           })
         : { tripped: false, fanPct: plannedFanPct };
     if (guarded.tripped !== this.#stallTripped) {
@@ -114,10 +146,27 @@ export class RoastRun {
         btC,
         ror,
         stallTripped: guarded.tripped,
+        firstCracked,
       }) ?? 0;
 
     const sinceFirstCrackS = firstCrackAtMs === null ? undefined : (nowMs - firstCrackAtMs) / 1_000;
     const endRule = dueEndRule({ profile: this.#profile, sinceFirstCrackS, btC });
     return { heaterPct, fanPct: guarded.fanPct, endRule, events };
   }
+}
+
+/**
+ * A run for the roast charged at `chargedAtMs`. Turned on mid-roast, it starts at the phase the
+ * roast has reached, not the soak, from the readings since charge.
+ */
+export function startRoastRun(
+  profile: AutoProfile,
+  tuning: AutoTuning,
+  chargedAtMs: number,
+  readings: readonly Reading[],
+): RoastRun {
+  const run = new RoastRun(profile, tuning, chargedAtMs);
+  const since = readings.filter((r) => r.atMs >= chargedAtMs);
+  run.catchUp(since.map((r) => ({ atMs: r.atMs, btC: r.values[BEAN_TEMP] })));
+  return run;
 }

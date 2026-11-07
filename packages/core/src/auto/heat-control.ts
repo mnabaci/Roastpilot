@@ -14,13 +14,19 @@ export interface HeatInput {
   ror: number | undefined;
   /** The stall guard is holding: a `target` phase may add more heat. */
   stallTripped: boolean;
+  /** Your first-crack tap: until then no step aims below the stall guard's RoR. */
+  firstCracked: boolean;
 }
 
 /** How one output is controlled in one phase (docs/spec/extensibility.md, Control per output). */
 export interface OutputController {
   /** The heater % to ask for: not yet rounded to the roaster's step. */
   next(input: HeatInput): number;
+  /** The last `next` could add no more heat, so the stall guard may turn to the fan. */
+  readonly maxed: boolean;
 }
+
+const FULL_PCT = 100;
 
 type TargetHeat = Extract<PhaseHeat, { mode: 'target' }>;
 
@@ -38,22 +44,28 @@ export function neededRor(heat: TargetHeat, btC: number, phaseElapsedS: number):
 }
 
 function fixedControl(pct: number): OutputController {
-  return { next: () => pct };
+  // A fixed step never adds heat of its own.
+  return { next: () => pct, maxed: true };
 }
 
 function targetControl(heat: TargetHeat, tuning: AutoTuning): OutputController {
   const pid = new Pid(tuning.target);
   let reachedRange = false;
   let correction = 0;
+  let max = tuning.targetLimitPct;
   return {
-    next: ({ phaseElapsedS, dtS, btC, ror, stallTripped }) => {
+    get maxed() {
+      return correction >= max || heat.pct + correction >= FULL_PCT;
+    },
+    next: ({ phaseElapsedS, dtS, btC, ror, stallTripped, firstCracked }) => {
       if (ror === undefined || btC === undefined) return heat.pct + correction;
       // Until RoR has reached the range, the climb out of the turning point would pin the PID.
       if (ror >= heat.rorMin) reachedRange = true;
       if (!reachedRange && !stallTripped) return heat.pct;
-      const max = stallTripped ? STALL.extraHeatLimitPct : tuning.targetLimitPct;
-      const error = neededRor(heat, btC, phaseElapsedS) - ror;
-      correction = pid.update(error, dtS, { min: -tuning.targetLimitPct, max });
+      max = stallTripped ? STALL.extraHeatLimitPct : tuning.targetLimitPct;
+      const needed = neededRor(heat, btC, phaseElapsedS);
+      const aim = firstCracked ? needed : Math.max(needed, STALL.tripRor);
+      correction = pid.update(aim - ror, dtS, { min: -tuning.targetLimitPct, max });
       return heat.pct + correction;
     },
   };
@@ -66,9 +78,12 @@ function followControl(
 ): OutputController {
   const pid = new Pid(tuning.follow);
   // Around its starting value, so the heater doesn't jump as the phase begins.
-  const limits = { min: -heat.pct, max: 100 - heat.pct };
+  const limits = { min: -heat.pct, max: FULL_PCT - heat.pct };
   let last = heat.pct;
   return {
+    get maxed() {
+      return last >= FULL_PCT;
+    },
     next: ({ elapsedS, dtS, btC }) => {
       const curveC = curveTargetC(curve, elapsedS);
       if (btC === undefined || curveC === undefined) return last;

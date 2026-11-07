@@ -60,7 +60,19 @@ const reading = (atMs: number, bt?: number): Reading => ({
   values: bt === undefined ? {} : { bt },
 });
 
+function fakeLogger() {
+  const logger = {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    child: () => logger,
+  };
+  return logger;
+}
+
 function setup(initial: Partial<RoastState> = {}) {
+  const logger = fakeLogger();
   let state: RoastState = { ...READY_ROAST, ...initial };
   let locked = false;
   const readings: Reading[] = [];
@@ -85,6 +97,7 @@ function setup(initial: Partial<RoastState> = {}) {
     soakS: () => 60,
     onEvent: (event) => events.push(event),
     onChange,
+    logger,
   });
   const feed = async (atMs: number, bt?: number) => {
     const next = reading(atMs, bt);
@@ -98,6 +111,7 @@ function setup(initial: Partial<RoastState> = {}) {
     drop,
     events,
     onChange,
+    logger,
     setState: (patch: Partial<RoastState>) => {
       state = { ...state, ...patch };
     },
@@ -144,7 +158,8 @@ describe('AutoPilot', () => {
     drop.mockRejectedValueOnce(new Error('refused'));
     await feed(1_000, PROFILE.capC + 1);
     expect(setOutput).toHaveBeenLastCalledWith('heater', 0);
-    expect(pilot.status).toMatchObject({ stopped: true, heater: 'manual', fan: 'manual' });
+    expect(pilot.status).toMatchObject({ heater: 'manual', fan: 'manual' });
+    expect(pilot.status.stopReason).not.toBeNull();
   });
 
   it('leaves a heater you took alone when it fails', async () => {
@@ -155,8 +170,9 @@ describe('AutoPilot', () => {
     setOutput.mockClear();
     drop.mockRejectedValueOnce(new Error('refused'));
     await feed(2_000, PROFILE.capC + 1);
+    await feed(3_000, PROFILE.capC + 1);
     expect(setOutput).not.toHaveBeenCalledWith('heater', 0);
-    expect(pilot.status.stopped).toBe(true);
+    expect(pilot.status.stopReason).not.toBeNull();
   });
 
   it('still stops when even the heater cut fails', async () => {
@@ -164,9 +180,10 @@ describe('AutoPilot', () => {
     pilot.setEnabled(true);
     await feed(1_000, 170);
     drop.mockRejectedValueOnce(new Error('refused'));
-    setOutput.mockRejectedValueOnce(new Error('port gone'));
     await feed(2_000, PROFILE.capC + 1);
-    expect(pilot.status.stopped).toBe(true);
+    setOutput.mockRejectedValueOnce(new Error('port gone'));
+    await feed(3_000, PROFILE.capC + 1);
+    expect(pilot.status.stopReason).not.toBeNull();
   });
 
   it('records nothing for a manual roast', async () => {
@@ -207,9 +224,10 @@ describe('AutoPilot', () => {
       pilot.setEnabled(true);
       await feed(0, 100);
       await feed(15 * 60_000, 100);
-      expect(setOutput).toHaveBeenLastCalledWith('fan', 30);
-      expect(setOutput.mock.calls.filter(([c]) => c === 'heater').at(-1)?.[1]).toBe(0);
-      expect(pilot.status.stopped).toBe(true);
+      expect(setOutput).toHaveBeenLastCalledWith('heater', 0);
+      expect(setOutput.mock.calls.filter(([c]) => c === 'fan').at(-1)?.[1]).toBe(30);
+      expect(pilot.status.stopReason).toBe('preheat-limit');
+      expect(pilot.status.stopReason).not.toBeNull();
       setOutput.mockClear();
       await feed(15 * 60_000 + 1_000, 100);
       expect(setOutput).not.toHaveBeenCalled();
@@ -231,6 +249,8 @@ describe('AutoPilot', () => {
       expect(pilot.status.nextPhaseAtC).toBe(150);
       expect(sent()).toContainEqual(['heater', 85]);
       expect(events).toEqual([
+        // Turned on with the roast already charged.
+        { kind: 'mode', auto: true },
         { kind: 'phase', name: 'Soak' },
         { kind: 'phase', name: 'Heat on' },
       ]);
@@ -351,8 +371,9 @@ describe('AutoPilot', () => {
       const { pilot, feed, setOutput } = setup(ROASTING);
       pilot.setEnabled(true);
       await feed(1_000, 170);
-      pilot.stop('emergency-stop');
-      expect(pilot.status).toMatchObject({ stopped: true, heater: 'manual', fan: 'manual' });
+      pilot.stop('safety-stop');
+      expect(pilot.status).toMatchObject({ heater: 'manual', fan: 'manual' });
+      expect(pilot.status.stopReason).not.toBeNull();
       setOutput.mockClear();
       await feed(70_000, 92);
       expect(setOutput).not.toHaveBeenCalled();
@@ -362,7 +383,7 @@ describe('AutoPilot', () => {
       const { pilot, feed, drop } = setup(ROASTING);
       pilot.setEnabled(true);
       await feed(1_000, 170);
-      pilot.stop('lost-connection');
+      pilot.stop('lost');
       await feed(2_000, 205);
       expect(drop).not.toHaveBeenCalled();
     });
@@ -372,7 +393,7 @@ describe('AutoPilot', () => {
       pilot.setEnabled(true);
       lock(true);
       await feed(1_000, 170);
-      expect(pilot.status.stopped).toBe(true);
+      expect(pilot.status.stopReason).not.toBeNull();
       expect(setOutput).not.toHaveBeenCalled();
     });
 
@@ -380,22 +401,22 @@ describe('AutoPilot', () => {
       const { pilot, feed, setOutput } = setup(ROASTING);
       pilot.setEnabled(true);
       await feed(70_000, 92);
-      pilot.stop('lost-connection');
+      pilot.stop('lost');
       setOutput.mockClear();
       await feed(80_000, 95);
       await feed(90_000, 96);
       expect(setOutput).not.toHaveBeenCalled();
-      expect(pilot.status.stopped).toBe(true);
+      expect(pilot.status.stopReason).not.toBeNull();
     });
 
     it('does not carry a stop or an override into the next roast', async () => {
       const { pilot, feed, setState, setOutput } = setup(ROASTING);
       pilot.setEnabled(true);
       await feed(1_000, 170);
-      pilot.stop('emergency-stop');
+      pilot.stop('safety-stop');
       setState({ phase: 'done' });
       await feed(2_000, 100);
-      expect(pilot.status).toMatchObject({ stopped: false, heater: 'auto', fan: 'auto' });
+      expect(pilot.status).toMatchObject({ stopReason: null, heater: 'auto', fan: 'auto' });
       setState({ phase: 'preheat' });
       setOutput.mockClear();
       await feed(3_000, 100);
@@ -406,17 +427,17 @@ describe('AutoPilot', () => {
       const { pilot, feed, lock } = setup(ROASTING);
       pilot.setEnabled(true);
       await feed(1_000, 170);
-      pilot.stop('emergency-stop');
+      pilot.stop('safety-stop');
       lock(true);
       expect(pilot.resume()).toEqual(err({ kind: 'safety-locked' }));
-      expect(pilot.status.stopped).toBe(true);
+      expect(pilot.status.stopReason).not.toBeNull();
     });
 
     it('Resume auto carries on after you acknowledge', async () => {
       const { pilot, feed, setOutput } = setup(ROASTING);
       pilot.setEnabled(true);
       await feed(1_000, 170);
-      pilot.stop('emergency-stop');
+      pilot.stop('safety-stop');
       expect(pilot.resume()).toEqual(ok(undefined));
       setOutput.mockClear();
       await feed(70_000, 92);
@@ -429,6 +450,100 @@ describe('AutoPilot', () => {
       await feed(1_000, 170);
       setState({ events: null as unknown as RoastState['events'] });
       await expect(feed(2_000, 170)).resolves.toBeUndefined();
+    });
+  });
+
+  describe('readings that lie', () => {
+    it('ignores one bad reading at the BT cap; two in a row drop', async () => {
+      const { pilot, feed, drop } = setup(ROASTING);
+      pilot.setEnabled(true);
+      await feed(400_000, 185);
+      await feed(401_000, 185);
+      await feed(402_000, PROFILE.capC + 30);
+      await feed(403_000, 186);
+      expect(drop).not.toHaveBeenCalled();
+      await feed(404_000, PROFILE.capC);
+      await feed(405_000, PROFILE.capC);
+      expect(drop).toHaveBeenCalledTimes(1);
+    });
+
+    it('logs once when a command holds up every later reading', async () => {
+      const { pilot, setOutput, logger } = setup(ROASTING);
+      pilot.setEnabled(true);
+      setOutput.mockImplementationOnce(() => new Promise(() => undefined));
+      void pilot.onReading(reading(1_000, 170));
+      for (let atMs = 2_000; atMs <= 9_000; atMs += 1_000)
+        await pilot.onReading(reading(atMs, 170));
+      expect(logger.error.mock.calls.filter(([name]) => name === 'auto.tick-stuck')).toHaveLength(
+        1,
+      );
+    });
+  });
+
+  describe('the heater cut has to land', () => {
+    it('Charge soon sends heater 0 at once, not on the next reading', async () => {
+      const { pilot, feed, setOutput } = setup({ phase: 'preheat' });
+      pilot.setEnabled(true);
+      await feed(0, 100);
+      await feed(1_000, 180);
+      await feed(151_000, 180);
+      expect(pilot.status.preheatStep).toBe('add-beans');
+      setOutput.mockClear();
+      expect(pilot.chargeSoon(150_500)).toEqual(ok(undefined));
+      expect(setOutput).toHaveBeenCalledWith('heater', 0);
+    });
+
+    it('sends heater 0 again on every reading after Drop until it lands', async () => {
+      const { pilot, feed, setOutput } = setup(ROASTING);
+      pilot.setEnabled(true);
+      setOutput.mockResolvedValueOnce(err({ kind: 'disconnected' }));
+      await feed(1_000, PROFILE.capC);
+      await feed(2_000, 150);
+      await feed(3_000, 140);
+      expect(setOutput.mock.calls).toEqual([
+        ['heater', 0],
+        ['heater', 0],
+      ]);
+    });
+
+    it('stops sending it once you set the heater yourself', async () => {
+      const { pilot, feed, setOutput } = setup(ROASTING);
+      pilot.setEnabled(true);
+      setOutput.mockResolvedValueOnce(err({ kind: 'disconnected' }));
+      await feed(1_000, PROFILE.capC);
+      pilot.outputRequested('heater', 40);
+      setOutput.mockClear();
+      await feed(3_000, 150);
+      expect(setOutput).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('turned on mid-roast', () => {
+    it('starts at the phase the roast has reached, without replaying the soak', async () => {
+      const { pilot, feed, sent, events } = setup(ROASTING);
+      for (let s = 1; s <= 120; s++) await feed(s * 1_000, s < 60 ? 170 : 100 + s / 2);
+      pilot.setEnabled(true);
+      await feed(121_000, 161);
+      expect(pilot.status.phaseName).toBe('Finish');
+      // One command, Finish's own: its 40% less the −20% limit, as RoR runs at 30 °C/min.
+      expect(sent().filter(([c]) => c === 'heater')).toEqual([['heater', 20]]);
+      expect(events).toEqual([
+        { kind: 'mode', auto: true },
+        { kind: 'phase', name: 'Finish' },
+      ]);
+    });
+
+    it('says when it is turned off mid-roast, but not outside one', () => {
+      const roasting = setup(ROASTING);
+      roasting.pilot.setEnabled(true);
+      roasting.pilot.setEnabled(false);
+      expect(roasting.events).toEqual([
+        { kind: 'mode', auto: true },
+        { kind: 'mode', auto: false },
+      ]);
+      const ready = setup();
+      ready.pilot.setEnabled(true);
+      expect(ready.events).toEqual([]);
     });
   });
 

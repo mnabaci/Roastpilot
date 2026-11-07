@@ -3,11 +3,13 @@ export {
   AutoResumeErrorSchema,
   AUTO_OFF,
   AutoStatusSchema,
+  AutoStopReasonSchema,
   OutputOwnerSchema,
   PreheatStepSchema,
   type AutoChargeSoonError,
   type AutoResumeError,
   type AutoStatus,
+  type AutoStopReason,
   type OutputOwner,
   type PreheatStep,
 } from './auto-status';

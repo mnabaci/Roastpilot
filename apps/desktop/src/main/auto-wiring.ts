@@ -1,6 +1,7 @@
 import {
   AutoPilot,
   quantize,
+  withCapUnder,
   withSoakTime,
   type AutoEvent,
   type Logger,
@@ -10,6 +11,7 @@ import {
 } from '@roastpilot/core';
 import {
   IPC_CHANNELS,
+  type AutoProfile,
   type IpcEventChannel,
   type IpcEventPayloads,
   type Reading,
@@ -20,16 +22,24 @@ import type { ProfileService } from './profiles/profile-service';
 import type { RoasterService } from './roasters/roaster-service';
 import type { SettingsService } from './settings/settings-service';
 
-/** How the roast charging now runs, for the saved copy: read once, at charge. */
+/** The profile Auto runs: the chosen one, with its cap under the active roaster's max. */
+export function autoProfile(
+  profiles: Pick<ProfileService, 'active'>,
+  roasters: Pick<RoasterService, 'active'>,
+): AutoProfile {
+  return withCapUnder(profiles.active(), roasters.active().maxTempC);
+}
+
+/** How the roast charging now runs, for the saved copy: read at charge, and again if Auto comes on. */
 export function roastPlan(
   settings: Pick<SettingsService, 'latest'>,
-  profiles: Pick<ProfileService, 'active'>,
+  profile: () => AutoProfile,
   roasterId: RoasterId,
   setup: RoastSetup,
 ): RoastPlan {
   const { roastMode, soakTimeS } = settings.latest;
   return roastMode === 'auto'
-    ? { mode: 'auto', profile: withSoakTime(profiles.active(), soakTimeS), roasterId, ...setup }
+    ? { mode: 'auto', profile: withSoakTime(profile(), soakTimeS), roasterId, ...setup }
     : { mode: 'manual', profile: null, roasterId, ...setup };
 }
 
@@ -46,6 +56,9 @@ function noteAutoEvent(roast: ManualRoast, event: AutoEvent): void {
       return;
     case 'override':
       roast.note('override', `${event.channel} ${String(event.value)}`);
+      return;
+    case 'mode':
+      roast.note('mode', event.auto ? 'auto' : 'manual');
   }
 }
 
@@ -87,7 +100,7 @@ export function createAutoPilot({
       // AutoPilot cuts the heater and stops: it never drives past the end of a roast.
       if (!dropped.ok) throw new Error(`Drop refused: ${dropped.error.kind}`);
     },
-    profile: () => profiles.active(),
+    profile: () => autoProfile(profiles, roasters),
     tuning: () => roasters.active().tuning,
     soakS: () => settings.latest.soakTimeS,
     onEvent: (event) => {

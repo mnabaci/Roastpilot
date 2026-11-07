@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { STALL, StallGuard } from './stall-guard';
 
 /** Feeds one RoR value every 30 s, like the tables in roast-control.md. */
-function run(guard: StallGuard, rors: readonly number[], fan = 80, startS = 300) {
+function run(guard: StallGuard, rors: readonly number[], fan = 80, heaterMaxed = true) {
   return rors.map((ror, i) =>
     guard.update({
-      elapsedS: startS + i * 30,
+      elapsedS: 300 + i * 30,
       ror,
       plannedFanPct: fan,
       firstCracked: false,
+      heaterMaxed,
     }),
   );
 }
@@ -37,10 +38,22 @@ describe('StallGuard', () => {
   it('needs enough history before it trusts a rate of fall', () => {
     const guard = new StallGuard();
     expect(
-      guard.update({ elapsedS: 300, ror: 9, plannedFanPct: 80, firstCracked: false }).tripped,
+      guard.update({
+        elapsedS: 300,
+        ror: 9,
+        plannedFanPct: 80,
+        firstCracked: false,
+        heaterMaxed: true,
+      }).tripped,
     ).toBe(false);
     expect(
-      guard.update({ elapsedS: 310, ror: 6, plannedFanPct: 80, firstCracked: false }).tripped,
+      guard.update({
+        elapsedS: 310,
+        ror: 6,
+        plannedFanPct: 80,
+        firstCracked: false,
+        heaterMaxed: true,
+      }).tripped,
     ).toBe(false);
   });
 
@@ -69,7 +82,13 @@ describe('StallGuard', () => {
   it('stands down at first crack', () => {
     const guard = new StallGuard();
     run(guard, [6, 4]);
-    const after = guard.update({ elapsedS: 400, ror: 2, plannedFanPct: 80, firstCracked: true });
+    const after = guard.update({
+      elapsedS: 400,
+      ror: 2,
+      plannedFanPct: 80,
+      firstCracked: true,
+      heaterMaxed: true,
+    });
     expect(after.tripped).toBe(false);
   });
 
@@ -81,24 +100,67 @@ describe('StallGuard', () => {
       ror: undefined,
       plannedFanPct: 80,
       firstCracked: false,
+      heaterMaxed: true,
     });
     expect(result.tripped).toBe(true);
   });
 
   describe('fan', () => {
-    it('holds a planned increase while tripped', () => {
+    it('follows the plan, increases too, while the heater has more to give', () => {
       const guard = new StallGuard();
-      run(guard, [6, 4], 65);
+      const results = run(guard, [6, 4, 4, 4, 4], 65, false);
+      expect(results.every((r) => r.tripped || r.fanPct === 65)).toBe(true);
+      expect(results.map((r) => r.fanPct)).toEqual([65, 65, 65, 65, 65]);
       const result = guard.update({
-        elapsedS: 335,
+        elapsedS: 425,
         ror: 4,
         plannedFanPct: 80,
         firstCracked: false,
+        heaterMaxed: false,
       });
-      expect(result.fanPct).toBe(65);
+      expect(result).toEqual({ tripped: true, fanPct: 80 });
     });
 
-    it('steps down 5% every 30 s, to at most 20% below where it tripped', () => {
+    it('waits 30 s with the heater at its limit before it touches the fan', () => {
+      const guard = new StallGuard();
+      run(guard, [6, 4], 80);
+      const update = (elapsedS: number) =>
+        guard.update({
+          elapsedS,
+          ror: 4,
+          plannedFanPct: 80,
+          firstCracked: false,
+          heaterMaxed: true,
+        });
+      expect(update(359).fanPct).toBe(80);
+      expect(update(360).fanPct).toBe(75);
+    });
+
+    it('starts the wait over when the heater has more to give again', () => {
+      const guard = new StallGuard();
+      const update = (elapsedS: number, ror: number, heaterMaxed: boolean) =>
+        guard.update({ elapsedS, ror, plannedFanPct: 80, firstCracked: false, heaterMaxed });
+      update(300, 6, true);
+      update(330, 4, true);
+      update(350, 4, false);
+      expect(update(360, 4, true).fanPct).toBe(80);
+      expect(update(390, 4, true).fanPct).toBe(75);
+    });
+
+    it('holds a planned increase once the fan is held', () => {
+      const guard = new StallGuard();
+      run(guard, [6, 4, 4], 65);
+      const result = guard.update({
+        elapsedS: 365,
+        ror: 4,
+        plannedFanPct: 80,
+        firstCracked: false,
+        heaterMaxed: true,
+      });
+      expect(result.fanPct).toBe(60);
+    });
+
+    it('steps down 5% every 30 s, to at most 20% below the plan', () => {
       const results = run(new StallGuard(), [6, 4, 4, 4, 4, 4, 4, 4, 4]);
       expect(results.map((r) => r.fanPct)).toEqual([80, 80, 75, 70, 65, 60, 60, 60, 60]);
       expect(80 - STALL.maxFanBelowPct).toBe(60);
@@ -123,6 +185,7 @@ describe('StallGuard', () => {
         ror: 4,
         plannedFanPct: 50,
         firstCracked: false,
+        heaterMaxed: true,
       });
       expect(result.fanPct).toBe(50);
     });
