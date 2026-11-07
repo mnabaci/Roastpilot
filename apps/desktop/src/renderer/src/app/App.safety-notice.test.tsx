@@ -27,7 +27,7 @@ describe('App safety notice', () => {
     renderApp(<App />, FIRST_LAUNCH);
     expect(
       screen.getByRole('heading', {
-        name: 'Roastpilot switches a heater · use it at your own risk',
+        name: 'Roastpilot switches a heater',
       }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: 'Screens' })).not.toBeInTheDocument();

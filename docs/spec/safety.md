@@ -19,7 +19,7 @@ The app never claims it can be left alone. The roast screen says to stay with th
 
 The first time the app opens, the whole window shows the safety notice before anything else, so nobody connects a roaster without reading it.
 
-- **What it says:** "Roastpilot switches a heater · use it at your own risk", then four one-line points: never leave the roaster alone, in Manual or Auto; Auto is not a safety device; keep the roaster's own fuses, cut-outs and the sketch's watchdog; free software with no warranty (GPL-3.0). One button: **I understand · continue**.
+- **What it says:** a centred card: the mark, "Roastpilot switches a heater", "Use it at your own risk", then four one-line points with an icon each: Stay with the roaster · in Manual and in Auto; Auto is not a safety device; Keep the fuses, cut-outs and watchdog in place; Free software · no warranty (GPL-3.0). One full-width button: **I understand · continue**.
 - **Nothing else is reachable** until you accept: no top bar, no screens. No roast can be running then, as the app never connects by itself.
 - **Asked once:** accepting saves the notice's version in `settings.json` (`safetyNoticeAccepted`). It shows again only when the wording changes and its version goes up.
 - **If saving fails:** you still continue for this run; an error toast says "Couldn't save · the safety notice shows again next launch".

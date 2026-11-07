@@ -94,7 +94,7 @@ export function App() {
   // First launch: the notice fills the window before anything else (docs/spec/safety.md).
   if (ready && firstLaunch) {
     return (
-      <div className="flex h-screen flex-col overflow-y-auto bg-bg font-sans text-ink">
+      <div className="h-screen overflow-y-auto bg-bg font-sans text-ink">
         <SafetyNotice
           action="accept"
           onDone={() => {
