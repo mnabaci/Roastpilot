@@ -80,6 +80,7 @@ describe('AutoProfileSchema', () => {
     ['chargeC', { chargeC: 90 }],
     ['chargeC', { chargeC: 240 }],
     ['capC', { capC: 236 }],
+    ['capC', { chargeC: 205, capC: 205 }],
     ['devTimeS', { devTimeS: 10 }],
     ['devTimeS', { devTimeS: 601 }],
     ['dryEndC', { dryEndC: 200 }],

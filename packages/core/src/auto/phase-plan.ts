@@ -25,6 +25,15 @@ export function advancePhase(profile: AutoProfile, index: number, clock: PhaseCl
   return Math.min(index + 1, profile.phases.length - 1);
 }
 
+/** Auto drops at least this far below the roaster's max temperature, so Drop comes before a safety stop. */
+export const CAP_BELOW_MAX_C = 5;
+
+/** The profile with its BT cap under the roaster's max temperature (docs/spec/roast-control.md). */
+export function withCapUnder(profile: AutoProfile, maxTempC: number): AutoProfile {
+  const capC = Math.min(profile.capC, maxTempC - CAP_BELOW_MAX_C);
+  return capC === profile.capC ? profile : { ...profile, capC };
+}
+
 /** The profile with its opening soak set to `soakS`: a fixed phase that ends on time. */
 export function withSoakTime(profile: AutoProfile, soakS: number): AutoProfile {
   return {
