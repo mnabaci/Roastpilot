@@ -17,4 +17,12 @@ describe('StatCard', () => {
     expect(card).toHaveTextContent('—');
     expect(card).not.toHaveTextContent('°C/min');
   });
+
+  it('shows an em dash, never NaN, for a reading that is not a number', () => {
+    render(<StatCard label="Rate of rise" value={Number.NaN} unit="°C/min" />);
+    const card = screen.getByRole('region', { name: 'Rate of rise' });
+    expect(card).toHaveTextContent('—');
+    expect(card).not.toHaveTextContent('NaN');
+    expect(card).not.toHaveTextContent('°C/min');
+  });
 });

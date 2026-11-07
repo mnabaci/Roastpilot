@@ -14,6 +14,11 @@ describe('FilterSelect', () => {
     expect(screen.getByRole('button', { name: 'Compare: All' })).toHaveTextContent('Compare: All');
   });
 
+  it('is named by its label alone when the value is not in the list', () => {
+    render(<FilterSelect label="Bean" options={OPTIONS} value="gone" onChange={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'Bean' })).toBeInTheDocument();
+  });
+
   it('as a filter: its name until it filters, then the choice', () => {
     const { rerender } = render(
       <FilterSelect label="Bean" allValue="all" options={OPTIONS} value="all" onChange={vi.fn()} />,

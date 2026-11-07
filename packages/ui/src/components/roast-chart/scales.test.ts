@@ -1,6 +1,6 @@
 import type uPlot from 'uplot';
 import { describe, expect, it } from 'vitest';
-import { MIN_TIME_SPAN_S, TEMPERATURE_RANGE, TIME_RANGE } from './uplot-options';
+import { MIN_TIME_SPAN_S, ROR_RANGE, TEMPERATURE_RANGE, TIME_RANGE } from './scales';
 
 const range = (min: number, max: number) => TIME_RANGE({} as uPlot, min, max, 'x');
 
@@ -33,5 +33,21 @@ describe('temperature axis', () => {
 
   it('copes with no data yet', () => {
     expect(temperature(Number.NaN, Number.NaN)).toEqual([0, 250]);
+  });
+});
+
+const ror = (min: number, max: number) => ROR_RANGE({} as uPlot, min, max, 'ror');
+
+describe('RoR axis', () => {
+  it('shows at least 0–30 °C/min', () => {
+    expect(ror(4.2, 12.8)).toEqual([0, 30]);
+  });
+
+  it('widens when RoR goes outside', () => {
+    expect(ror(-6.5, 41.2)).toEqual([-7, 42]);
+  });
+
+  it('copes with no RoR yet', () => {
+    expect(ror(Number.NaN, Number.NaN)).toEqual([0, 30]);
   });
 });

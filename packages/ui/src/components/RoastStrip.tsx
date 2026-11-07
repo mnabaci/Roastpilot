@@ -38,7 +38,13 @@ export function RoastStrip({ lead, prompt, numbers, onOpen, className }: RoastSt
         aria-hidden="true"
         className="size-2 shrink-0 rounded-full bg-heat motion-safe:animate-pulse"
       />
-      <span className={cn('shrink-0 text-body text-heat', prompt ? 'font-bold' : 'font-semibold')}>
+      {/* A long prompt truncates; the lead is short and never does. */}
+      <span
+        className={cn(
+          'text-body text-heat',
+          prompt ? 'min-w-0 truncate font-bold' : 'shrink-0 font-semibold',
+        )}
+      >
         {prompt ?? lead}
       </span>
       <span className="flex min-w-0 gap-4 truncate">

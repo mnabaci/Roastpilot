@@ -24,6 +24,12 @@ describe('OutputControl', () => {
     expect(screen.getByRole('slider', { name: 'Heater' })).toBeDisabled();
   });
 
+  it('shows a dash, never NaN, for a reading that is not a number', () => {
+    render(<OutputControl label="Heater" value={Number.NaN} onChange={vi.fn()} />);
+    expect(screen.getByText('–')).toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: 'Heater' })).toBeDisabled();
+  });
+
   it('while dragging only the number moves; letting go sends the value once', () => {
     const onChange = vi.fn();
     render(<OutputControl label="Fan" value={30} mode="auto" onChange={onChange} />);
@@ -126,5 +132,42 @@ describe('OutputControl', () => {
     expect(screen.getByText('Manual')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Resume auto' }));
     expect(onResumeAuto).toHaveBeenCalledOnce();
+  });
+
+  it('sends nothing when it goes away mid-drag', () => {
+    const onChange = vi.fn();
+    const { unmount } = render(<OutputControl label="Fan" value={30} onChange={onChange} />);
+    const slider = screen.getByRole('slider', { name: 'Fan' });
+    fireEvent.pointerDown(slider);
+    fireEvent.change(slider, { target: { value: '45' } });
+    unmount();
+    fireEvent.pointerUp(window);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('a delayed send uses the latest onChange and skips a value the roaster already reports', () => {
+    vi.useFakeTimers();
+    try {
+      const first = vi.fn();
+      const latest = vi.fn();
+      const { rerender } = render(<OutputControl label="Fan" value={30} onChange={first} />);
+      const slider = screen.getByRole('slider', { name: 'Fan' });
+      fireEvent.change(slider, { target: { value: '35' } });
+      rerender(<OutputControl label="Fan" value={30} onChange={latest} />);
+      act(() => {
+        vi.advanceTimersByTime(KEYBOARD_COMMIT_MS);
+      });
+      expect(first).not.toHaveBeenCalled();
+      expect(latest).toHaveBeenCalledExactlyOnceWith(35);
+
+      fireEvent.change(slider, { target: { value: '40' } });
+      rerender(<OutputControl label="Fan" value={40} onChange={latest} />);
+      act(() => {
+        vi.advanceTimersByTime(KEYBOARD_COMMIT_MS);
+      });
+      expect(latest).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
