@@ -1,5 +1,5 @@
 import { createLogger } from '@roastpilot/core';
-import type { LogEntry } from '@roastpilot/shared';
+import { coachAppliedDetail, type LogEntry } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { openDatabase } from './open-database';
 import { drizzleOn } from './proxy-db';
@@ -108,6 +108,30 @@ describe('SqliteRoastRepository', () => {
         events: [{ kind: 'phase', tS: 60, bt: 95, detail: 'Heat on' }],
       },
     });
+  });
+
+  it('keeps what the coach applied, each output with from and to', async () => {
+    const { repository } = setup();
+    const made = await repository.create({
+      startedAt: '2026-11-07T10:00:00.000Z',
+      mode: 'manual',
+      profile: null,
+      roasterId: null,
+      beanId: null,
+      batchG: null,
+      ghostRoastId: null,
+    });
+    if (!made.ok) throw new Error('create failed');
+    const applied = {
+      kind: 'coach-applied',
+      tS: 312.5,
+      bt: 151.2,
+      detail: coachAppliedDetail({ heater: { from: 65, to: 75 }, fan: { from: 50, to: 40 } }),
+    } as const;
+    await repository.addEvent(made.value, applied);
+    const read = await repository.get(made.value);
+    expect(read).toMatchObject({ ok: true, value: { events: [applied] } });
+    expect(applied.detail).toBe('heater 65→75, fan 50→40');
   });
 
   it('keeps a roast whose profile copy can no longer be read, and logs it', async () => {
