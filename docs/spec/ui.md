@@ -129,17 +129,19 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 
 ## Sounds
 
-- **What:** short sounds through the computer's speakers when something needs you, so you can hear it over the roaster. Synthesised in the window with Web Audio (no files) through a compressor, played by the one main window, once per change: never again on later readings.
+- **What:** short sounds through the computer's speakers when something needs you, so you can hear it over the roaster. Synthesised in the window with Web Audio (no files) through a compressor, played by the one main window, once per change (then repeated as set, below): never again on later readings.
 - **Steps and defaults:**
 
-| Step                   | Plays when                                                                         | Default voice, volume |
-| ---------------------- | ---------------------------------------------------------------------------------- | --------------------- |
-| Charge soon            | Auto's preheat reaches Add beans                                                   | Chime, 80 %           |
-| Beans in               | Auto's preheat reaches Beans in                                                    | Chime, 80 %           |
-| Dump beans             | the roast enters Cooling                                                           | Chime, 80 %           |
-| Listen for first crack | once per roast, while Roasting with no first-crack tap, BT reaches expected − 3 °C | Ping, 70 %            |
-| Auto stopped           | Auto hands you the outputs mid-run (Preheat to Development)                        | Alert, 90 %           |
+| Step                   | Plays when                                                                         | Still waiting while                 | Default voice, volume | Repeat     |
+| ---------------------- | ---------------------------------------------------------------------------------- | ----------------------------------- | --------------------- | ---------- |
+| Charge soon            | Auto's preheat reaches Add beans                                                   | the preheat step is still Add beans | Chime, 80 %           | Until done |
+| Beans in               | Auto's preheat reaches Beans in                                                    | the preheat step is still Beans in  | Chime, 80 %           | Until done |
+| Listen for first crack | once per roast, while Roasting with no first-crack tap, BT reaches expected − 3 °C | Roasting with no first-crack tap    | Ping, 70 %            | Once       |
+| Dump beans             | the roast enters Cooling                                                           | the roast is Cooling                | Chime, 80 %           | 2 times    |
+| Auto stopped           | Auto hands you the outputs mid-run (Preheat to Development)                        | Auto is stopped (until Resume auto) | Alert, 90 %           | 3 times    |
 
+- **Order:** the steps are listed in the order they happen in a roast; Auto stopped is last because it can happen at any point.
+- **Repeat:** Once, 2 times or 3 times play 3 s apart; Until done plays every 10 s while the step is still waiting, for at most 1 minute (7 plays). Any repeat stops at once when its step stops waiting, Sounds is switched off or that step's setting changes; two plays of one step never overlap.
 - **Expected first crack:** the median BT at first crack of the last 5 saved roasts that have one, from the active roaster when it has any, otherwise from all. Without any, there is no listen cue. Sound only: nothing new on screen.
 - **Voices:** Chime (rising 660 → 880 Hz), Ping (587 Hz), Alert (low 330 Hz twice), Bell (struck 784 Hz, rings out), Marimba (523 → 659 Hz, short), Beep (two square beeps, 1000 Hz), None. Volume 0–100 % in steps of 5 scales the voice's peak.
 - **Never for safety:** a safety trip (Safety stop, Heater locked, Emergency stop) keeps its banner and plays nothing. A window that opens mid-roast stays quiet until the next change. Sound that can't play (no audio device, blocked) is logged once.
@@ -147,6 +149,7 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 ## Settings
 
 - The shared sidebar lists the sections Controls, Roast, Auto, Sounds and Chart; only the chosen one shows. Settings opens on Controls when the app starts, then on the last section viewed until quit (not saved).
-- **Rows:** each setting is one row: name with a one-line hint under it on the left, its control on the right (it wraps under the name when narrow). On / off settings are a switch; other choices a segmented control. The chosen option keeps the `heat-tint` toggle look. A setting that doesn't apply is hidden (Cool the drum to, while Cool the drum after each roast is off).
-- **Sections:** Controls (Guided / Full control, see [manual-mode.md](manual-mode.md)); Roast (Find the charge point, on; Cool the beans for, 2–6 min, default 4; Cool the drum after each roast, on; Cool the drum to, 40–70 °C, default 50 °C); Auto (Soak time); Sounds (the Sounds switch, on, "A chime when something needs you, and before first crack"; while on, a row per step with its voice, a Volume slider, an icon-only Play that previews it, and an icon-only Reset (↺) while it differs from its default, whose place is kept when hidden so a change never moves the row; see [Sounds](#sounds)); Chart (temperature smoothing: Off, 3 s, 5 s or 10 s). Saved in `settings.json` in the app's user-data folder behind a `SettingsStore` interface.
+- **Width:** each section is at most 1152 px wide, so rows stay readable and a switch stays near its name on very wide windows.
+- **Rows:** each setting is one row: name with a one-line hint under it on the left, its control on the right (it wraps under the name when narrow, the same way for every row of a section). On / off settings are a switch; other choices a segmented control. The chosen option keeps the `heat-tint` toggle look. A setting that doesn't apply is hidden (Cool the drum to, while Cool the drum after each roast is off).
+- **Sections:** Controls (Guided / Full control, see [manual-mode.md](manual-mode.md)); Roast (Find the charge point, on; Cool the beans for, 2–6 min, default 4; Cool the drum after each roast, on; Cool the drum to, 40–70 °C, default 50 °C); Auto (Soak time); Sounds (the Sounds switch, on, "A chime when something needs you, and before first crack"; while on, a row per step, in roast order, with its voice, its Repeat (Once, 2 times, 3 times, Until done), a Volume slider, an icon-only Play that previews it, and an icon-only Reset (↺) while it differs from its default, whose place is kept when hidden so a change never moves the row; see [Sounds](#sounds)); Chart (temperature smoothing: Off, 3 s, 5 s or 10 s). Saved in `settings.json` in the app's user-data folder behind a `SettingsStore` interface.
 - Roasters and connecting have their own screen (above).

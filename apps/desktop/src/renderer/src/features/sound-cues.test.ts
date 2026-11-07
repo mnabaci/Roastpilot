@@ -1,6 +1,13 @@
 import { AUTO_OFF, type RoastSummary } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import { expectedFirstCrackC, listenDue, stepsReached, type CueState } from './sound-cues';
+import {
+  expectedFirstCrackC,
+  listenDue,
+  stepsReached,
+  stillWaiting,
+  type CueState,
+  type WaitState,
+} from './sound-cues';
 
 const state = (
   phase: CueState['roast']['phase'],
@@ -109,5 +116,40 @@ describe('listenDue', () => {
     expect(listenDue({ phase: 'preheat', firstCrackAtMs: null }, 199, 196)).toBe(false);
     expect(listenDue(roasting, undefined, 196)).toBe(false);
     expect(listenDue(roasting, 199, undefined)).toBe(false);
+  });
+});
+
+describe('stillWaiting', () => {
+  const at = (
+    roast: Partial<WaitState['roast']>,
+    auto: Partial<WaitState['auto']> = {},
+  ): WaitState => ({
+    roast: { phase: 'preheat', firstCrackAtMs: null, ...roast },
+    auto: { ...AUTO_OFF, enabled: true, ...auto },
+  });
+
+  it('Charge soon and Beans in wait while Auto is on that preheat step', () => {
+    expect(stillWaiting('charge-soon', at({}, { preheatStep: 'add-beans' }))).toBe(true);
+    expect(stillWaiting('charge-soon', at({}, { preheatStep: 'beans-in' }))).toBe(false);
+    expect(stillWaiting('charge-soon', at({}, { enabled: false, preheatStep: 'add-beans' }))).toBe(
+      false,
+    );
+    expect(stillWaiting('beans-in', at({}, { preheatStep: 'beans-in' }))).toBe(true);
+    expect(stillWaiting('beans-in', at({ phase: 'roasting' }, { preheatStep: null }))).toBe(false);
+  });
+
+  it('Listen waits while Roasting with no crack; Dump beans while Cooling', () => {
+    expect(stillWaiting('listen-first-crack', at({ phase: 'roasting' }))).toBe(true);
+    expect(stillWaiting('listen-first-crack', at({ phase: 'roasting', firstCrackAtMs: 5 }))).toBe(
+      false,
+    );
+    expect(stillWaiting('listen-first-crack', at({ phase: 'development' }))).toBe(false);
+    expect(stillWaiting('dump-beans', at({ phase: 'cooling' }))).toBe(true);
+    expect(stillWaiting('dump-beans', at({ phase: 'ready' }))).toBe(false);
+  });
+
+  it('Auto stopped waits until the stop reason clears', () => {
+    expect(stillWaiting('auto-stopped', at({}, { stopReason: 'disconnected' }))).toBe(true);
+    expect(stillWaiting('auto-stopped', at({}))).toBe(false);
   });
 });

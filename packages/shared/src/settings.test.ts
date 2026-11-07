@@ -56,7 +56,10 @@ describe('SettingsSchema', () => {
       soakTimeS: 90,
       sounds: {
         enabled: false,
-        steps: { ...DEFAULT_SOUNDS.steps, 'beans-in': { voice: 'bell', volumePct: 55 } },
+        steps: {
+          ...DEFAULT_SOUNDS.steps,
+          'beans-in': { voice: 'bell', volumePct: 55, repeat: 'twice' },
+        },
       },
     };
     expect(SettingsSchema.parse(settings)).toEqual(settings);
@@ -104,11 +107,11 @@ describe('SettingsSchema', () => {
     expect(SettingsSchema.parse({ controls: 'full' }).sounds).toEqual({
       enabled: true,
       steps: {
-        'charge-soon': { voice: 'chime', volumePct: 80 },
-        'beans-in': { voice: 'chime', volumePct: 80 },
-        'dump-beans': { voice: 'chime', volumePct: 80 },
-        'listen-first-crack': { voice: 'ping', volumePct: 70 },
-        'auto-stopped': { voice: 'alert', volumePct: 90 },
+        'charge-soon': { voice: 'chime', volumePct: 80, repeat: 'until-done' },
+        'beans-in': { voice: 'chime', volumePct: 80, repeat: 'until-done' },
+        'listen-first-crack': { voice: 'ping', volumePct: 70, repeat: 'once' },
+        'dump-beans': { voice: 'chime', volumePct: 80, repeat: 'twice' },
+        'auto-stopped': { voice: 'alert', volumePct: 90, repeat: 'thrice' },
       },
     });
     expect(SettingsSchema.parse({ sounds: 'loud' }).sounds).toEqual(DEFAULT_SOUNDS);
@@ -125,9 +128,37 @@ describe('SettingsSchema', () => {
       },
     });
     expect(sounds.enabled).toBe(false);
-    expect(sounds.steps['beans-in']).toEqual({ voice: 'chime', volumePct: 40 });
-    expect(sounds.steps['dump-beans']).toEqual({ voice: 'bell', volumePct: 80 });
-    expect(sounds.steps['auto-stopped']).toEqual({ voice: 'alert', volumePct: 90 });
+    expect(sounds.steps['beans-in']).toEqual({
+      voice: 'chime',
+      volumePct: 40,
+      repeat: 'until-done',
+    });
+    expect(sounds.steps['dump-beans']).toEqual({ voice: 'bell', volumePct: 80, repeat: 'twice' });
+    expect(sounds.steps['auto-stopped']).toEqual({
+      voice: 'alert',
+      volumePct: 90,
+      repeat: 'thrice',
+    });
+  });
+
+  it('an older step without a repeat gets its default; a bad one falls back for that step only', () => {
+    const { sounds } = SettingsSchema.parse({
+      sounds: {
+        steps: {
+          'charge-soon': { voice: 'bell', volumePct: 40 },
+          'dump-beans': { voice: 'bell', volumePct: 50, repeat: 'forever' },
+          'auto-stopped': { voice: 'beep', volumePct: 60, repeat: 'once' },
+        },
+      },
+    });
+    expect(sounds.steps['charge-soon']).toEqual({
+      voice: 'bell',
+      volumePct: 40,
+      repeat: 'until-done',
+    });
+    expect(sounds.steps['dump-beans']).toEqual({ voice: 'bell', volumePct: 50, repeat: 'twice' });
+    expect(sounds.steps['auto-stopped']).toEqual({ voice: 'beep', volumePct: 60, repeat: 'once' });
+    expect(sounds.steps['listen-first-crack'].repeat).toBe('once');
   });
 
   it('cools the drum to 50 °C unless set; an odd value falls back', () => {

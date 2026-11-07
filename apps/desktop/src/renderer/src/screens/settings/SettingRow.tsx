@@ -33,7 +33,7 @@ export function SettingRow({
 /** A section's rows in one card. */
 export function SettingCard({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section aria-label={title} className="flex max-w-3xl flex-col gap-3">
+    <section aria-label={title} className="flex max-w-6xl flex-col gap-3">
       <h2 className="text-heading">{title}</h2>
       <div className="flex flex-col rounded-xl bg-surface px-5">{children}</div>
     </section>

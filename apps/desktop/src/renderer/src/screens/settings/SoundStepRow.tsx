@@ -1,6 +1,8 @@
 import {
   DEFAULT_STEP_SOUNDS,
+  SoundRepeatSchema,
   SoundVoiceSchema,
+  type SoundRepeat,
   type SoundStep,
   type StepSound,
 } from '@roastpilot/shared';
@@ -31,7 +33,20 @@ const VOICES = SoundVoiceSchema.options.map((voice) => ({
   label: VOICE_LABEL[voice],
 }));
 
-/** One step's sound: voice, volume, a preview, and Reset while it differs from the default. */
+/** What the repeat choices are called in Settings. */
+const REPEAT_LABEL: Readonly<Record<SoundRepeat, string>> = {
+  once: 'Once',
+  twice: '2 times',
+  thrice: '3 times',
+  'until-done': 'Until done',
+};
+
+const REPEATS = SoundRepeatSchema.options.map((repeat) => ({
+  value: repeat,
+  label: REPEAT_LABEL[repeat],
+}));
+
+/** One step's sound: voice, repeat, volume, a preview, and Reset while it differs from the default. */
 export function SoundStepRow({
   step,
   sound,
@@ -44,7 +59,10 @@ export function SoundStepRow({
   const { chime } = useDeps();
   const { name, hint } = STEP[step];
   const fallback = DEFAULT_STEP_SOUNDS[step];
-  const changed = sound.voice !== fallback.voice || sound.volumePct !== fallback.volumePct;
+  const changed =
+    sound.voice !== fallback.voice ||
+    sound.volumePct !== fallback.volumePct ||
+    sound.repeat !== fallback.repeat;
   return (
     <SettingRow name={name} hint={hint} group>
       <div className="flex flex-wrap items-end justify-end gap-3">
@@ -55,6 +73,15 @@ export function SoundStepRow({
           className="w-36"
           onChange={(voice) => {
             onChange({ ...sound, voice });
+          }}
+        />
+        <SelectField
+          label="Repeat"
+          value={sound.repeat}
+          options={REPEATS}
+          className="w-36"
+          onChange={(repeat) => {
+            onChange({ ...sound, repeat });
           }}
         />
         <OutputControl

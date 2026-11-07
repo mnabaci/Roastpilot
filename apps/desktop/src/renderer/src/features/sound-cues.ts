@@ -36,6 +36,28 @@ export function stepsReached(before: CueState, after: CueState): SoundStep[] {
   return steps;
 }
 
+/** What tells whether a step still needs you, after it played. */
+export interface WaitState {
+  roast: Pick<RoastState, 'phase' | 'firstCrackAtMs'>;
+  auto: Pick<AutoStatus, 'enabled' | 'preheatStep' | 'stopReason'>;
+}
+
+/** Whether a step still needs you, so its repeats go on (docs/spec/ui.md, Sounds). */
+export function stillWaiting(step: SoundStep, { roast, auto }: WaitState): boolean {
+  switch (step) {
+    case 'charge-soon':
+      return auto.enabled && auto.preheatStep === 'add-beans';
+    case 'beans-in':
+      return auto.enabled && auto.preheatStep === 'beans-in';
+    case 'listen-first-crack':
+      return roast.phase === 'roasting' && roast.firstCrackAtMs === null;
+    case 'dump-beans':
+      return roast.phase === 'cooling';
+    case 'auto-stopped':
+      return auto.stopReason !== null;
+  }
+}
+
 /** How many recent roasts with a first crack set the expected temperature. */
 const RECENT = 5;
 /** The listen cue sounds this far under the expected first-crack temperature, in °C. */

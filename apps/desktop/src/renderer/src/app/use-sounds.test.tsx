@@ -9,7 +9,7 @@ import {
   type Sounds,
 } from '@roastpilot/shared';
 import { act } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { addReading, setRoast } from '../stores/roast-store';
 import { fakeApi, renderApp } from '../test/render-app';
 import { useSounds } from './use-sounds';
@@ -59,6 +59,9 @@ function setup(history: RoastSummary[] = [], sounds: Sounds = DEFAULT_SOUNDS) {
       act(() => {
         stores.auto.setState({ status: { ...AUTO, ...status } });
       });
+    },
+    sounds: (next: Sounds) => {
+      stores.settings.setState(({ settings }) => ({ settings: { ...settings, sounds: next } }));
     },
     reading: (atMs: number, bt: number) => {
       act(() => {
@@ -168,8 +171,8 @@ describe('useSounds', () => {
       enabled: true,
       steps: {
         ...DEFAULT_SOUNDS.steps,
-        'charge-soon': { voice: 'bell', volumePct: 45 },
-        'beans-in': { voice: 'beep', volumePct: 100 },
+        'charge-soon': { voice: 'bell', volumePct: 45, repeat: 'once' },
+        'beans-in': { voice: 'beep', volumePct: 100, repeat: 'once' },
       },
     });
     s.roast(PREHEAT);
@@ -189,5 +192,135 @@ describe('useSounds', () => {
     });
     s.reading(4_000, 180);
     expect(s.chime.play).not.toHaveBeenCalled();
+  });
+});
+
+describe('useSounds repeats', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** Moves the fake clock on, inside act. */
+  const wait = (ms: number) => {
+    act(() => {
+      vi.advanceTimersByTime(ms);
+    });
+  };
+  /** When each play happened, in ms from `from`. */
+  const timesOf = (plays: number[], from: number) => plays.map((at) => at - from);
+
+  function timed(sounds: Sounds = DEFAULT_SOUNDS) {
+    vi.useFakeTimers();
+    const s = setup([], sounds);
+    const plays: number[] = [];
+    s.chime.play.mockImplementation(() => {
+      plays.push(Date.now());
+    });
+    return { ...s, plays, startMs: Date.now() };
+  }
+
+  it('Charge soon repeats every 10 s while Auto waits for the beans, at most a minute', () => {
+    const s = timed();
+    s.roast(PREHEAT);
+    s.auto({ preheatStep: 'add-beans' });
+    wait(5 * 60_000);
+    expect(timesOf(s.plays, s.startMs)).toEqual([
+      0, 10_000, 20_000, 30_000, 40_000, 50_000, 60_000,
+    ]);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('Charge soon stops at once when Auto moves on, and Beans in takes over', () => {
+    const s = timed();
+    s.roast(PREHEAT);
+    s.auto({ preheatStep: 'add-beans' });
+    wait(15_000);
+    s.auto({ preheatStep: 'beans-in' });
+    wait(15_000);
+    // Charge soon at 0 and 10 s; Beans in at 15 and 25 s.
+    expect(timesOf(s.plays, s.startMs)).toEqual([0, 10_000, 15_000, 25_000]);
+    s.auto({ preheatStep: null });
+    s.roast(ROASTING);
+    wait(60_000);
+    expect(s.plays).toHaveLength(4);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('Dump beans plays twice, 3 s apart; Auto stopped three times', () => {
+    const s = timed();
+    s.roast(ROASTING);
+    s.auto({});
+    s.auto({ stopReason: 'disconnected' });
+    wait(10_000);
+    expect(played(s.chime)).toEqual([AUTO_STOPPED, AUTO_STOPPED, AUTO_STOPPED]);
+    s.roast({ ...ROASTING, phase: 'cooling', droppedAtMs: 3_000 });
+    wait(10_000);
+    expect(timesOf(s.plays, s.startMs)).toEqual([0, 3_000, 6_000, 10_000, 13_000]);
+  });
+
+  it('a counted repeat stops early when its step stops waiting', () => {
+    const s = timed();
+    s.roast(ROASTING);
+    s.auto({});
+    s.auto({ stopReason: 'disconnected' });
+    wait(3_000);
+    // Resume auto clears the stop reason: the third play never comes.
+    s.auto({});
+    wait(10_000);
+    expect(played(s.chime)).toEqual([AUTO_STOPPED, AUTO_STOPPED]);
+  });
+
+  it('switching Sounds off cancels what is still to come', () => {
+    const s = timed();
+    s.roast(PREHEAT);
+    s.auto({ preheatStep: 'add-beans' });
+    act(() => {
+      s.sounds({ ...DEFAULT_SOUNDS, enabled: false });
+    });
+    wait(60_000);
+    expect(s.plays).toHaveLength(1);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("changing the step's setting cancels its repeats, not other steps'", () => {
+    const s = timed();
+    s.roast(ROASTING);
+    s.auto({});
+    s.auto({ stopReason: 'disconnected' });
+    s.roast({ ...ROASTING, phase: 'cooling', droppedAtMs: 3_000 });
+    act(() => {
+      s.sounds({
+        ...DEFAULT_SOUNDS,
+        steps: {
+          ...DEFAULT_SOUNDS.steps,
+          'dump-beans': { ...DEFAULT_SOUNDS.steps['dump-beans'], volumePct: 50 },
+        },
+      });
+    });
+    wait(10_000);
+    // Auto stopped plays on (3 times); Dump beans' second play is cancelled.
+    expect(played(s.chime)).toEqual([AUTO_STOPPED, DUMP_BEANS, AUTO_STOPPED, AUTO_STOPPED]);
+  });
+
+  it('a step reached again restarts its repeats instead of overlapping them', () => {
+    const s = timed();
+    s.roast(ROASTING);
+    s.auto({});
+    s.auto({ stopReason: 'disconnected' });
+    wait(1_000);
+    s.auto({});
+    s.auto({ stopReason: 'disconnected' });
+    wait(60_000);
+    expect(timesOf(s.plays, s.startMs)).toEqual([0, 1_000, 4_000, 7_000]);
+  });
+
+  it('unmounting leaves no timer behind', () => {
+    const s = timed();
+    s.roast(PREHEAT);
+    s.auto({ preheatStep: 'add-beans' });
+    s.unmount();
+    wait(60_000);
+    expect(s.plays).toHaveLength(1);
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
