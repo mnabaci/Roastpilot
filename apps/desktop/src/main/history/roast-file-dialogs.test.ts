@@ -1,5 +1,11 @@
-import { describe, expect, it } from 'vitest';
-import { exportDialog, importDialog, ROAST_FILE_EXTENSION } from './roast-file-dialogs';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  exportDialog,
+  exportPathChooser,
+  importDialog,
+  importPathChooser,
+  ROAST_FILE_EXTENSION,
+} from './roast-file-dialogs';
 
 const DAY = new Date('2026-11-06T14:00:00.000Z');
 
@@ -34,5 +40,44 @@ describe('roast file dialogs', () => {
       title: 'Import an Artisan roast',
       filters: [{ name: 'Artisan roast', extensions: ['alog'] }],
     });
+  });
+});
+
+describe('path choosers', () => {
+  const saveDialog = (result: { canceled: boolean; filePath: string }) => ({
+    showSaveDialog: vi.fn(() => Promise.resolve(result)),
+  });
+  const openDialog = (result: { canceled: boolean; filePaths: string[] }) => ({
+    showOpenDialog: vi.fn(() => Promise.resolve(result)),
+  });
+
+  it('export returns the picked path, with the dialog set up for the format and count', async () => {
+    const dialogs = saveDialog({ canceled: false, filePath: '/tmp/out.csv' });
+    const choose = exportPathChooser(dialogs, () => DAY);
+    await expect(choose('csv', 3)).resolves.toBe('/tmp/out.csv');
+    expect(dialogs.showSaveDialog).toHaveBeenCalledWith(exportDialog('csv', 3, DAY));
+  });
+
+  it('a cancelled export, or one with no path, is undefined', async () => {
+    const choose = (result: { canceled: boolean; filePath: string }) =>
+      exportPathChooser(saveDialog(result), () => DAY)('roastpilot', 'all');
+    await expect(choose({ canceled: true, filePath: '' })).resolves.toBeUndefined();
+    await expect(choose({ canceled: false, filePath: '' })).resolves.toBeUndefined();
+  });
+
+  it('import returns the one file picked, from an open-file dialog', async () => {
+    const dialogs = openDialog({ canceled: false, filePaths: ['/tmp/a.alog'] });
+    await expect(importPathChooser(dialogs)('artisan')).resolves.toBe('/tmp/a.alog');
+    expect(dialogs.showOpenDialog).toHaveBeenCalledWith({
+      ...importDialog('artisan'),
+      properties: ['openFile'],
+    });
+  });
+
+  it('a cancelled import, or one with no file, is undefined', async () => {
+    const choose = (result: { canceled: boolean; filePaths: string[] }) =>
+      importPathChooser(openDialog(result))('roastpilot');
+    await expect(choose({ canceled: true, filePaths: [] })).resolves.toBeUndefined();
+    await expect(choose({ canceled: false, filePaths: [] })).resolves.toBeUndefined();
   });
 });

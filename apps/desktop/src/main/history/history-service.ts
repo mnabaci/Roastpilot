@@ -12,7 +12,7 @@ import {
   type StorageError,
 } from '@roastpilot/shared';
 import { parseArtisan } from './artisan-import';
-import { fillRoast } from './fill-roast';
+import { fillOrRemove } from './fill-roast';
 import { roastsToCsv } from './roast-csv';
 
 export interface HistoryServiceDeps {
@@ -134,10 +134,9 @@ export class HistoryService {
       return created;
     }
     const id = created.value;
-    const filled = await fillRoast(repository, id, roast);
+    const filled = await fillOrRemove(repository, id, roast, logger);
     if (!filled.ok) {
       logger.warn('history.import-failed', { id, error: filled.error });
-      await repository.delete(id);
       return filled;
     }
     logger.info('history.imported', { id, samples: roast.samples.length });

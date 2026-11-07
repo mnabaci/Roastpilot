@@ -1,4 +1,4 @@
-import type { RoastRepository } from '@roastpilot/core';
+import type { Logger, RoastRepository } from '@roastpilot/core';
 import type { Result, RoastId, SavedEvent, SavedSample, StorageError } from '@roastpilot/shared';
 
 /** A finished roast from a file, to write into a row that was just made. */
@@ -43,4 +43,21 @@ export async function fillRoast(
     isFavourite: roast.isFavourite ?? false,
     notes: roast.notes,
   });
+}
+
+/**
+ * `fillRoast`, and on a failure the half-written row is deleted again, so an import leaves all or
+ * nothing. A delete that fails too is logged: that row stays, visible in History.
+ */
+export async function fillOrRemove(
+  repository: Pick<RoastRepository, 'addSamples' | 'addEvent' | 'update' | 'saveResult' | 'delete'>,
+  id: RoastId,
+  roast: RoastToFill,
+  logger: Logger,
+): Promise<Result<void, StorageError>> {
+  const filled = await fillRoast(repository, id, roast);
+  if (filled.ok) return filled;
+  const removed = await repository.delete(id);
+  if (!removed.ok) logger.error('history.import-cleanup-failed', { id, error: removed.error });
+  return filled;
 }

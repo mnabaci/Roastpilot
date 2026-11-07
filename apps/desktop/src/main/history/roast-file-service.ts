@@ -8,7 +8,7 @@ import {
   type RoastId,
   type StorageError,
 } from '@roastpilot/shared';
-import { fillRoast } from './fill-roast';
+import { fillOrRemove } from './fill-roast';
 import { idByName, parseRoastFile, toRoastFile, type Names } from './roast-file';
 
 export interface RoastFileServiceDeps {
@@ -97,10 +97,9 @@ export class RoastFileService {
         logger.warn('history.import-failed', { added, error: created.error });
         return created;
       }
-      const filled = await fillRoast(repository, created.value, roast);
+      const filled = await fillOrRemove(repository, created.value, roast, logger);
       if (!filled.ok) {
         logger.warn('history.import-failed', { added, error: filled.error });
-        await repository.delete(created.value);
         return filled;
       }
       here.add(roast.startedAt);
