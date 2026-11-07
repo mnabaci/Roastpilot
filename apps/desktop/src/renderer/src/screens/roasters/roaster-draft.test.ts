@@ -39,6 +39,23 @@ describe('roaster draft', () => {
     });
   });
 
+  it('reads how curves are followed', () => {
+    const result = fromRoasterDraft(
+      draft({ curveKp: '2', curveLookAheadS: '45', curvePullPerC: '0.5', curveSlewPct: '3' }),
+      SKYWALKER,
+    );
+    expect(result).toMatchObject({
+      ok: true,
+      value: {
+        tuning: {
+          curveFollow: { gains: { kp: 2 }, lookAheadS: 45, pullPerC: 0.5, slewPctPer10s: 3 },
+        },
+      },
+    });
+    expect(errorsOf({ curveSlewPct: '0' })).toHaveProperty('curveSlewPct');
+    expect(errorsOf({ curveLimitPct: '' })).toEqual({ curveLimitPct: 'Enter a number' });
+  });
+
   it('names a cell with a half-typed value', () => {
     expect(errorsOf({ batchMinG: '2x' })).toEqual({ batchMinG: 'Enter a number' });
     expect(errorsOf({ hold: '90' })).toEqual({ hold: 'Enter a time like 2:30' });

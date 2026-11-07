@@ -1,7 +1,8 @@
 import type { AutoProfile, AutoTuning, Reading } from '@roastpilot/shared';
 import { BEAN_TEMP } from '../safety/safety-rule';
 import { dueEndRule, type EndRule } from './end-rules';
-import { heatControlFor, type OutputController } from './heat-control';
+import { heatControlFor } from './heat-control';
+import type { OutputController } from './output-controller';
 import { advancePhase, dryEndReached } from './phase-plan';
 import { SettledBt } from './settled-bt';
 import { StallGuard } from './stall-guard';

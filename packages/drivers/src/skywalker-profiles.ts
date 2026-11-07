@@ -1,6 +1,7 @@
 import {
   AutoProfileSchema,
   AutoTuningSchema,
+  CURVE_FOLLOW_DEFAULTS,
   PROFILE_SCHEMA_VERSION,
   type AutoProfile,
   type AutoTuning,
@@ -140,7 +141,8 @@ export const SKYWALKER_PROFILES = {
 export const SKYWALKER_TUNING: AutoTuning = AutoTuningSchema.parse({
   target: { kp: 1.5, ki: 0.02, kd: 0 },
   targetLimitPct: 20,
-  follow: { kp: 1, ki: 0.01, kd: 0 },
+  // The shared defaults are the Skywalker's (ADR 0016).
+  curveFollow: CURVE_FOLLOW_DEFAULTS,
   preheat: { kp: 5, ki: 0.02, kd: 0 },
   preheatFanPct: 30,
   holdS: 150,

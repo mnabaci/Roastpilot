@@ -86,6 +86,8 @@ export {
 export {
   AutoProfileSchema,
   AutoTuningSchema,
+  CURVE_FOLLOW_DEFAULTS,
+  CurveFollowSchema,
   CurvePointSchema,
   PhaseHeatSchema,
   PhaseNextSchema,
@@ -99,6 +101,7 @@ export {
   PROFILE_SCHEMA_VERSION,
   type AutoProfile,
   type AutoTuning,
+  type CurveFollow,
   type CurvePoint,
   type PhaseHeat,
   type PhaseNext,

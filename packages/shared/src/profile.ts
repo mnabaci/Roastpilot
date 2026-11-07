@@ -23,7 +23,7 @@ export const PhaseHeatSchema = z.discriminatedUnion('mode', [
       rorMax: z.number(),
     })
     .refine((heat) => heat.rorMin < heat.rorMax, { message: 'rorMin must be below rorMax' }),
-  /** The PID sets the heater 0–100% to track the curve; `pct` is its starting value. */
+  /** Hold the curve's own RoR; `pct` is the heater's starting estimate (ADR 0016). */
   z.object({ mode: z.literal('follow'), pct: PercentSchema }),
 ]);
 
@@ -84,6 +84,32 @@ export const PidGainsSchema = z.object({
   kd: z.number().nonnegative(),
 });
 
+/** How `follow` phases trace the curve (docs/spec/roast-control.md, Heat control; ADR 0016). */
+export const CurveFollowSchema = z.object({
+  /** On RoR error (°C/min). */
+  gains: PidGainsSchema,
+  /** At most this many % above or below the heater estimate. */
+  limitPct: z.number().positive(),
+  /** Aim for the curve's RoR this many seconds ahead, to cover the drum's lag. */
+  lookAheadS: z.number().nonnegative(),
+  /** °C/min more RoR for each °C BT is behind the curve. */
+  pullPerC: z.number().nonnegative(),
+  /** The heater moves at most this many % per 10 s, either way. */
+  slewPctPer10s: z.number().positive(),
+});
+
+/**
+ * The Skywalker's starting values, the one real model so far. A record saved before curve phases
+ * followed RoR reads with these.
+ */
+export const CURVE_FOLLOW_DEFAULTS: CurveFollow = {
+  gains: { kp: 1.5, ki: 0.02, kd: 0 },
+  limitPct: 20,
+  lookAheadS: 30,
+  pullPerC: 0.3,
+  slewPctPer10s: 5,
+};
+
 /**
  * What Auto needs to know about the roaster beyond its profiles; moves to the roaster record in
  * milestone 5 (docs/adr/0011-built-in-profile-as-data.md).
@@ -93,8 +119,8 @@ export const AutoTuningSchema = z.object({
   target: PidGainsSchema,
   /** At most this many % above or below the heater estimate. */
   targetLimitPct: z.number().positive(),
-  /** On temperature error (°C), for `follow` phases. */
-  follow: PidGainsSchema,
+  /** For `follow` phases. The old temperature-error `follow` gains are dropped on read. */
+  curveFollow: CurveFollowSchema.default(() => CURVE_FOLLOW_DEFAULTS),
   /** On temperature error (°C), for the preheat climb and hold. */
   preheat: PidGainsSchema,
   preheatFanPct: PercentSchema,
@@ -112,6 +138,7 @@ export type ProfileId = z.infer<typeof ProfileIdSchema>;
 export type AutoProfile = z.infer<typeof AutoProfileSchema>;
 export type PidGains = z.infer<typeof PidGainsSchema>;
 export type AutoTuning = z.infer<typeof AutoTuningSchema>;
+export type CurveFollow = z.infer<typeof CurveFollowSchema>;
 
 /** A profile as the Profiles screen lists it. */
 export const ProfileEntrySchema = z.object({

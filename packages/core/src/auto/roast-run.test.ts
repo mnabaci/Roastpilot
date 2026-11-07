@@ -31,7 +31,13 @@ const PROFILE: AutoProfile = {
 const TUNING: AutoTuning = {
   target: { kp: 0, ki: 0.1, kd: 0 },
   targetLimitPct: 20,
-  follow: { kp: 0, ki: 0.1, kd: 0 },
+  curveFollow: {
+    gains: { kp: 0, ki: 0.1, kd: 0 },
+    limitPct: 20,
+    lookAheadS: 30,
+    pullPerC: 0.3,
+    slewPctPer10s: 5,
+  },
   preheat: { kp: 1, ki: 0, kd: 0 },
   preheatFanPct: 30,
   holdS: 150,
@@ -43,26 +49,27 @@ const tick = (run: RoastRun, s: number, btC: number) =>
 
 describe('RoastRun', () => {
   it(`counts a gap of more than ${String(MAX_STEP_S)} s as ${String(MAX_STEP_S)} s`, () => {
-    // Follow phase on a flat curve, BT 10 °C under it: each counted second adds 0.1 × 10 = 1%.
-    const flat = {
+    // Follow phase on a curve climbing 30 °C/min, RoR 10: the heater climbs at its 0.5% a second.
+    const steep = {
       ...PROFILE,
       curve: [
         { tS: 0, c: 180 },
         { tS: 60, c: 150 },
-        { tS: 900, c: 150 },
+        { tS: 900, c: 570 },
       ],
     };
     const heaterAfter = (gapS: number) => {
-      const run = new RoastRun(flat, TUNING, 0);
+      const run = new RoastRun(steep, TUNING, 0);
       run.catchUp([
         { atMs: 100_000, btC: 150 },
         { atMs: 101_000, btC: 150 },
       ]);
-      [102, 103, 104].forEach((s) => tick(run, s, 140));
-      return tick(run, 104 + gapS, 140).heaterPct;
+      [102, 103, 104].forEach((s) => tick(run, s, 150));
+      return tick(run, 104 + gapS, 150).heaterPct;
     };
+    expect(heaterAfter(1)).toBe(52);
     expect(heaterAfter(300)).toBe(heaterAfter(MAX_STEP_S));
-    expect(heaterAfter(300)).toBeLessThan(heaterAfter(1) + MAX_STEP_S);
+    expect(heaterAfter(300)).toBe(53);
   });
 
   it('catches up quietly, timing the phase from when it really began', () => {

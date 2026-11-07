@@ -17,3 +17,17 @@ export function curveTargetC(curve: readonly CurvePoint[], tS: number): number |
   if (!start || !end) return undefined;
   return start.c + ((end.c - start.c) * (tS - start.tS)) / (end.tS - start.tS);
 }
+
+/** Half the window the curve's RoR is taken over: its slope over ±15 s. */
+export const CURVE_ROR_HALF_WINDOW_S = 15;
+
+/**
+ * The curve's own rate of rise at `tS`, in °C/min: its slope over ±15 s, so a knee shows a little
+ * before it comes. Past the last point the last slope carries on, as `curveTargetC` does.
+ */
+export function curveRorAt(curve: readonly CurvePoint[], tS: number): number | undefined {
+  const before = curveTargetC(curve, tS - CURVE_ROR_HALF_WINDOW_S);
+  const after = curveTargetC(curve, tS + CURVE_ROR_HALF_WINDOW_S);
+  if (before === undefined || after === undefined) return undefined;
+  return ((after - before) / (2 * CURVE_ROR_HALF_WINDOW_S)) * 60;
+}
