@@ -11,6 +11,7 @@ import { FinishedRoastCard } from './FinishedRoastCard';
 import { useRunningPlan } from './use-active-profile';
 import { usePlanLines } from './use-plan-lines';
 import { OutputsPanel } from './OutputsPanel';
+import { CoachPanel } from './CoachPanel';
 import { RoastNumbersRow } from './RoastNumbersRow';
 import { useSensorNames } from '../../features/use-sensor-names';
 import { useConnection, useRoast, useSettings } from '../../stores/use-stores';
@@ -105,6 +106,7 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
           // During and after a roast the controls come right under the action.
           <>
             {flow}
+            <CoachPanel />
             <OutputsPanel />
             {setupPanel}
             {roast.phase === 'done' ? null : (

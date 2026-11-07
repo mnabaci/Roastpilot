@@ -1,6 +1,7 @@
 import type { Logger } from '@roastpilot/core';
 import {
   type AppInfo,
+  type CoachStatus,
   type Reading,
   type UpdateStatus,
   DEFAULT_SETTINGS,
@@ -39,6 +40,29 @@ describe('syncWithMain', () => {
     expect(stores.settings.getState().settings.controls).toBe('full');
     onReading({ atMs: 1, values: { bt: 150 } });
     expect(stores.roast.getState().readings).toEqual([{ atMs: 1, values: { bt: 150 } }]);
+  });
+
+  it('follows the coach card from the snapshot and then from main', async () => {
+    let onCoach: (status: CoachStatus) => void = () => undefined;
+    const card: CoachStatus = {
+      advice: { kind: 'first-crack-soon', id: 2, inS: 45 },
+      needsCalibration: null,
+    };
+    const api = fakeApi({
+      onCoachStatus: (listener) => {
+        onCoach = listener;
+        return () => undefined;
+      },
+    });
+    const snapshot = await api.getSnapshot();
+    api.getSnapshot = vi.fn(() => Promise.resolve({ ...snapshot, coach: card }));
+    const stores = createStores();
+    syncWithMain(api, stores, logger());
+    await vi.waitFor(() => {
+      expect(stores.coach.getState().status).toEqual(card);
+    });
+    onCoach({ advice: null, needsCalibration: null });
+    expect(stores.coach.getState().status.advice).toBeNull();
   });
 
   it('listens before it loads, so nothing in between is lost', () => {

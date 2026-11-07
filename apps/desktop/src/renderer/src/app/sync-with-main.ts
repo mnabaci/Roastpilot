@@ -19,6 +19,7 @@ type SyncApi = Pick<
   | 'onSafetyEvent'
   | 'onRoast'
   | 'onAutoStatus'
+  | 'onCoachStatus'
   | 'getAppInfo'
   | 'onUpdateStatus'
 >;
@@ -48,6 +49,9 @@ export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsu
     }),
     api.onAutoStatus((status) => {
       stores.auto.setState({ status });
+    }),
+    api.onCoachStatus((status) => {
+      stores.coach.setState({ status });
     }),
     api.onUpdateStatus((status) => {
       updateHeard = true;
@@ -102,6 +106,7 @@ export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsu
       stores.auto.setState(
         profilesAsked === 0 ? { status: snapshot.auto, profiles } : { status: snapshot.auto },
       );
+      stores.coach.setState({ status: snapshot.coach });
       stores.roasters.setState({ roasters });
       stores.beans.setState({
         beans,

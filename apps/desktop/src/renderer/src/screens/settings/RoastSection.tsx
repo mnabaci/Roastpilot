@@ -12,7 +12,7 @@ const ROASTER_COOL_TO: readonly SegmentedOption<RoasterCoolTo>[] = ([40, 50, 60,
   (c) => ({ value: c, label: `${String(c)} °C` }),
 );
 
-/** Charge point, bean cooling and drum cooling (docs/spec/manual-mode.md). */
+/** Charge point, the coach, bean cooling and drum cooling (docs/spec/manual-mode.md). */
 export function RoastSection() {
   const settings = useSettings((s) => s.settings);
   const save = useSaveSettings();
@@ -27,6 +27,15 @@ export function RoastSection() {
           checked={settings.findChargePoint}
           onChange={(on) => {
             save({ findChargePoint: on });
+          }}
+        />
+      </SettingRow>
+      <SettingRow name="Coach in manual roasts" hint="Suggests what Auto would set now, with Apply">
+        <Switch
+          aria-label="Coach in manual roasts"
+          checked={settings.coachInManual}
+          onChange={(on) => {
+            save({ coachInManual: on });
           }}
         />
       </SettingRow>
