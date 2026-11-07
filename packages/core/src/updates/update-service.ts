@@ -42,6 +42,8 @@ export class UpdateService {
   readonly #schedule: UpdateSchedule;
   readonly #stopListening: () => void;
   #status: UpdateStatus = { state: 'idle', checkedAt: null };
+  /** The version whose install failed last run (macOS); never downloaded again this run. */
+  #failedInstall: string | null = null;
   #disposed = false;
 
   constructor(deps: UpdateServiceDeps) {
@@ -95,9 +97,15 @@ export class UpdateService {
       this.#set({ state: 'idle', checkedAt: new Date(this.#deps.wallNowMs()).toISOString() });
       return;
     }
-    if (!this.#deps.canInstall()) {
-      if (shown !== version) this.#deps.logger.info('update.available', { version });
-      this.#set({ state: 'available', version, reason: 'cant-replace' });
+    // Installing this version failed last time: downloading it again would fail at every quit.
+    const reason = !this.#deps.canInstall()
+      ? 'cant-replace'
+      : version === this.#failedInstall
+        ? 'install-failed'
+        : undefined;
+    if (reason !== undefined) {
+      if (shown !== version) this.#deps.logger.info('update.available', { version, reason });
+      this.#set({ state: 'available', version, reason });
       return;
     }
     await this.#download(version);
@@ -123,10 +131,12 @@ export class UpdateService {
 
   /**
    * The last install (macOS: the swap after quitting) failed, as main read from its log: shown as
-   * "Couldn't update" until the next check, which downloads it again. Ignored once a check runs.
+   * "Couldn't update" until the next check, which offers that version as a Download instead of
+   * downloading it again. Ignored once a check runs.
    */
   installFailed(detail: { version: string | null; reason: string }): void {
     if (this.#disposed || this.#status.state !== 'idle' || this.#status.checkedAt !== null) return;
+    this.#failedInstall = detail.version;
     this.#deps.logger.warn('update.last-install-failed', detail);
     this.#set({ state: 'failed', stage: 'install' });
   }

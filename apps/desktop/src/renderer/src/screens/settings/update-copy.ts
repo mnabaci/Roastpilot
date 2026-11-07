@@ -34,9 +34,13 @@ export function updateCopy(status: UpdateStatus | null): UpdateCopy {
     case 'ready':
       return { line: `${status.version} is ready · installs when you quit`, action: 'restart' };
     case 'available':
-      // macOS, when this copy can't replace itself (the DMG, Downloads, a read-only folder).
+      // macOS, when this copy can't replace itself (the DMG, Downloads, a read-only folder), or
+      // installing this version failed last time.
       return {
-        line: `Version ${status.version} is out · move Roastpilot to Applications to update by itself`,
+        line:
+          status.reason === 'install-failed'
+            ? `Version ${status.version} is out · couldn't install it by itself`
+            : `Version ${status.version} is out · move Roastpilot to Applications to update by itself`,
         action: 'download',
       };
     case 'failed':

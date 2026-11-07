@@ -16,6 +16,7 @@ const EVERY_STATE: UpdateStatus[] = [
   { state: 'downloading', version: '0.2.0', percent: 45 },
   { state: 'ready', version: '0.2.0' },
   { state: 'available', version: '0.2.0', reason: 'cant-replace' },
+  { state: 'available', version: '0.2.0', reason: 'install-failed' },
   { state: 'failed', stage: 'check' },
   { state: 'failed', stage: 'download' },
   { state: 'failed', stage: 'install' },
@@ -62,7 +63,11 @@ describe('UpdateStatusSchema', () => {
 
 describe('updateWaiting', () => {
   it('is true only while an update is ready or out', () => {
-    expect(EVERY_STATE.filter(updateWaiting).map((s) => s.state)).toEqual(['ready', 'available']);
+    expect(EVERY_STATE.filter(updateWaiting).map((s) => s.state)).toEqual([
+      'ready',
+      'available',
+      'available',
+    ]);
     expect(updateWaiting({ state: 'failed', stage: 'install' })).toBe(false);
   });
 });

@@ -424,7 +424,7 @@ describe('UpdateService: the last install failed', () => {
     ]);
   });
 
-  it('stays on screen until the first check, which downloads it again', async () => {
+  it('stays on screen until the first check, which offers that version as a download', async () => {
     const h = updateHarness();
     h.latest(ok('0.2.0'));
     h.service.installFailed(FAILED);
@@ -432,6 +432,27 @@ describe('UpdateService: the last install failed', () => {
     await h.clock.runFor(FIRST_CHECK_MS - 1);
     expect(h.service.status).toEqual({ state: 'failed', stage: 'install' });
     await h.clock.runFor(1);
+    expect(h.service.status).toEqual({
+      state: 'available',
+      version: '0.2.0',
+      reason: 'install-failed',
+    });
+    expect(h.updater.download).not.toHaveBeenCalled();
+  });
+
+  it('a newer version than the one that failed downloads as usual', async () => {
+    const h = updateHarness();
+    h.latest(ok('0.2.1'));
+    h.service.installFailed(FAILED);
+    await h.service.check();
+    expect(h.service.status).toEqual({ state: 'ready', version: '0.2.1' });
+  });
+
+  it('a failure with no version read from the log blocks nothing', async () => {
+    const h = updateHarness();
+    h.latest(ok('0.2.0'));
+    h.service.installFailed({ version: null, reason: 'unknown' });
+    await h.service.check();
     expect(h.service.status).toEqual({ state: 'ready', version: '0.2.0' });
   });
 

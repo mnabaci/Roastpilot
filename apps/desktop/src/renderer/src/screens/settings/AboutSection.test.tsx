@@ -51,6 +51,12 @@ describe('AboutSection', () => {
       'Download',
     ],
     [
+      'out on a Mac whose last install of it failed',
+      { state: 'available', version: '0.2.0', reason: 'install-failed' },
+      "Version 0.2.0 is out · couldn't install it by itself",
+      'Download',
+    ],
+    [
       "couldn't check",
       { state: 'failed', stage: 'check' },
       "Couldn't check · try again",

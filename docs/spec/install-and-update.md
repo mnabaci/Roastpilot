@@ -39,7 +39,7 @@ macOS's own updater (Squirrel) accepts an update only when it is signed by the s
 1. **Download:** the `.zip` that `latest-mac.yml` names, from the same GitHub release, into `<userData>/updates/`. About shows the percentage. A download cut off (offline, quit) is thrown away and tried again at the next check.
 2. **Check, before it counts as ready:** size and SHA-512 match `latest-mac.yml`; unpacked with `ditto` (keeps the signature); the app inside passes `codesign --verify --deep --strict`, is `app.roastpilot.desktop`, and says the version that was found. Any mismatch: deleted, logged (`update.verify-failed`), About says "Couldn't update · try again".
 3. **Ready:** "0.1.2 is ready · installs when you quit", **Restart to update**, the Settings tab dot, as on Windows.
-4. **Install, after the app has quit:** the quit's last steps (after the safe stop, the roast save and closing the database) start a small helper (`mac-update-swap.sh`, shipped in the app's resources) and let it go. It waits up to 30 s for the app's process to end, then renames the installed app to `Roastpilot.app.old`, moves the new one into its place, deletes the old one and starts the new one (after Restart to update only). If a step fails it puts the old app back and logs why in `<userData>/updates/install.log`; the next launch reads it once and says "Couldn't update · try again" until the first check, 10 s later, downloads it again. The same launch deletes anything a run left in `<userData>/updates/` (a download cut off by quitting, an app never installed).
+4. **Install, after the app has quit:** the quit's last steps (after the safe stop, the roast save and closing the database) start a small helper (`mac-update-swap.sh`, shipped in the app's resources) and let it go. It waits up to 30 s for the app's process to end, then renames the installed app to `Roastpilot.app.old`, moves the new one into its place, deletes the old one and starts the new one (after Restart to update only). If a step fails it puts the old app back and logs why in `<userData>/updates/install.log`; the next launch reads it once and says "Couldn't update · try again" until the first check, 10 s later. That check doesn't download the same version again (it would fail the same way at every quit): it shows it as out, with **Download**. A newer version tries again. The same launch deletes anything a run left in `<userData>/updates/` (a download cut off by quitting, an app never installed).
 5. **No prompt after the first install:** a file the app downloads itself carries no quarantine flag, so macOS doesn't ask again.
 
 - **Falls back to Download** (the release page) when Roastpilot can't replace itself: running from the DMG, from a translocated copy (macOS runs apps opened from Downloads from a read-only copy), or from a folder you can't write to. About says why in one line ("Move Roastpilot to Applications to update by itself").
@@ -49,18 +49,19 @@ macOS's own updater (Squirrel) accepts an update only when it is signed by the s
 
 - **Settings › About** (last section): Version `0.2.0`, then one row for updates, with one button:
 
-| State                      | Line                                                                       | Button            |
-| -------------------------- | -------------------------------------------------------------------------- | ----------------- |
-| Not checked yet            | Not checked yet (the first 10 s)                                           | Check for updates |
-| Up to date                 | Up to date · checked 14:02                                                 | Check for updates |
-| Checking                   | Checking…                                                                  | (disabled)        |
-| Downloading                | Downloading 0.2.0 · 45 %                                                   | (none)            |
-| Ready                      | 0.2.0 is ready · installs when you quit                                    | Restart to update |
-| Out, can't install (macOS) | Version 0.2.0 is out · move Roastpilot to Applications to update by itself | Download          |
-| Couldn't check             | Couldn't check · try again                                                 | Check for updates |
-| Couldn't update            | Couldn't update · try again (the download, its checks or the install)      | Check for updates |
+| State                       | Line                                                                       | Button            |
+| --------------------------- | -------------------------------------------------------------------------- | ----------------- |
+| Not checked yet             | Not checked yet (the first 10 s)                                           | Check for updates |
+| Up to date                  | Up to date · checked 14:02                                                 | Check for updates |
+| Checking                    | Checking…                                                                  | (disabled)        |
+| Downloading                 | Downloading 0.2.0 · 45 %                                                   | (none)            |
+| Ready                       | 0.2.0 is ready · installs when you quit                                    | Restart to update |
+| Out, can't install (macOS)  | Version 0.2.0 is out · move Roastpilot to Applications to update by itself | Download          |
+| Out, install failed (macOS) | Version 0.2.0 is out · couldn't install it by itself                       | Download          |
+| Couldn't check              | Couldn't check · try again                                                 | Check for updates |
+| Couldn't update             | Couldn't update · try again (the download, its checks or the install)      | Check for updates |
 
-- **Settings tab dot:** while an update is ready, or out and this copy can't install it (macOS), the Settings tab carries a small ember dot, said to screen readers as "Update available". No pop-up, no toast.
+- **Settings tab dot:** while an update is ready, or out and this copy can't install it (macOS, either case), the Settings tab carries a small ember dot, said to screen readers as "Update available". No pop-up, no toast.
 - What's new: a "What's new" link next to the version opens the release notes on GitHub (not in development, where there is no release).
 - A Restart to update or Download that fails, or is refused because a roast started meanwhile, says so in a toast; a failed check stays in the line.
 

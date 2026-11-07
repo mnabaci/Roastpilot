@@ -3,8 +3,11 @@ import { z } from 'zod';
 /** A release version, `X.Y.Z` (no pre-releases: docs/spec/install-and-update.md). */
 export const VersionSchema = z.string().regex(/^\d+\.\d+\.\d+$/);
 
-/** Why a newer version can't install by itself (macOS: move Roastpilot to Applications). */
-export const UpdateBlockedReasonSchema = z.enum(['cant-replace']);
+/**
+ * Why a newer version can't install by itself (macOS): `cant-replace`, move Roastpilot to
+ * Applications; `install-failed`, installing this version failed last time.
+ */
+export const UpdateBlockedReasonSchema = z.enum(['cant-replace', 'install-failed']);
 
 /** Which step failed: About says "Couldn't check" or "Couldn't update". */
 export const UpdateStageSchema = z.enum(['check', 'download', 'install']);
@@ -27,6 +30,7 @@ export const UpdateStatusSchema = z.discriminatedUnion('state', [
   /**
    * A newer version is out but this copy can't install it (`reason`); Download opens its release
    * page. `cant-replace`: macOS, run from the DMG, a translocated copy or a folder it can't write.
+   * `install-failed`: macOS, the last install of this version failed, so it isn't downloaded again.
    */
   z.object({
     state: z.literal('available'),
