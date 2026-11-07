@@ -100,7 +100,9 @@ export function BeansScreen({
         />
       ) : right.kind === 'calculator' ? (
         <section aria-label="Batch calculator" className={cn('flex flex-col gap-4', PAGE_WIDTH)}>
-          <h2 className="text-heading">Batch calculator</h2>
+          <div className="flex min-h-control-sm min-w-0 items-center">
+            <h2 className="truncate text-title">Batch calculator</h2>
+          </div>
           <BatchCalculator orderG={orderG} onOrderG={setOrderG} />
         </section>
       ) : open ? (

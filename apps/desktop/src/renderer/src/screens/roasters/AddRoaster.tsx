@@ -33,7 +33,9 @@ export function AddRoaster({ onAdded }: { onAdded: (id: RoasterId) => void }) {
   };
   return (
     <section aria-label="Add roaster" className={cn('flex flex-col gap-4', PAGE_WIDTH)}>
-      <h2 className="text-heading">Add roaster</h2>
+      <div className="flex min-h-control-sm min-w-0 items-center">
+        <h2 className="truncate text-title">Add roaster</h2>
+      </div>
       <div className="flex flex-wrap items-end gap-2">
         <TextField label="Name" className="min-w-40 flex-1" value={name} onChange={setName} />
         <SelectField
