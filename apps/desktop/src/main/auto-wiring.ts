@@ -59,7 +59,8 @@ export function roundOutput(session: Pick<RoasterSession, 'connection'>) {
 export const heaterLocked = (session: Pick<RoasterSession, 'connection' | 'safetyStatus'>) => () =>
   session.connection.status !== 'connected' || session.safetyStatus.locked;
 
-function noteAutoEvent(roast: ManualRoast, event: AutoEvent): void {
+/** What Auto did, as an event on the roast (docs/spec/data-model.md, Auto mode). */
+export function noteAutoEvent(roast: Pick<ManualRoast, 'note'>, event: AutoEvent): void {
   switch (event.kind) {
     case 'phase':
       roast.note('phase', event.name);
