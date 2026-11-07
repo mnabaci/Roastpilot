@@ -7,3 +7,9 @@ onlyBuiltDependencies:
   - esbuild
   - better-sqlite3
   - '@serialport/bindings-cpp'
+
+# Patched versions of build-only dependencies Dependabot can't bump through their parents.
+overrides:
+  esbuild@<0.25.0: ^0.25.12
+  glob@>=9.0.0 <14.0.2: ^14.0.2
+  minimatch@>=7.0.0 <11.0.1: ^11.0.1
