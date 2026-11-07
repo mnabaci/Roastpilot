@@ -33,6 +33,7 @@ import { createAppLogger } from './logging/app-logger';
 import { listLogDays, readLogDay } from './logging/log-reader';
 import { pruneOldLogsLater } from './logging/prune';
 import { makeProfileFromRoast } from './profiles/make-profile';
+import { exportDialog, importDialog } from './history/roast-file-dialogs';
 import { createPowerGuard } from './power-guard';
 import { createQuitGuard } from './quit-guard';
 import { JsonSettingsStore } from './settings/json-settings-store';
@@ -181,29 +182,15 @@ app
             history,
             files: roastFileService,
             chooseExportPath: async (format, count) => {
-              const day = new Date().toISOString().slice(0, 10);
-              const what = count === 1 ? 'roast' : 'roasts';
-              const { canceled, filePath } = await dialog.showSaveDialog({
-                title: count === 'all' ? 'Export all roasts' : `Export ${String(count)} ${what}`,
-                defaultPath:
-                  format === 'csv'
-                    ? `Roastpilot ${what} ${day}.csv`
-                    : `Roastpilot ${what} ${day}.json`,
-                filters:
-                  format === 'csv'
-                    ? [{ name: 'CSV', extensions: ['csv'] }]
-                    : [{ name: 'Roastpilot roasts', extensions: ['json'] }],
-              });
+              const { canceled, filePath } = await dialog.showSaveDialog(
+                exportDialog(format, count, new Date()),
+              );
               return canceled ? undefined : filePath;
             },
             chooseImportPath: async (kind) => {
               const { canceled, filePaths } = await dialog.showOpenDialog({
-                title: kind === 'artisan' ? 'Import an Artisan roast' : 'Import Roastpilot roasts',
+                ...importDialog(kind),
                 properties: ['openFile'],
-                filters:
-                  kind === 'artisan'
-                    ? [{ name: 'Artisan roast', extensions: ['alog'] }]
-                    : [{ name: 'Roastpilot roasts', extensions: ['json'] }],
               });
               return canceled ? undefined : filePaths[0];
             },

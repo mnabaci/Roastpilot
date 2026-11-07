@@ -55,8 +55,8 @@ One migration per milestone.
 
 ## Roastpilot roast files
 
-- **Export** writes a Roastpilot file (`.json`) or a CSV, of every roast ("Export all"), the ones ticked in Select, or the open roast. A Roastpilot file is `{ format: "roastpilot-roasts", version: 1, exportedAt, roasts }`, each roast in full (its summary, mode, profile copy, samples and events) plus the bean's and roaster's names; ids stay behind, as they mean nothing on another computer.
-- **Import** reads a Roastpilot file. A roast whose start time is already in History is skipped; the rest are added and the result says both counts ("Imported 12 roasts · 3 were already here"). A file that isn't one, or a newer `version`, is refused as a whole with one line.
+- **Export** writes a Roastpilot file (`.rpr`, JSON inside, as Artisan's `.alog`) or a CSV, of every roast ("Export all"), the ones ticked in Select, or the open roast. A Roastpilot file is `{ format: "roastpilot-roasts", version: 1, exportedAt, roasts }`, each roast in full (its summary, mode, profile copy, samples and events) plus the bean's and roaster's names; ids stay behind, as they mean nothing on another computer.
+- **Import** reads a Roastpilot file (`.rpr`). A roast whose start time is already in History is skipped; the rest are added and the result says both counts ("Imported 12 roasts · 3 were already here"). A file that isn't one, or a newer `version`, is refused as a whole with one line.
 - **Links:** an imported roast links to a bean or roaster with exactly the same name, else to none; it never touches stock, as those beans were roasted elsewhere.
 - **Migration 0004:** `roasts.imported` (0 or 1). Existing roasts with no roaster are Artisan imports and get 1. Stock never moves for an imported roast: not at import, not when its weights change, not when its bean changes.
 - **Changing a saved roast's bean** (History): for a roast made here, its batch goes back to the old bean's green stock and comes off the new one's, and the roasted weight moves the same way; for an imported roast, only the link changes.
