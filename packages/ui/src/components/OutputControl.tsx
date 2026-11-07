@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
 import { cn } from '../lib/utils';
 import { Badge } from './Badge';
 import { Button } from './Button';
@@ -29,10 +29,11 @@ export interface OutputControlProps {
   className?: string;
 }
 
-const ACCENT = {
-  heat: 'accent-heat-fill',
-  air: 'accent-air',
-  neutral: 'accent-ink-muted',
+/** The fill and thumb colour per tone (the track itself is `border-strong`, see globals.css). */
+const FILL = {
+  heat: 'var(--heat-fill)',
+  air: 'var(--air)',
+  neutral: 'var(--ink-muted)',
 } as const;
 
 /** How long the keyboard has to rest before its value is sent. */
@@ -95,10 +96,16 @@ export function OutputControl({
         }}
         onBlur={commitNow}
         // sm sits in a row of fields: as tall as they are, so the labels line up (and a 44 px target).
+        // Drawn by us, not Chromium, so every tone gets the same track in both themes.
+        style={
+          {
+            '--range-fill': FILL[tone],
+            '--range-at': `${String((((shown ?? min) - min) / (max - min)) * 100)}%`,
+          } as CSSProperties
+        }
         className={cn(
-          'w-full cursor-pointer disabled:cursor-not-allowed',
+          'rp-range w-full cursor-pointer disabled:cursor-not-allowed disabled:opacity-50',
           sm ? 'h-control-sm' : 'h-7',
-          ACCENT[tone],
         )}
       />
       {manual && onResumeAuto ? (
