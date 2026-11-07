@@ -33,27 +33,39 @@ describe('AboutSection', () => {
     ['not checked yet', { state: 'idle', checkedAt: null }, 'Not checked yet', 'Check for updates'],
     ['checking', { state: 'checking' }, 'Checking…', 'Check for updates'],
     [
-      'downloading',
+      'downloading (Windows and macOS alike)',
       { state: 'downloading', version: '0.2.0', percent: 45 },
       'Downloading 0.2.0 · 45 %',
       null,
     ],
     [
-      'ready',
+      'ready (Windows and macOS alike)',
       { state: 'ready', version: '0.2.0' },
       '0.2.0 is ready · installs when you quit',
       'Restart to update',
     ],
     [
-      'out on macOS',
+      'out on a Mac that cannot replace itself',
       { state: 'available', version: '0.2.0', reason: 'cant-replace' },
-      'Version 0.2.0 is out',
+      'Version 0.2.0 is out · move Roastpilot to Applications to update by itself',
       'Download',
     ],
     [
       "couldn't check",
       { state: 'failed', stage: 'check' },
       "Couldn't check · try again",
+      'Check for updates',
+    ],
+    [
+      "couldn't download",
+      { state: 'failed', stage: 'download' },
+      "Couldn't update · try again",
+      'Check for updates',
+    ],
+    [
+      "couldn't install (the last swap failed)",
+      { state: 'failed', stage: 'install' },
+      "Couldn't update · try again",
       'Check for updates',
     ],
     ['off in development', { state: 'off' }, 'Updates are off in development', null],
@@ -89,6 +101,16 @@ describe('AboutSection', () => {
     expect(api.checkForUpdates).toHaveBeenCalledTimes(1);
     renderApp(<AboutSection />, { version: '0.1.0', update: { state: 'checking' } });
     expect(screen.getAllByRole('button', { name: 'Check for updates' }).at(-1)).toBeDisabled();
+  });
+
+  it('after a failed install, Check for updates tries again', async () => {
+    const { api, stores } = renderApp(<AboutSection />, {
+      version: '0.1.0',
+      update: { state: 'failed', stage: 'install' },
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Check for updates' }));
+    expect(api.checkForUpdates).toHaveBeenCalledTimes(1);
+    expect(toasts(stores)).toEqual([]);
   });
 
   it('a failed check is said in the line only, not in a toast', () => {
