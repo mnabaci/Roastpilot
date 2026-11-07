@@ -50,6 +50,13 @@ describe('RoastScreen coach card', () => {
     expect(card).toHaveTextContent('4 °C below target, RoR falling');
   });
 
+  it('names a profile that needs calibration after the label', () => {
+    show({ ...SUGGESTION, needsCalibration: 'Light · Steps' });
+    expect(screen.getByRole('region', { name: 'Coach suggestion' })).toHaveTextContent(
+      'Coach suggests · Light · Steps needs calibration',
+    );
+  });
+
   it('is not there when main has nothing to say', () => {
     show({ advice: null, needsCalibration: null });
     expect(screen.queryByRole('region', { name: 'Coach suggestion' })).toBeNull();
