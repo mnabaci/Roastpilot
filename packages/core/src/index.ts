@@ -80,3 +80,7 @@ export {
   suggestProfile,
   type ProfileSuggestion,
 } from './beans/suggest-profile';
+export type { Updater, UpdaterEvent, UpdaterFailure } from './updates/updater';
+export { UpdateService, type UpdateServiceDeps } from './updates/update-service';
+export { CHECK_EVERY_MS, FIRST_CHECK_MS } from './updates/update-schedule';
+export { isNewerVersion } from './updates/version';
