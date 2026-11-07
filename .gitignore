@@ -16,3 +16,4 @@ storybook-static/
 
 # TypeScript incremental build info
 *.tsbuildinfo
+*.swp
