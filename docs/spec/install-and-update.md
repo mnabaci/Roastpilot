@@ -18,32 +18,46 @@ How Roastpilot gets onto a computer and stays current, without ever touching a r
 
 ## Updates
 
-|                   | Windows                                                                  | macOS (unsigned)                                             |
-| ----------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------ |
-| Check             | At launch (after 10 s) and every 24 h, against the latest GitHub release | The same                                                     |
-| Found a newer one | Downloads it in the background                                           | Nothing downloads: macOS won't install an unsigned update    |
-| Ready             | Installs when you quit; or **Restart to update**                         | **Download** opens the release page; you install the new DMG |
-| During a roast    | Never restarts; Restart to update is disabled ("Finish the roast first") | —                                                            |
+|                   | Windows                                                                  | macOS (ad-hoc signed)                                                             |
+| ----------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| Check             | At launch (after 10 s) and every 24 h, against the latest GitHub release | The same                                                                          |
+| Found a newer one | Downloads it in the background (electron-updater)                        | Downloads the release's `.zip` in the background (Roastpilot's own Mac installer) |
+| Ready             | Installs when you quit; or **Restart to update**                         | The same                                                                          |
+| During a roast    | Never restarts; Restart to update is disabled ("Finish the roast first") | The same                                                                          |
+| Can't install     | —                                                                        | **Download** opens the release page, as before (see Mac installer, Falls back)    |
 
 - **During a roast** means Preheat to Cooling, or drum cooling. Quit still goes through the safe stop first ([safety.md](safety.md)); the installer runs after it. Restart to update runs the same shutdown (safe stop, save the roast, close the database, flush the logs) before it starts the installer, which closes the app; if the installer won't start, the app quits anyway rather than stay open shut down.
 - **Only newer versions:** no downgrades, no pre-releases.
 - **Offline or GitHub down:** the check fails quietly (logged, `update.check-failed`); About says "Couldn't check · try again", the next daily check tries again.
 - **In development** (`pnpm dev`) the updater is off; About says "Updates are off in development".
-- Signing later (Apple Developer ID) switches macOS to the Windows column; the app code doesn't change.
+- An Apple Developer ID later replaces the Mac installer with electron-updater's, as on Windows ([ADR 0018](../adr/0018-own-mac-installer.md)).
+
+### Mac installer
+
+macOS's own updater (Squirrel) accepts an update only when it is signed by the same Apple developer; an ad-hoc signature changes with every build, so Roastpilot installs Mac updates itself ([ADR 0018](../adr/0018-own-mac-installer.md)).
+
+1. **Download:** the `.zip` that `latest-mac.yml` names, from the same GitHub release, into `<userData>/updates/`. About shows the percentage. A download cut off (offline, quit) is thrown away and tried again at the next check.
+2. **Check, before it counts as ready:** size and SHA-512 match `latest-mac.yml`; unpacked with `ditto` (keeps the signature); the app inside passes `codesign --verify --deep --strict`, is `app.roastpilot.desktop`, and says the version that was found. Any mismatch: deleted, logged (`update.verify-failed`), About says "Couldn't update · try again".
+3. **Ready:** "0.1.2 is ready · installs when you quit", **Restart to update**, the Settings tab dot, as on Windows.
+4. **Install, after the app has quit:** a small helper waits for the app's process to end, then renames the installed app to `Roastpilot.app.old`, moves the new one into its place, starts it (after Restart to update only) and deletes the old one. If a step fails it puts the old app back and logs why in `<userData>/updates/install.log`; the next launch reports it ("Couldn't install 0.1.2 · try again").
+5. **No prompt after the first install:** a file the app downloads itself carries no quarantine flag, so macOS doesn't ask again.
+
+- **Falls back to Download** (the release page) when Roastpilot can't replace itself: running from the DMG, from a translocated copy (macOS runs apps opened from Downloads from a read-only copy), or from a folder you can't write to. About says why in one line ("Move Roastpilot to Applications to update by itself").
+- **Trust:** HTTPS to GitHub plus the SHA-512 and signature checks catch a corrupted or altered download. They can't catch a bad release published from the repository itself; only a Developer ID signature would.
 
 ## What you see
 
 - **Settings › About** (last section): Version `0.2.0`, then one row for updates, with one button:
 
-| State                 | Line                                    | Button            |
-| --------------------- | --------------------------------------- | ----------------- |
-| Not checked yet       | Not checked yet (the first 10 s)        | Check for updates |
-| Up to date            | Up to date · checked 14:02              | Check for updates |
-| Checking              | Checking…                               | (disabled)        |
-| Downloading (Windows) | Downloading 0.2.0 · 45 %                | (none)            |
-| Ready (Windows)       | 0.2.0 is ready · installs when you quit | Restart to update |
-| Out (macOS)           | Version 0.2.0 is out                    | Download          |
-| Couldn't check        | Couldn't check · try again              | Check for updates |
+| State                      | Line                                                                       | Button            |
+| -------------------------- | -------------------------------------------------------------------------- | ----------------- |
+| Not checked yet            | Not checked yet (the first 10 s)                                           | Check for updates |
+| Up to date                 | Up to date · checked 14:02                                                 | Check for updates |
+| Checking                   | Checking…                                                                  | (disabled)        |
+| Downloading                | Downloading 0.2.0 · 45 %                                                   | (none)            |
+| Ready                      | 0.2.0 is ready · installs when you quit                                    | Restart to update |
+| Out, can't install (macOS) | Version 0.2.0 is out · move Roastpilot to Applications to update by itself | Download          |
+| Couldn't check             | Couldn't check · try again                                                 | Check for updates |
 
 - **Settings tab dot:** while an update is ready (Windows) or out (macOS), the Settings tab carries a small ember dot, said to screen readers as "Update available". No pop-up, no toast.
 - What's new: a "What's new" link next to the version opens the release notes on GitHub (not in development, where there is no release).
