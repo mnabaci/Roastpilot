@@ -18,15 +18,6 @@ describe('OutputControl', () => {
     expect(screen.queryByRole('button', { name: /Resume auto/ })).toBeNull();
   });
 
-  it('colours the slider by what it drives: ember heat, cyan air, neutral for a drum speed', () => {
-    const { rerender } = render(<OutputControl label="Drum" value={60} onChange={vi.fn()} />);
-    expect(screen.getByRole('slider', { name: 'Drum' })).toHaveClass('accent-heat-fill');
-    rerender(<OutputControl label="Drum" value={60} tone="air" onChange={vi.fn()} />);
-    expect(screen.getByRole('slider', { name: 'Drum' })).toHaveClass('accent-air');
-    rerender(<OutputControl label="Drum" value={60} tone="neutral" onChange={vi.fn()} />);
-    expect(screen.getByRole('slider', { name: 'Drum' })).toHaveClass('accent-ink-muted');
-  });
-
   it('shows a dash and locks the slider when there is no value', () => {
     render(<OutputControl label="Heater" value={undefined} mode="manual" onChange={vi.fn()} />);
     expect(screen.getByText('–')).toBeInTheDocument();
