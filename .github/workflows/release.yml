@@ -1,0 +1,123 @@
+name: Release
+
+# One GitHub release per vX.Y.Z tag on main (docs/spec/install-and-update.md, Releases).
+on:
+  push:
+    tags: ['v*.*.*']
+  # A PR that changes how releases are built packages both installers too, without publishing,
+  # so a broken build shows before a tag.
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - apps/desktop/electron-builder.yml
+      - apps/desktop/package.json
+      - pnpm-lock.yaml
+
+# Read-only by default. Only the publish job, which checks out nothing and installs nothing, may
+# write. Every action is pinned to a commit.
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      # Fails before anything is built when the tag doesn't match apps/desktop/package.json or
+      # CHANGELOG.md has no section for it.
+      - name: Tag, version and release notes
+        if: github.event_name == 'push'
+        run: node scripts/release-notes.ts --tag "$GITHUB_REF_NAME" --out release-notes.md
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm check
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: github.event_name == 'push'
+        with:
+          name: release-notes
+          path: release-notes.md
+
+  build:
+    name: Build (${{ matrix.os }})
+    needs: verify
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: macos-latest
+            target: --mac
+            name: installers-mac
+          - os: windows-latest
+            target: --win
+            name: installers-win
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      # Install scripts run here (Electron itself, native modules), so this job holds no write token.
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Package (installers and the update files)
+        run: pnpm --filter @roastpilot/desktop exec electron-builder ${{ matrix.target }} --publish never
+        env:
+          # Unsigned for now (ADR 0017): don't look for a signing identity on the runner.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ matrix.name }}
+          if-no-files-found: error
+          path: |
+            apps/desktop/dist/*.dmg
+            apps/desktop/dist/*.zip
+            apps/desktop/dist/*.exe
+            apps/desktop/dist/*.blockmap
+            apps/desktop/dist/latest*.yml
+
+  publish:
+    name: Publish
+    needs: build
+    # Tags only: a PR run stops after building.
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: installers-*
+          merge-multiple: true
+          path: dist
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-notes
+      # One step, so a release is never seen half-uploaded: the changelog section as the notes,
+      # the installers and latest.yml / latest-mac.yml for the updater.
+      - name: Create the release
+        run: >-
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag
+          --title "$GITHUB_REF_NAME" --notes-file release-notes.md --latest dist/*
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

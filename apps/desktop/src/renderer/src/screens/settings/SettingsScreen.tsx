@@ -1,5 +1,6 @@
 import { NavList, SidebarLayout } from '@roastpilot/ui';
 import type { ReactNode } from 'react';
+import { AboutSection } from './AboutSection';
 import { AppearanceSection } from './AppearanceSection';
 import { AutoSection } from './AutoSection';
 import { ChartSection } from './ChartSection';
@@ -15,6 +16,7 @@ const SECTION: Readonly<Record<SettingsSection, () => ReactNode>> = {
   sounds: () => <SoundsSection />,
   chart: () => <ChartSection />,
   appearance: () => <AppearanceSection />,
+  about: () => <AboutSection />,
 };
 
 /** The sections in the shared sidebar, one open (docs/spec/ui.md, Settings). */

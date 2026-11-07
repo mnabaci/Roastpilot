@@ -8,11 +8,16 @@ import roastImported0004 from './migrations/0004_roast_imported.sql?raw';
 import coolerHelpsDrum0005 from './migrations/0005_cooler_helps_drum.sql?raw';
 import drumSpeed0006 from './migrations/0006_drum_speed.sql?raw';
 
+interface Migration {
+  tag: string;
+  sql: string;
+}
+
 /**
  * Every migration drizzle-kit generated, in order (src/migrations/meta/_journal.json). Add the new
  * file here after `drizzle-kit generate`; a test checks this list against the journal.
  */
-export const MIGRATIONS: readonly { tag: string; sql: string }[] = [
+export const MIGRATIONS: readonly Migration[] = [
   { tag: '0000_roasts', sql: roasts0000 },
   { tag: '0001_profiles', sql: profiles0001 },
   { tag: '0002_roasters', sql: roasters0002 },
@@ -22,9 +27,27 @@ export const MIGRATIONS: readonly { tag: string; sql: string }[] = [
   { tag: '0006_drum_speed', sql: drumSpeed0006 },
 ];
 
-function userVersion(db: DatabaseSync): number {
+/** How many migrations the database has had (`PRAGMA user_version`); 0 for a new one. */
+export function schemaVersion(db: DatabaseSync): number {
   const row = db.prepare('PRAGMA user_version').get() as { user_version: number } | undefined;
   return row?.user_version ?? 0;
+}
+
+/**
+ * The migrations `migrate` would run, without running them. A database from a newer Roastpilot is
+ * an error: this app can't read it and leaves it alone.
+ */
+export function pendingMigrations(
+  db: DatabaseSync,
+  migrations: readonly Migration[] = MIGRATIONS,
+): Result<Migration[], StorageError> {
+  const version = schemaVersion(db);
+  if (version > migrations.length)
+    return err({
+      kind: 'storage-failed',
+      message: `The database is from a newer Roastpilot (schema ${String(version)}).`,
+    });
+  return ok(migrations.slice(version));
 }
 
 /**
@@ -33,21 +56,17 @@ function userVersion(db: DatabaseSync): number {
  */
 export function migrate(
   db: DatabaseSync,
-  migrations: readonly { tag: string; sql: string }[] = MIGRATIONS,
+  migrations: readonly Migration[] = MIGRATIONS,
 ): Result<{ applied: string[] }, StorageError> {
-  const version = userVersion(db);
-  if (version > migrations.length)
-    return err({
-      kind: 'storage-failed',
-      message: `The database is from a newer Roastpilot (schema ${String(version)}).`,
-    });
+  const pending = pendingMigrations(db, migrations);
+  if (!pending.ok) return pending;
+  const version = schemaVersion(db);
   const applied: string[] = [];
-  for (const [index, migration] of migrations.entries()) {
-    if (index < version) continue;
+  for (const [offset, migration] of pending.value.entries()) {
     try {
       db.exec('BEGIN');
       db.exec(migration.sql);
-      db.exec(`PRAGMA user_version = ${String(index + 1)}`);
+      db.exec(`PRAGMA user_version = ${String(version + offset + 1)}`);
       db.exec('COMMIT');
       applied.push(migration.tag);
     } catch (error) {

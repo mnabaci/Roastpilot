@@ -8,11 +8,21 @@ files:
 npmRebuild: true
 mac:
   category: public.app-category.utilities
+  # The zip is what electron-updater reads (latest-mac.yml); the DMG is what people install.
   target:
     - dmg
+    - zip
 win:
   target:
     - nsis
 nsis:
+  # No spaces: GitHub renames them on upload, and latest.yml must name the file as uploaded.
+  artifactName: ${productName}-Setup-${version}.${ext}
   oneClick: false
   allowToChangeInstallationDirectory: true
+# Updates come from GitHub releases (ADR 0017): this goes into the app (app-update.yml) and the
+# update files. The release workflow builds with --publish never and uploads them itself.
+publish:
+  provider: github
+  owner: mnabaci
+  repo: Roastpilot

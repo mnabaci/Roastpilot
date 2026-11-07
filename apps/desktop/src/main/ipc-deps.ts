@@ -19,6 +19,7 @@ import type { RoastFiles } from './history/roast-files';
 import type { ProfileService } from './profiles/profile-service';
 import type { RoasterService } from './roasters/roaster-service';
 import type { SettingsService } from './settings/settings-service';
+import type { Updates } from './updates/update-wiring';
 
 /** What the IPC handlers reach in main: the services each channel calls. */
 export interface IpcDeps {
@@ -52,6 +53,7 @@ export interface IpcDeps {
   snapshot: () => Snapshot;
   listPorts: () => Promise<SerialPortInfo[]>;
   createDriver: (target: ConnectTarget) => RoasterDriver;
+  updates: Pick<Updates, 'info' | 'check' | 'restart' | 'openReleasePage'>;
   logs: {
     listDays: () => Promise<LogDay[]>;
     readDay: (day: LogDay) => Promise<LogDayRead>;

@@ -12,6 +12,7 @@ export default defineConfig({
           include: [
             'packages/{core,shared,drivers,storage}/src/**/*.test.ts',
             'apps/desktop/src/{main,preload}/**/*.test.ts',
+            'scripts/**/*.test.ts',
           ],
         },
       },

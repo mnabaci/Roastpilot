@@ -8,5 +8,7 @@ The Roastpilot Electron app, built with electron-vite.
 
 ```sh
 pnpm dev        # from the repo root: rebuilds native modules for Electron, then starts the app
-pnpm dist:mac   # in this folder: build a macOS DMG
+pnpm dist:mac   # in this folder: a local macOS DMG, for trying a build (unsigned, not published)
 ```
+
+Releases are built and published by GitHub Actions from a `vX.Y.Z` tag (`release` skill).

@@ -5,6 +5,7 @@ import type { AutoData } from './auto-store';
 import type { BeansData } from './beans-store';
 import type { RoastData } from './roast-store';
 import type { SafetyState } from './safety-store';
+import type { UpdatesData } from './updates-store';
 
 // One hook per store: a component re-renders only when the value it selects changes.
 
@@ -31,3 +32,6 @@ export const useAuto = <T>(select: (state: AutoData) => T): T =>
 
 export const useSettings = <T>(select: (state: { settings: Settings }) => T): T =>
   useStore(useDeps().stores.settings, select);
+
+export const useUpdates = <T>(select: (state: UpdatesData) => T): T =>
+  useStore(useDeps().stores.updates, select);

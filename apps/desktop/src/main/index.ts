@@ -1,7 +1,7 @@
 // Composition root: wires core, drivers, logging and IPC (docs/spec/architecture.md).
 import { serializeError } from '@roastpilot/core';
 import { listSerialPorts } from '@roastpilot/drivers';
-import { IPC_CHANNELS } from '@roastpilot/shared';
+import { IPC_CHANNELS, isRoastRunning } from '@roastpilot/shared';
 import { app, BrowserWindow, dialog, Menu, powerMonitor, powerSaveBlocker, shell } from 'electron';
 import { randomUUID } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
@@ -27,6 +27,8 @@ import { createQuitGuard } from './quit-guard';
 import { JsonSettingsStore } from './settings/json-settings-store';
 import { openStores } from './storage-wiring';
 import { systemClock } from './system-clock';
+import electronUpdater from 'electron-updater';
+import { createUpdates } from './updates/update-wiring';
 
 const logDir = app.getPath('logs');
 const logs = createAppLogger({
@@ -51,10 +53,12 @@ async function openLogFolder(): Promise<void> {
 }
 
 // Saved data (docs/spec/data-model.md). Without a database the app still roasts; History says why.
+// A database about to be migrated is backed up first (docs/spec/install-and-update.md).
 const stores = openStores(
   join(app.getPath('userData'), 'roastpilot.db'),
   systemClock,
   logger.child('storage'),
+  { dir: join(app.getPath('userData'), 'backups'), appVersion: app.getVersion(), now: new Date() },
 );
 
 // Asleep, nothing watches the roaster: stay awake while one is connected, and keep the screen on
@@ -128,21 +132,42 @@ installCrashHandlers({
 });
 
 // Safe stop before anything else on quit (docs/spec/safety.md).
-app.on(
-  'before-quit',
-  createQuitGuard({
-    logger,
-    steps: [
-      { name: 'safe-stop', run: stopRoaster },
-      { name: 'save-roast', run: saveRoast },
-      { name: 'close-database', run: stores.close },
-      { name: 'flush-logs', run: flushLogs },
-    ],
-    quit: () => {
-      app.quit();
-    },
-  }),
-);
+const quitGuard = createQuitGuard({
+  logger,
+  steps: [
+    { name: 'safe-stop', run: stopRoaster },
+    { name: 'save-roast', run: saveRoast },
+    { name: 'close-database', run: stores.close },
+    { name: 'flush-logs', run: flushLogs },
+  ],
+  quit: () => {
+    app.quit();
+  },
+});
+app.on('before-quit', quitGuard);
+
+// Updates never touch a roast: Restart to update waits for it to end (ADR 0017).
+const updates = createUpdates({
+  packaged: app.isPackaged,
+  platform: process.platform,
+  version: app.getVersion(),
+  updater: () => electronUpdater.autoUpdater,
+  clock: systemClock,
+  wallNowMs: () => Date.now(),
+  isRoasting: () => isRoastRunning(roast.state),
+  publish: (status) => {
+    broadcast(IPC_CHANNELS.updateStatus, status);
+  },
+  // Restart to update: the same shutdown as quitting, then the installer (docs/spec/safety.md).
+  shutdownThen: (finish) => {
+    quitGuard.shutdownThen(finish);
+  },
+  quit: () => {
+    app.quit();
+  },
+  openExternal: (url) => shell.openExternal(url),
+  logger: logger.child('updates'),
+});
 
 const DEV_ICON = devIcon();
 const createWindow = () => {
@@ -189,6 +214,7 @@ app
           listPorts: () => listSerialPorts(),
           createDriver: (target) =>
             simulatorBeans.attach(createDriver(target, systemClock, logger.child('driver'))),
+          updates,
           logs: {
             listDays: () => listLogDays(logDir),
             readDay: (day) => readLogDay(logDir, day),
@@ -232,6 +258,7 @@ app
     });
     powerMonitor.on('resume', () => {
       power.onResume();
+      updates.wake();
     });
     if (DEV_ICON) app.dock?.setIcon(DEV_ICON);
     createWindow();

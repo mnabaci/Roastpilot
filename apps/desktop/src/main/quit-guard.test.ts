@@ -89,3 +89,42 @@ describe('createQuitGuard', () => {
     ]);
   });
 });
+
+describe('createQuitGuard shutdownThen', () => {
+  it('runs every step, then finishes with its own action instead of quitting', async () => {
+    const { guard, calls, event } = setup(() => Promise.resolve());
+    guard.shutdownThen(() => calls.push('install'));
+    await settle();
+    expect(calls).toEqual(['stop', 'install']);
+    // The installer quits the app: that quit passes straight through, no second safe stop.
+    const quitting = event();
+    guard(quitting);
+    expect(quitting.prevented).toBe(false);
+    expect(calls).toEqual(['stop', 'install']);
+  });
+
+  it('holds a quit that comes while it shuts down, and runs the steps once', async () => {
+    const { guard, calls, event } = setup(() => Promise.resolve());
+    guard.shutdownThen(() => calls.push('install'));
+    const early = event();
+    guard(early);
+    expect(early.prevented).toBe(true);
+    await settle();
+    expect(calls).toEqual(['stop', 'install']);
+  });
+
+  it('a quit already under way wins: no install on top', async () => {
+    const { guard, calls, event } = setup(() => Promise.resolve());
+    guard(event());
+    guard.shutdownThen(() => calls.push('install'));
+    await settle();
+    expect(calls).toEqual(['stop', 'quit']);
+  });
+
+  it('still finishes when a step fails', async () => {
+    const { guard, calls } = setup(() => Promise.reject(new Error('no answer')));
+    guard.shutdownThen(() => calls.push('install'));
+    await settle();
+    expect(calls).toEqual(['stop', 'install']);
+  });
+});

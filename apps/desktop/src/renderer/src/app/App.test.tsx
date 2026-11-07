@@ -86,6 +86,39 @@ describe('App', () => {
     expect(within(tab).getByTitle('Connection lost')).toBeInTheDocument();
   });
 
+  it.each([
+    { state: 'ready', version: '0.2.0' },
+    { state: 'available', version: '0.2.0' },
+  ] as const)('the Settings tab carries an ember dot while an update is $state', (update) => {
+    renderApp(<App />, { update });
+    const tab = within(screen.getByRole('navigation', { name: 'Screens' })).getByRole('button', {
+      name: 'Settings',
+    });
+    expect(within(tab).getByTitle('Update available')).toBeInTheDocument();
+    expect(screen.getByText('Update available')).toHaveClass('sr-only');
+  });
+
+  it.each([
+    { state: 'off' },
+    { state: 'idle', checkedAt: null },
+    { state: 'checking' },
+    { state: 'downloading', version: '0.2.0', percent: 45 },
+    { state: 'failed' },
+  ] as const)('no update dot while updates are $state', (update) => {
+    renderApp(<App />, { update });
+    expect(screen.queryByTitle('Update available')).toBeNull();
+    expect(screen.queryByText('Update available')).toBeNull();
+  });
+
+  it('the update dot goes away when the update is no longer waiting', () => {
+    const { stores } = renderApp(<App />, { update: { state: 'available', version: '0.2.0' } });
+    expect(screen.getByTitle('Update available')).toBeInTheDocument();
+    act(() => {
+      stores.updates.setState({ status: { state: 'idle', checkedAt: null } });
+    });
+    expect(screen.queryByTitle('Update available')).toBeNull();
+  });
+
   it('shows nothing but the bar until the first snapshot', () => {
     renderApp(<App />, { ready: false });
     expect(screen.queryByRole('main')).not.toBeInTheDocument();

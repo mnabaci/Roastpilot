@@ -211,6 +211,21 @@ function setup() {
       calls.push(['createDriver', target]);
       return driver;
     },
+    updates: {
+      info: () => ({ version: '0.1.0', update: { state: 'ready', version: '0.2.0' } }),
+      check: () => {
+        calls.push(['checkForUpdates']);
+        return Promise.resolve();
+      },
+      restart: () => {
+        calls.push(['restartToUpdate']);
+        return err({ kind: 'roasting' });
+      },
+      openReleasePage: (page) => {
+        calls.push(['openReleasePage', page]);
+        return Promise.resolve(ok(undefined));
+      },
+    },
     logs: {
       listDays: () => Promise.resolve(['2026-11-03']),
       readDay: (day) => {
@@ -281,8 +296,45 @@ describe('createIpcHandlers', () => {
         IPC_CHANNELS.saveRoastResult,
         IPC_CHANNELS.makeProfileFromRoast,
         IPC_CHANNELS.makeBeanProfile,
+        IPC_CHANNELS.getAppInfo,
+        IPC_CHANNELS.checkForUpdates,
+        IPC_CHANNELS.restartToUpdate,
+        IPC_CHANNELS.openReleasePage,
       ].sort(),
     );
+  });
+
+  describe('updates', () => {
+    it('About gets the version and the status; check and restart reach the updater', async () => {
+      const { handlers, calls } = setup();
+      expect(await handle(handlers, IPC_CHANNELS.getAppInfo)).toEqual({
+        version: '0.1.0',
+        update: { state: 'ready', version: '0.2.0' },
+      });
+      expect(await handle(handlers, IPC_CHANNELS.checkForUpdates)).toBeUndefined();
+      expect(await handle(handlers, IPC_CHANNELS.restartToUpdate)).toEqual(
+        err({ kind: 'roasting' }),
+      );
+      expect(calls).toEqual([['checkForUpdates'], ['restartToUpdate']]);
+    });
+
+    it('opens a release page by name', async () => {
+      const { handlers, calls } = setup();
+      expect(await handle(handlers, IPC_CHANNELS.openReleasePage, 'latest')).toEqual(ok(undefined));
+      expect(calls).toEqual([['openReleasePage', 'latest']]);
+    });
+
+    it.each([
+      'https://evil.example/releases',
+      'https://github.com/mnabaci/Roastpilot/releases/tag/v0.2.0',
+      { page: 'latest' },
+      undefined,
+      '',
+    ])('refuses a release page payload %j: only a name, never an address', async (payload) => {
+      const { handlers, calls } = setup();
+      await expect(handle(handlers, IPC_CHANNELS.openReleasePage, payload)).rejects.toThrow();
+      expect(calls).toEqual([]);
+    });
   });
 
   it('builds the driver for a valid target and connects it', async () => {

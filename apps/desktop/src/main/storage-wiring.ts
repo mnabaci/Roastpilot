@@ -7,6 +7,7 @@ import type {
   RoastRepository,
 } from '@roastpilot/core';
 import {
+  type BackupPlan,
   drizzleOn,
   openDatabase,
   SqliteBeanRepository,
@@ -33,9 +34,16 @@ export interface Stores {
 /**
  * The saved data (docs/spec/data-model.md). Without a database the app still roasts: every store
  * stands in with one that fails with the reason, so History and the other screens can say why.
+ * With `backup`, a database about to be migrated is copied first; a failed copy counts as a
+ * database that can't open (docs/spec/install-and-update.md).
  */
-export function openStores(path: string, clock: Clock, logger: Logger): Stores {
-  const database = openDatabase(path, logger);
+export function openStores(
+  path: string,
+  clock: Clock,
+  logger: Logger,
+  backup?: BackupPlan,
+): Stores {
+  const database = openDatabase(path, logger, backup);
   if (!database.ok) {
     const reason =
       database.error.kind === 'storage-failed' ? database.error.message : 'unavailable';

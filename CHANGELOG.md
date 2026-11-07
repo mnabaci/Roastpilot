@@ -36,4 +36,7 @@ Everything so far; there is no release yet.
 - **Sounds:** cues for charge soon, beans in, listen for first crack, dump beans and Auto stopped,
   each with its own voice, volume and repeat.
 - **Logs screen:** the app's log, live, and Open log folder in the app menu.
+- **Install and update:** installers on GitHub Releases. Windows updates in the background and
+  installs on quit or Restart to update, never mid-roast; macOS says when a new version is out.
+  Settings › About shows the version and updates. The database is backed up before migrations.
 - **Toasts** for actions that fail or are refused, and for import and export results.

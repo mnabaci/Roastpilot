@@ -25,7 +25,7 @@ describe('SettingsScreen', () => {
       within(sections)
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['Controls', 'Roast', 'Auto', 'Sounds', 'Chart', 'Appearance']);
+    ).toEqual(['Controls', 'Roast', 'Auto', 'Sounds', 'Chart', 'Appearance', 'About']);
     expect(within(sections).getByRole('button', { name: 'Controls' })).toHaveAttribute(
       'aria-current',
       'true',

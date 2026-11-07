@@ -1,7 +1,7 @@
-import type { ConnectionState, Screen } from '@roastpilot/shared';
+import { updateWaiting, type ConnectionState, type Screen } from '@roastpilot/shared';
 import { Button, cn, Mark } from '@roastpilot/ui';
 import { OctagonX } from 'lucide-react';
-import { useConnection, useRoast } from '../stores/use-stores';
+import { useConnection, useRoast, useUpdates } from '../stores/use-stores';
 import { useDeps } from './app-context';
 import { useRun } from '../features/use-run';
 import { targetLabel } from './connection-label';
@@ -39,6 +39,7 @@ export function TopBar({
   const connection = useConnection((s) => s.connection);
   const { status } = connection;
   const phase = useRoast((s) => s.roast.phase);
+  const updateDot = useUpdates((s) => s.status !== null && updateWaiting(s.status));
   return (
     <header className="flex items-center gap-4 border-b border-border px-6 py-3">
       <Mark withName />
@@ -65,12 +66,23 @@ export function TopBar({
                 className={cn('size-2 rounded-full', DOT[status])}
               />
             ) : null}
+            {id === 'settings' && updateDot ? (
+              // An update is ready or out: ember, like anything waiting for you.
+              <span
+                aria-hidden="true"
+                title="Update available"
+                className="size-2 rounded-full bg-heat"
+              />
+            ) : null}
           </Button>
         ))}
       </nav>
       {/* The dot is for the eye; this says it to screen readers. */}
       <p className="sr-only" aria-live="polite">
         {CONNECTION_LABEL[status]}
+      </p>
+      <p className="sr-only" aria-live="polite">
+        {updateDot ? 'Update available' : ''}
       </p>
       {connection.status !== 'disconnected' ? (
         // On a wide window the roaster in use and the phase follow the tabs.

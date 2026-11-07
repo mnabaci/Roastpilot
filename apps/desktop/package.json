@@ -18,6 +18,7 @@
     "icon": "electron scripts/make-icon.ts"
   },
   "dependencies": {
+    "electron-updater": "^6.8.11",
     "lucide-react": "^1.66.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

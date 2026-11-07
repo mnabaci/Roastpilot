@@ -9,6 +9,7 @@ import { RoastStateSchema, type RoastState } from './roast';
 import { RoastIdSchema, type RoastId } from './saved-roast';
 import type { Screen } from './screen';
 import type { SafetyEvent } from './safety-event';
+import type { UpdateStatus } from './update-status';
 
 /** A saved roast changed; `current` when it's the roast on the Roast screen. */
 export interface RoastsChange {
@@ -75,6 +76,11 @@ export const IPC_CHANNELS = {
   setRoastSetup: 'roast:set-setup',
   saveRoastResult: 'history:save-result',
   makeProfileFromRoast: 'history:make-profile',
+  getAppInfo: 'app:get-info',
+  checkForUpdates: 'updates:check',
+  restartToUpdate: 'updates:restart',
+  openReleasePage: 'updates:open-release-page',
+  updateStatus: 'updates:status',
 } as const;
 
 /** Everything a window needs when it opens or reloads mid-roast. */
@@ -104,6 +110,7 @@ export interface IpcEventPayloads {
   [IPC_CHANNELS.autoStatus]: AutoStatus;
   [IPC_CHANNELS.roastersChanged]: Roaster[];
   [IPC_CHANNELS.beansChanged]: Bean[];
+  [IPC_CHANNELS.updateStatus]: UpdateStatus;
 }
 export type IpcEventChannel = keyof IpcEventPayloads;
 

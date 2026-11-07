@@ -4,6 +4,7 @@ import {
   DEFAULT_SETTINGS,
   NO_ROAST_SETUP,
   SAFETY_NOTICE_VERSION,
+  UPDATES_OFF,
   err,
   ok,
   type AutoProfile,
@@ -97,6 +98,11 @@ export function fakeApi(overrides: Partial<RoastpilotApi> = {}): Mocked<Roastpil
     setRoastSetup: vi.fn(() => Promise.resolve()),
     saveRoastResult: vi.fn(() => Promise.resolve(ok(undefined))),
     makeProfileFromRoast: vi.fn(() => Promise.resolve(err({ kind: 'too-short' as const }))),
+    getAppInfo: vi.fn(() => Promise.resolve({ version: '0.1.0', update: UPDATES_OFF })),
+    checkForUpdates: vi.fn(() => Promise.resolve()),
+    restartToUpdate: vi.fn(() => Promise.resolve(ok(undefined))),
+    openReleasePage: vi.fn(() => Promise.resolve(ok(undefined))),
+    onUpdateStatus: vi.fn(() => unsubscribe),
     ...overrides,
   } as Mocked<RoastpilotApi>;
 }

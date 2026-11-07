@@ -8,6 +8,7 @@ import type {
   RoastSetup,
   RoastState,
   Settings,
+  UpdateStatus,
 } from '@roastpilot/shared';
 import { createAutoStore, type AutoStore } from './auto-store';
 import { createBeansStore, type BeansStore } from './beans-store';
@@ -18,6 +19,7 @@ import { createSafetyStore, type SafetyState, type SafetyStore } from './safety-
 import { createSettingsStore, type SettingsStore } from './settings-store';
 import { createSyncStore, type SyncStore } from './sync-store';
 import { createToastsStore, type ToastsStore } from './toasts-store';
+import { createUpdatesStore, type UpdatesStore } from './updates-store';
 
 /** One small store per concern, all fed by window.roastpilot events (app/sync-with-main.ts). */
 export interface Stores {
@@ -29,6 +31,8 @@ export interface Stores {
   auto: AutoStore;
   roasters: RoastersStore;
   beans: BeansStore;
+  /** The installed version and updates (Settings › About, the Settings tab's dot). */
+  updates: UpdatesStore;
   /** One-line notes for actions that failed where the screen shows nothing. */
   toasts: ToastsStore;
 }
@@ -47,6 +51,8 @@ export interface StoresSeed {
   beans?: Bean[];
   setup?: RoastSetup;
   currentRoastId?: number;
+  version?: string;
+  update?: UpdateStatus;
 }
 
 export function createStores(seed: StoresSeed = {}): Stores {
@@ -62,6 +68,7 @@ export function createStores(seed: StoresSeed = {}): Stores {
     auto: createAutoStore(seed.auto, seed.profiles),
     roasters: createRoastersStore(seed.roasters),
     beans: createBeansStore(seed.beans, seed.setup, seed.currentRoastId),
+    updates: createUpdatesStore(seed.version, seed.update),
     toasts: createToastsStore(),
   };
 }

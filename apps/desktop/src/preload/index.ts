@@ -81,6 +81,11 @@ const api: RoastpilotApi = {
   setActiveRoaster: (id) => ipcRenderer.invoke(IPC_CHANNELS.setActiveRoaster, id),
   chooseConnection: (target) => ipcRenderer.invoke(IPC_CHANNELS.chooseConnection, target),
   onRoasters: (listener) => subscribe(IPC_CHANNELS.roastersChanged, listener),
+  getAppInfo: () => ipcRenderer.invoke(IPC_CHANNELS.getAppInfo),
+  checkForUpdates: () => ipcRenderer.invoke(IPC_CHANNELS.checkForUpdates),
+  restartToUpdate: () => ipcRenderer.invoke(IPC_CHANNELS.restartToUpdate),
+  openReleasePage: (page) => ipcRenderer.invoke(IPC_CHANNELS.openReleasePage, page),
+  onUpdateStatus: (listener) => subscribe(IPC_CHANNELS.updateStatus, listener),
   log: (entry) => {
     ipcRenderer.send(IPC_CHANNELS.log, entry);
   },

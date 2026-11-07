@@ -37,6 +37,13 @@ import type {
 } from './saved-roast';
 import type { Screen } from './screen';
 import type { Settings, SettingsWriteError } from './settings';
+import type {
+  AppInfo,
+  OpenReleasePageError,
+  ReleasePage,
+  RestartToUpdateError,
+  UpdateStatus,
+} from './update-status';
 
 // The renderer's side of the IPC contract (docs/spec/architecture.md), one interface per area
 // (interface segregation): code that needs one area depends on that interface only.
@@ -194,6 +201,18 @@ export interface AppApi {
   onShowSafetyNotice(listener: () => void): Unsubscribe;
 }
 
+/** Settings › About: the version and updates (docs/spec/install-and-update.md). */
+export interface UpdatesApi {
+  getAppInfo(): Promise<AppInfo>;
+  /** Checks now; the answer comes as `onUpdateStatus`. Does nothing while one is under way. */
+  checkForUpdates(): Promise<void>;
+  /** Quits and installs the downloaded update; refused while a roast runs (`roasting`). */
+  restartToUpdate(): Promise<Result<void, RestartToUpdateError>>;
+  /** Opens a release page on GitHub in the browser. */
+  openReleasePage(page: ReleasePage): Promise<Result<void, OpenReleasePageError>>;
+  onUpdateStatus(listener: (status: UpdateStatus) => void): Unsubscribe;
+}
+
 /** The typed API the preload script exposes to the renderer as `window.roastpilot`. */
 export interface RoastpilotApi
   extends
@@ -207,4 +226,5 @@ export interface RoastpilotApi
     ProfilesApi,
     RoastersApi,
     BeansApi,
-    AppApi {}
+    AppApi,
+    UpdatesApi {}

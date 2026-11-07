@@ -1,5 +1,11 @@
 import type { Logger } from '@roastpilot/core';
-import { type Reading, DEFAULT_SETTINGS, READY_ROAST } from '@roastpilot/shared';
+import {
+  type AppInfo,
+  type Reading,
+  type UpdateStatus,
+  DEFAULT_SETTINGS,
+  READY_ROAST,
+} from '@roastpilot/shared';
 import { describe, expect, it, vi } from 'vitest';
 import { fakeApi } from '../test/render-app';
 import { BUILT_INS } from '../test/profiles';
@@ -146,5 +152,59 @@ describe('syncWithMain', () => {
       expect(stores.sync.getState().ready).toBe(true);
     });
     expect(stores.auto.getState().profiles).toEqual(BUILT_INS.slice(1));
+  });
+
+  describe('updates', () => {
+    it('loads the version and the update status', async () => {
+      const api = fakeApi({
+        getAppInfo: () =>
+          Promise.resolve({ version: '0.1.0', update: { state: 'available', version: '0.2.0' } }),
+      });
+      const stores = createStores();
+      syncWithMain(api, stores, logger());
+      await vi.waitFor(() => {
+        expect(stores.updates.getState()).toEqual({
+          version: '0.1.0',
+          status: { state: 'available', version: '0.2.0' },
+        });
+      });
+    });
+
+    it('follows status events, and an event before the info wins over the older info', async () => {
+      let send: (status: UpdateStatus) => void = () => undefined;
+      let answer: (info: AppInfo) => void = () => undefined;
+      const api = fakeApi({
+        onUpdateStatus: (listener) => {
+          send = listener;
+          return () => undefined;
+        },
+        getAppInfo: () =>
+          new Promise<AppInfo>((resolve) => {
+            answer = resolve;
+          }),
+      });
+      const stores = createStores();
+      syncWithMain(api, stores, logger());
+      send({ state: 'ready', version: '0.2.0' });
+      answer({ version: '0.1.0', update: { state: 'downloading', version: '0.2.0', percent: 90 } });
+      await vi.waitFor(() => {
+        expect(stores.updates.getState().version).toBe('0.1.0');
+      });
+      expect(stores.updates.getState().status).toEqual({ state: 'ready', version: '0.2.0' });
+    });
+
+    it('app info that fails is logged; the other screens still load', async () => {
+      const api = fakeApi({ getAppInfo: () => Promise.reject(new Error('main gone')) });
+      const stores = createStores();
+      const log = logger();
+      syncWithMain(api, stores, log);
+      await vi.waitFor(() => {
+        expect(log.error).toHaveBeenCalledWith('sync.app-info-failed', expect.anything());
+      });
+      expect(stores.updates.getState()).toEqual({ version: null, status: null });
+      await vi.waitFor(() => {
+        expect(stores.sync.getState().ready).toBe(true);
+      });
+    });
   });
 });
