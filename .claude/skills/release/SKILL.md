@@ -34,5 +34,5 @@ Releases are built by GitHub Actions from a tag, never on a laptop
    - Windows: install, SmartScreen (More info → Run anyway), Simulator roast; the previous
      version downloads it and Restart to update installs it (refused mid-roast).
    - One real roast on the Skywalker.
-8. No certificate yet: Windows builds are unsigned and macOS builds ad-hoc signed (`identity: '-'` in `electron-builder.yml`; `CSC_IDENTITY_AUTO_DISCOVERY=false`). The Build job's log must say `identityName=-`. When an Apple
+8. No certificate yet: Windows builds are unsigned and macOS builds ad-hoc signed (`identity: '-'` in `electron-builder.yml`; `CSC_IDENTITY_AUTO_DISCOVERY=false`). The Build job checks the signature with `codesign --verify` and fails without one. When an Apple
    Developer ID or Windows certificate arrives, add it as repository secrets and update ADR 0017.
