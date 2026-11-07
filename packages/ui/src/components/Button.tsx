@@ -13,8 +13,9 @@ const buttonVariants = cva(
         danger: 'bg-critical text-on-critical hover:brightness-110',
       },
       size: {
-        sm: 'h-control-sm px-3.5 text-label',
-        md: 'h-control-md px-4 text-body',
+        // Never narrower than tall, so a one-digit or icon-only button still makes a 44 px target.
+        sm: 'h-control-sm min-w-control-sm px-3.5 text-label',
+        md: 'h-control-md min-w-control-md px-4 text-body',
         lg: 'h-control-lg w-full px-5 text-heading',
       },
     },
