@@ -24,6 +24,8 @@ export interface OutputControlProps {
   /** Step from the roaster's channel definition (Skywalker: 5). */
   step?: number;
   disabled?: boolean;
+  /** `md` for the Roast screen's outputs; `sm` for a value in a row of fields (a sound's Volume). */
+  size?: 'md' | 'sm';
   className?: string;
 }
 
@@ -48,22 +50,33 @@ export function OutputControl({
   max = 100,
   step = 5,
   disabled = false,
+  size = 'md',
   className,
 }: OutputControlProps) {
+  const sm = size === 'sm';
   const id = useId();
   const manual = mode === 'manual';
   // A reading that isn't a number shows a dash, like no reading at all.
   const reading = value !== undefined && Number.isFinite(value) ? value : undefined;
   const { shown, draft, startDrag, commitNow } = useDraft(reading, onChange);
   return (
-    <div className={cn('flex flex-col gap-2.5', className)}>
+    <div className={cn('flex flex-col', sm ? 'gap-1.5' : 'gap-2.5', className)}>
       <div className="flex items-center justify-between gap-2">
-        <label htmlFor={id} className="text-body font-semibold text-ink">
+        <label
+          htmlFor={id}
+          className={sm ? 'text-label text-ink-muted' : 'text-body font-semibold text-ink'}
+        >
           {label}
         </label>
         <div className="flex items-center gap-2.5">
           {mode ? <Badge tone={manual ? 'heat' : 'air'}>{manual ? 'Manual' : 'Auto'}</Badge> : null}
-          <output htmlFor={id} className="min-w-14 text-right text-readout-lg tabular-nums">
+          <output
+            htmlFor={id}
+            className={cn(
+              'text-right tabular-nums',
+              sm ? 'min-w-10 text-body font-semibold' : 'min-w-14 text-readout-lg',
+            )}
+          >
             {shown === undefined ? '–' : `${String(shown)}%`}
           </output>
         </div>

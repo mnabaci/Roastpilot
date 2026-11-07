@@ -91,6 +91,7 @@ export function SoundStepRow({
         <OutputControl
           label="Volume"
           tone="neutral"
+          size="sm"
           value={sound.volumePct}
           className="w-44"
           onChange={(volumePct) => {
