@@ -36,9 +36,18 @@ const message = (error: unknown) => (error instanceof Error ? error.message : St
  * (Windows only) and when to install (docs/spec/install-and-update.md). Its own chatter goes to
  * the app log at debug level; its failures come back as results.
  */
+export interface AdaptUpdaterOptions {
+  canInstall: boolean;
+  /** The quit guard's shutdown (safe stop, save, close), then `finish` instead of quitting. */
+  shutdownThen: (finish: () => void) => void;
+  /** Electron's app.quit; after the shutdown it passes straight through. */
+  quit: () => void;
+  logger: Logger;
+}
+
 export function adaptUpdater(
   updater: AppUpdaterLike,
-  { canInstall, logger }: { canInstall: boolean; logger: Logger },
+  { canInstall, shutdownThen, quit, logger }: AdaptUpdaterOptions,
 ): Updater {
   updater.autoDownload = false;
   updater.autoInstallOnAppQuit = canInstall;
@@ -71,8 +80,16 @@ export function adaptUpdater(
       }
     },
     quitAndInstall() {
-      // Silent, then start the new version: Restart to update is one click.
-      updater.quitAndInstall(true, true);
+      // electron-updater starts the installer at once, and the installer closes the app: so the
+      // safe stop, the roast save and closing the database come first (docs/spec/safety.md).
+      shutdownThen(() => {
+        logger.info('update.installing');
+        // Silent, then start the new version: Restart to update is one click.
+        updater.quitAndInstall(true, true);
+        // An installer that won't start is only an `error` event, and the app is already shut
+        // down: quit either way. A started installer quits it too; a second quit is harmless.
+        quit();
+      });
     },
     onEvent(listener: (event: UpdaterEvent) => void) {
       const progress = (info: { percent: number }) => {

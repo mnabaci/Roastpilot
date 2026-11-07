@@ -112,22 +112,6 @@ const {
   publish: broadcast,
 });
 
-// Updates never touch a roast: Restart to update waits for it to end (ADR 0017).
-const updates = createUpdates({
-  packaged: app.isPackaged,
-  platform: process.platform,
-  version: app.getVersion(),
-  updater: () => electronUpdater.autoUpdater,
-  clock: systemClock,
-  wallNowMs: () => Date.now(),
-  isRoasting: () => isRoastRunning(roast.state),
-  publish: (status) => {
-    broadcast(IPC_CHANNELS.updateStatus, status);
-  },
-  openExternal: (url) => shell.openExternal(url),
-  logger: logger.child('updates'),
-});
-
 // Shared by quit and crash, in this order: safe stop first, then saving, logs last.
 const stopRoaster = () => session.disconnect();
 const saveRoast = () => recorder.flush();
@@ -148,21 +132,42 @@ installCrashHandlers({
 });
 
 // Safe stop before anything else on quit (docs/spec/safety.md).
-app.on(
-  'before-quit',
-  createQuitGuard({
-    logger,
-    steps: [
-      { name: 'safe-stop', run: stopRoaster },
-      { name: 'save-roast', run: saveRoast },
-      { name: 'close-database', run: stores.close },
-      { name: 'flush-logs', run: flushLogs },
-    ],
-    quit: () => {
-      app.quit();
-    },
-  }),
-);
+const quitGuard = createQuitGuard({
+  logger,
+  steps: [
+    { name: 'safe-stop', run: stopRoaster },
+    { name: 'save-roast', run: saveRoast },
+    { name: 'close-database', run: stores.close },
+    { name: 'flush-logs', run: flushLogs },
+  ],
+  quit: () => {
+    app.quit();
+  },
+});
+app.on('before-quit', quitGuard);
+
+// Updates never touch a roast: Restart to update waits for it to end (ADR 0017).
+const updates = createUpdates({
+  packaged: app.isPackaged,
+  platform: process.platform,
+  version: app.getVersion(),
+  updater: () => electronUpdater.autoUpdater,
+  clock: systemClock,
+  wallNowMs: () => Date.now(),
+  isRoasting: () => isRoastRunning(roast.state),
+  publish: (status) => {
+    broadcast(IPC_CHANNELS.updateStatus, status);
+  },
+  // Restart to update: the same shutdown as quitting, then the installer (docs/spec/safety.md).
+  shutdownThen: (finish) => {
+    quitGuard.shutdownThen(finish);
+  },
+  quit: () => {
+    app.quit();
+  },
+  openExternal: (url) => shell.openExternal(url),
+  logger: logger.child('updates'),
+});
 
 const DEV_ICON = devIcon();
 const createWindow = () => {

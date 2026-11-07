@@ -28,7 +28,25 @@ function setup(canInstall = true) {
   const raw = fakeAutoUpdater();
   const entries: LogEntry[] = [];
   const logger = createLogger({ write: (e) => entries.push(e) }, 'updates');
-  return { raw, entries, updater: adaptUpdater(raw, { canInstall, logger }) };
+  const calls: string[] = [];
+  let finish: (() => void) | undefined;
+  raw.quitAndInstall.mockImplementation(() => {
+    calls.push('install');
+  });
+  const updater = adaptUpdater(raw, {
+    canInstall,
+    // The quit guard: the shutdown runs, then hands over to `finish` (called by the test).
+    shutdownThen: (next) => {
+      calls.push('shutdown');
+      finish = next;
+    },
+    quit: () => calls.push('quit'),
+    logger,
+  });
+  const shutDown = () => {
+    finish?.();
+  };
+  return { raw, entries, updater, calls, shutDown };
 }
 
 describe('adaptUpdater', () => {
@@ -81,10 +99,26 @@ describe('adaptUpdater', () => {
     expect(await updater.download()).toEqual({ ok: false, error: { message: 'ENOSPC' } });
   });
 
-  it('installs silently and starts the new version', () => {
-    const { raw, updater } = setup();
+  it('installs silently and starts the new version, only once the shutdown has finished', () => {
+    const { raw, updater, calls, shutDown } = setup();
     updater.quitAndInstall();
+    // The safe stop is still under way: no installer yet, it would close the app mid-stop.
+    expect(calls).toEqual(['shutdown']);
+    expect(raw.quitAndInstall).not.toHaveBeenCalled();
+    shutDown();
     expect(raw.quitAndInstall).toHaveBeenCalledWith(true, true);
+    expect(calls).toEqual(['shutdown', 'install', 'quit']);
+  });
+
+  it('quits anyway when the installer would not start, rather than stay up shut down', () => {
+    const { raw, updater, calls, shutDown } = setup();
+    // electron-updater reports a missing installer as an `error` event and returns.
+    raw.quitAndInstall.mockImplementation(() => {
+      raw.emit('error', new Error("No update filepath provided, can't quit and install"));
+    });
+    updater.quitAndInstall();
+    shutDown();
+    expect(calls.at(-1)).toBe('quit');
   });
 
   it('passes on progress and downloads until unsubscribed', () => {

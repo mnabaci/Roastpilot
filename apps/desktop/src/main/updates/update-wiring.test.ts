@@ -33,6 +33,11 @@ function setup(overrides: Partial<UpdatesDeps> = {}) {
     wallNowMs: () => Date.UTC(2026, 10, 7) + clock.now(),
     isRoasting: () => roasting,
     publish: (status) => published.push(status),
+    // The quit guard: the shutdown finishes at once here.
+    shutdownThen: (finish) => {
+      finish();
+    },
+    quit: () => undefined,
     openExternal: () => Promise.resolve(),
     logger: silentLogger,
     ...overrides,

@@ -14,17 +14,24 @@ export interface QuitGuardDeps {
   logger: Logger;
 }
 
+/** Electron's before-quit handler, plus the same shutdown ending in something other than quit. */
+export interface QuitGuard {
+  (event: { preventDefault: () => void }): void;
+  /**
+   * Runs the steps (once, as a quit would), then `finish` instead of quitting; after that a quit
+   * passes straight through. Restart to update uses it: the installer starts only after the safe
+   * stop.
+   */
+  shutdownThen(finish: () => void): void;
+}
+
 /**
  * Handles Electron's before-quit: the first time, hold the quit, run every step in order, then quit
  * for real. A failing step is logged and the rest still run, so a roaster that won't answer never
  * keeps the roast from being saved. Later calls (our own quit, or the user pressing quit again)
  * pass straight through or wait.
  */
-export function createQuitGuard({
-  steps,
-  quit,
-  logger,
-}: QuitGuardDeps): (event: { preventDefault: () => void }) => void {
+export function createQuitGuard({ steps, quit, logger }: QuitGuardDeps): QuitGuard {
   let stopped = false;
   let stopping = false;
   const runAll = async () => {
@@ -37,19 +44,34 @@ export function createQuitGuard({
       }
     }
   };
-  return (event) => {
-    if (stopped) return;
-    event.preventDefault();
+  let finish = quit;
+  const shutdown = () => {
     if (stopping) return;
     stopping = true;
     logger.info('app.quitting');
     runAll()
       .finally(() => {
         stopped = true;
-        quit();
+        finish();
       })
       .catch((error: unknown) => {
         logger.error('app.quit-failed', { error: serializeError(error) });
       });
   };
+  const guard: QuitGuard = Object.assign(
+    (event: { preventDefault: () => void }) => {
+      if (stopped) return;
+      event.preventDefault();
+      shutdown();
+    },
+    {
+      shutdownThen(next: () => void) {
+        // A quit already under way wins: it ends in quit, and the installer runs on quit anyway.
+        if (stopping) return;
+        finish = next;
+        shutdown();
+      },
+    },
+  );
+  return guard;
 }

@@ -11,6 +11,7 @@ How Roastpilot gets onto a computer and stays current, without ever touching a r
 | Publish                     | One GitHub release per tag with the installers, the update files (`latest.yml`, `latest-mac.yml`) and the changelog section |
 | Tag and version don't match | The workflow fails before building                                                                                          |
 
+- A PR that changes the release workflow, `electron-builder.yml`, the app's `package.json` or the lockfile builds both installers too, without publishing, so a broken build shows before a tag.
 - Built by GitHub Actions only, never on a laptop, so every release comes from a tagged commit.
 - The release token is `GITHUB_TOKEN` with `contents: write`, only in the release workflow's publish job, which checks out and installs nothing; the build jobs, which run install scripts, are read-only. The workflow runs on tags (never on fork PRs) and pins every action to a commit.
 - No signing yet: macOS asks once to open an app from an unidentified developer (Control-click → Open, or System Settings → Privacy & Security → Open Anyway); Windows SmartScreen asks once (More info → Run anyway). The README says how.
@@ -24,7 +25,7 @@ How Roastpilot gets onto a computer and stays current, without ever touching a r
 | Ready             | Installs when you quit; or **Restart to update**                         | **Download** opens the release page; you install the new DMG |
 | During a roast    | Never restarts; Restart to update is disabled ("Finish the roast first") | —                                                            |
 
-- **During a roast** means Preheat to Cooling, or drum cooling. Quit still goes through the safe stop first ([safety.md](safety.md)); the installer runs after it.
+- **During a roast** means Preheat to Cooling, or drum cooling. Quit still goes through the safe stop first ([safety.md](safety.md)); the installer runs after it. Restart to update runs the same shutdown (safe stop, save the roast, close the database, flush the logs) before it starts the installer, which closes the app; if the installer won't start, the app quits anyway rather than stay open shut down.
 - **Only newer versions:** no downgrades, no pre-releases.
 - **Offline or GitHub down:** the check fails quietly (logged, `update.check-failed`); About says "Couldn't check · try again", the next daily check tries again.
 - **In development** (`pnpm dev`) the updater is off; About says "Updates are off in development".

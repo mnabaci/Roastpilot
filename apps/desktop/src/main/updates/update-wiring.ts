@@ -33,6 +33,9 @@ export interface UpdatesDeps {
   wallNowMs: () => number;
   isRoasting: () => boolean;
   publish: (status: UpdateStatus) => void;
+  /** The quit guard's shutdown, then `finish` instead of quitting (Restart to update). */
+  shutdownThen: (finish: () => void) => void;
+  quit: () => void;
   openExternal: (url: string) => Promise<void>;
   logger: Logger;
 }
@@ -62,7 +65,12 @@ export function createUpdates(deps: UpdatesDeps): Updates {
   }
   const canInstall = platform === 'win32';
   const service = new UpdateService({
-    updater: adaptUpdater(deps.updater(), { canInstall, logger }),
+    updater: adaptUpdater(deps.updater(), {
+      canInstall,
+      shutdownThen: deps.shutdownThen,
+      quit: deps.quit,
+      logger,
+    }),
     clock: deps.clock,
     wallNowMs: deps.wallNowMs,
     installedVersion: version,
