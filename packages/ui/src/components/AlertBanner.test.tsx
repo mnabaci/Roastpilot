@@ -5,8 +5,14 @@ import { AlertBanner } from './AlertBanner';
 
 describe('AlertBanner', () => {
   it('announces critical alerts assertively', () => {
-    render(<AlertBanner kind="critical">Emergency stop · heater off, cooling on</AlertBanner>);
-    expect(screen.getByRole('alert')).toHaveTextContent('Emergency stop · heater off, cooling on');
+    render(
+      <AlertBanner kind="critical">
+        Emergency stop · heater off, fan and bean cooler on
+      </AlertBanner>,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Emergency stop · heater off, fan and bean cooler on',
+    );
   });
 
   it('uses a polite status for warnings and can be dismissed', async () => {

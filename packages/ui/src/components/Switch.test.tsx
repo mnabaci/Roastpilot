@@ -11,14 +11,16 @@ describe('Switch', () => {
 
   it('asks for the other state when clicked', async () => {
     const onChange = vi.fn();
-    render(<Switch aria-label="Cool the roaster" checked={false} onChange={onChange} />);
+    render(
+      <Switch aria-label="Cool the drum after each roast" checked={false} onChange={onChange} />,
+    );
     await userEvent.click(screen.getByRole('switch'));
     expect(onChange).toHaveBeenCalledExactlyOnceWith(true);
   });
 
   it('toggles with Space from the keyboard', async () => {
     const onChange = vi.fn();
-    render(<Switch aria-label="Cool the roaster" checked onChange={onChange} />);
+    render(<Switch aria-label="Cool the drum after each roast" checked onChange={onChange} />);
     await userEvent.tab();
     await userEvent.keyboard(' ');
     expect(onChange).toHaveBeenCalledExactlyOnceWith(false);
@@ -26,7 +28,9 @@ describe('Switch', () => {
 
   it('does nothing when disabled', async () => {
     const onChange = vi.fn();
-    render(<Switch aria-label="Cool the roaster" checked onChange={onChange} disabled />);
+    render(
+      <Switch aria-label="Cool the drum after each roast" checked onChange={onChange} disabled />,
+    );
     await userEvent.click(screen.getByRole('switch'));
     expect(onChange).not.toHaveBeenCalled();
   });

@@ -6,12 +6,12 @@ const meta = {
   title: 'Inputs/SegmentedControl',
   component: SegmentedControl,
   args: {
-    label: 'Cooling ends',
+    label: 'Controls',
     options: [
-      { value: 'time', label: 'By time' },
-      { value: 'temperature', label: 'By temperature' },
+      { value: 'guided', label: 'Guided' },
+      { value: 'full', label: 'Full control' },
     ],
-    value: 'time',
+    value: 'guided',
     onChange: () => undefined,
   },
   render: function Render(args) {

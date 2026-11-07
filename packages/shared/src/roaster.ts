@@ -33,6 +33,8 @@ export const RoasterSchema = z
       .min(-MAX_OFFSET_C, `At least -${String(MAX_OFFSET_C)} °C`)
       .max(MAX_OFFSET_C, `At most ${String(MAX_OFFSET_C)} °C`),
     tuning: AutoTuningSchema,
+    /** The tray fan sits under the drum, so it stays on while the drum cools (roasters.md). */
+    coolerHelpsDrum: z.boolean(),
     active: z.boolean(),
   })
   .superRefine((roaster, ctx) => {

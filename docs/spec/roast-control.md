@@ -120,8 +120,8 @@ A curve profile is usually: a fixed soak phase, then one `follow` phase until dr
 2. **Charge:** you press Start (beans in). The clock starts at 0 and the first phase begins.
 3. **Phases:** the controller runs each phase and moves on when its trigger fires (or its backup time passes). Dry end is marked automatically at the dry-end temp.
 4. **First crack:** you press First crack; the app records time and BT and starts the development timer. Only your tap starts the timer: the Development heat and fan step can begin earlier, on its BT trigger, but it never counts as a crack. With no tap, the BT cap ends the roast.
-5. **Drop:** at the development time, or when BT reaches the cap. Heater 0%, fan 100%, cooling on, prompt "Dump beans".
-6. **Cooling:** runs for the roaster's cooling time (default 4 min). Then either the next batch's preheat starts (back-to-back session) or everything turns off, and the roast is saved.
+5. **Drop:** at the development time, or when BT reaches the cap. Heater 0%, fan 100%, bean cooler on, prompt "Dump beans"; drum cooling starts too ([manual-mode.md](manual-mode.md)).
+6. **Cooling:** the beans cool for the bean cooling time (default 4 min), then the roast is saved; the drum keeps cooling to its target unless the next batch's preheat starts (back-to-back session).
 
 After cooling the summary shows the phase split: drying / Maillard / development as % of roast time.
 
@@ -134,7 +134,7 @@ Touching the heater or fan switches that output to manual; the other output stay
 ## Auto mode: first version (milestone 4)
 
 - **Choosing it:** a setting on the Roast screen, Auto or Manual, Manual by default. It can be changed at any time, also mid-roast.
-- **What it drives:** heater and fan, from Preheat until Drop. The flow stays as in [manual-mode.md](manual-mode.md), with the same states, events, cooling, roaster cool-down and saving; Auto presses Drop by itself. You still press Preheat, Start and First crack.
+- **What it drives:** heater and fan, from Preheat until Drop. The flow stays as in [manual-mode.md](manual-mode.md), with the same states, events, bean and drum cooling and saving; Auto presses Drop by itself. You still press Preheat, Start and First crack.
 - **Profiles:** two Skywalker Light styles to choose from, shipped as data with the Skywalker driver and marked "needs calibration", and your own copies from the Profiles screen ([ui.md](ui.md)). Making a profile from a roast comes in milestone 6; Medium and Dark in milestone 8, once Light is tuned.
   - **Light · Steps:** the table above: each step aims for its end temperature in its duration, inside its RoR range.
   - **Light · Curve:** the same curve points, end rule, fan steps and fixed soak, with every other phase `follow`: no planned heat, the PID sets the heater 0–100%.

@@ -12,7 +12,8 @@ and never move between roasters on their own (see [roast-control.md](roast-contr
 | Safety limits                    | 240 °C, 20 min                                                                   |
 | PID gains, correction limit      | Tuned on real roasts; ±20%                                                       |
 | Temperature offset               | 0 °C                                                                             |
-| Preheat hold / cooling time      | 2:30 hold at charge temp / 4 min                                                 |
+| Preheat hold                     | 2:30 hold at charge temp                                                         |
+| Bean cooler helps cool the drum  | On (the tray fan sits under the drum)                                            |
 | Built-in profiles                | Skywalker set: Light · Steps, Light · Curve; Medium and Dark once Light is tuned |
 
 - Profiles, roasts and favourites belong to a roaster. A roaster model ships its own Light, Medium and Dark; an unknown model gets generic templates marked "needs calibration".
@@ -22,7 +23,7 @@ and never move between roasters on their own (see [roast-control.md](roast-contr
 ## First version (milestone 5)
 
 - **Two records to start:** Skywalker and Simulator, made by the migration. Add another by picking a model and filling in the record; a Simulator is the only other model until a new driver ships.
-- **In the record:** name, model, connection, batch min / ideal / max, safety limits, temperature offset, preheat hold and PID gains. Batch min starts at 250 g; change it once you've tested smaller batches. Cooling stays in Settings, as it doesn't depend on the roaster so far.
+- **In the record:** name, model, connection, batch min / ideal / max, safety limits, temperature offset, preheat hold, PID gains and "Bean cooler helps cool the drum" (on for a Skywalker, off for the Simulator). Batch min starts at 250 g; change it once you've tested smaller batches. The cooling times and the drum target stay in Settings.
 - **Moving over:** the connection in Settings moves to the Skywalker or Simulator record on first start. Your own profiles and every saved roast move to the Skywalker record, simulator practice roasts included, as nothing recorded which roaster they used.
 - **Active roaster:** one at a time. Connect uses it, and Connect on a roaster's page (Roasters screen) makes that roaster active first, and picking its port saves it on that record. Changing it, or its limits and gains, waits while it is connected. Its profiles, batch sizes and limits follow.
 - **Limits:** the record's temperature and time limits replace the fixed ones, and can only be set at or below the model's own (Skywalker: 240 °C, 20 min).

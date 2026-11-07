@@ -1,5 +1,5 @@
 import type { Roaster } from '@roastpilot/shared';
-import { Button, NumberField, TextField } from '@roastpilot/ui';
+import { Button, NumberField, Switch, TextField } from '@roastpilot/ui';
 import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
@@ -68,6 +68,25 @@ export function RoasterEditor({ roaster, locked }: { roaster: Roaster; locked: b
       />
       {errors.name ? <p className="text-label text-critical-text">{errors.name}</p> : null}
       {EVERYDAY_FIELDS.map(fields)}
+      <fieldset className="flex flex-col gap-2">
+        <legend className="pb-1 text-body font-semibold">Cooling</legend>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-body">Bean cooler helps cool the drum</p>
+            <p className="text-label text-ink-muted">
+              Tray fan under the drum · stays on while the drum cools
+            </p>
+          </div>
+          <Switch
+            aria-label="Bean cooler helps cool the drum"
+            checked={draft.coolerHelpsDrum}
+            disabled={locked}
+            onChange={(on) => {
+              setDraft({ ...draft, coolerHelpsDrum: on });
+            }}
+          />
+        </div>
+      </fieldset>
       <Button
         variant="ghost"
         className="self-start"

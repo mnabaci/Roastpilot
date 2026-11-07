@@ -13,6 +13,13 @@ describe('roaster draft', () => {
     expect(fromRoasterDraft(draft(), SKYWALKER)).toEqual({ ok: true, value: SKYWALKER });
   });
 
+  it('keeps whether the bean cooler helps cool the drum', () => {
+    expect(fromRoasterDraft(draft({ coolerHelpsDrum: false }), SKYWALKER)).toMatchObject({
+      ok: true,
+      value: { coolerHelpsDrum: false },
+    });
+  });
+
   it('reads times, minutes and gains', () => {
     const result = fromRoasterDraft(
       draft({ hold: '1:30', maxTimeMin: '15', targetKp: '2' }),

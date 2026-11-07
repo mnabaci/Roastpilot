@@ -91,7 +91,7 @@ export class RoastRecorder {
       this.#currentId = null;
       return;
     }
-    // Done keeps the charge on screen; a roaster cool-down after it changes the state again.
+    // Done keeps the charge on screen; drum cooling after it changes the state again.
     if (chargedAtMs === this.#finishedChargedAtMs) return;
     if (this.#recording?.chargedAtMs !== chargedAtMs) this.#start(state, chargedAtMs);
     this.#saveNewEvents(state);

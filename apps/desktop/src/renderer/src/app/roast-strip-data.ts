@@ -18,7 +18,7 @@ const percent = (v: number | undefined) => (v === undefined ? undefined : `${Str
 
 /**
  * What the roast strip shows on the other screens (docs/spec/ui.md, Roast strip), or undefined
- * when no roast is running and the roaster isn't cooling down.
+ * when no roast is running and the drum isn't cooling.
  */
 export function roastStripData(
   roast: RoastState,
@@ -38,16 +38,9 @@ export function roastStripData(
     { label: 'Heater', value: percent(latest?.heater) },
     fan,
   ];
-  if (coolingRoaster)
-    return {
-      lead: `Cooling the roaster · ${formatNumber(n.bt, 0) ?? '–'} °C → ${String(roast.roasterCoolToC)} °C`,
-      numbers: [temp, fan],
-    };
+  // While the beans cool, their countdown leads, even with the drum cooling beside them.
   if (roast.phase === 'cooling') {
-    const left =
-      roast.coolingBelowC === null
-        ? `Cooling ${clock(n.coolingLeftS)} left`
-        : `Cooling · ${formatNumber(n.bt, 0) ?? '–'} °C → ${String(roast.coolingBelowC)} °C`;
+    const left = `Cooling beans ${clock(n.coolingLeftS)} left`;
     const nowMs = readings.at(-1)?.atMs;
     const justDropped =
       roast.droppedAtMs !== null &&
@@ -59,6 +52,11 @@ export function roastStripData(
       numbers: [temp],
     };
   }
+  if (coolingRoaster)
+    return {
+      lead: `Cooling the drum · ${formatNumber(n.bt, 0) ?? '–'} °C → ${String(roast.roasterCoolToC)} °C`,
+      numbers: [temp, fan],
+    };
   const time = roast.phase === 'preheat' ? n.preheatS : n.elapsedS;
   return { lead: `${PHASE_LABEL[roast.phase]} · ${clock(time)}`, numbers };
 }

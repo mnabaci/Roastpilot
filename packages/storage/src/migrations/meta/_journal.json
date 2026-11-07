@@ -36,6 +36,13 @@
       "when": 1793969577356,
       "tag": "0004_roast_imported",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1793974379110,
+      "tag": "0005_cooler_helps_drum",
+      "breakpoints": true
     }
   ]
 }

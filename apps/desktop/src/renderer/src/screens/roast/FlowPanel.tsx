@@ -4,7 +4,7 @@ import { ConfirmButton } from '../../features/ConfirmButton';
 import { autoFlowStep } from './auto-flow';
 import { flowHint, flowStep, isConnected } from './flow-step';
 import { useActiveProfile } from './use-active-profile';
-import { RoasterCooling } from './RoasterCooling';
+import { DrumCooling } from './DrumCooling';
 import { useRun } from '../../features/use-run';
 import { useDeps } from '../../app/app-context';
 import { useAuto, useConnection, useRoast } from '../../stores/use-stores';
@@ -22,7 +22,6 @@ export function FlowPanel({
   const connected = useConnection((s) => isConnected(s.connection));
   const lost = useConnection((s) => s.connection.status === 'lost');
   const roast = useRoast((s) => s.roast);
-  const temp = useRoast((s) => s.readings.at(-1)?.values.bt);
   const { phase } = roast;
   const auto = useAuto((s) => s.status);
   const profile = useActiveProfile();
@@ -52,7 +51,7 @@ export function FlowPanel({
       </div>
     );
   }
-  const hint = autoStep?.hint ?? flowHint(roast, { coolingLeftS, temp });
+  const hint = autoStep?.hint ?? flowHint(roast, { coolingLeftS });
   const noRoast = phase === 'ready' || phase === 'done';
   return (
     <div className="flex flex-col gap-2">
@@ -93,7 +92,7 @@ export function FlowPanel({
           {step.secondary.label}
         </Button>
       ) : null}
-      {noRoast ? <RoasterCooling onAction={act} /> : null}
+      {noRoast ? <DrumCooling onAction={act} /> : null}
       {step.quiet ? (
         <Button
           variant="ghost"

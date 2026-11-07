@@ -9,16 +9,16 @@ interface SafetyCopy {
 const COPY: Readonly<Record<string, SafetyCopy>> = {
   'emergency-stop': {
     kind: 'critical',
-    text: 'Emergency stop · heater off, fan and cooling on',
+    text: 'Emergency stop · heater off, fan and bean cooler on',
   },
   'computer-sleep': {
     kind: 'critical',
-    text: 'Computer went to sleep · heater off, fan and cooling on',
+    text: 'Computer went to sleep · heater off, fan and bean cooler on',
   },
-  'max-temperature': { kind: 'critical', text: 'Too hot · heater off, fan and cooling on' },
+  'max-temperature': { kind: 'critical', text: 'Too hot · heater off, fan and bean cooler on' },
   'max-roast-time': {
     kind: 'critical',
-    text: 'Roast too long · heater off, fan and cooling on',
+    text: 'Roast too long · heater off, fan and bean cooler on',
   },
   'lost-connection': {
     kind: 'critical',

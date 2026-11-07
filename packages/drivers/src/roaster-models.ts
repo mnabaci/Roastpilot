@@ -50,6 +50,8 @@ export function newRoaster(name: string, model: RoasterModel): Omit<Roaster, 'id
     maxTimeS,
     tempOffsetC: 0,
     tuning,
+    // The Skywalker's tray fan sits under the drum.
+    coolerHelpsDrum: model === 'skywalker',
     active: false,
   };
 }

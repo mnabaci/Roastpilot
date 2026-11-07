@@ -36,15 +36,13 @@ describe('SettingsScreen', () => {
     expect(screen.queryByRole('radiogroup', { name: 'Controls' })).toBeNull();
   });
 
-  it('roast settings: charge point, cooling time and roaster cool-down', async () => {
+  it('roast settings: charge point, bean cooling time and drum cooling', async () => {
     const { api, stores } = renderApp(<Settings first="roast" />);
     expect(screen.getByRole('switch', { name: 'Find the charge point' })).toBeChecked();
-    expect(radio('4 min', 'Cooling time')).toBeChecked();
+    expect(radio('4 min', 'Cool the beans for')).toBeChecked();
     await userEvent.click(screen.getByRole('switch', { name: 'Find the charge point' }));
-    await userEvent.click(radio('6 min', 'Cooling time'));
-    await userEvent.click(
-      screen.getByRole('switch', { name: 'Cool the roaster after each roast' }),
-    );
+    await userEvent.click(radio('6 min', 'Cool the beans for'));
+    await userEvent.click(screen.getByRole('switch', { name: 'Cool the drum after each roast' }));
     expect(stores.settings.getState().settings).toMatchObject({
       findChargePoint: false,
       coolingTimeMin: 6,
@@ -59,30 +57,20 @@ describe('SettingsScreen', () => {
     );
   });
 
-  it('hides Cool the roaster to while the cool-down is off', async () => {
+  it('hides Cool the drum to while drum cooling is off', async () => {
     renderApp(<Settings first="roast" />);
-    expect(screen.getByRole('radiogroup', { name: 'Cool the roaster to' })).toBeInTheDocument();
-    await userEvent.click(
-      screen.getByRole('switch', { name: 'Cool the roaster after each roast' }),
-    );
-    expect(screen.queryByRole('radiogroup', { name: 'Cool the roaster to' })).toBeNull();
+    expect(screen.getByRole('radiogroup', { name: 'Cool the drum to' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('switch', { name: 'Cool the drum after each roast' }));
+    expect(screen.queryByRole('radiogroup', { name: 'Cool the drum to' })).toBeNull();
   });
 
-  it('cooling ends by time or by temperature; the roaster cools to its own target', async () => {
+  it('the beans cool by time only; the drum cools to its own target', async () => {
     const { api, stores } = renderApp(<Settings first="roast" />);
-    expect(screen.queryByRole('radiogroup', { name: 'Cool until below' })).toBeNull();
-    await userEvent.click(radio('By temperature', 'Cooling ends'));
-    expect(screen.queryByRole('radiogroup', { name: 'Cooling time' })).toBeNull();
-    expect(radio('90 °C', 'Cool until below')).toBeChecked();
-    await userEvent.click(radio('80 °C', 'Cool until below'));
-    await userEvent.click(radio('60 °C', 'Cool the roaster to'));
-    expect(stores.settings.getState().settings).toMatchObject({
-      coolingEnd: 'temperature',
-      coolingBelowC: 80,
-      roasterCoolToC: 60,
-    });
+    expect(screen.queryByRole('radiogroup', { name: 'Cooling ends' })).toBeNull();
+    await userEvent.click(radio('60 °C', 'Cool the drum to'));
+    expect(stores.settings.getState().settings.roasterCoolToC).toBe(60);
     expect(api.setSettings).toHaveBeenLastCalledWith(
-      expect.objectContaining({ coolingEnd: 'temperature', coolingBelowC: 80, roasterCoolToC: 60 }),
+      expect.objectContaining({ roasterCoolToC: 60 }),
     );
   });
 

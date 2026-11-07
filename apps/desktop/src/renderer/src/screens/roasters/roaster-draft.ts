@@ -18,7 +18,14 @@ export interface RoasterDraft {
   followKi: string;
   preheatKp: string;
   preheatKi: string;
+  /** On / off, not typed: the Cooling switch. */
+  coolerHelpsDrum: boolean;
 }
+
+/** The cells typed as text. */
+export type TextCell = {
+  [K in keyof RoasterDraft]: RoasterDraft[K] extends string ? K : never;
+}[keyof RoasterDraft];
 
 export type RoasterDraftErrors = Readonly<Partial<Record<keyof RoasterDraft, string>>>;
 
@@ -40,6 +47,7 @@ export function toRoasterDraft(roaster: Roaster): RoasterDraft {
     followKi: String(tuning.follow.ki),
     preheatKp: String(tuning.preheat.kp),
     preheatKi: String(tuning.preheat.ki),
+    coolerHelpsDrum: roaster.coolerHelpsDrum,
   };
 }
 
@@ -68,7 +76,7 @@ export function fromRoasterDraft(
   base: Roaster,
 ): Result<Roaster, RoasterDraftErrors> {
   const errors: Partial<Record<keyof RoasterDraft, string>> = {};
-  const number = (cell: keyof RoasterDraft): number => {
+  const number = (cell: TextCell): number => {
     const text = draft[cell].trim();
     const value = Number(text);
     if (text === '' || !Number.isFinite(value)) errors[cell] = 'Enter a number';
@@ -86,6 +94,7 @@ export function fromRoasterDraft(
     maxTempC: number('maxTempC'),
     maxTimeS: number('maxTimeMin') * 60,
     tempOffsetC: number('tempOffsetC'),
+    coolerHelpsDrum: draft.coolerHelpsDrum,
     tuning: {
       ...tuning,
       holdS: clock ? Number(clock[1]) * 60 + Number(clock[2]) : tuning.holdS,

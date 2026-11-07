@@ -17,14 +17,14 @@ describe('RoastStrip', () => {
   it('a prompt from the flow leads instead of the phase', () => {
     render(
       <RoastStrip
-        lead="Cooling · 0:02"
-        prompt="Dump beans · Cooling 3:58 left"
+        lead="Cooling beans 0:02 left"
+        prompt="Dump beans · Cooling beans 3:58 left"
         numbers={numbers}
         onOpen={vi.fn()}
       />,
     );
-    expect(screen.getByRole('button')).toHaveTextContent(/^Dump beans · Cooling 3:58 left/);
-    expect(screen.queryByText('Cooling · 0:02')).not.toBeInTheDocument();
+    expect(screen.getByRole('button')).toHaveTextContent(/^Dump beans · Cooling beans 3:58 left/);
+    expect(screen.queryByText('Cooling beans 0:02 left')).not.toBeInTheDocument();
   });
 
   it('opens Roast when pressed', async () => {

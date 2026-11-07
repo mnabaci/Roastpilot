@@ -253,6 +253,18 @@ describe('RoastersScreen', () => {
       expect(api.saveRoaster).toHaveBeenCalledWith(expect.objectContaining({ maxTempC: 230 }));
     });
 
+    it('turns the bean cooler helping the drum off, and saves it', async () => {
+      const { api } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
+      const helps = screen.getByRole('switch', { name: 'Bean cooler helps cool the drum' });
+      expect(helps).toBeChecked();
+      await userEvent.click(helps);
+      expect(helps).not.toBeChecked();
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      expect(api.saveRoaster).toHaveBeenCalledWith(
+        expect.objectContaining({ coolerHelpsDrum: false }),
+      );
+    });
+
     it('keeps the tuning closed, in plain words, until asked', async () => {
       const { api } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
       expect(screen.queryByRole('group', { name: 'Reaching step temperatures' })).toBeNull();

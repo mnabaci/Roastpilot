@@ -17,7 +17,7 @@ describe('SafetyBanners', () => {
     });
     const alerts = screen.getAllByRole('alert');
     expect(alerts).toHaveLength(1);
-    expect(alerts[0]).toHaveTextContent('Too hot · heater off, fan and cooling on');
+    expect(alerts[0]).toHaveTextContent('Too hot · heater off, fan and bean cooler on');
     expect(screen.getByRole('status')).toHaveTextContent('Temperature barely rising');
     expect(screen.queryByText(/Heater locked/)).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Acknowledge' }));

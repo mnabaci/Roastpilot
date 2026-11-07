@@ -11,28 +11,36 @@ const TIMES = [
 
 describe('SegmentedControl', () => {
   it('is a radio group with the chosen option checked', () => {
-    render(<SegmentedControl label="Cooling time" options={TIMES} value={4} onChange={vi.fn()} />);
-    expect(screen.getByRole('radiogroup', { name: 'Cooling time' })).toBeInTheDocument();
+    render(
+      <SegmentedControl label="Cool the beans for" options={TIMES} value={4} onChange={vi.fn()} />,
+    );
+    expect(screen.getByRole('radiogroup', { name: 'Cool the beans for' })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: '4 min' })).toBeChecked();
     expect(screen.getByRole('radio', { name: '2 min' })).not.toBeChecked();
   });
 
   it('chooses an option on click', async () => {
     const onChange = vi.fn();
-    render(<SegmentedControl label="Cooling time" options={TIMES} value={4} onChange={onChange} />);
+    render(
+      <SegmentedControl label="Cool the beans for" options={TIMES} value={4} onChange={onChange} />,
+    );
     await userEvent.click(screen.getByRole('radio', { name: '6 min' }));
     expect(onChange).toHaveBeenCalledExactlyOnceWith(6);
   });
 
   it('is one Tab stop, on the chosen option', async () => {
-    render(<SegmentedControl label="Cooling time" options={TIMES} value={4} onChange={vi.fn()} />);
+    render(
+      <SegmentedControl label="Cool the beans for" options={TIMES} value={4} onChange={vi.fn()} />,
+    );
     await userEvent.tab();
     expect(screen.getByRole('radio', { name: '4 min' })).toHaveFocus();
   });
 
   it('moves the choice with the arrow keys, wrapping at the ends', async () => {
     const onChange = vi.fn();
-    render(<SegmentedControl label="Cooling time" options={TIMES} value={6} onChange={onChange} />);
+    render(
+      <SegmentedControl label="Cool the beans for" options={TIMES} value={6} onChange={onChange} />,
+    );
     await userEvent.tab();
     await userEvent.keyboard('{ArrowRight}');
     expect(onChange).toHaveBeenLastCalledWith(2);
