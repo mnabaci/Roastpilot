@@ -13,3 +13,6 @@ coverage/
 !.vscode/extensions.json
 .claude/settings.local.json
 storybook-static/
+
+# TypeScript incremental build info
+*.tsbuildinfo

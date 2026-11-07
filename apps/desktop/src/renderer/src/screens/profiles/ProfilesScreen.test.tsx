@@ -53,7 +53,7 @@ describe('ProfilesScreen', () => {
     open(api, BUILT_INS, 'light-steps');
     expect(screen.getByRole('textbox', { name: 'Name' })).toBeDisabled();
     expect(screen.getByRole('textbox', { name: 'BT cap' })).toBeDisabled();
-    await userEvent.click(screen.getByRole('button', { name: /^More for/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^More for (?!Profiles$)/ }));
     expect(screen.queryByRole('menuitem', { name: 'Delete' })).toBeNull();
     await userEvent.click(screen.getByRole('menuitem', { name: 'Duplicate' }));
     expect(api.duplicateProfile).toHaveBeenCalledWith('light-steps');
@@ -130,7 +130,7 @@ describe('ProfilesScreen', () => {
   it('asks once before deleting, then goes back to the one Auto uses', async () => {
     const api = fakeApi({ listProfiles: vi.fn(() => Promise.resolve(BUILT_INS)) });
     open(api);
-    await userEvent.click(screen.getByRole('button', { name: /^More for/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^More for (?!Profiles$)/ }));
     await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
     expect(api.deleteProfile).not.toHaveBeenCalled();
     const confirm = screen.getByRole('alertdialog', { name: 'Delete this profile?' });
@@ -186,13 +186,13 @@ describe('ProfilesScreen', () => {
       { profiles: withMine, ...settingsOn('light-steps'), roasters: roastersWith(null) },
       api,
     );
-    await userEvent.click(screen.getByRole('button', { name: /^More for/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^More for (?!Profiles$)/ }));
     await userEvent.click(screen.getByRole('menuitem', { name: 'Copy to Simulator' }));
     expect(api.copyProfile).toHaveBeenCalledWith({ id: 'light-steps', roasterId: 2 });
     // One line under the header, never inside the actions beside the name.
     const message = await screen.findByText(/needs calibration there/);
-    expect(screen.getByRole('button', { name: /^More for/ }).parentElement).not.toContainElement(
-      message,
-    );
+    expect(
+      screen.getByRole('button', { name: /^More for (?!Profiles$)/ }).parentElement,
+    ).not.toContainElement(message);
   });
 });

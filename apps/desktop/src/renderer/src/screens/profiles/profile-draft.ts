@@ -7,6 +7,7 @@ import {
   type Result,
 } from '@roastpilot/shared';
 import { formatClock } from '@roastpilot/ui';
+import { reader, type Reader } from './draft-reader';
 
 /** One editable step, as typed. Soak is kept apart: only its fan is yours to change here. */
 export interface StepDraft {
@@ -75,30 +76,6 @@ export function toDraft(profile: AutoProfile): ProfileDraft {
     points: profile.curve.slice(1).map((p) => ({ time: formatClock(p.tS), c: String(p.c) })),
   };
 }
-
-/** Reads the typed cells, collecting a message per cell that isn't what it should be. */
-function reader() {
-  const errors: Record<string, string> = {};
-  return {
-    errors,
-    number(key: string, text: string): number {
-      const value = Number(text.trim());
-      if (text.trim() === '' || !Number.isFinite(value)) errors[key] = 'Enter a number';
-      return value;
-    },
-    clock(key: string, text: string): number {
-      const match = /^(\d+):([0-5]\d)$/.exec(text.trim());
-      if (!match) errors[key] = 'Enter a time like 1:30';
-      return match ? Number(match[1]) * 60 + Number(match[2]) : 0;
-    },
-    text(key: string, text: string): string {
-      if (text.trim() === '') errors[key] = 'Enter a name';
-      return text.trim();
-    },
-  };
-}
-
-type Reader = ReturnType<typeof reader>;
 
 function toPhase(step: StepDraft, i: number, last: boolean, steps: boolean, read: Reader) {
   const key = (cell: string) => `steps.${String(i)}.${cell}`;

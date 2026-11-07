@@ -71,6 +71,9 @@ export function fakeApi(overrides: Partial<RoastpilotApi> = {}): Mocked<Roastpil
     copyProfile: vi.fn((request: { id: string }) =>
       Promise.resolve(err({ kind: 'not-found' as const, id: request.id })),
     ),
+    makeProfileFromMilestones: vi.fn(() =>
+      Promise.resolve(err({ kind: 'storage-failed' as const, message: 'not in this test' })),
+    ),
     listRoasters: vi.fn(() => Promise.resolve([])),
     addRoaster: vi.fn(() => Promise.resolve(err({ kind: 'in-use' as const }))),
     saveRoaster: vi.fn((roaster: Roaster) => Promise.resolve(ok(roaster))),

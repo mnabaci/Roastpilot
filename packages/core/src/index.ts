@@ -51,6 +51,12 @@ export { RoastRecorder, type RoastRecorderDeps } from './history/roast-recorder'
 export { AutoPilot, type AutoPilotDeps } from './auto/auto-pilot';
 export type { AutoEvent } from './auto/roast-run';
 export { plannedCurve } from './auto/steps-curve';
+export { timeAtC } from './profiles/curve-time';
+export {
+  builderBase,
+  milestonesFrom,
+  profileFromMilestones,
+} from './profiles/profile-from-milestones';
 export { profileFromRoast, type ProfileStyle } from './profiles/profile-from-roast';
 export type { ProfileRepository } from './profiles/profile-repository';
 export type { RoasterRepository } from './roasters/roaster-repository';

@@ -27,6 +27,7 @@ import type {
   UpdateBean,
 } from './bean';
 import type { MakeProfileError, MakeProfileRequest } from './make-profile';
+import type { Milestones } from './milestones';
 import type { Result } from './result';
 import type { NewRoaster, Roaster, RoasterError, RoasterId } from './roaster';
 import {
@@ -93,6 +94,7 @@ export const IPC_CHANNELS = {
   saveProfile: 'profiles:save',
   deleteProfile: 'profiles:delete',
   copyProfile: 'profiles:copy',
+  makeProfileFromMilestones: 'profiles:make-from-milestones',
   listRoasters: 'roasters:list',
   addRoaster: 'roasters:add',
   saveRoaster: 'roasters:save',
@@ -249,6 +251,8 @@ export interface ProfilesApi {
     id: ProfileId;
     roasterId: RoasterId;
   }): Promise<Result<ProfileEntry, ProfileError>>;
+  /** A new curve profile of your own on the active roaster, from the milestone builder. */
+  makeProfileFromMilestones(milestones: Milestones): Promise<Result<ProfileEntry, ProfileError>>;
 }
 
 /** Beans and stock (docs/spec/batch-and-stock.md). The stores follow `onBeans`. */

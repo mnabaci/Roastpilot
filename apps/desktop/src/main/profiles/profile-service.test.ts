@@ -1,4 +1,4 @@
-import { silentLogger, type ProfileRepository } from '@roastpilot/core';
+import { milestonesFrom, silentLogger, type ProfileRepository } from '@roastpilot/core';
 import { SKYWALKER_PROFILES } from '@roastpilot/drivers';
 import { err, ok, type AutoProfile } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
@@ -75,6 +75,11 @@ describe('ProfileService', () => {
       ok: false,
       error: { kind: 'storage-failed', message: 'gone' },
     });
+    const milestones = milestonesFrom(SKYWALKER_PROFILES['light-curve']);
+    expect(await service.fromMilestones(milestones)).toEqual({
+      ok: false,
+      error: { kind: 'storage-failed', message: 'gone' },
+    });
   });
 
   it('duplicates a built-in as your own, leaving the original alone', async () => {
@@ -85,6 +90,22 @@ describe('ProfileService', () => {
       value: { builtIn: false, profile: { id: 'custom-new', name: 'Light · Steps copy' } },
     });
     expect(stored().map((p) => p.id)).toEqual(['custom-new']);
+  });
+
+  it('makes a curve profile from milestones on the active roaster, named after the ones there', async () => {
+    const { service, stored, useRoaster } = setup([{ ...MINE, name: 'Milestones' }]);
+    await service.list();
+    const milestones = milestonesFrom(SKYWALKER_PROFILES['light-curve']);
+    const made = await service.fromMilestones({ ...milestones, chargeC: 190 });
+    expect(made).toMatchObject({
+      ok: true,
+      value: { builtIn: false, profile: { id: 'custom-new', name: 'Milestones 2', chargeC: 190 } },
+    });
+    expect(stored().map((p) => p.id)).toEqual(['custom-a', 'custom-new']);
+    useRoaster(2);
+    expect(await service.fromMilestones(milestones)).toMatchObject({
+      value: { profile: { name: 'Milestones' } },
+    });
   });
 
   it('refuses to duplicate a profile it does not know', async () => {
