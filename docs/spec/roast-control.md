@@ -76,12 +76,12 @@ Each phase:
 
 - **Fixed phases** send exactly the planned heat. Used for the soak, where any heat would scorch.
 - **Target phases** aim for the step's end temperature in its duration, starting from the heater estimate:
-  1. RoR is computed over the last 30 s from smoothed BT.
-  2. The RoR to aim for is worked out again every second: the temperature still to gain ÷ the time left in the step, kept inside the RoR range. With no time left and BT still short, it is the top of the range; at or past the end temperature, the bottom. A phase's correction stays 0 until RoR has first reached its range, so the climb out of the turning point doesn't pin the correction at its limit.
+  1. RoR is computed over the last 30 s from smoothed BT. **Settled BT:** everything Auto acts on (phase triggers, dry end, the BT cap, the PID) uses the middle of the last three readings, so one bad reading can't skip a phase or drop the roast; a real temperature counts about a second later.
+  2. The RoR to aim for is worked out again every second: the temperature still to gain ÷ the time left in the step, kept inside the RoR range. With no time left and BT still short, it is the top of the range; at or past the end temperature, the bottom. Until your first-crack tap it is never below the stall guard's 5 °C/min, so the two never pull against each other; after the tap the step's own range applies (Development: 3–7). A phase's correction stays 0 until RoR has first reached its range, so the climb out of the turning point doesn't pin the correction at its limit.
   3. The PID adds or removes heat to hold that RoR, limited to ±20% of the estimate (per-roaster setting).
   4. Temperature ends the step, not the duration: a step that runs long hands over to the next one where the roast really is, so one late step doesn't leave the rest chasing a clock. The backup time still moves on if the temperature never comes.
   5. Output is clamped to 0–100 and rounded to the roaster's step (Skywalker: 5%); commands are sent only on change.
-  6. Anti-windup: the integral stops while the correction is at its limit.
+  6. Anti-windup: the integral stops while the correction is at its limit, and never holds more than the limits allow, so heat built up while the stall guard allowed +30% is let go as soon as it clears. One time step counts at most 3 s, so a gap (Auto stopped, readings lost) can't land on the integral all at once after Resume auto.
 - **Follow phases** run a full PID on BT error against the curve (target = curve value at elapsed time, smoothed BT, anti-windup, roaster step rounding). Past the last curve point the target carries on along the last section's slope, until the end rule drops. They need well-tuned gains per roaster (`pid-tune` skill).
 - The fan follows the plan and is never driven by the PID, so heat and fan don't fight. The stall guard is the one exception.
 
@@ -91,11 +91,12 @@ A roast that loses its RoR before first crack stalls: in roast 6 (2026-11-04) th
 
 - **Armed** once RoR has first reached 5 °C/min, so the climb out of the turning point never trips it.
 - **Trips** when RoR is below 5 °C/min, or will reach it within 60 s at its rate of fall over the last 60 s. **Clears** at 6 °C/min or more with no such fall in sight.
-- **Fan:** planned increases wait, then the fan steps down 5% every 30 s, to at most 20% below where it was when the guard tripped. After it clears, it steps back up 5% every 30 s to the plan.
-- **Heater:** in `target` phases the correction may go up to +30% instead of +20%. `follow` phases are already free.
-- **On screen:** the flow panel says "RoR low · fan held", and each trip and clear is logged and saved as an event.
+- **Heat first, fan last:** near first crack the drum fills with smoke, and heat is what drives RoR, so the fan keeps its plan while the heater does the work.
+- **Heater:** in `target` phases the correction may go up to +30% instead of +20%. `follow` phases are already free, up to 100%.
+- **Fan, only when heat is spent:** once the heater has been at its limit (the +30%, or 100%) for 30 s and the guard is still tripped, planned increases wait and the fan steps down 5% at once, then every 30 s, to at most 20% below the plan. After it clears, it steps back up 5% every 30 s to the plan.
+- **On screen:** the flow panel says "RoR low · more heat", and each trip and clear is logged and saved as an event.
 - An output you set by hand stays yours. The temperature safety limits apply as ever. After your first-crack tap there is no guard: a low RoR is normal there (roast 7 fell to 2.4).
-- 5 °C/min, 60 s, 5%, 20% and +30% are starting values, tuned with the profile on real roasts.
+- 5 °C/min, 60 s, 30 s, 5%, 20% and +30% are starting values, tuned with the profile on real roasts.
 
 Target and follow both handle room conditions: outdoors or on a heat-soaked roaster, the roast drifts from its aim and the PID corrects it. No weather data is used.
 
@@ -132,8 +133,8 @@ A curve profile is usually: a fixed soak phase, then one `follow` phase until dr
    1. If BT is above charge temp − 10 °C (a hot roaster), cool first: heat 0%, fan 100%, drum on, until BT is 20 °C below charge temp (Skywalker Light: 160 °C).
    2. Climb: fan 30%, heat on, PID brings BT to charge temp smoothly.
    3. Hold at charge temp for 2:30 (per-roaster setting, 2–3 min), then show "Add beans". The PID keeps holding until you press Start, for at most 10 min after "Add beans".
-   4. Heater off before charge, so the beans don't scorch on landing: at "Add beans" you press Charge soon. The heater goes to 0, whichever way the phases will control heat, and a per-roaster countdown runs (Skywalker: 5 s), then the flow panel says "Beans in". You charge and press Start, and the heater stays at 0 through the soak. With no Start within 30 s of the countdown ending, the hold resumes and Charge soon is offered again. Start without Charge soon also works, as a heater cut at that moment. A heater you set by hand stays yours.
-   5. Limits: the cool step and the climb each give up after 15 min, and when the hold's 10 min run out the heater goes to 0 and Auto hands the outputs to you. Both are logged, so a stuck probe or a forgotten roaster can't keep running.
+   4. Heater off before charge, so the beans don't scorch on landing: at "Add beans" you press Charge soon. The heater goes to 0 at once (not on the next reading), whichever way the phases will control heat, and a per-roaster countdown runs (Skywalker: 5 s), then the flow panel says "Beans in". You charge and press Start, and the heater stays at 0 through the soak. With no Start within 30 s of the countdown ending, the hold resumes and Charge soon is offered again. Start without Charge soon also works, as a heater cut at that moment. A heater you set by hand stays yours.
+   5. Limits: the cool step and the climb each give up after 15 min, and when the hold's 10 min run out the heater goes to 0 and Auto hands the outputs to you. Both are logged, so a stuck probe or a forgotten roaster can't keep running. The flow panel then says "Preheat ran out · heater off · end, then Preheat again" and offers no Start: the drum is cooling.
 2. **Charge:** you press Start (beans in). The clock starts at 0 and the first phase begins.
 3. **Phases:** the controller runs each phase and moves on when its trigger fires (or its backup time passes). Dry end is marked automatically at the dry-end temp.
 4. **First crack:** you press First crack; the app records time and BT and starts the development timer. Only your tap starts the timer: the Development heat and fan step can begin earlier, on its BT trigger, but it never counts as a crack. With no tap, the BT cap ends the roast.
@@ -150,7 +151,13 @@ Touching the heater or fan switches that output to manual; the other output stay
 
 ## Auto mode: first version (milestone 4)
 
-- **Choosing it:** a setting on the Roast screen, Auto or Manual, Manual by default. It can be changed at any time, also mid-roast.
+- **Choosing it:** a setting on the Roast screen, Auto or Manual, Manual by default. It can be changed at any time, also mid-roast:
+  - **Off mid-roast:** heater and fan stay where they are, and Drop is yours. The flow panel says so in one line: "Manual · heater stays 85 % · you drop".
+  - **On mid-roast:** Auto replays the readings since charge, quietly, and starts in the phase the roast has reached, timed from when it really began; nothing replays from the soak. The roast is then saved as an Auto roast with its profile.
+  - Each switch mid-roast is saved as a `mode` event.
+- **When Auto stops:** the flow panel and the roast strip say why, in a few words ("Safety stop", "Roaster disconnected", "Heater locked", "Auto failed", "Preheat ran out"), and what is yours now ("you drop").
+- **BT cap and the roaster's limit:** Auto drops at the profile's cap or 5 °C under the roaster's max temperature, whichever is lower, so Drop always comes before a safety stop. A profile's cap is above its charge temperature.
+- **Development countdown:** in Development the flow panel counts down: "Development · drops in 0:43 or at 200 °C".
 - **What it drives:** heater and fan, from Preheat until Drop. The flow stays as in [manual-mode.md](manual-mode.md), with the same states, events, bean and drum cooling and saving; Auto presses Drop by itself. You still press Preheat, Start and First crack.
 - **Profiles:** two Skywalker Light styles to choose from, shipped as data with the Skywalker driver and marked "needs calibration", and your own copies from the Profiles screen ([ui.md](ui.md)). Making a profile from a roast comes in milestone 6; Medium and Dark in milestone 8, once Light is tuned.
   - **Light · Steps:** the table above: each step aims for its end temperature in its duration, inside its RoR range.
