@@ -86,7 +86,7 @@ Each phase:
   1. **Estimate:** each phase starts from its heat %, the heater the source roast used there.
   2. **Aim:** the curve's own RoR 30 s ahead (its slope over ±15 s, so a knee is met early) plus 0.3 °C/min for each °C BT is below the curve (minus when above), kept within 0–30 °C/min. Settled BT, as for steps. Past the last curve point the slope carries on. Until your first-crack tap never below the stall guard's 5 °C/min.
   3. **Correction:** the same RoR PID as steps, with its own gains, limited to ±20% of the estimate (+30% while the stall guard trips) and the same anti-windup. It stays 0 until RoR has first reached 5 °C/min (or the aim, when lower), so the climb out of the turning point doesn't pin it.
-  4. **Slew limit:** the heater moves at most 5% per 10 s, up or down, so a correction never kicks RoR. At a phase change it starts from the new estimate, as a step does.
+  4. **Slew limit:** the heater moves at most 5% per 10 s, up or down, so a correction never kicks RoR. From one curve phase to the next it carries on from where the heater was and slews to the new estimate, as roast 7 stepped down 5% at a time; out of the soak it starts at the estimate at once.
   5. No RoR or BT: the heater holds. Rounded to the roaster's step like every output.
   6. 30 s, 0.3, 5% per 10 s, ±20% and the gains are per-roaster tuning (Skywalker values; [roasters.md](roasters.md)), tuned on real roasts (`pid-tune`).
 - The fan follows the plan and is never driven by the PID, so heat and fan don't fight. The stall guard is the one exception.

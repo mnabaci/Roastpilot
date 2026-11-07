@@ -39,16 +39,18 @@ function slew(from: number, to: number, maxStep: number): number {
 }
 
 /**
- * A curve phase: starts from its heat estimate, and a RoR PID trims it within its limit to hold
- * the aim, the heater moving at most `slewPctPer10s` per 10 s either way (ADR 0016).
+ * A curve phase: aims at its heat estimate, and a RoR PID trims it within its limit to hold the
+ * aim, the heater moving at most `slewPctPer10s` per 10 s either way (ADR 0016). After another
+ * curve phase it starts `fromPct`, where that one left the heater, and slews on from there.
  */
 export function followControl(
   heat: Extract<PhaseHeat, { mode: 'follow' }>,
   tuning: CurveFollow,
   curve: readonly CurvePoint[],
+  fromPct: number = heat.pct,
 ): OutputController {
   const pid = new Pid(tuning.gains);
-  let heater = heat.pct;
+  let heater = fromPct;
   let ceiling = Math.min(FULL_PCT, heat.pct + tuning.limitPct);
   let reachedAim = false;
   return {

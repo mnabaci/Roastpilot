@@ -47,11 +47,15 @@ function targetControl(heat: TargetHeat, tuning: AutoTuning): OutputController {
   };
 }
 
-/** The controller for one phase's heat mode; a new one for each phase, so nothing carries over. */
+/**
+ * The controller for one phase's heat mode; a new one for each phase. Only a curve phase after
+ * another takes `fromPct`, the heater the last one left, so the change between them is slewed too.
+ */
 export function heatControlFor(
   heat: PhaseHeat,
   tuning: AutoTuning,
   curve: readonly CurvePoint[],
+  fromPct?: number,
 ): OutputController {
   switch (heat.mode) {
     case 'fixed':
@@ -59,6 +63,6 @@ export function heatControlFor(
     case 'target':
       return targetControl(heat, tuning);
     case 'follow':
-      return followControl(heat, tuning.curveFollow, curve);
+      return followControl(heat, tuning.curveFollow, curve, fromPct);
   }
 }

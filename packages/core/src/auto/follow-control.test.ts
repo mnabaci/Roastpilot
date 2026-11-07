@@ -73,6 +73,14 @@ describe('followAimRor', () => {
 });
 
 describe('followControl', () => {
+  it('after another curve phase, starts where it left the heater and slews to its estimate', () => {
+    const control = followControl({ mode: 'follow', pct: 50 }, TUNING, CURVE, 65);
+    const heater = run(control, { ...ON_CURVE, ror: 3 }, 30);
+    expect(heater[0]).toBe(64.5);
+    expect(heater[9]).toBe(60);
+    expect(heater.at(-1)).toBe(50);
+  });
+
   it('stays on its estimate while the roast is on the curve', () => {
     const control = followControl(FOLLOW, TUNING, CURVE);
     expect(run(control, ON_CURVE, 30).every((pct) => pct === 50)).toBe(true);

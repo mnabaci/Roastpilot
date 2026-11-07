@@ -49,6 +49,9 @@ export class RoastRun {
   #lastMs: number;
   #dryEnd = false;
   #stallTripped = false;
+  /** The heater sent last, and what a following curve phase starts from. */
+  #lastHeaterPct: number | undefined;
+  #carryPct: number | undefined;
 
   constructor(profile: AutoProfile, tuning: AutoTuning, chargedAtMs: number) {
     this.#profile = profile;
@@ -107,6 +110,9 @@ export class RoastRun {
 
     const nextIndex = advancePhase(this.#profile, this.#index, { elapsedS, btC });
     if (nextIndex !== this.#index) {
+      // Curve to curve, the heater goes on from where it was (ADR 0016); a soak hands over at once.
+      const wasFollow = this.#profile.phases[this.#index]?.heat.mode === 'follow';
+      this.#carryPct = wasFollow ? this.#lastHeaterPct : undefined;
       this.#index = nextIndex;
       this.#phaseStartedS = elapsedS;
       this.#control = undefined;
@@ -137,7 +143,8 @@ export class RoastRun {
     }
 
     if (phase && !this.#control) {
-      this.#control = heatControlFor(phase.heat, this.#tuning, this.#profile.curve);
+      this.#control = heatControlFor(phase.heat, this.#tuning, this.#profile.curve, this.#carryPct);
+      this.#carryPct = undefined;
     }
     const heaterPct =
       this.#control?.next({
@@ -150,6 +157,7 @@ export class RoastRun {
         firstCracked,
       }) ?? 0;
 
+    this.#lastHeaterPct = heaterPct;
     const sinceFirstCrackS = firstCrackAtMs === null ? undefined : (nowMs - firstCrackAtMs) / 1_000;
     const endRule = dueEndRule({ profile: this.#profile, sinceFirstCrackS, btC });
     return { heaterPct, fanPct: guarded.fanPct, endRule, events };

@@ -14,7 +14,7 @@ Curve phases work like steps, with the curve as the plan:
 - **Feed-forward:** each phase starts from its heat %, the heater the source roast used there.
 - **Aim:** the curve's own RoR, taken 30 s ahead to cover the lag, plus 0.3 °C/min per °C BT is behind the curve (less when ahead), kept within 0–30 °C/min and, before the first-crack tap, never under the stall guard's 5.
 - **Correction:** a RoR PID (its own gains) limited to ±20% of the estimate, +30% while the stall guard trips, with the usual anti-windup.
-- **Slew limit:** the heater moves at most 5% per 10 s either way.
+- **Slew limit:** the heater moves at most 5% per 10 s either way, also across a change from one curve phase to the next (the new phase starts where the heater was). Only the hand-over from the soak is immediate.
 - The new numbers are per-roaster tuning in a `curveFollow` group, with the Skywalker values as defaults. The old temperature-error gains (`follow`) no longer apply and are dropped; a record saved before this reads with the defaults.
 
 ## Consequences
