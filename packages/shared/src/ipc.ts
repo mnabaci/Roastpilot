@@ -70,6 +70,7 @@ export const IPC_CHANNELS = {
   addStock: 'beans:add-stock',
   adjustStock: 'beans:adjust-stock',
   beansChanged: 'beans:changed',
+  makeBeanProfile: 'beans:make-profile',
   setRoastSetup: 'roast:set-setup',
   saveRoastResult: 'history:save-result',
   makeProfileFromRoast: 'history:make-profile',

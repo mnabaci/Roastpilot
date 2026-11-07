@@ -207,8 +207,12 @@ export {
   type UpdateBean,
 } from './bean';
 export {
+  MakeBeanProfileErrorSchema,
+  MakeBeanProfileRequestSchema,
   MakeProfileErrorSchema,
   MakeProfileRequestSchema,
+  type MakeBeanProfileError,
+  type MakeBeanProfileRequest,
   type MakeProfileError,
   type MakeProfileRequest,
 } from './make-profile';

@@ -14,7 +14,12 @@ import type { DriverError } from './driver-error';
 import type { RoastsChange, SetOutputRequest, Snapshot } from './ipc';
 import type { RendererLogEntry } from './log-entry';
 import type { LogDay, LogDayRead, LogRecord } from './log-record';
-import type { MakeProfileError, MakeProfileRequest } from './make-profile';
+import type {
+  MakeBeanProfileError,
+  MakeBeanProfileRequest,
+  MakeProfileError,
+  MakeProfileRequest,
+} from './make-profile';
 import type { Milestones } from './milestones';
 import type { AutoProfile, ProfileEntry, ProfileError, ProfileId } from './profile';
 import type { Result } from './result';
@@ -149,6 +154,13 @@ export interface BeansApi {
   addStock(stock: AddStock): Promise<Result<void, StorageError>>;
   adjustStock(stock: AdjustStock): Promise<Result<void, StorageError>>;
   onBeans(listener: (beans: Bean[]) => void): Unsubscribe;
+  /**
+   * The bean's own profile in one step: copies `profileId`, names it after the bean, saves it and
+   * links it. All or nothing: a failure leaves no copy behind.
+   */
+  makeBeanProfile(
+    request: MakeBeanProfileRequest,
+  ): Promise<Result<ProfileEntry, MakeBeanProfileError>>;
   /** What the next roast is of; read at charge. */
   setRoastSetup(setup: RoastSetup): Promise<void>;
   /** Roasted weight, rating, star and notes. */
