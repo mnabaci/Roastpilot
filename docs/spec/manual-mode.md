@@ -12,11 +12,15 @@ In a manual roast, a card above the heater and fan sliders suggests what Auto wo
 - **When:** from Start until Drop (Roasting and Development), while the roast is Manual, connected and not locked by a safety stop. Not in Preheat: the Preheat hint already says to set the heater yourself.
 - **How often:** at most one new suggestion every 15 s, and only when it differs from what is set by 10 % or more (heater or fan). One card can carry both: "Heater 65% → 75% · Fan 50% → 40%".
 - **Why, in one line:** on a curve phase, the gap to the curve and the RoR trend ("4 °C below target, RoR falling"); on a step phase, the RoR against the step's range ("RoR 6.5 · step wants 8–12"); at a phase change, its name ("Maillard from 150 °C"). A roast with the stall guard tripped says so ("RoR stalling").
+  - "At a phase change" is the first 30 s of a phase, and "from" is BT when it began; a fixed phase (the soak) always gives its name. The trend compares RoR now with RoR 20 s ago: a change under 1 °C/min either way is steady.
+  - What is set is your value for 2 s after you set it, then what the roaster reports. A card keeps its numbers (and reason) until a new suggestion replaces it; one that no longer starts from what is set goes.
 - **Apply:** sets the suggested heater and fan through the same path as the sliders, so every safety rule applies, and records a `coach_applied` event (detail: output, from, to). The card goes away until the next suggestion.
-- **Dismiss:** hides that suggestion until the next phase, or until the coach wants something 10 % or more further from what is set than the one you dismissed.
+  - Apply names the card you saw: a card that has changed or gone is refused ("The suggestion changed · check the card"). Heater goes first; an output the roaster refuses stops it there, and only what was set is recorded.
+- **Dismiss:** hides that suggestion until the next phase, or until the coach wants something 10 % or more further from what is set than the one you dismissed. An output that wasn't on the card counts from how far it was when you dismissed. A dismissed heads-up stays away for the rest of that roast.
 - **Heads-ups (no Apply, Dismiss only), when no setting is suggested:**
   - "First crack in ~45 s · listen": in Roasting with no first-crack tap, once BT is within 60 s of the expected first crack at the current RoR. Expected first crack is the same as for the Listen for first crack sound ([ui.md](ui.md#sounds)); without one, no heads-up.
   - "Drop in ~30 s · 1:45 development": in Development, 30 s before the profile's development time; or "BT cap 225 °C in ~30 s" when BT will reach the cap first at the current RoR.
+  - Seconds count down in steps of 5 s. With RoR at 0 or below there is no first-crack or cap heads-up; once BT reaches the expected first crack, or the development time has passed, the heads-up goes.
 - **Needs calibration:** with a profile that needs calibration, the card's first line says so ("Coach · Light · Steps needs calibration"), so you weigh its advice.
 - **Off:** a setting, Settings › Roast "Coach in manual roasts", on by default. Off, Manual looks as it does without a coach.
 - **Gone:** at Drop, a switch to Auto, a disconnect or a safety stop the card disappears at once.
