@@ -14,6 +14,37 @@ export interface AppMenuOptions {
 
 const separator: MenuItemConstructorOptions = { type: 'separator' };
 
+/**
+ * Only what text fields need: on macOS the keyboard shortcuts in a field (⌘C, ⌘V, ⌘Z) work through
+ * these items. Electron's full Edit menu adds Paste and Match Style, Delete, Substitutions, Speech.
+ */
+const EDIT: MenuItemConstructorOptions = {
+  label: 'Edit',
+  submenu: [
+    { role: 'undo' },
+    { role: 'redo' },
+    separator,
+    { role: 'cut' },
+    { role: 'copy' },
+    { role: 'paste' },
+    { role: 'selectAll' },
+  ],
+};
+
+/** The user defaults that keep macOS from adding its own items to the Edit menu. */
+export const MAC_EDIT_EXTRAS_OFF = [
+  'NSDisabledDictationMenuItem',
+  'NSDisabledCharacterPaletteMenuItem',
+  'NSDisabledAutoFillMenuItem',
+] as const;
+
+/** Start Dictation, Emoji & Symbols and AutoFill: macOS adds them to any menu named Edit. */
+export function hideMacEditExtras(
+  setUserDefault: (key: string, type: 'boolean', value: boolean) => void,
+): void {
+  for (const key of MAC_EDIT_EXTRAS_OFF) setUserDefault(key, 'boolean', true);
+}
+
 export function buildAppMenu(options: AppMenuOptions): MenuItemConstructorOptions[] {
   const mac = options.platform === 'darwin';
   const settings: MenuItemConstructorOptions = {
@@ -53,7 +84,7 @@ export function buildAppMenu(options: AppMenuOptions): MenuItemConstructorOption
       label: 'File',
       submenu: mac ? [{ role: 'close' }] : [settings, separator, { role: 'quit' }],
     },
-    { role: 'editMenu' },
+    EDIT,
     {
       label: 'View',
       submenu: [

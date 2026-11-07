@@ -11,6 +11,19 @@ describe('OutputControl', () => {
     expect(screen.getByText('Auto')).toBeInTheDocument();
   });
 
+  it('sm: the value in body text, the label like a field label, the same slider', () => {
+    render(<OutputControl label="Volume" value={70} size="sm" tone="neutral" onChange={vi.fn()} />);
+    expect(screen.getByRole('slider', { name: 'Volume' })).toHaveValue('70');
+    expect(screen.getByText('70%')).toHaveClass('text-body');
+    expect(screen.getByText('70%')).not.toHaveClass('text-readout-lg');
+    expect(screen.getByText('Volume')).toHaveClass('text-label', 'text-ink-muted');
+  });
+
+  it('md stays the readout size', () => {
+    render(<OutputControl label="Heater" value={65} onChange={vi.fn()} />);
+    expect(screen.getByText('65%')).toHaveClass('text-readout-lg');
+  });
+
   it('shows no badge and no Resume auto in a manual roast', () => {
     render(<OutputControl label="Fan" value={30} onChange={vi.fn()} onResumeAuto={vi.fn()} />);
     expect(screen.queryByText('Manual')).toBeNull();

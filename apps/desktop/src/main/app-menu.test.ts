@@ -1,6 +1,11 @@
 import type { MenuItemConstructorOptions } from 'electron';
 import { describe, expect, it, vi } from 'vitest';
-import { buildAppMenu, type AppMenuOptions } from './app-menu';
+import {
+  buildAppMenu,
+  hideMacEditExtras,
+  MAC_EDIT_EXTRAS_OFF,
+  type AppMenuOptions,
+} from './app-menu';
 
 function build(overrides: Partial<AppMenuOptions> = {}) {
   const navigate = vi.fn();
@@ -83,6 +88,47 @@ describe('buildAppMenu', () => {
     const { menu } = build({ dev: true });
     expect(roles(menu)).toEqual(
       expect.arrayContaining(['reload', 'forceReload', 'toggleDevTools']),
+    );
+  });
+});
+
+describe('the Edit and View menus', () => {
+  const submenu = (menu: MenuItemConstructorOptions[], label: string) =>
+    menu.find((item) => item.label === label)?.submenu as MenuItemConstructorOptions[];
+
+  it.each(['darwin', 'win32'] as const)(
+    'on %s, Edit holds only what text fields need',
+    (platform) => {
+      const { menu } = build({ platform });
+      expect(roles(submenu(menu, 'Edit')).filter(Boolean)).toEqual([
+        'undo',
+        'redo',
+        'cut',
+        'copy',
+        'paste',
+        'selectAll',
+      ]);
+      expect(roles(menu)).not.toContain('editMenu');
+    },
+  );
+
+  it('View keeps zoom for reading from across the room, and full screen', () => {
+    const { menu } = build();
+    expect(roles(submenu(menu, 'View')).filter(Boolean)).toEqual([
+      'resetZoom',
+      'zoomIn',
+      'zoomOut',
+      'togglefullscreen',
+    ]);
+  });
+});
+
+describe('hideMacEditExtras', () => {
+  it('turns off Dictation, Emoji & Symbols and AutoFill in the Edit menu', () => {
+    const setUserDefault = vi.fn();
+    hideMacEditExtras(setUserDefault);
+    expect(setUserDefault.mock.calls).toEqual(
+      MAC_EDIT_EXTRAS_OFF.map((key) => [key, 'boolean', true]),
     );
   });
 });

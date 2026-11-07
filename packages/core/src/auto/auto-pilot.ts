@@ -126,7 +126,8 @@ export class AutoPilot {
     }
     this.#stopReason = null;
     this.#outputs.handBack();
-    this.#drive.run?.restartControl();
+    // A curve phase picks up from the heater the roaster has now, not from a jump to its estimate.
+    this.#drive.run?.restartControl(this.#deps.readings().at(-1)?.values.heater);
     this.#logger.info('auto.resumed');
     this.#publish();
     return ok(undefined);

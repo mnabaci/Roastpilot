@@ -78,13 +78,62 @@ describe('RoastRun', () => {
     expect(at(129)).toBe(80);
   });
 
-  it('after Resume auto, a curve phase starts on its estimate, not from a heater never sent', () => {
+  it('after Resume auto with no heater reading, a curve phase starts on its estimate', () => {
     const run = new RoastRun(CURVES, TUNING, 0);
     const at = curveTick(run);
     for (let s = 1; s < 120; s++) at(s);
     // Auto was stopped, so the last heater it worked out never reached the roaster.
     run.restartControl();
     expect(at(120)).toBe(50);
+  });
+
+  it('after Resume auto, a curve phase slews from the heater the roaster has, not a jump', () => {
+    const run = new RoastRun(CURVES, TUNING, 0);
+    const at = curveTick(run);
+    for (let s = 1; s < 125; s++) at(s);
+    // You had the heater at 30 % by hand; Maillard's estimate is 50 %.
+    run.restartControl(30);
+    expect(at(125)).toBe(30.5);
+    for (let s = 126; s < 134; s++) at(s);
+    expect(at(134)).toBe(35);
+  });
+
+  it('slews down too, from a heater above the estimate', () => {
+    const run = new RoastRun(CURVES, TUNING, 0);
+    const at = curveTick(run);
+    for (let s = 1; s < 125; s++) at(s);
+    run.restartControl(90);
+    expect(at(125)).toBe(89.5);
+  });
+
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, undefined])(
+    'a heater reading of %s counts as none: the estimate',
+    (reading) => {
+      const run = new RoastRun(CURVES, TUNING, 0);
+      const at = curveTick(run);
+      for (let s = 1; s < 125; s++) at(s);
+      run.restartControl(reading);
+      expect(at(125)).toBe(50);
+    },
+  );
+
+  it('keeps a reported heater within 0–100 %', () => {
+    const run = new RoastRun(CURVES, TUNING, 0);
+    const at = curveTick(run);
+    for (let s = 1; s < 125; s++) at(s);
+    run.restartControl(140);
+    expect(at(125)).toBe(99.5);
+  });
+
+  it('in the soak, Resume auto keeps the soak heater: nothing to slew', () => {
+    const run = new RoastRun(CURVES, TUNING, 0);
+    const at = curveTick(run);
+    for (let s = 1; s < 30; s++) at(s);
+    run.restartControl(60);
+    expect(at(30)).toBe(0);
+    // Out of the soak, the curve phase still starts at its estimate at once.
+    for (let s = 31; s < 60; s++) at(s);
+    expect(at(60)).toBe(85);
   });
 
   it(`counts a gap of more than ${String(MAX_STEP_S)} s as ${String(MAX_STEP_S)} s`, () => {

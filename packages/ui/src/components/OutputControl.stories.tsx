@@ -58,3 +58,14 @@ export const DrumSpeed: Story = {
 export const ManualRoast: Story = { args: { mode: undefined, value: 60 } };
 export const Locked: Story = { args: { disabled: true, value: 0 } };
 export const NoReading: Story = { args: { mode: 'manual', value: undefined } };
+/** In a row of fields, as a sound's Volume in Settings › Sounds. */
+export const Small: Story = {
+  args: { label: 'Volume', tone: 'neutral', mode: undefined, value: 70, size: 'sm' },
+  decorators: [
+    (Story) => (
+      <div className="w-44">
+        <Story />
+      </div>
+    ),
+  ],
+};

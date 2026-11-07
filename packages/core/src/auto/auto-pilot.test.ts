@@ -56,10 +56,19 @@ const TUNING: AutoTuning = {
   chargeCutS: 5,
 };
 
-const reading = (atMs: number, bt?: number): Reading => ({
+const reading = (atMs: number, bt?: number, heater?: number): Reading => ({
   atMs,
-  values: bt === undefined ? {} : { bt },
+  values: { ...(bt === undefined ? {} : { bt }), ...(heater === undefined ? {} : { heater }) },
 });
+
+/** The same roast with a curve phase after the soak, estimate 50 %. */
+const CURVE_PROFILE: AutoProfile = {
+  ...PROFILE,
+  phases: [
+    { name: 'Soak', heat: { mode: 'fixed', pct: 0 }, fanPct: 30, next: { on: 'time', afterS: 60 } },
+    { name: 'Follow', heat: { mode: 'follow', pct: 50 }, fanPct: 60, next: { on: 'end' } },
+  ],
+};
 
 function fakeLogger() {
   const logger = {
@@ -72,7 +81,7 @@ function fakeLogger() {
   return logger;
 }
 
-function setup(initial: Partial<RoastState> = {}) {
+function setup(initial: Partial<RoastState> = {}, profile: AutoProfile = PROFILE) {
   const logger = fakeLogger();
   let state: RoastState = { ...READY_ROAST, ...initial };
   let locked = false;
@@ -93,15 +102,15 @@ function setup(initial: Partial<RoastState> = {}) {
     round: (_channel, value) => Math.round(value / 5) * 5,
     heaterLocked: () => locked,
     drop,
-    profile: () => PROFILE,
+    profile: () => profile,
     tuning: () => TUNING,
     soakS: () => 60,
     onEvent: (event) => events.push(event),
     onChange,
     logger,
   });
-  const feed = async (atMs: number, bt?: number) => {
-    const next = reading(atMs, bt);
+  const feed = async (atMs: number, bt?: number, heater?: number) => {
+    const next = reading(atMs, bt, heater);
     readings.push(next);
     await pilot.onReading(next);
   };
@@ -359,6 +368,26 @@ describe('AutoPilot', () => {
       setOutput.mockClear();
       await feed(2_000, 170);
       expect(setOutput).toHaveBeenCalledWith('heater', 0);
+    });
+
+    it('Resume auto in a curve phase slews from the heater the roaster reports', async () => {
+      const { pilot, feed, setOutput } = setup(ROASTING, CURVE_PROFILE);
+      pilot.setEnabled(true);
+      // A minute of the roast climbing 12 °C/min, so RoR is known.
+      const bt = (s: number) => 118 + (s - 60) * 0.2;
+      for (let s = 60; s <= 120; s++) await feed(s * 1_000, bt(s), 50);
+      // You turn it down to 20 %; the roaster reports it, then Resume auto.
+      pilot.outputRequested('heater', 20);
+      await feed(121_000, bt(121), 20);
+      expect(pilot.resume()).toEqual(ok(undefined));
+      setOutput.mockClear();
+      await feed(122_000, bt(122), 20);
+      // 20.5 % rounds to the roaster's step: 20, then up 5 % per 10 s, never a jump to 50.
+      expect(setOutput).toHaveBeenCalledWith('heater', 20);
+      for (let s = 123; s <= 132; s++) await feed(s * 1_000, bt(s), 20);
+      const heater = setOutput.mock.calls.filter(([channel]) => channel === 'heater');
+      expect(heater.at(-1)).toEqual(['heater', 25]);
+      expect(heater.every(([, value]) => value <= 25)).toBe(true);
     });
 
     it('switching to Manual stops all commands', async () => {
