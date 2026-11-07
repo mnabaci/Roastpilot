@@ -1,13 +1,12 @@
 import {
   DEFAULT_SAFETY_LIMITS,
-  drumOnValue,
-  ManualRoast,
   ReadingHistory,
   RoasterSession,
   RoastRecorder,
   serializeError,
   type Clock,
   type Logger,
+  type ManualRoast,
   type BeanRepository,
   type ProfileRepository,
   type RoasterRepository,
@@ -24,10 +23,13 @@ import {
 } from '@roastpilot/shared';
 import { autoProfile, createAutoPilot, roastPlan } from './auto-wiring';
 import { BeanService } from './beans/bean-service';
-import { HistoryService } from './history/history-service';
-import { RoastFileService } from './history/roast-file-service';
+import { createHistory } from './history-wiring';
+import type { HistoryService } from './history/history-service';
+import type { RoastFileService } from './history/roast-file-service';
 import { ProfileService } from './profiles/profile-service';
 import { RoasterService } from './roasters/roaster-service';
+import { createManualRoast } from './roast-wiring';
+import { sessionHandlers } from './session-handlers';
 import { startLoading } from './start-loading';
 import { SettingsService } from './settings/settings-service';
 
@@ -95,6 +97,7 @@ export function createAppServices({
     });
   };
   const historyLogger = logger.child('history');
+  const roastLogger = logger.child('roast');
   const recorder = new RoastRecorder({
     repository: roasts,
     nowIso,
@@ -123,38 +126,15 @@ export function createAppServices({
       return { ...DEFAULT_SAFETY_LIMITS, maxTempC, maxRoastMs: maxTimeS * 1000 };
     },
     tempOffsetC: () => roasters.active().tempOffsetC,
-    onReading: (reading) => {
-      history.add(reading);
-      recorder.onReading(reading);
-      publish(IPC_CHANNELS.reading, reading);
-      // After it is kept: the turning point and drum cooling look at the readings.
-      roast.onReading(reading).catch((error: unknown) => {
-        roastLogger.error('roast.reading-failed', { error: serializeError(error) });
-      });
-      pilot.onReading(reading).catch((error: unknown) => {
-        roastLogger.error('auto.reading-failed', { error: serializeError(error) });
-      });
-    },
-    onConnection: (state) => {
-      onConnectionChange(state);
-      publish(IPC_CHANNELS.connection, state);
-      // A fresh connection starts with the outputs off: a running roast puts its own back.
-      if (state.status === 'connected') {
-        roast.restoreOutputs().catch((error: unknown) => {
-          roastLogger.error('roast.restore-failed', { error: serializeError(error) });
-        });
-      } else if (state.status === 'disconnected') roast.stopRoasterCooling('disconnected');
-      if (state.status === 'disconnected' || state.status === 'lost') pilot.stop(state.status);
-    },
-    onSafetyEvent: (event) => {
-      publish(IPC_CHANNELS.safetyEvent, event);
-      if (event.kind === 'tripped' && event.action === 'safe-stop') {
-        roast.stopRoasterCooling('safety-stop');
-        pilot.stop('safety-stop');
-      }
-    },
+    ...sessionHandlers({
+      history,
+      recorder,
+      parts: () => ({ roast, pilot }),
+      publish,
+      onConnectionChange,
+      logger: roastLogger,
+    }),
   });
-  const roastLogger = logger.child('roast');
   const settings = new SettingsService(settingsStore, (latest) => {
     pilot.setEnabled(latest.roastMode === 'auto');
   });
@@ -167,44 +147,17 @@ export function createAppServices({
   });
   // Before the first roast, so a chosen profile of your own is there without opening a window.
   startLoading({ settings, roasters, profiles, logger });
-  const roast = new ManualRoast({
+  const roast = createManualRoast({
     clock,
     logger: roastLogger,
-    setOutput: (channel, value) => session.setOutput(channel, value),
-    latestBt: () => history.latest()?.values.bt,
-    readings: () => history.all(),
-    canCoolRoaster: () => session.connection.status === 'connected' && !session.safetyStatus.locked,
-    options: () => {
-      const latest = settings.latest;
-      return {
-        findChargePoint: latest.findChargePoint,
-        coolingMs: latest.coolingTimeMin * 60_000,
-        coolRoasterAfter: latest.coolRoasterAfter,
-        roasterCoolToC: latest.roasterCoolToC,
-        coolerHelpsDrum: roasters.active().coolerHelpsDrum,
-        // From the connected roaster's own drum: what it takes for on.
-        drumOn: drumOnValue(
-          session.connection.status === 'connected' ? session.connection.channels : [],
-          roasters.active().drumSpeedPct,
-        ),
-      };
-    },
+    session,
+    history,
+    settings,
+    roasters,
     onChange: (state) => {
       recorder.onRoastChange(state);
       onRoastChange(state);
       publish(IPC_CHANNELS.roast, state);
-    },
-    onNewRoast: () => {
-      history.clear();
-    },
-    onRoastStarted: (chargedAtMs) => {
-      session.roastStarted(chargedAtMs);
-    },
-    onTurningPoint: (atMs) => {
-      session.turningPoint(atMs);
-    },
-    onRoastEnded: () => {
-      session.roastEnded();
     },
   });
   const pilot = createAutoPilot({
@@ -230,32 +183,14 @@ export function createAppServices({
     session,
     roast,
     settings,
-    roastFiles: new RoastFileService({
-      repository: roasts,
-      names: async () => ({
-        beans: new Map((await beans.list()).map((bean) => [bean.id, bean.name])),
-        roasters: new Map(roasters.all.map((roaster) => [roaster.id, roaster.name])),
-      }),
-      onAdded: (id) => {
-        publish(IPC_CHANNELS.roastsChanged, { id, deleted: false });
-      },
-      now: () => new Date(nowIso()),
-      logger: historyLogger,
-    }),
-    history: new HistoryService({
-      repository: roasts,
-      beanNames: async () => new Map((await beans.list()).map((bean) => [bean.id, bean.name])),
-      isRecording: (id) => recorder.isRecording(id),
-      onDeleted: (id) => {
-        recorder.forget(id);
-        publish(IPC_CHANNELS.roastsChanged, { id, deleted: true });
-        // The next roast's row points at its ghost, which has to exist.
-        if (beans.setup.ghostRoastId === id) beans.setSetup({ ...beans.setup, ghostRoastId: null });
-      },
-      onResultSaved: (id) => {
-        publish(IPC_CHANNELS.roastsChanged, { id, deleted: false });
-        refreshBeans();
-      },
+    ...createHistory({
+      roasts,
+      beans,
+      roasters,
+      recorder,
+      nowIso,
+      refreshBeans,
+      publish,
       logger: historyLogger,
     }),
     recorder,
