@@ -19,7 +19,11 @@ import {
 export interface SessionHandlerDeps {
   history: ReadingHistory;
   recorder: Pick<RoastRecorder, 'onReading'>;
-  parts: () => { roast: ManualRoast; pilot: AutoPilot; coach: Coach };
+  parts: () => {
+    roast: Pick<ManualRoast, 'onReading' | 'restoreOutputs' | 'stopRoasterCooling'>;
+    pilot: Pick<AutoPilot, 'onReading' | 'stop'>;
+    coach: Pick<Coach, 'onReading' | 'sync' | 'stop'>;
+  };
   publish: <C extends IpcEventChannel>(channel: C, payload: IpcEventPayloads[C]) => void;
   onConnectionChange: (state: ConnectionState) => void;
   logger: Logger;
