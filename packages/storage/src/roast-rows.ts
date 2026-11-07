@@ -9,7 +9,19 @@ import {
 import { sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { parseJson } from './attempt';
-import { roasts } from './schema/roasts';
+import { roastEvents, roasts } from './schema/roasts';
+
+/** BT at the roast's first crack, from its event's JSON detail; null when unreadable or missing. */
+const fcTemp = sql<number | null>`(
+  SELECT CASE WHEN json_valid(${roastEvents.detail}) THEN
+    CASE WHEN json_type(${roastEvents.detail}, '$.bt') IN ('integer', 'real')
+      THEN json_extract(${roastEvents.detail}, '$.bt') END
+  END
+  FROM ${roastEvents}
+  WHERE ${roastEvents.roastId} = ${roasts.id} AND ${roastEvents.type} = 'first-crack'
+  ORDER BY ${roastEvents.tS}
+  LIMIT 1
+)`;
 
 /** A roast's list columns, with its profile's id and name pulled from the JSON copy. */
 export const summaryColumns = {
@@ -17,6 +29,7 @@ export const summaryColumns = {
   startedAt: roasts.startedAt,
   endedAt: roasts.endedAt,
   fcTimeS: roasts.fcTimeS,
+  fcTemp,
   dropTimeS: roasts.dropTimeS,
   dropTemp: roasts.dropTemp,
   roasterId: roasts.roasterId,

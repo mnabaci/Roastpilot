@@ -7,6 +7,7 @@ const ROAST: RoastDetail = {
   startedAt: '2026-11-04T10:00:00.000Z',
   endedAt: '2026-11-04T10:14:00.000Z',
   fcTimeS: 480,
+  fcTemp: 196,
   dropTimeS: 580,
   dropTemp: 205.5,
   roasterId: 1,
@@ -40,6 +41,8 @@ describe('Roastpilot roast file', () => {
     expect(roast).not.toHaveProperty('id');
     expect(roast).not.toHaveProperty('beanId');
     expect(roast).not.toHaveProperty('ghostRoastId');
+    // Read from the events, so the file stays as it was.
+    expect(roast).not.toHaveProperty('fcTemp');
     // Version 2: samples as columns.
     expect(roast?.samples).toEqual({ tS: [0], values: { bt: [180] } });
   });

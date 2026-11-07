@@ -53,6 +53,7 @@ class FakeRepository implements RoastRepository {
       imported: roast.imported ?? false,
       endedAt: null,
       fcTimeS: null,
+      fcTemp: null,
       dropTimeS: null,
       dropTemp: null,
       samples: [],
@@ -70,7 +71,10 @@ class FakeRepository implements RoastRepository {
   }
   addEvent(id: RoastId, event: SavedEvent): Saved<void> {
     if (this.failing) return this.#fail();
-    this.roasts.get(id)?.events.push(event);
+    const roast = this.roasts.get(id);
+    roast?.events.push(event);
+    // Storage reads BT at first crack from the event, like this.
+    if (roast && event.kind === 'first-crack') roast.fcTemp = event.bt;
     return Promise.resolve(ok(undefined));
   }
   update(id: RoastId, patch: RoastSummaryPatch): Saved<void> {
@@ -194,6 +198,7 @@ describe('RoastRecorder', () => {
       startedAt: '2026-11-04T10:00:00.000Z',
       endedAt: '2026-11-04T10:15:40.000Z',
       fcTimeS: 480,
+      fcTemp: 196,
       dropTimeS: 580,
       dropTemp: 205.5,
       samples: [

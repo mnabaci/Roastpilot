@@ -20,6 +20,7 @@ const DETAIL: RoastDetail = {
   startedAt: '2026-11-04T14:32:10.000Z',
   endedAt: '2026-11-04T14:46:00.000Z',
   fcTimeS: 2,
+  fcTemp: null,
   dropTimeS: 3,
   dropTemp: 205,
   samples: [

@@ -59,6 +59,7 @@ describe('RoastScreen', () => {
       startedAt: '2026-11-04T10:00:00.000Z',
       endedAt: '2026-11-04T10:12:00.000Z',
       fcTimeS: 480,
+      fcTemp: null,
       dropTimeS: 570,
       dropTemp: 205,
       roasterId: null,

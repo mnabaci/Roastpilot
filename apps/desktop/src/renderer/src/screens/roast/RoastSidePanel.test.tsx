@@ -18,6 +18,7 @@ const GHOST: RoastSummary = {
   startedAt: '2026-11-04T14:32:10.000Z',
   endedAt: '2026-11-04T14:46:00.000Z',
   fcTimeS: 480,
+  fcTemp: null,
   dropTimeS: 580,
   roasterId: null,
   beanId: null,

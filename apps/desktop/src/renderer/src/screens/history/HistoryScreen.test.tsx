@@ -27,6 +27,7 @@ const summary = (id: number, startedAt: string, over: Partial<RoastSummary> = {}
   startedAt,
   endedAt: startedAt,
   fcTimeS: 480,
+  fcTemp: null,
   dropTimeS: 580,
   roasterId: null,
   beanId: null,
