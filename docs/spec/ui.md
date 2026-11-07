@@ -74,7 +74,7 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 - **Milestone 5:** the list shows the active roaster's profiles; Copy to another roaster when there's another one.
 - **Milestone 6:** Make step profile and Make curve profile on a History roast open the new copy here.
 - **Milestone 8, milestone builder:** "⋯" on the list header has "New from milestones". The editor area shows a table (Milestone, Time, Temp) with the rows from [roast-control.md](roast-control.md), "Add point" for your own points (each with Remove), and the same preview chart, updating as you type. Create (primary) saves it and opens it in the editor; Cancel goes back to the profile you had open.
-- **Later:** drag points on the chart.
+- **Drag points:** on your own curve profile, drag a point on the preview chart; it stays between its neighbours and under the BT cap.
 - New profile from a roast: "Make step profile" (phases from its heat/fan changes) or "Make curve profile" (its BT curve).
 - Import an Artisan `.alog` as a curve profile.
 - "Copy to another roaster" makes a copy marked "needs calibration".

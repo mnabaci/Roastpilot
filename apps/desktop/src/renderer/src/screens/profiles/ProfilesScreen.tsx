@@ -1,7 +1,9 @@
-import { Badge, NavList, SidebarLayout } from '@roastpilot/ui';
+import { builderBase } from '@roastpilot/core';
+import { Badge, Menu, NavList, SidebarLayout } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useAuto, useSettings } from '../../stores/use-stores';
 import { activeEntry } from '../roast/use-active-profile';
+import { MilestoneBuilder } from './MilestoneBuilder';
 import { ProfileEditor } from './ProfileEditor';
 
 /** Your profiles and the built-ins, with one open to edit (docs/spec/ui.md, Profiles screen). */
@@ -10,6 +12,8 @@ export function ProfilesScreen({ openFirst }: { openFirst?: string | undefined }
   const drafts = useAuto((s) => s.drafts);
   const chosenId = useSettings((s) => s.settings.autoProfile);
   const [openId, setOpenId] = useState(openFirst);
+  const [building, setBuilding] = useState(false);
+  const base = builderBase(profiles.filter((e) => e.builtIn).map((e) => e.profile));
   const open = profiles.find((e) => e.profile.id === openId) ?? activeEntry(profiles, chosenId);
   // The one Auto runs, marked in the list so it shows without opening it.
   const autoId = activeEntry(profiles, chosenId)?.profile.id;
@@ -17,6 +21,21 @@ export function ProfilesScreen({ openFirst }: { openFirst?: string | undefined }
     <SidebarLayout
       title="Profiles"
       contentLabel="Profile"
+      titleAction={
+        base ? (
+          <Menu
+            label="More for Profiles"
+            items={[
+              {
+                label: 'New from milestones',
+                onSelect: () => {
+                  setBuilding(true);
+                },
+              },
+            ]}
+          />
+        ) : undefined
+      }
       sidebar={
         <NavList
           label="Profiles"
@@ -31,12 +50,28 @@ export function ProfilesScreen({ openFirst }: { openFirst?: string | undefined }
                 </span>
               ) : undefined,
           }))}
-          openId={open?.profile.id}
-          onOpen={setOpenId}
+          openId={building ? undefined : open?.profile.id}
+          onOpen={(id) => {
+            setBuilding(false);
+            setOpenId(id);
+          }}
         />
       }
     >
-      {open ? <ProfileEditor key={open.profile.id} entry={open} onSelect={setOpenId} /> : null}
+      {building && base ? (
+        <MilestoneBuilder
+          base={base}
+          onCreated={(id) => {
+            setBuilding(false);
+            setOpenId(id);
+          }}
+          onCancel={() => {
+            setBuilding(false);
+          }}
+        />
+      ) : open ? (
+        <ProfileEditor key={open.profile.id} entry={open} onSelect={setOpenId} />
+      ) : null}
     </SidebarLayout>
   );
 }
