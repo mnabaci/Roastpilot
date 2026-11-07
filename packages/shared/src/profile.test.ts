@@ -114,6 +114,25 @@ describe('AutoProfileSchema', () => {
     }
   });
 
+  it('refuses a step longer than 15 min, a backup after 19 min and a curve above the cap', () => {
+    const [soak, heatOn, finish] = profile.phases;
+    if (soak?.heat.mode !== 'fixed' || heatOn?.heat.mode !== 'target' || !finish) {
+      throw new Error('fixture changed');
+    }
+    const issues = (change: Partial<AutoProfile>) =>
+      AutoProfileSchema.safeParse({ ...profile, ...change }).error?.issues.map((i) => i.path);
+    const longStep = { ...heatOn, heat: { ...heatOn.heat, durationS: 901 } };
+    expect(issues({ phases: [soak, longStep, finish] })).toEqual([
+      ['phases', 1, 'heat', 'durationS'],
+    ]);
+    const lateBackup = { ...heatOn, next: { on: 'bt', c: 150, backupS: 1141 } } as const;
+    expect(issues({ phases: [soak, lateBackup, finish] })).toEqual([
+      ['phases', 1, 'next', 'backupS'],
+    ]);
+    const curve = [...profile.curve, { tS: 600, c: profile.capC + 1 }];
+    expect(issues({ curve })).toEqual([['curve', 2, 'c']]);
+  });
+
   it('refuses a saved format from a different version', () => {
     expect(AutoProfileSchema.safeParse({ ...profile, schemaVersion: 99 }).success).toBe(false);
   });

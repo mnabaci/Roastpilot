@@ -2,6 +2,7 @@ import { err, ok, type LogEntry, type Reading } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { ManualClock } from '../clock';
 import { createLogger } from '../logging/logger';
+import { DEFAULT_SAFETY_LIMITS } from './safety-limits';
 import { COMPUTER_SLEEP, SafetyMonitor, type SafetyEvent } from './safety-monitor';
 
 function setup() {
@@ -239,5 +240,49 @@ describe('SafetyMonitor when the driver breaks its contract', () => {
       ['error', 'safety.safe-stop-rejected'],
     ]);
     expect(entries[0]?.context?.error).toMatchObject({ message: 'port exploded' });
+  });
+});
+
+describe('SafetyMonitor when a caller misbehaves', () => {
+  it('still safe-stops and locks when the event listener throws, and logs it', () => {
+    const entries: LogEntry[] = [];
+    const clock = new ManualClock();
+    let safeStops = 0;
+    const monitor = new SafetyMonitor({
+      clock,
+      safeStop: () => {
+        safeStops++;
+        return Promise.resolve();
+      },
+      onEvent: () => {
+        throw new Error('window closed');
+      },
+      logger: createLogger({ write: (e) => entries.push(e) }, 'safety'),
+    });
+    monitor.connected();
+    monitor.recordRead(ok({ atMs: 0, values: { bt: 245 } }));
+    expect(safeStops).toBe(1);
+    expect(monitor.locked).toBe(true);
+    expect(entries.map((e) => e.event)).toContain('safety.listener-failed');
+  });
+
+  it('keeps a full window when the limits change to a longer one', () => {
+    const clock = new ManualClock();
+    const events: SafetyEvent[] = [];
+    let limits = DEFAULT_SAFETY_LIMITS;
+    const monitor = new SafetyMonitor({
+      clock,
+      safeStop: () => Promise.resolve(),
+      onEvent: (e) => events.push(e),
+      limits: () => limits,
+    });
+    monitor.connected();
+    // Another roaster is picked: its stall window is two minutes.
+    limits = { ...DEFAULT_SAFETY_LIMITS, slowRise: { ...limits.slowRise, windowMs: 120_000 } };
+    for (let i = 0; i <= 120; i++) {
+      monitor.recordRead(ok({ atMs: clock.now(), values: { bt: 150, heater: 60 } }));
+      clock.advance(1000);
+    }
+    expect(kinds(events)).toContain('tripped:slow-rise');
   });
 });

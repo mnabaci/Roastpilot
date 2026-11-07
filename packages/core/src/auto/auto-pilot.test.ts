@@ -162,6 +162,18 @@ describe('AutoPilot', () => {
     expect(pilot.status.stopReason).not.toBeNull();
   });
 
+  it('drops again after a refused Drop and Resume auto, rather than heating past the end', async () => {
+    const { pilot, feed, setOutput, drop } = setup(ROASTING);
+    pilot.setEnabled(true);
+    drop.mockRejectedValueOnce(new Error('refused'));
+    await feed(1_000, PROFILE.capC + 1);
+    expect(pilot.resume()).toEqual(ok(undefined));
+    setOutput.mockClear();
+    await feed(2_000, PROFILE.capC + 1);
+    expect(drop).toHaveBeenCalledTimes(2);
+    expect(setOutput.mock.calls.filter(([c, v]) => c === 'heater' && v > 0)).toEqual([]);
+  });
+
   it('leaves a heater you took alone when it fails', async () => {
     const { pilot, feed, setOutput, drop } = setup(ROASTING);
     pilot.setEnabled(true);

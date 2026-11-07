@@ -1,4 +1,7 @@
 import { z } from 'zod';
+import { checkProfile } from './profile-rules';
+
+export { PROFILE_LIMITS } from './profile-rules';
 
 /** Bumped when the saved format changes, so a roast's copy of its profile stays readable. */
 export const PROFILE_SCHEMA_VERSION = 1;
@@ -48,15 +51,6 @@ export const ProfileIdSchema = z.string().min(1).max(64);
 /** The profile Auto falls back to when the chosen one is gone. */
 export const DEFAULT_PROFILE_ID = 'light-steps';
 
-/** Sane limits for a profile, below the roaster's safety limits (docs/spec/safety.md). */
-export const PROFILE_LIMITS = {
-  chargeC: { min: 100, max: 230 },
-  capC: { max: 235 },
-  devTimeS: { min: 30, max: 600 },
-  durationS: { max: 900 },
-  backupS: { max: 1140 },
-} as const;
-
 export const ProfileSourceSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('profile'), profileId: ProfileIdSchema }),
   z.object({ kind: z.literal('roast'), roastId: z.number().int().positive() }),
@@ -81,80 +75,7 @@ export const AutoProfileSchema = z
     curve: z.array(CurvePointSchema).min(2),
     phases: z.array(ProfilePhaseSchema).min(1),
   })
-  .superRefine((profile, ctx) => {
-    const issue = (path: (string | number)[], message: string) => {
-      ctx.addIssue({ code: 'custom', path, message });
-    };
-    const { chargeC, capC, devTimeS, dryEndC } = profile;
-    if (chargeC < PROFILE_LIMITS.chargeC.min || chargeC > PROFILE_LIMITS.chargeC.max) {
-      issue(
-        ['chargeC'],
-        `Between ${String(PROFILE_LIMITS.chargeC.min)} and ${String(PROFILE_LIMITS.chargeC.max)} °C`,
-      );
-    }
-    if (capC > PROFILE_LIMITS.capC.max) {
-      issue(['capC'], `At most ${String(PROFILE_LIMITS.capC.max)} °C`);
-    }
-    if (devTimeS < PROFILE_LIMITS.devTimeS.min || devTimeS > PROFILE_LIMITS.devTimeS.max) {
-      issue(['devTimeS'], 'Between 0:30 and 10:00');
-    }
-    if (dryEndC >= capC) issue(['dryEndC'], 'Must be below the BT cap');
-    if (capC <= chargeC) issue(['capC'], `Above charge, ${String(chargeC)} °C`);
-    let lastTriggerC = Number.NEGATIVE_INFINITY;
-    let lastBackupS = 0;
-    profile.phases.forEach((phase, index) => {
-      if (phase.heat.mode === 'target' && phase.heat.durationS > PROFILE_LIMITS.durationS.max) {
-        issue(['phases', index, 'heat', 'durationS'], 'At most 15:00');
-      }
-      if (phase.next.on !== 'bt') return;
-      if (phase.next.c >= capC) issue(['phases', index, 'next', 'c'], 'Must be below the BT cap');
-      if (phase.next.c <= lastTriggerC) {
-        issue(['phases', index, 'next', 'c'], 'Must be above the step before');
-      }
-      if (phase.next.backupS <= lastBackupS) {
-        issue(['phases', index, 'next', 'backupS'], 'Must be after the step before');
-      }
-      if (phase.next.backupS > PROFILE_LIMITS.backupS.max) {
-        issue(['phases', index, 'next', 'backupS'], 'At most 19:00');
-      }
-      lastTriggerC = phase.next.c;
-      lastBackupS = phase.next.backupS;
-    });
-    profile.curve.slice(1).forEach((point, index) => {
-      if (point.c > capC) issue(['curve', index + 1, 'c'], 'Must not be above the BT cap');
-    });
-    const lastIndex = profile.phases.length - 1;
-    profile.phases.forEach((phase, index) => {
-      if (
-        phase.heat.mode === 'target' &&
-        phase.next.on === 'bt' &&
-        phase.heat.endC !== phase.next.c
-      ) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['phases', index, 'heat', 'endC'],
-          message: 'a target step must end at the temperature that starts the next phase',
-        });
-      }
-      if ((phase.next.on === 'end') !== (index === lastIndex)) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['phases', index, 'next'],
-          message: 'only the last phase, and always the last phase, ends with the end rule',
-        });
-      }
-    });
-    profile.curve.slice(1).forEach((point, index) => {
-      const previous = profile.curve[index];
-      if (previous && point.tS <= previous.tS) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['curve', index + 1, 'tS'],
-          message: 'curve points must go forward in time',
-        });
-      }
-    });
-  });
+  .superRefine(checkProfile);
 
 /** One PID's gains. Output in % per unit of error. */
 export const PidGainsSchema = z.object({

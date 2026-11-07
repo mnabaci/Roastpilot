@@ -208,6 +208,17 @@ describe('RoasterSession', () => {
     expect(second.count('read')).toBeGreaterThan(4);
     expect(roaster.log).toContain('safeStop');
   });
+
+  it('closes the first roaster when a second connect comes before the first is done', async () => {
+    const { clock, roaster, session } = setup();
+    const second = new FakeRoaster(clock);
+    await Promise.all([session.connect(roaster, TARGET), session.connect(second, TARGET)]);
+    expect(roaster.log).toContain('disconnect');
+    await clock.runFor(3000);
+    expect(roaster.count('read')).toBe(0);
+    expect(second.count('read')).toBeGreaterThan(1);
+    expect(session.connection.status).toBe('connected');
+  });
 });
 
 describe('RoasterSession error handling and logging', () => {
