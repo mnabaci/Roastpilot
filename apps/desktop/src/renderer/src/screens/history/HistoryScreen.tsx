@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
 import { useBeans, useRoast, useSettings } from '../../stores/use-stores';
-import { FileNote } from './FileNote';
 import { inProgressId, roastRows, roastTitle, selectionAfterDelete } from './history-format';
 import { OpenRoast } from './OpenRoast';
 import { filterRoasts, NO_FILTER } from './roast-filter';
@@ -29,7 +28,11 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
   const [compareId, setCompareId] = useState<RoastId>();
   const [deleteError, setDeleteError] = useState<string>();
   const [filter, setFilter] = useState(NO_FILTER);
-  const files = useRoastFiles(setPicked);
+  // An imported roast opens, even when the filter would hide it.
+  const files = useRoastFiles((id) => {
+    setFilter(NO_FILTER);
+    setPicked(id);
+  });
   const profileMaker = useMakeProfile(onOpenProfile);
 
   const list = roasts ?? [];
@@ -84,7 +87,6 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
             Import from Artisan
           </Button>
         </div>
-        <FileNote message={files.message} />
       </main>
     );
 
@@ -118,7 +120,6 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
       contentLabel="Roast"
       sidebar={
         <>
-          <FileNote message={files.message} />
           <RoastFilters filter={filter} onChange={setFilter} beans={beans} roasts={list} />
           {selection.selecting ? (
             <SelectionBar

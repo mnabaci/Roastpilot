@@ -91,7 +91,9 @@ export type ExportRoastsError = StorageError | { kind: 'write-failed' };
 export type ImportArtisanResult = { status: 'cancelled' } | { status: 'imported'; id: RoastId };
 export type ImportArtisanError = StorageError | { kind: 'read-failed' } | { kind: 'not-artisan' };
 export type ImportRoastsResult =
-  { status: 'cancelled' } | { status: 'imported'; added: number; skipped: number };
+  | { status: 'cancelled' }
+  /** `newestId`: the newest roast added, for History to open; null when all were already here. */
+  | { status: 'imported'; added: number; skipped: number; newestId: RoastId | null };
 export type ImportRoastsError =
   StorageError | { kind: 'read-failed' } | { kind: 'not-roastpilot' } | { kind: 'newer-version' };
 
