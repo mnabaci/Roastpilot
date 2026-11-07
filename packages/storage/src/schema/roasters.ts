@@ -15,6 +15,8 @@ export const roasters = sqliteTable('roasters', {
   tempOffsetC: real('temp_offset').notNull(),
   /** The tray fan sits under the drum and helps cool it (0005). */
   coolerHelpsDrum: integer('cooler_helps_drum', { mode: 'boolean' }).notNull().default(false),
+  /** The usual speed of a drum that has one, 5–100 % (0006). */
+  drumSpeedPct: real('drum_speed_pct').notNull().default(60),
   /** JSON AutoTuning: gains, correction limit, preheat hold. */
   pid: text('pid').notNull(),
   isActive: integer('is_active', { mode: 'boolean' }).notNull(),

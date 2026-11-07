@@ -30,9 +30,19 @@ export interface SimulatedDriverOptions {
   protocolVersion?: number;
 }
 
+/**
+ * The Skywalker's channels, but with a drum speed (0–100 %) instead of on/off, so drum speed can be
+ * tried without such a roaster (docs/spec/hardware.md). The thermal model ignores the drum.
+ */
+export const SIMULATOR_CHANNELS: readonly Channel[] = SKYWALKER_CHANNELS.map((channel) =>
+  channel.id === 'drum'
+    ? { id: 'drum', kind: 'output', unit: 'percent', min: 0, max: 100, step: 5 }
+    : channel,
+);
+
 /** A twin of the Skywalker + SkyCommand setup on a simple thermal model (docs/spec/hardware.md). */
 export class SimulatedDriver implements RoasterDriver {
-  readonly channels: readonly Channel[] = SKYWALKER_CHANNELS;
+  readonly channels: readonly Channel[] = SIMULATOR_CHANNELS;
 
   readonly #clock: Clock;
   readonly #constants: ThermalConstants;

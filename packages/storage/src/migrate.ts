@@ -6,6 +6,7 @@ import roasters0002 from './migrations/0002_roasters.sql?raw';
 import beans0003 from './migrations/0003_beans.sql?raw';
 import roastImported0004 from './migrations/0004_roast_imported.sql?raw';
 import coolerHelpsDrum0005 from './migrations/0005_cooler_helps_drum.sql?raw';
+import drumSpeed0006 from './migrations/0006_drum_speed.sql?raw';
 
 /**
  * Every migration drizzle-kit generated, in order (src/migrations/meta/_journal.json). Add the new
@@ -18,6 +19,7 @@ export const MIGRATIONS: readonly { tag: string; sql: string }[] = [
   { tag: '0003_beans', sql: beans0003 },
   { tag: '0004_roast_imported', sql: roastImported0004 },
   { tag: '0005_cooler_helps_drum', sql: coolerHelpsDrum0005 },
+  { tag: '0006_drum_speed', sql: drumSpeed0006 },
 ];
 
 function userVersion(db: DatabaseSync): number {
