@@ -48,8 +48,11 @@ export function PhaseStepper({
             />
             <span className="flex flex-col">
               <span
+                // An invisible bold copy holds the width, so the steps after it don't move when
+                // this one becomes current.
+                data-text={step}
                 className={cn(
-                  'text-body',
+                  'inline-flex flex-col text-body after:invisible after:h-0 after:overflow-hidden after:font-semibold after:content-[attr(data-text)]',
                   state === 'upcoming' || state === 'skipped' ? 'text-ink-muted' : 'text-ink',
                   state === 'current' && 'font-semibold',
                 )}
