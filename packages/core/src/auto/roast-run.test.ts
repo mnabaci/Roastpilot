@@ -171,6 +171,8 @@ describe('RoastRun', () => {
       { atMs: 62_000, btC: 96 },
     ]);
     expect(run.phaseName).toBe('Heat on');
+    expect(run.phaseIndex).toBe(1);
+    expect(run.phaseStartedS).toBe(61);
     const next = tick(run, 63, 97);
     expect(next.events).toEqual([]);
   });
