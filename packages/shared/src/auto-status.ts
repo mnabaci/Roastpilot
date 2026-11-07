@@ -14,12 +14,24 @@ export const PreheatStepSchema = z.enum([
   'beans-in',
 ]);
 
+/** Why Auto handed the outputs to you (docs/spec/roast-control.md, Auto mode). */
+export const AutoStopReasonSchema = z.enum([
+  /** A preheat step ran past its limit; the heater is at 0. */
+  'preheat-limit',
+  'heater-locked',
+  'safety-stop',
+  'lost',
+  'disconnected',
+  /** Auto itself failed; the heater it set is at 0. */
+  'tick-failed',
+]);
+
 /** What Auto is doing, for the window. */
 export const AutoStatusSchema = z.object({
   enabled: z.boolean(),
   profileId: ProfileIdSchema,
-  /** A stop handed the outputs to you; Resume auto takes them back. */
-  stopped: z.boolean(),
+  /** Why a stop handed the outputs to you; null while Auto drives. Resume auto takes them back. */
+  stopReason: AutoStopReasonSchema.nullable(),
   heater: OutputOwnerSchema,
   fan: OutputOwnerSchema,
   preheatStep: PreheatStepSchema.nullable(),
@@ -36,7 +48,7 @@ export const AutoStatusSchema = z.object({
 export const AUTO_OFF: z.infer<typeof AutoStatusSchema> = {
   enabled: false,
   profileId: DEFAULT_PROFILE_ID,
-  stopped: false,
+  stopReason: null,
   heater: 'auto',
   fan: 'auto',
   preheatStep: null,
@@ -51,6 +63,7 @@ export const AutoChargeSoonErrorSchema = z.object({ kind: z.literal('not-now') }
 
 export type OutputOwner = z.infer<typeof OutputOwnerSchema>;
 export type PreheatStep = z.infer<typeof PreheatStepSchema>;
+export type AutoStopReason = z.infer<typeof AutoStopReasonSchema>;
 export type AutoStatus = z.infer<typeof AutoStatusSchema>;
 export type AutoResumeError = z.infer<typeof AutoResumeErrorSchema>;
 export type AutoChargeSoonError = z.infer<typeof AutoChargeSoonErrorSchema>;

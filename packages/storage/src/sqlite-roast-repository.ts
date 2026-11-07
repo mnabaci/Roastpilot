@@ -116,8 +116,12 @@ export class SqliteRoastRepository implements RoastRepository {
   }
 
   update(id: RoastId, patch: RoastSummaryPatch): Promise<Result<void, StorageError>> {
+    const { profile, ...rest } = patch;
+    // The profile is saved as its JSON copy, as at create.
+    const row =
+      profile === undefined ? rest : { ...rest, profile: profile && JSON.stringify(profile) };
     return attempt(async () => {
-      await this.#db.update(roasts).set(patch).where(eq(roasts.id, id)).run();
+      await this.#db.update(roasts).set(row).where(eq(roasts.id, id)).run();
     });
   }
 

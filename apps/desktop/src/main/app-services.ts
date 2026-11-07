@@ -22,7 +22,7 @@ import {
   type IpcEventPayloads,
   type Snapshot,
 } from '@roastpilot/shared';
-import { createAutoPilot, roastPlan } from './auto-wiring';
+import { autoProfile, createAutoPilot, roastPlan } from './auto-wiring';
 import { BeanService } from './beans/bean-service';
 import { HistoryService } from './history/history-service';
 import { RoastFileService } from './history/roast-file-service';
@@ -99,7 +99,8 @@ export function createAppServices({
     repository: roasts,
     nowIso,
     readingsSoFar: () => history.all(),
-    plan: () => roastPlan(settings, profiles, roasters.active().id, beans.setup),
+    plan: () =>
+      roastPlan(settings, () => autoProfile(profiles, roasters), roasters.active().id, beans.setup),
     onSaved: (id) => {
       publish(IPC_CHANNELS.roastsChanged, { id, deleted: false, current: true });
       refreshBeans();

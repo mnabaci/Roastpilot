@@ -46,8 +46,16 @@ interface Recording {
 const toSeconds = (ms: number) => Math.round(ms) / 1000;
 
 /** What each event adds to the roast's summary row. */
+interface PatchContext {
+  nowIso: string;
+  plan: () => RoastPlan;
+}
+
 const SUMMARY_FROM_EVENT: Readonly<
-  Record<RoastEvent['kind'], (tS: number, event: RoastEvent, nowIso: string) => RoastSummaryPatch>
+  Record<
+    RoastEvent['kind'],
+    (tS: number, event: RoastEvent, ctx: PatchContext) => RoastSummaryPatch
+  >
 > = {
   charge: () => ({}),
   'turning-point': () => ({}),
@@ -57,8 +65,15 @@ const SUMMARY_FROM_EVENT: Readonly<
   'stall-guard': () => ({}),
   'first-crack': (tS) => ({ fcTimeS: tS }),
   drop: (tS, event) => ({ dropTimeS: tS, dropTemp: event.bt }),
-  'cool-end': (_tS, _event, nowIso) => ({ endedAt: nowIso }),
-  end: (_tS, _event, nowIso) => ({ endedAt: nowIso }),
+  'cool-end': (_tS, _event, { nowIso }) => ({ endedAt: nowIso }),
+  // Auto turned on mid-roast: saved as an Auto roast, with the profile it ran. Turned off, the
+  // roast keeps what it was, since Auto ran part of it.
+  mode: (_tS, event, { plan }) => {
+    if (event.detail !== 'auto') return {};
+    const { mode, profile } = plan();
+    return mode === 'auto' ? { mode, profile } : {};
+  },
+  end: (_tS, _event, { nowIso }) => ({ endedAt: nowIso }),
 };
 
 /**
@@ -159,7 +174,10 @@ export class RoastRecorder {
     if (!recording) return;
     for (const event of state.events.slice(recording.eventsSaved)) {
       const tS = toSeconds(event.atMs - recording.chargedAtMs);
-      const patch = SUMMARY_FROM_EVENT[event.kind](tS, event, this.#deps.nowIso());
+      const patch = SUMMARY_FROM_EVENT[event.kind](tS, event, {
+        nowIso: this.#deps.nowIso(),
+        plan: () => this.#deps.plan?.() ?? MANUAL_PLAN,
+      });
       this.#write(recording, async (id) => {
         const added = await this.#deps.repository.addEvent(id, {
           kind: event.kind,

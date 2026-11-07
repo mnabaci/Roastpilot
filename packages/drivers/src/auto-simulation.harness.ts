@@ -60,7 +60,7 @@ export async function simulateAutoRoast(options: SimulationOptions) {
     onConnection: () => undefined,
     onSafetyEvent: (event) => {
       safety.push(event);
-      if (event.kind === 'tripped' && event.action === 'safe-stop') pilot.stop(event.rule);
+      if (event.kind === 'tripped' && event.action === 'safe-stop') pilot.stop('safety-stop');
     },
   });
   const roast = new ManualRoast({
@@ -113,7 +113,7 @@ export async function simulateAutoRoast(options: SimulationOptions) {
 
   const preheatStarted = clock.now();
   const reachedAddBeans = await runUntil(
-    () => pilot.status.preheatStep === 'add-beans' || pilot.status.stopped,
+    () => pilot.status.preheatStep === 'add-beans' || pilot.status.stopReason !== null,
     40 * 60_000,
   );
   const preheatMs = clock.now() - preheatStarted;
@@ -163,6 +163,6 @@ export async function simulateAutoRoast(options: SimulationOptions) {
     safety,
     failures,
     finalState,
-    stopped: pilot.status.stopped,
+    stopped: pilot.status.stopReason !== null,
   };
 }
