@@ -127,9 +127,26 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 - **Add roaster:** a name and a model, then Add; the new roaster opens.
 - The app starts on Roasters until a roaster is connected; Connect on the Roast screen opens it too.
 
+## Sounds
+
+- **What:** short sounds through the computer's speakers when something needs you, so you can hear it over the roaster. Synthesised in the window with Web Audio (no files) through a compressor, played by the one main window, once per change: never again on later readings.
+- **Steps and defaults:**
+
+| Step                   | Plays when                                                                         | Default voice, volume |
+| ---------------------- | ---------------------------------------------------------------------------------- | --------------------- |
+| Charge soon            | Auto's preheat reaches Add beans                                                   | Chime, 80 %           |
+| Beans in               | Auto's preheat reaches Beans in                                                    | Chime, 80 %           |
+| Dump beans             | the roast enters Cooling                                                           | Chime, 80 %           |
+| Listen for first crack | once per roast, while Roasting with no first-crack tap, BT reaches expected − 3 °C | Ping, 70 %            |
+| Auto stopped           | Auto hands you the outputs mid-run (Preheat to Development)                        | Alert, 90 %           |
+
+- **Expected first crack:** the median BT at first crack of the last 5 saved roasts that have one, from the active roaster when it has any, otherwise from all. Without any, there is no listen cue. Sound only: nothing new on screen.
+- **Voices:** Chime (rising 660 → 880 Hz), Ping (587 Hz), Alert (low 330 Hz twice), Bell (struck 784 Hz, rings out), Marimba (523 → 659 Hz, short), Beep (two square beeps, 1000 Hz), None. Volume 0–100 % in steps of 5 scales the voice's peak.
+- **Never for safety:** a safety trip (Safety stop, Heater locked, Emergency stop) keeps its banner and plays nothing. A window that opens mid-roast stays quiet until the next change. Sound that can't play (no audio device, blocked) is logged once.
+
 ## Settings
 
-- The shared sidebar lists the sections Controls, Roast, Auto and Chart; only the chosen one shows. Settings opens on Controls when the app starts, then on the last section viewed until quit (not saved).
+- The shared sidebar lists the sections Controls, Roast, Auto, Sounds and Chart; only the chosen one shows. Settings opens on Controls when the app starts, then on the last section viewed until quit (not saved).
 - **Rows:** each setting is one row: name with a one-line hint under it on the left, its control on the right (it wraps under the name when narrow). On / off settings are a switch; other choices a segmented control. The chosen option keeps the `heat-tint` toggle look. A setting that doesn't apply is hidden (Cool the drum to, while Cool the drum after each roast is off).
-- **Sections:** Controls (Guided / Full control, see [manual-mode.md](manual-mode.md)); Roast (Find the charge point, on; Cool the beans for, 2–6 min, default 4; Cool the drum after each roast, on; Cool the drum to, 40–70 °C, default 50 °C); Auto (Soak time); Chart (temperature smoothing: Off, 3 s, 5 s or 10 s). Saved in `settings.json` in the app's user-data folder behind a `SettingsStore` interface.
+- **Sections:** Controls (Guided / Full control, see [manual-mode.md](manual-mode.md)); Roast (Find the charge point, on; Cool the beans for, 2–6 min, default 4; Cool the drum after each roast, on; Cool the drum to, 40–70 °C, default 50 °C); Auto (Soak time); Sounds (the Sounds switch, on, "A chime when something needs you, and before first crack"; while on, a row per step with its voice, a Volume slider, an icon-only Play that previews it, and Reset while it differs from its default; see [Sounds](#sounds)); Chart (temperature smoothing: Off, 3 s, 5 s or 10 s). Saved in `settings.json` in the app's user-data folder behind a `SettingsStore` interface.
 - Roasters and connecting have their own screen (above).
