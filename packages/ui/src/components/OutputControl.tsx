@@ -17,8 +17,8 @@ export interface OutputControlProps {
   onChange: (value: number) => void;
   /** Called when the user hands control back to the profile. Shown only in manual mode. */
   onResumeAuto?: () => void;
-  /** `heat` for the heater, `air` for the fan. */
-  tone?: 'heat' | 'air';
+  /** `heat` for the heater, `air` for the fan, `neutral` for a drum speed (neither heat nor air). */
+  tone?: 'heat' | 'air' | 'neutral';
   min?: number;
   max?: number;
   /** Step from the roaster's channel definition (Skywalker: 5). */
@@ -26,6 +26,12 @@ export interface OutputControlProps {
   disabled?: boolean;
   className?: string;
 }
+
+const ACCENT = {
+  heat: 'accent-heat-fill',
+  air: 'accent-air',
+  neutral: 'accent-ink-muted',
+} as const;
 
 /** How long the keyboard has to rest before its value is sent. */
 export const KEYBOARD_COMMIT_MS = 300;
@@ -73,10 +79,7 @@ export function OutputControl({
           draft(Number(event.target.value));
         }}
         onBlur={commitNow}
-        className={cn(
-          'h-7 w-full cursor-pointer disabled:cursor-not-allowed',
-          tone === 'heat' ? 'accent-heat-fill' : 'accent-air',
-        )}
+        className={cn('h-7 w-full cursor-pointer disabled:cursor-not-allowed', ACCENT[tone])}
       />
       {manual && onResumeAuto ? (
         <Button variant="ghost" size="sm" className="self-start" onClick={onResumeAuto}>

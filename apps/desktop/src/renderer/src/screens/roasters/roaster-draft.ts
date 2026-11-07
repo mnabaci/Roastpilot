@@ -18,6 +18,8 @@ export interface RoasterDraft {
   followKi: string;
   preheatKp: string;
   preheatKi: string;
+  /** The usual speed of a drum that has one. */
+  drumSpeedPct: string;
   /** On / off, not typed: the Cooling switch. */
   coolerHelpsDrum: boolean;
 }
@@ -47,6 +49,7 @@ export function toRoasterDraft(roaster: Roaster): RoasterDraft {
     followKi: String(tuning.follow.ki),
     preheatKp: String(tuning.preheat.kp),
     preheatKi: String(tuning.preheat.ki),
+    drumSpeedPct: String(roaster.drumSpeedPct),
     coolerHelpsDrum: roaster.coolerHelpsDrum,
   };
 }
@@ -68,6 +71,7 @@ const CELL_OF: Readonly<Record<string, keyof RoasterDraft>> = {
   'tuning.follow.ki': 'followKi',
   'tuning.preheat.kp': 'preheatKp',
   'tuning.preheat.ki': 'preheatKi',
+  drumSpeedPct: 'drumSpeedPct',
 };
 
 /** The record a draft makes, or a message per cell. `base` keeps what the draft doesn't hold. */
@@ -95,6 +99,7 @@ export function fromRoasterDraft(
     maxTimeS: number('maxTimeMin') * 60,
     tempOffsetC: number('tempOffsetC'),
     coolerHelpsDrum: draft.coolerHelpsDrum,
+    drumSpeedPct: number('drumSpeedPct'),
     tuning: {
       ...tuning,
       holdS: clock ? Number(clock[1]) * 60 + Number(clock[2]) : tuning.holdS,

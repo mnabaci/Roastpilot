@@ -13,9 +13,21 @@ export const MODEL_LIMITS: Readonly<
   simulator: { maxTempC: 240, maxTimeS: 20 * 60 },
 };
 
+/**
+ * Whether a model's drum has a speed rather than only on/off, known without connecting, so the
+ * Roasters page can offer Drum speed. Matches the drivers' channels (roaster-models.test.ts).
+ */
+export const MODEL_DRUM_SPEED: Readonly<Record<z.infer<typeof RoasterModelSchema>, boolean>> = {
+  skywalker: false,
+  simulator: true,
+};
+
 export const RoasterIdSchema = z.number().int().positive();
 
 const MAX_OFFSET_C = 20;
+
+/** A drum with a speed turns at its roaster's usual speed when on (docs/spec/roasters.md). */
+export const DRUM_SPEED = { minPct: 5, maxPct: 100, stepPct: 5, defaultPct: 60 } as const;
 
 export const RoasterSchema = z
   .object({
@@ -35,6 +47,12 @@ export const RoasterSchema = z
     tuning: AutoTuningSchema,
     /** The tray fan sits under the drum, so it stays on while the drum cools (roasters.md). */
     coolerHelpsDrum: z.boolean(),
+    /** The usual speed of a drum that has one; an on/off drum ignores it. */
+    drumSpeedPct: z
+      .number()
+      .min(DRUM_SPEED.minPct, `At least ${String(DRUM_SPEED.minPct)} %`)
+      .max(DRUM_SPEED.maxPct, `At most ${String(DRUM_SPEED.maxPct)} %`)
+      .multipleOf(DRUM_SPEED.stepPct, `In steps of ${String(DRUM_SPEED.stepPct)} %`),
     active: z.boolean(),
   })
   .superRefine((roaster, ctx) => {

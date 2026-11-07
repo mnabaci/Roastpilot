@@ -33,6 +33,7 @@ describe('migrate', () => {
           '0003_beans',
           '0004_roast_imported',
           '0005_cooler_helps_drum',
+          '0006_drum_speed',
         ],
       },
     });
@@ -64,6 +65,7 @@ describe('migrate', () => {
           '0003_beans',
           '0004_roast_imported',
           '0005_cooler_helps_drum',
+          '0006_drum_speed',
         ],
       },
     });
@@ -110,6 +112,16 @@ describe('migrate', () => {
       { model: 'skywalker', cooler_helps_drum: 1 },
       { model: 'simulator', cooler_helps_drum: 0 },
       { model: 'skywalker', cooler_helps_drum: 1 },
+    ]);
+  });
+
+  it('gives every existing roaster the usual drum speed of 60 %', () => {
+    const db = new DatabaseSync(':memory:');
+    migrate(db, MIGRATIONS.slice(0, 6));
+    migrate(db);
+    expect(db.prepare('SELECT model, drum_speed_pct FROM roasters ORDER BY id').all()).toEqual([
+      { model: 'skywalker', drum_speed_pct: 60 },
+      { model: 'simulator', drum_speed_pct: 60 },
     ]);
   });
 

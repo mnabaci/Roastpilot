@@ -1,5 +1,5 @@
 import type { RoastAction, RoastPhase } from '@roastpilot/shared';
-import { ROAST_ON, type Outputs } from './roast-outputs';
+import { DRUM_ON, roastOn, type Outputs } from './roast-outputs';
 import { DEFAULT_ROASTER_COOL_TO_C } from './roaster-cooldown';
 
 /** Default bean cooling time; the Cool the beans for setting overrides it. */
@@ -23,16 +23,16 @@ export const ALLOWED_FROM: Readonly<Record<RoastAction, readonly RoastPhase[]>> 
   'stop-cooling-roaster': ['ready', 'done'],
 };
 
-/** What each phase keeps running, put back after a reconnect; never the heater above 0. */
-export const PHASE_OUTPUTS: Readonly<Record<RoastPhase, Outputs>> = {
-  ready: [],
-  preheat: ROAST_ON,
-  roasting: ROAST_ON,
-  development: ROAST_ON,
-  // Cooling's own outputs come from coolingOutputs (ManualRoast.restoreOutputs).
-  cooling: ROAST_ON,
-  done: [],
-};
+/** Phases that keep the drum and filter fan running. */
+const RUNNING: ReadonlySet<RoastPhase> = new Set(['preheat', 'roasting', 'development', 'cooling']);
+
+/**
+ * What a phase keeps running, put back after a reconnect; never the heater above 0. Cooling's own
+ * outputs come from coolingOutputs (ManualRoast.restoreOutputs).
+ */
+export function phaseOutputs(phase: RoastPhase, drumOn: number): Outputs {
+  return RUNNING.has(phase) ? roastOn(drumOn) : [];
+}
 
 /** The roast settings ManualRoast follows, read at the moment they matter. */
 export interface RoastOptions {
@@ -45,6 +45,8 @@ export interface RoastOptions {
   roasterCoolToC: number;
   /** The tray fan sits under the drum and helps cool it (roasters.md). */
   coolerHelpsDrum: boolean;
+  /** What the drum gets when on: 1 for an on/off drum, else the roaster's usual speed (roasters.md). */
+  drumOn: number;
 }
 
 export const DEFAULT_OPTIONS: RoastOptions = {
@@ -53,4 +55,5 @@ export const DEFAULT_OPTIONS: RoastOptions = {
   coolRoasterAfter: true,
   roasterCoolToC: DEFAULT_ROASTER_COOL_TO_C,
   coolerHelpsDrum: false,
+  drumOn: DRUM_ON,
 };

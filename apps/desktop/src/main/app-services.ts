@@ -1,5 +1,6 @@
 import {
   DEFAULT_SAFETY_LIMITS,
+  drumOnValue,
   ManualRoast,
   ReadingHistory,
   RoasterSession,
@@ -180,6 +181,11 @@ export function createAppServices({
         coolRoasterAfter: latest.coolRoasterAfter,
         roasterCoolToC: latest.roasterCoolToC,
         coolerHelpsDrum: roasters.active().coolerHelpsDrum,
+        // From the connected roaster's own drum: what it takes for on.
+        drumOn: drumOnValue(
+          session.connection.status === 'connected' ? session.connection.channels : [],
+          roasters.active().drumSpeedPct,
+        ),
       };
     },
     onChange: (state) => {

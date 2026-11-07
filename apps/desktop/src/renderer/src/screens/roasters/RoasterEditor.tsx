@@ -1,11 +1,17 @@
-import type { Roaster } from '@roastpilot/shared';
+import { MODEL_DRUM_SPEED, type Roaster } from '@roastpilot/shared';
 import { Button, NumberField, Switch, TextField } from '@roastpilot/ui';
 import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
 import { fromRoasterDraft, toRoasterDraft } from './roaster-draft';
-import { EVERYDAY_FIELDS, TUNING_FIELDS, TUNING_HINT, type FieldGroup } from './roaster-fields';
+import {
+  DRUM_FIELDS,
+  EVERYDAY_FIELDS,
+  TUNING_FIELDS,
+  TUNING_HINT,
+  type FieldGroup,
+} from './roaster-fields';
 
 /** One roaster's record (docs/spec/roasters.md). Locked while a roaster is connected. */
 export function RoasterEditor({ roaster, locked }: { roaster: Roaster; locked: boolean }) {
@@ -35,9 +41,10 @@ export function RoasterEditor({ roaster, locked }: { roaster: Roaster; locked: b
   // A problem in a tuning number opens the section, so a held-back Save is never unexplained.
   const tuningShown =
     showTuning || TUNING_FIELDS.some((g) => g.cells.some((c) => Boolean(errors[c.key])));
-  const fields = ({ title, cells }: FieldGroup) => (
+  const fields = ({ title, hint, cells }: FieldGroup) => (
     <fieldset key={title} className="flex flex-col gap-2">
       <legend className="pb-1 text-body font-semibold">{title}</legend>
+      {hint ? <p className="-mt-2 text-label text-ink-muted">{hint}</p> : null}
       <div className="grid grid-cols-3 items-start gap-3">
         {cells.map(({ key, label, unit }) => (
           <NumberField
@@ -68,6 +75,7 @@ export function RoasterEditor({ roaster, locked }: { roaster: Roaster; locked: b
       />
       {errors.name ? <p className="text-label text-critical-text">{errors.name}</p> : null}
       {EVERYDAY_FIELDS.map(fields)}
+      {MODEL_DRUM_SPEED[roaster.model] ? fields(DRUM_FIELDS) : null}
       <fieldset className="flex flex-col gap-2">
         <legend className="pb-1 text-body font-semibold">Cooling</legend>
         <div className="flex items-center justify-between gap-3">

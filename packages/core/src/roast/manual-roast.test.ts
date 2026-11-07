@@ -230,6 +230,15 @@ describe('ManualRoast', () => {
     },
   );
 
+  it('a drum with a speed turns at the usual speed at Preheat and after a reconnect', async () => {
+    const { roast, sent, act } = setup({ options: { drumOn: 60 } });
+    await act('preheat');
+    expect(sent).toEqual(['drum=60', 'filter=1']);
+    sent.length = 0;
+    await roast.restoreOutputs();
+    expect(sent).toEqual(['drum=60', 'filter=1']);
+  });
+
   it('after a reconnect in Ready or Done, sends nothing', async () => {
     const { roast, sent, entries, act } = setup();
     await roast.restoreOutputs();

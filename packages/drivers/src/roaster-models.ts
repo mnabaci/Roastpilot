@@ -1,10 +1,14 @@
 import {
+  DRUM_SPEED,
   MODEL_LIMITS,
   type AutoProfile,
+  type Channel,
   type AutoTuning,
   type Roaster,
   type RoasterModel,
 } from '@roastpilot/shared';
+import { SIMULATOR_CHANNELS } from './simulated/simulated-driver';
+import { SKYWALKER_CHANNELS } from './skywalker';
 import { SKYWALKER_PROFILES, SKYWALKER_TUNING } from './skywalker-profiles';
 
 const LIGHT = Object.values(SKYWALKER_PROFILES);
@@ -15,6 +19,8 @@ export const ROASTER_MODELS: Readonly<
     RoasterModel,
     {
       label: string;
+      /** What its driver reads and controls, known without connecting. */
+      channels: readonly Channel[];
       profiles: readonly AutoProfile[];
       tuning: AutoTuning;
       batch: { minG: number; idealG: number; maxG: number };
@@ -23,12 +29,14 @@ export const ROASTER_MODELS: Readonly<
 > = {
   skywalker: {
     label: 'Skywalker',
+    channels: SKYWALKER_CHANNELS,
     profiles: LIGHT,
     tuning: SKYWALKER_TUNING,
     batch: { minG: 250, idealG: 375, maxG: 400 },
   },
   simulator: {
     label: 'Simulator',
+    channels: SIMULATOR_CHANNELS,
     profiles: LIGHT,
     tuning: SKYWALKER_TUNING,
     batch: { minG: 250, idealG: 375, maxG: 400 },
@@ -52,6 +60,7 @@ export function newRoaster(name: string, model: RoasterModel): Omit<Roaster, 'id
     tuning,
     // The Skywalker's tray fan sits under the drum.
     coolerHelpsDrum: model === 'skywalker',
+    drumSpeedPct: DRUM_SPEED.defaultPct,
     active: false,
   };
 }

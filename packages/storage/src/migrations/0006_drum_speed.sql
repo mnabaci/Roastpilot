@@ -1,0 +1,1 @@
+ALTER TABLE `roasters` ADD `drum_speed_pct` real DEFAULT 60 NOT NULL;

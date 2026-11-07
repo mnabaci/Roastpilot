@@ -43,6 +43,13 @@
       "when": 1793974379110,
       "tag": "0005_cooler_helps_drum",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1794037009232,
+      "tag": "0006_drum_speed",
+      "breakpoints": true
     }
   ]
 }
