@@ -49,5 +49,5 @@ How Roastpilot gets onto a computer and stays current, without ever touching a r
 ## Your data across updates
 
 - Settings, roasts, beans and profiles live in the app's user-data folder, which an update never touches.
-- **Backup before migrations:** when a new version has database migrations to run, the app first copies the database to `backups/roastpilot-<old version>-<date>.db` in the user-data folder (SQLite `VACUUM INTO`, a clean copy). The last 5 backups are kept. If the backup fails, migrations don't run and History says why, as when the database can't open.
+- **Backup before migrations:** when a new version has database migrations to run, the app first copies the database to `backups/roastpilot-before-<new version>-<date>.db` in the user-data folder (SQLite `VACUUM INTO`, a clean copy; a second one the same day gets `-2`). The name says which update it came before: the database doesn't record which app version wrote it. A new, empty database needs no backup. The last 5 backups are kept; other files in the folder are left alone. If the backup fails, migrations don't run and History says why, as when the database can't open.
 - An older app never opens a database a newer one migrated (it reports it as unreadable and leaves it alone).

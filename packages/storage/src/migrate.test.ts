@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { describe, expect, it } from 'vitest';
-import { migrate, MIGRATIONS } from './migrate';
+import { migrate, MIGRATIONS, pendingMigrations, schemaVersion } from './migrate';
 
 const tables = (db: DatabaseSync) =>
   (
@@ -158,5 +158,31 @@ describe('migrate', () => {
     const db = new DatabaseSync(':memory:');
     db.exec('PRAGMA user_version = 99');
     expect(migrate(db)).toMatchObject({ ok: false, error: { kind: 'storage-failed' } });
+  });
+
+  describe('pendingMigrations', () => {
+    it('lists what migrate would run, without running it', () => {
+      const db = new DatabaseSync(':memory:');
+      migrate(db, MIGRATIONS.slice(0, 5));
+      const pending = pendingMigrations(db);
+      expect(pending.ok && pending.value.map((m) => m.tag)).toEqual([
+        '0005_cooler_helps_drum',
+        '0006_drum_speed',
+      ]);
+      expect(schemaVersion(db)).toBe(5);
+    });
+
+    it('is empty for an up-to-date database and everything for a new one', () => {
+      const db = new DatabaseSync(':memory:');
+      expect(pendingMigrations(db)).toEqual({ ok: true, value: MIGRATIONS });
+      migrate(db);
+      expect(pendingMigrations(db)).toEqual({ ok: true, value: [] });
+    });
+
+    it('refuses a database from a newer app', () => {
+      const db = new DatabaseSync(':memory:');
+      db.exec(`PRAGMA user_version = ${String(MIGRATIONS.length + 1)}`);
+      expect(pendingMigrations(db)).toMatchObject({ ok: false, error: { kind: 'storage-failed' } });
+    });
   });
 });
