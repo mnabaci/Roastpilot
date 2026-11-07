@@ -18,4 +18,5 @@ In a manual roast the coach suggests heater and fan settings ([manual-mode.md](.
 
 - Tuning Auto tunes the coach too; a profile that needs calibration gives advice that does too, which the card says.
 - Restarting from your heater means a curve phase's suggestion grows 5 % per 10 s from your setting (ADR 0016), so it speaks up about 20 s after a gap opens, not at once.
+- Auto's soak (heater fixed after charge) is not advice for a manual charge, which usually goes in with the heat on: the setting rule stays quiet until the soak ends.
 - A rule that wants to suggest something Auto wouldn't do has to be a new `CoachRule`, never a change to Auto.

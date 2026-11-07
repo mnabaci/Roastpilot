@@ -33,6 +33,15 @@ describe('autoSettingRule', () => {
     });
   });
 
+  it('says nothing in the soak, however far Auto is from what is set', () => {
+    const input = coachInputOf({
+      step: step({ index: 0, phase: soak, soak: true }),
+      set: { heater: 70, fan: 0 },
+      wants: { heater: 0, fan: 30 },
+    });
+    expect(autoSettingRule.advise(input)).toBeUndefined();
+  });
+
   it('leaves out an output the roaster has not reported', () => {
     const input = coachInputOf({
       set: { heater: undefined, fan: 30 },

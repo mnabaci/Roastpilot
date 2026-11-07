@@ -17,6 +17,8 @@ export interface CoachStep {
   /** Its place in the profile: a new phase is a new number. */
   index: number;
   phase: ProfilePhase | undefined;
+  /** The opening soak: Auto's own way to start, not advice for a manual charge. */
+  soak: boolean;
   /** BT when it began, when the coach saw it begin. */
   startC: number | undefined;
   /** Seconds since the coach saw it begin; undefined for a phase it caught up into. */

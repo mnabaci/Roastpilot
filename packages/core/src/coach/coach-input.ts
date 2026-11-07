@@ -1,4 +1,5 @@
 import type { AutoProfile, Reading, RoastState } from '@roastpilot/shared';
+import { isSoak } from '../auto/phase-plan';
 import type { RoastRun } from '../auto/roast-run';
 import type { CoachInput, CoachOutputs } from './coach-rule';
 
@@ -35,6 +36,7 @@ export function coachInput(parts: CoachInputParts): CoachInput {
     step: {
       index: run.phaseIndex,
       phase: profile.phases[run.phaseIndex],
+      soak: isSoak(profile, run.phaseIndex),
       startC: seen?.btC,
       newForS: seen?.atMs === undefined ? undefined : (reading.atMs - seen.atMs) / 1_000,
       stallTripped: run.stallTripped,

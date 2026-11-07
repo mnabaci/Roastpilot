@@ -60,6 +60,7 @@ export function coachInputOf(change: Partial<CoachInput> = {}): CoachInput {
     step: {
       index: 1,
       phase: COACH_PROFILE.phases[1],
+      soak: false,
       startC: 95,
       newForS: 140,
       stallTripped: false,

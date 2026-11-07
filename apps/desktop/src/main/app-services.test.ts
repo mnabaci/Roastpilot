@@ -64,29 +64,41 @@ describe('createAppServices', () => {
   });
 
   describe('the coach in a manual roast', () => {
-    const suggesting = async () => {
+    const charged = async () => {
       const kit = setup();
       await kit.services.settings.get();
       await kit.services.session.connect(kit.sim, { kind: 'simulator' });
       await kit.services.roast.act('start');
-      // The soak keeps the heater at 0 and the fan at 30 %; you set heater 80 %.
-      await kit.services.setOutputByHand('fan', 30);
-      await kit.services.setOutputByHand('heater', 80);
-      // Past the 15 s a suggestion made before you set them waits for.
-      await kit.clock.runFor(16_000);
-      const advice = kit.services.coach.status.advice;
-      expect(advice).toMatchObject({ kind: 'setting', heater: { from: 80, to: 0 } });
-      return { ...kit, id: advice?.id ?? 0 };
+      return kit;
     };
 
+    const suggesting = async () => {
+      const kit = await charged();
+      // Heater 0 and fan 30 % through the 60 s soak: then Auto's first step wants heat.
+      await kit.services.setOutputByHand('fan', 30);
+      await kit.clock.runFor(62_000);
+      const advice = kit.services.coach.status.advice;
+      expect(advice).toMatchObject({ kind: 'setting', heater: { from: 0 } });
+      const to = advice?.kind === 'setting' ? advice.heater?.to : undefined;
+      return { ...kit, id: advice?.id ?? 0, to: to ?? 0 };
+    };
+
+    it('says nothing during the soak, though you charged with the heater on', async () => {
+      const { clock, services } = await charged();
+      await services.setOutputByHand('heater', 80);
+      await clock.runFor(59_000);
+      expect(services.coach.status.advice).toBeNull();
+    });
+
     it('Apply sets the heater as the slider does and records it on the roast', async () => {
-      const { clock, services, id } = await suggesting();
+      const { clock, services, id, to } = await suggesting();
+      expect(to).toBeGreaterThanOrEqual(10);
       expect(await services.coachActions.apply(id)).toEqual(ok(undefined));
       await clock.runFor(2000);
-      expect(services.snapshot().readings.at(-1)?.values.heater).toBe(0);
+      expect(services.snapshot().readings.at(-1)?.values.heater).toBe(to);
       expect(services.roast.state.events.at(-1)).toMatchObject({
         kind: 'coach-applied',
-        detail: 'heater 80→0',
+        detail: `heater 0→${String(to)}`,
       });
       expect(services.snapshot().coach.advice).toBeNull();
     });

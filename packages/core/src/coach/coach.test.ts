@@ -90,16 +90,37 @@ function setup({
 
 describe('Coach', () => {
   describe('suggests what Auto would set', () => {
-    it("from charge: the soak's heater, from what you set", () => {
-      const { world, feed, advice } = setup();
-      world.outputs = { heater: 70, fan: 30 };
-      feed(0);
+    it('nothing during the soak, whatever you set: it is how Auto starts, not advice', () => {
+      const { world, feed, advice, statuses } = setup();
+      world.outputs = { heater: 70, fan: 0 };
+      feed(0, 59);
+      expect(advice()).toBeNull();
+      expect(statuses.every((status) => status.advice === null)).toBe(true);
+    });
+
+    it('from the end of the soak, at once', () => {
+      const { feed, advice } = setup();
+      feed(0, 59);
+      feed(60);
       expect(advice()).toEqual({
         kind: 'setting',
         id: 1,
-        heater: { from: 70, to: 0 },
-        reason: 'Soak from 180 °C',
+        heater: { from: 0, to: 80 },
+        reason: 'Drying from 95 °C',
       });
+    });
+
+    it('heads-ups still come during the soak', () => {
+      const longSoak: AutoProfile = {
+        ...COACH_PROFILE,
+        phases: COACH_PROFILE.phases.map((phase, i) =>
+          i === 0 ? { ...phase, next: { on: 'time', afterS: 900 } } : phase,
+        ),
+      };
+      const { world, feed, advice } = setup({ profile: longSoak });
+      world.outputs = { heater: 70, fan: 30 };
+      feed(0, 516);
+      expect(advice()).toEqual({ kind: 'first-crack-soon', id: 1, inS: 60 });
     });
 
     it('says nothing while you are where Auto would be', () => {
@@ -211,8 +232,7 @@ describe('Coach', () => {
       ['a disconnect or a safety stop', { locked: true }],
     ] as const)('at once after %s', (_name, change) => {
       const { coach, world, feed, advice, statuses, logged } = setup();
-      world.outputs = { heater: 70, fan: 30 };
-      feed(0);
+      feed(0, 60);
       expect(advice()).not.toBeNull();
       Object.assign(world, change);
       coach.sync();
@@ -223,12 +243,12 @@ describe('Coach', () => {
 
     it('at once on a safe stop, before the lock is in place', () => {
       const { coach, world, feed, advice } = setup();
-      world.outputs = { heater: 70, fan: 30 };
-      feed(0);
+      feed(0, 60);
+      expect(advice()).not.toBeNull();
       coach.stop();
       expect(advice()).toBeNull();
       world.locked = true;
-      feed(1, 5);
+      feed(61, 65);
       expect(advice()).toBeNull();
     });
 
@@ -313,10 +333,10 @@ describe('Coach', () => {
   });
 
   describe('Apply and Dismiss', () => {
+    /** Heater 0 through the soak: Drying wants 80 % from 1:00. */
     const suggesting = () => {
       const kit = setup();
-      kit.world.outputs = { heater: 70, fan: 30 };
-      kit.feed(0);
+      kit.feed(0, 60);
       return kit;
     };
 
@@ -325,7 +345,7 @@ describe('Coach', () => {
       const id = advice()?.id ?? 0;
       expect(coach.claim(id)).toEqual({
         ok: true,
-        value: { kind: 'setting', id, heater: { from: 70, to: 0 }, reason: 'Soak from 180 °C' },
+        value: { kind: 'setting', id, heater: { from: 0, to: 80 }, reason: 'Drying from 95 °C' },
       });
       expect(advice()).toBeNull();
       expect(statuses.at(-1)?.advice).toBeNull();
@@ -351,7 +371,7 @@ describe('Coach', () => {
       coach.dismiss(id);
       expect(advice()).toBeNull();
       expect(logged('coach.dismissed')).toEqual([['coach.dismissed', { kind: 'setting', id }]]);
-      feed(1, 20);
+      feed(61, 80);
       expect(advice()).toBeNull();
     });
 
@@ -364,25 +384,23 @@ describe('Coach', () => {
   });
 
   it('notes a profile that needs calibration, only while it says something', () => {
-    const { world, feed, coach } = setup({
+    const { feed, coach } = setup({
       profile: { ...COACH_PROFILE, needsCalibration: true },
     });
-    feed(0);
+    feed(0, 59);
     expect(coach.status.needsCalibration).toBeNull();
-    world.outputs = { heater: 70, fan: 30 };
-    feed(1);
+    feed(60);
     expect(coach.status).toMatchObject({ needsCalibration: 'Light · Steps' });
   });
 
   it('tells the window only what changed, and logs each new suggestion', () => {
-    const { world, feed, statuses, logged } = setup();
-    world.outputs = { heater: 70, fan: 30 };
-    feed(0, 10);
-    expect(statuses).toHaveLength(1);
+    const { feed, statuses, logged } = setup();
+    feed(0, 70);
+    expect(statuses.map((status) => status.advice?.id ?? null)).toEqual([null, 1]);
     expect(logged('coach.suggested')).toEqual([
       [
         'coach.suggested',
-        { kind: 'setting', id: 1, heater: { from: 70, to: 0 }, reason: 'Soak from 180 °C' },
+        { kind: 'setting', id: 1, heater: { from: 0, to: 80 }, reason: 'Drying from 95 °C' },
       ],
     ]);
   });

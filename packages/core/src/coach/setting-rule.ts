@@ -26,10 +26,14 @@ export function settingReason(input: CoachInput): string {
   return curveC === undefined || btC === undefined ? named : curveReason(btC - curveC, input.trend);
 }
 
-/** Auto's heater and fan, when either is 10 points or more from what you set. */
+/**
+ * Auto's heater and fan, when either is 10 points or more from what you set. Never in the soak:
+ * it is Auto's own way to start, and a manual roast usually charges with the heat on.
+ */
 export const autoSettingRule: CoachRule = {
   id: 'auto-setting',
   advise: (input) => {
+    if (input.step.soak) return undefined;
     const heater = change(input.set.heater, input.wants.heater);
     const fan = change(input.set.fan, input.wants.fan);
     if (!heater && !fan) return undefined;

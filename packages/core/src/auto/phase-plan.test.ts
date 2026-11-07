@@ -5,6 +5,7 @@ import {
   advancePhase,
   CAP_BELOW_MAX_C,
   dryEndReached,
+  isSoak,
   withCapUnder,
   withSoakTime,
 } from './phase-plan';
@@ -70,6 +71,18 @@ describe('advancePhase', () => {
 
   it('never moves for a phase that does not exist', () => {
     expect(advancePhase(PROFILE, 9, { elapsedS: 500, btC: 190 })).toBe(9);
+  });
+});
+
+describe('isSoak', () => {
+  it('is the first phase, when it holds the heater fixed', () => {
+    expect(isSoak(PROFILE, 0)).toBe(true);
+    expect(isSoak(PROFILE, 1)).toBe(false);
+  });
+
+  it('is no phase of a profile that opens with heat control', () => {
+    const [, heatOn] = PROFILE.phases;
+    expect(isSoak({ ...PROFILE, phases: heatOn ? [heatOn] : [] }, 0)).toBe(false);
   });
 });
 
