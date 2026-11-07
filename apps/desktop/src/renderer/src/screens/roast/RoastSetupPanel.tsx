@@ -42,6 +42,8 @@ export function RoastSetupPanel() {
   const ghost = roasts.find((r) => r.id === setup.ghostRoastId);
   const line = [
     mode === 'auto' ? profile?.profile.name : 'Manual',
+    // Second, so it shows before the line truncates: a first Auto roast needs you close by.
+    mode === 'auto' && profile?.profile.needsCalibration ? 'needs calibration' : undefined,
     bean?.name ?? 'No bean',
     setup.batchG === null ? undefined : `${String(setup.batchG)} g`,
     ghost ? `ghost ${ghostLabel(ghost)}` : undefined,

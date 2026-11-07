@@ -12,9 +12,13 @@ import { useAuto, useConnection, useRoast } from '../../stores/use-stores';
 /** The one next action for the state, with its one-line hint. */
 export function FlowPanel({
   coolingLeftS,
+  developmentS,
+  heaterPct,
   onConnect,
 }: {
   coolingLeftS: number | undefined;
+  developmentS: number | undefined;
+  heaterPct: number | undefined;
   onConnect: () => void;
 }) {
   const { api, logger } = useDeps();
@@ -25,7 +29,7 @@ export function FlowPanel({
   const { phase } = roast;
   const auto = useAuto((s) => s.status);
   const profile = useActiveProfile();
-  const autoStep = autoFlowStep(roast, auto, profile?.profile);
+  const autoStep = autoFlowStep(roast, auto, profile?.profile, { developmentS, heaterPct });
   const step = autoStep ?? flowStep(roast);
   const act = (action: RoastAction) => {
     run('roast.action-failed', async () => {

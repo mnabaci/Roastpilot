@@ -1,6 +1,7 @@
 import { AUTO_OFF, READY_ROAST, type AutoProfile, type AutoStatus } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { autoFlowStep } from './auto-flow';
+import { END_ROAST } from './flow-step';
 
 const PROFILE = { chargeC: 180, devTimeS: 90, capC: 200 } as AutoProfile;
 const ON: AutoStatus = { ...AUTO_OFF, enabled: true };
@@ -9,9 +10,8 @@ const ROASTING = { ...READY_ROAST, phase: 'roasting' } as const;
 const DEVELOPMENT = { ...READY_ROAST, phase: 'development' } as const;
 
 describe('autoFlowStep', () => {
-  it('leaves the normal flow alone when Auto is off or stopped, or nothing is driven', () => {
+  it('leaves the normal flow alone in a manual roast, or when nothing is driven', () => {
     expect(autoFlowStep(ROASTING, AUTO_OFF, PROFILE)).toBeUndefined();
-    expect(autoFlowStep(ROASTING, { ...ON, stopped: true }, PROFILE)).toBeUndefined();
     expect(autoFlowStep({ ...READY_ROAST, phase: 'cooling' }, ON, PROFILE)).toBeUndefined();
     expect(autoFlowStep(ROASTING, ON, undefined)).toBeUndefined();
   });
@@ -64,16 +64,80 @@ describe('autoFlowStep', () => {
     );
   });
 
-  it('says the stall guard is holding the fan', () => {
+  it('says the stall guard is adding heat', () => {
     const status = { ...ON, phaseName: 'Maillard', stallTripped: true };
-    expect(autoFlowStep(ROASTING, status, PROFILE)?.hint).toBe('Maillard · RoR low · fan held');
+    expect(autoFlowStep(ROASTING, status, PROFILE)?.hint).toBe('Maillard · RoR low · more heat');
   });
 
-  it('says when Development drops by itself', () => {
+  it('counts down to the drop in Development', () => {
     const status = { ...ON, phaseName: 'Development' };
-    expect(autoFlowStep(DEVELOPMENT, status, PROFILE)).toMatchObject({
+    expect(autoFlowStep(DEVELOPMENT, status, PROFILE, { developmentS: 47 })).toMatchObject({
       primary: { action: 'drop' },
-      hint: 'Development · drops at 1:30 or 200 °C',
+      hint: 'Development · drops in 0:43 or at 200 °C',
+    });
+    expect(autoFlowStep(DEVELOPMENT, status, PROFILE, { developmentS: 95 })?.hint).toBe(
+      'Development · drops in 0:00 or at 200 °C',
+    );
+  });
+
+  describe('stopped', () => {
+    it('after a preheat ran out, offers no Start: the drum is cooling', () => {
+      const step = autoFlowStep(PREHEAT, { ...ON, stopReason: 'preheat-limit' }, PROFILE);
+      expect(step).toEqual({
+        stop: END_ROAST,
+        hint: 'Preheat ran out · heater off · end, then Preheat again.',
+      });
+    });
+
+    it('in a preheat for another reason, the outputs and Start are yours', () => {
+      const step = autoFlowStep(PREHEAT, { ...ON, stopReason: 'safety-stop' }, PROFILE);
+      expect(step).toMatchObject({
+        secondary: { action: 'start' },
+        hint: 'Safety stop · heater and fan are yours.',
+      });
+    });
+
+    it.each([
+      ['heater-locked', 'Heater locked · you drop.'],
+      ['disconnected', 'Roaster disconnected · you drop.'],
+      ['tick-failed', 'Auto failed · you drop.'],
+    ] as const)('mid-roast after %s, says why and that you drop', (stopReason, hint) => {
+      expect(autoFlowStep(ROASTING, { ...ON, stopReason }, PROFILE)).toMatchObject({
+        primary: { action: 'first-crack' },
+        secondary: { action: 'drop' },
+        hint,
+      });
+      expect(autoFlowStep(DEVELOPMENT, { ...ON, stopReason }, PROFILE)).toMatchObject({
+        primary: { action: 'drop' },
+        hint,
+      });
+    });
+
+    it('leaves cooling alone', () => {
+      const cooling = { ...READY_ROAST, phase: 'cooling' } as const;
+      expect(autoFlowStep(cooling, { ...ON, stopReason: 'lost' }, PROFILE)).toBeUndefined();
+    });
+  });
+
+  describe('turned off mid-roast', () => {
+    const off = { kind: 'mode', atMs: 300_000, bt: 160, detail: 'manual' } as const;
+    const on = { ...off, detail: 'auto' } as const;
+
+    it('says the heater stays where it was and that you drop', () => {
+      const roasting = { ...ROASTING, events: [off] };
+      expect(autoFlowStep(roasting, AUTO_OFF, PROFILE, { heaterPct: 85 })).toMatchObject({
+        primary: { action: 'first-crack' },
+        secondary: { action: 'drop' },
+        hint: 'Manual · heater stays 85 % · you drop.',
+      });
+      const developing = { ...DEVELOPMENT, events: [off] };
+      expect(autoFlowStep(developing, AUTO_OFF, PROFILE)?.hint).toBe(
+        'Manual · heater stays · you drop.',
+      );
+    });
+
+    it('only when the last switch was to Manual', () => {
+      expect(autoFlowStep({ ...ROASTING, events: [off, on] }, AUTO_OFF, PROFILE)).toBeUndefined();
     });
   });
 });
