@@ -29,13 +29,13 @@ Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9
 
 ## App menu
 
-| Menu                    | Items                                                                    |
-| ----------------------- | ------------------------------------------------------------------------ |
-| Roastpilot (macOS only) | About, Settings… (⌘,), Services, Hide, Quit (⌘Q)                         |
-| File                    | macOS: Close window. Windows: Settings… (Ctrl+,), Quit                   |
-| Edit                    | Undo, Redo, Cut, Copy, Paste, Select all                                 |
-| View                    | Zoom, Full screen. Reload and developer tools only in development builds |
-| Window, Help            | Standard window items; Help → Safety notice, Open log folder             |
+| Menu                    | Items                                                                                                                                                   |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Roastpilot (macOS only) | About, Settings… (⌘,), Services, Hide, Quit (⌘Q)                                                                                                        |
+| File                    | macOS: Close window. Windows: Settings… (Ctrl+,), Quit                                                                                                  |
+| Edit                    | Undo, Redo, Cut, Copy, Paste, Select all; nothing else (macOS's Dictation, Emoji & Symbols and AutoFill are switched off)                               |
+| View                    | Zoom (Actual size, Zoom in, Zoom out: ⌘0, ⌘+, ⌘−, for reading from across the room), Full screen. Reload and developer tools only in development builds |
+| Window, Help            | Standard window items; Help → Safety notice, Open log folder                                                                                            |
 
 - Quit always goes through the safe stop first (docs/spec/safety.md), whichever way it is chosen.
 - Settings… opens the Settings screen, even mid-roast; the roast keeps running in main.

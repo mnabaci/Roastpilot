@@ -2,11 +2,20 @@
 import { serializeError } from '@roastpilot/core';
 import { listSerialPorts } from '@roastpilot/drivers';
 import { IPC_CHANNELS, isRoastRunning } from '@roastpilot/shared';
-import { app, BrowserWindow, dialog, Menu, powerMonitor, powerSaveBlocker, shell } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  Menu,
+  powerMonitor,
+  powerSaveBlocker,
+  shell,
+  systemPreferences,
+} from 'electron';
 import { randomUUID } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { buildAppMenu } from './app-menu';
+import { buildAppMenu, hideMacEditExtras } from './app-menu';
 import { createAppServices } from './app-services';
 import { installCrashHandlers } from './crash-handlers';
 import { createDriver } from './driver-factory';
@@ -233,6 +242,12 @@ app
       },
       senderCheck,
     );
+    // macOS adds Dictation, Emoji & Symbols and AutoFill to any Edit menu; read when it builds one.
+    if (process.platform === 'darwin') {
+      hideMacEditExtras((key, type, value) => {
+        systemPreferences.setUserDefault(key, type, value);
+      });
+    }
     Menu.setApplicationMenu(
       Menu.buildFromTemplate(
         buildAppMenu({
