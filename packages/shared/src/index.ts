@@ -228,9 +228,13 @@ export {
   ROAST_FILE_FORMAT,
   ROAST_FILE_VERSION,
   RoastFileSchema,
+  RoastFileV2Schema,
+  SampleColumnsSchema,
   SetRoastBeanRequestSchema,
   type ExportRoastsRequest,
   type FileRoast,
   type RoastFile,
+  type RoastFileV2,
+  type SampleColumns,
   type SetRoastBeanRequest,
 } from './roast-file';

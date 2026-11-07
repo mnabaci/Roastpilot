@@ -40,7 +40,30 @@ describe('Roastpilot roast file', () => {
     expect(roast).not.toHaveProperty('id');
     expect(roast).not.toHaveProperty('beanId');
     expect(roast).not.toHaveProperty('ghostRoastId');
-    expect(roast?.samples).toEqual(ROAST.samples);
+    // Version 2: samples as columns.
+    expect(roast?.samples).toEqual({ tS: [0], values: { bt: [180] } });
+  });
+
+  it('still reads a version 1 file, samples as rows', () => {
+    const { roasts, ...head } = toRoastFile([ROAST], NAMES, new Date());
+    const v1 = {
+      ...head,
+      version: 1,
+      roasts: roasts.map((r) => ({ ...r, samples: ROAST.samples })),
+    };
+    const parsed = parseRoastFile(JSON.stringify(v1));
+    expect(parsed.ok && parsed.value[0]?.samples).toEqual(ROAST.samples);
+  });
+
+  it('refuses version 2 columns of different lengths', () => {
+    const file = toRoastFile([ROAST], NAMES, new Date());
+    const [first] = file.roasts;
+    if (!first) throw new Error('no roast');
+    const broken = {
+      ...file,
+      roasts: [{ ...first, samples: { tS: [0, 1], values: { bt: [180] } } }],
+    };
+    expect(parseRoastFile(JSON.stringify(broken))).toEqual({ ok: false, error: 'not-roastpilot' });
   });
 
   it('reads back what it wrote', () => {
