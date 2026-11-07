@@ -15,6 +15,8 @@ export const FileRoastSchema = RoastDetailSchema.omit({
   imported: true,
   profileId: true,
   profileName: true,
+  // Read from the events, so files stay as they were.
+  fcTemp: true,
 }).extend({
   beanName: z.string().nullable(),
   roasterName: z.string().nullable(),

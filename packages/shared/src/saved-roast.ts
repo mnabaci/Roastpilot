@@ -12,6 +12,8 @@ export const RoastSummarySchema = z.object({
   /** When cooling ended; null for an unfinished roast. */
   endedAt: z.string().nullable(),
   fcTimeS: z.number().nullable(),
+  /** BT at first crack, from its event; null when there was none or it had no reading. */
+  fcTemp: z.number().nullable(),
   dropTimeS: z.number().nullable(),
   dropTemp: z.number().nullable(),
   roasterId: z.number().int().positive().nullable(),

@@ -1,9 +1,9 @@
-import type { ConnectTarget, Roaster } from '@roastpilot/shared';
+import { CURVE_FOLLOW_DEFAULTS, type ConnectTarget, type Roaster } from '@roastpilot/shared';
 
 const TUNING = {
   target: { kp: 1.5, ki: 0.02, kd: 0 },
   targetLimitPct: 20,
-  follow: { kp: 1, ki: 0.01, kd: 0 },
+  curveFollow: CURVE_FOLLOW_DEFAULTS,
   preheat: { kp: 5, ki: 0.02, kd: 0 },
   preheatFanPct: 30,
   holdS: 150,

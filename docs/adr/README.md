@@ -17,5 +17,6 @@ One file per decision: context, decision, consequences. Add one with the `plan-f
 - [Roastpilot roast files, versioned JSON](0013-roastpilot-roast-files.md)
 - [Radix Popover and cmdk for dropdowns](0014-popover-and-cmdk-for-dropdowns.md)
 - [Compact Roastpilot roast files (version 2)](0015-compact-roast-files.md)
+- [Curve phases follow the curve's rate of rise](0016-curve-follows-rate-of-rise.md)
 
 Template: [template.md](template.md)

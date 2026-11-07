@@ -1,4 +1,10 @@
-import { rateOfRise, ROR_DRAW_LIMITS, ROR_WINDOW_MS, rorReadings } from '@roastpilot/core';
+import {
+  rateOfRise,
+  ROR_DRAW_LIMITS,
+  ROR_WINDOW_MS,
+  rorReadings,
+  smoothCurve,
+} from '@roastpilot/core';
 import {
   DEFAULT_TEMP_NAMES,
   type CurvePoint,
@@ -10,6 +16,9 @@ import type { ChartLayer, ChartMarker, ChartPoint } from '@roastpilot/ui';
 
 /** Readings further apart than this are a break in every line (the lost-connection limit). */
 export const GAP_MS = 3_000;
+
+/** The dashed plan is the smooth curve Auto follows, drawn from a point every 5 s. */
+export const PLAN_STEP_S = 5;
 
 const MARKER_LABELS: Partial<Record<RoastEvent['kind'], string>> = {
   charge: 'Charge',
@@ -165,7 +174,7 @@ export function roastChartData(
             tone: 'target',
             width: 2,
             dash: [6, 6],
-            points: plan.map((point) => ({ t: point.tS, v: point.c })),
+            points: smoothCurve(plan, PLAN_STEP_S).map((point) => ({ t: point.tS, v: point.c })),
           },
         ]
       : [];

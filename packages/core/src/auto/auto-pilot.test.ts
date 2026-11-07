@@ -1,4 +1,5 @@
 import {
+  CURVE_FOLLOW_DEFAULTS,
   err,
   ok,
   PROFILE_SCHEMA_VERSION,
@@ -48,7 +49,7 @@ const PROFILE: AutoProfile = {
 const TUNING: AutoTuning = {
   target: { kp: 1, ki: 0, kd: 0 },
   targetLimitPct: 20,
-  follow: { kp: 1, ki: 0, kd: 0 },
+  curveFollow: CURVE_FOLLOW_DEFAULTS,
   preheat: { kp: 2, ki: 0, kd: 0 },
   preheatFanPct: 30,
   holdS: 150,

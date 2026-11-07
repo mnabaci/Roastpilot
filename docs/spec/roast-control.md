@@ -4,7 +4,7 @@ A profile is a list of phases. Each phase sets heat and fan, says how heat is co
 says when the next phase starts. Two styles come out of the same format:
 
 - **Step profiles** aim each step at a temperature in a duration, inside a RoR range, starting from a heater estimate and a planned fan (the Skywalker Light).
-- **Curve profiles** let the PID set heat freely to follow a target BT curve.
+- **Curve profiles** trace a target BT curve: each phase starts from the heater the source roast used, and the PID trims it to hold the curve's own rate of rise.
 
 Both can start with a fixed soak. The controller runs once per second.
 
@@ -25,20 +25,20 @@ roaster's sensor, and heat percentages from its heater. So every profile has a `
 | Charge temp (°C) | BT to charge at, reached and held by the preheat routine                                 |
 | Phases           | Ordered list, see below                                                                  |
 | End rule         | Drop at development time after first crack, with a BT cap                                |
-| Curve points     | `(time, BT)` points: the dashed target on the chart, and the setpoint in `follow` phases |
+| Curve points     | `(time, BT)` points: the dashed target on the chart, and the RoR `follow` phases aim for |
 | Dry-end temp     | BT where Drying becomes Maillard (marker on the chart)                                   |
 
 Each phase:
 
-| Field                  | Meaning                                                                                                   |
-| ---------------------- | --------------------------------------------------------------------------------------------------------- |
-| Name                   | Shown as the phase label                                                                                  |
-| Heat mode              | `fixed` (exactly this %), `target` (reach a temperature in a duration) or `follow` (PID tracks the curve) |
-| Heat %                 | Exact duty for `fixed`; a starting estimate for `target` and `follow`                                     |
-| End temp, duration     | `target`: the temperature this step aims for, and how long it should take                                 |
-| Fan %                  | Fan duty                                                                                                  |
-| RoR range (°C/min)     | `target`: the limits on the RoR it aims for; empty otherwise                                              |
-| Starts next phase when | BT reaches a value, a time passes, or an event (first-crack tap); always with a backup time               |
+| Field                  | Meaning                                                                                              |
+| ---------------------- | ---------------------------------------------------------------------------------------------------- |
+| Name                   | Shown as the phase label                                                                             |
+| Heat mode              | `fixed` (exactly this %), `target` (reach a temperature in a duration) or `follow` (trace the curve) |
+| Heat %                 | Exact duty for `fixed`; a starting estimate for `target` and `follow`                                |
+| End temp, duration     | `target`: the temperature this step aims for, and how long it should take                            |
+| Fan %                  | Fan duty                                                                                             |
+| RoR range (°C/min)     | `target`: the limits on the RoR it aims for; empty otherwise                                         |
+| Starts next phase when | BT reaches a value, a time passes, or an event (first-crack tap); always with a backup time          |
 
 ## Built-in Skywalker profiles
 
@@ -56,6 +56,7 @@ Each phase:
 - Curve points, from roast 7 (2026-11-04): 0:00 180 °C, 1:04 92 °C (turning point), 2:34 110 °C, 5:05 150 °C, 6:19 165 °C, 7:57 180 °C, 9:18 190 °C, 11:03 197 °C.
 - Drum at 100% throughout to agitate the beans.
 - A step profile's dashed curve comes from its steps: charge, the turning point, each step's end at its planned time, then the BT cap at the planned drop.
+- Every planned curve, curve or step, is one smooth monotone curve through its points: exact at each point, flat at the turning point, the same on the chart, in "vs plan" and in what Auto aims for.
 - These numbers come from roasts 6 and 7 and stay marked "needs calibration" until tuned on real roasts: first crack came at 191–193 °C and both roasts dropped near 197 °C.
 - The soak runs for the Soak time setting, in Settings under Auto: 0:30, 0:45, 1:00, 1:15, 1:30 or 2:00 (default 1:00). It applies to both Light profiles and is taken at Start. Roasts 6 and 7 turned the heater on at about 1:06 and 0:54.
 
@@ -72,7 +73,7 @@ Each phase:
 | -------- | ---------------------------------------------------------------- | -------------- |
 | `fixed`  | Exactly the planned %, no correction                             | The soak       |
 | `target` | Estimate plus up to ±20% PID correction, to reach the step's end | Step profiles  |
-| `follow` | PID sets heat 0–100% to track the curve                          | Curve profiles |
+| `follow` | Estimate plus up to ±20% PID correction, to hold the curve's RoR | Curve profiles |
 
 - **Fixed phases** send exactly the planned heat. Used for the soak, where any heat would scorch.
 - **Target phases** aim for the step's end temperature in its duration, starting from the heater estimate:
@@ -82,7 +83,13 @@ Each phase:
   4. Temperature ends the step, not the duration: a step that runs long hands over to the next one where the roast really is, so one late step doesn't leave the rest chasing a clock. The backup time still moves on if the temperature never comes.
   5. Output is clamped to 0–100 and rounded to the roaster's step (Skywalker: 5%); commands are sent only on change.
   6. Anti-windup: the integral stops while the correction is at its limit, and never holds more than the limits allow, so heat built up while the stall guard allowed +30% is let go as soon as it clears. One time step counts at most 3 s, so a gap (Auto stopped, readings lost) can't land on the integral all at once after Resume auto.
-- **Follow phases** run a full PID on BT error against the curve (target = curve value at elapsed time, smoothed BT, anti-windup, roaster step rounding). Past the last curve point the target carries on along the last section's slope, until the end rule drops. They need well-tuned gains per roaster (`pid-tune` skill).
+- **Follow phases** trace the curve the way a step traces its range (ADR 0016): the heater reacts to RoR, which moves within seconds, not to BT, which lags the heater by 30–60 s on a drum.
+  1. **Estimate:** each phase starts from its heat %, the heater the source roast used there.
+  2. **Aim:** the curve's own RoR 30 s ahead (the smooth curve's slope, so the aim never steps at a point) plus 0.3 °C/min for each °C BT is below the curve (minus when above), kept within 0–30 °C/min. Settled BT, as for steps. Past the last curve point the slope carries on. Until your first-crack tap never below the stall guard's 5 °C/min.
+  3. **Correction:** the same RoR PID as steps, with its own gains, limited to ±20% of the estimate (+30% while the stall guard trips) and the same anti-windup. It stays 0 until RoR has first reached 5 °C/min (or the aim, when lower), so the climb out of the turning point doesn't pin it.
+  4. **Slew limit:** the heater moves at most 5% per 10 s, up or down, so a correction never kicks RoR. From one curve phase to the next it carries on from where the heater was and slews to the new estimate, as roast 7 stepped down 5% at a time; out of the soak it starts at the estimate at once.
+  5. No RoR or BT: the heater holds. Rounded to the roaster's step like every output.
+  6. 30 s, 0.3, 5% per 10 s, ±20% and the gains are per-roaster tuning (Skywalker values; [roasters.md](roasters.md)), tuned on real roasts (`pid-tune`).
 - The fan follows the plan and is never driven by the PID, so heat and fan don't fight. The stall guard is the one exception.
 
 ### Stall guard
@@ -92,7 +99,7 @@ A roast that loses its RoR before first crack stalls: in roast 6 (2026-11-04) th
 - **Armed** once RoR has first reached 5 °C/min, so the climb out of the turning point never trips it.
 - **Trips** when RoR is below 5 °C/min, or will reach it within 60 s at its rate of fall over the last 60 s. **Clears** at 6 °C/min or more with no such fall in sight.
 - **Heat first, fan last:** near first crack the drum fills with smoke, and heat is what drives RoR, so the fan keeps its plan while the heater does the work.
-- **Heater:** in `target` phases the correction may go up to +30% instead of +20%. `follow` phases are already free, up to 100%.
+- **Heater:** in `target` and `follow` phases the correction may go up to +30% instead of +20%.
 - **Fan, only when heat is spent:** once the heater has been at its limit (the +30%, or 100%) for 30 s and the guard is still tripped, planned increases wait and the fan steps down 5% at once, then every 30 s, to at most 20% below the plan. After it clears, it steps back up 5% every 30 s to the plan.
 - **On screen:** the flow panel says "RoR low · more heat", and each trip and clear is logged and saved as an event.
 - An output you set by hand stays yours. The temperature safety limits apply as ever. After your first-crack tap there is no guard: a low RoR is normal there (roast 7 fell to 2.4).
@@ -103,7 +110,7 @@ Target and follow both handle room conditions: outdoors or on a heat-soaked roas
 ## Creating a curve profile
 
 1. **From the Profiles screen:** duplicate Light · Curve and edit its points in a table.
-2. **From a roast you liked:** star it, then "Make curve profile". Its BT curve is simplified to about 10 editable points; its fan changes become the fan steps; an initial soak is kept as a fixed phase.
+2. **From a roast you liked:** star it, then "Make curve profile". Its BT curve is simplified to about 10 editable points; its fan changes become the fan steps, and each phase's heat estimate is the heater it averaged there; an initial soak is kept as a fixed phase.
 3. **Milestone builder:** enter charge temp and a few milestones; the app draws a smooth curve through them (below).
 4. **Drag points** on the chart (milestone 8).
 5. **Import from Artisan:** load an `.alog` roast as the curve (an `Importer`), marked "needs calibration" if it came from another roaster.
@@ -161,7 +168,7 @@ Touching the heater or fan switches that output to manual; the other output stay
 - **What it drives:** heater and fan, from Preheat until Drop. The flow stays as in [manual-mode.md](manual-mode.md), with the same states, events, bean and drum cooling and saving; Auto presses Drop by itself. You still press Preheat, Start and First crack.
 - **Profiles:** two Skywalker Light styles to choose from, shipped as data with the Skywalker driver and marked "needs calibration", and your own copies from the Profiles screen ([ui.md](ui.md)). Making a profile from a roast comes in milestone 6; Medium and Dark in milestone 8, once Light is tuned.
   - **Light · Steps:** the table above: each step aims for its end temperature in its duration, inside its RoR range.
-  - **Light · Curve:** the same curve points, end rule, fan steps and fixed soak, with every other phase `follow`: no planned heat, the PID sets the heater 0–100%.
+  - **Light · Curve:** the same curve points, end rule, fan steps, heat estimates and fixed soak, with every other phase `follow`: it aims for the curve's RoR instead of a step's range.
 - **PID gains:** cautious starting values kept with the profile's roaster data, tuned on real roasts (`pid-tune`). They live in the roaster record from milestone 5.
 - **After a stop:** see [safety.md](safety.md), Auto mode. Auto never turns the heater back on by itself.
 - **Saved:** the roast has `mode` `auto` and a copy of its profile; phase changes, dry end and overrides are events ([data-model.md](data-model.md)).

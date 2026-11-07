@@ -1,10 +1,11 @@
 import { RoasterModelSchema, type RoasterId, type RoasterModel } from '@roastpilot/shared';
-import { Button, SelectField, TextField } from '@roastpilot/ui';
+import { Button, cn, SelectField, TextField } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
 import { MODEL_LABEL } from './roaster-model';
 import { refusalText } from './roaster-refusal';
+import { PAGE_WIDTH } from '../../lib/page-width';
 
 const MODELS = RoasterModelSchema.options.map((value) => ({ value, label: MODEL_LABEL[value] }));
 
@@ -31,7 +32,7 @@ export function AddRoaster({ onAdded }: { onAdded: (id: RoasterId) => void }) {
     );
   };
   return (
-    <section aria-label="Add roaster" className="flex max-w-xl flex-col gap-4">
+    <section aria-label="Add roaster" className={cn('flex flex-col gap-4', PAGE_WIDTH)}>
       <h2 className="text-heading">Add roaster</h2>
       <div className="flex flex-wrap items-end gap-2">
         <TextField label="Name" className="min-w-40 flex-1" value={name} onChange={setName} />

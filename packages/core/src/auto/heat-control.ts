@@ -1,32 +1,8 @@
 import type { AutoTuning, CurvePoint, PhaseHeat } from '@roastpilot/shared';
-import { curveTargetC } from './curve';
+import { followControl } from './follow-control';
+import { FULL_PCT, type OutputController } from './output-controller';
 import { Pid } from './pid';
 import { STALL } from './stall-guard';
-
-export interface HeatInput {
-  /** Seconds since charge. */
-  elapsedS: number;
-  /** Seconds since this phase began. */
-  phaseElapsedS: number;
-  /** Seconds since the last call. */
-  dtS: number;
-  btC: number | undefined;
-  ror: number | undefined;
-  /** The stall guard is holding: a `target` phase may add more heat. */
-  stallTripped: boolean;
-  /** Your first-crack tap: until then no step aims below the stall guard's RoR. */
-  firstCracked: boolean;
-}
-
-/** How one output is controlled in one phase (docs/spec/extensibility.md, Control per output). */
-export interface OutputController {
-  /** The heater % to ask for: not yet rounded to the roaster's step. */
-  next(input: HeatInput): number;
-  /** The last `next` could add no more heat, so the stall guard may turn to the fan. */
-  readonly maxed: boolean;
-}
-
-const FULL_PCT = 100;
 
 type TargetHeat = Extract<PhaseHeat, { mode: 'target' }>;
 
@@ -71,33 +47,15 @@ function targetControl(heat: TargetHeat, tuning: AutoTuning): OutputController {
   };
 }
 
-function followControl(
-  heat: Extract<PhaseHeat, { mode: 'follow' }>,
-  tuning: AutoTuning,
-  curve: readonly CurvePoint[],
-): OutputController {
-  const pid = new Pid(tuning.follow);
-  // Around its starting value, so the heater doesn't jump as the phase begins.
-  const limits = { min: -heat.pct, max: FULL_PCT - heat.pct };
-  let last = heat.pct;
-  return {
-    get maxed() {
-      return last >= FULL_PCT;
-    },
-    next: ({ elapsedS, dtS, btC }) => {
-      const curveC = curveTargetC(curve, elapsedS);
-      if (btC === undefined || curveC === undefined) return last;
-      last = heat.pct + pid.update(curveC - btC, dtS, limits);
-      return last;
-    },
-  };
-}
-
-/** The controller for one phase's heat mode; a new one for each phase, so nothing carries over. */
+/**
+ * The controller for one phase's heat mode; a new one for each phase. Only a curve phase after
+ * another takes `fromPct`, the heater the last one left, so the change between them is slewed too.
+ */
 export function heatControlFor(
   heat: PhaseHeat,
   tuning: AutoTuning,
   curve: readonly CurvePoint[],
+  fromPct?: number,
 ): OutputController {
   switch (heat.mode) {
     case 'fixed':
@@ -105,6 +63,6 @@ export function heatControlFor(
     case 'target':
       return targetControl(heat, tuning);
     case 'follow':
-      return followControl(heat, tuning, curve);
+      return followControl(heat, tuning.curveFollow, curve, fromPct);
   }
 }

@@ -14,6 +14,7 @@ import { render } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { vi, type Mocked } from 'vitest';
 import { AppProvider } from '../app/AppProvider';
+import type { ChimePlayer } from '../features/chime';
 import { READY_ROAST } from '@roastpilot/shared';
 import { createStores, type StoresSeed } from '../stores/stores';
 
@@ -112,9 +113,15 @@ export const CONNECTED: ConnectionState = {
   ],
 };
 
+/** A chime player that only remembers what it was asked to play. */
+export const fakeChime = (): Mocked<ChimePlayer> => ({ play: vi.fn() });
+
 /** Renders `ui` with stores already seeded (and ready), and returns the fakes. */
 export function renderApp(ui: ReactNode, seed: StoresSeed = {}, api = fakeApi()) {
   const stores = createStores({ ready: true, ...seed });
-  const view = render(<AppProvider deps={{ api, stores, logger: silentLogger }}>{ui}</AppProvider>);
-  return { ...view, api, stores };
+  const chime = fakeChime();
+  const view = render(
+    <AppProvider deps={{ api, stores, logger: silentLogger, chime }}>{ui}</AppProvider>,
+  );
+  return { ...view, api, stores, chime };
 }

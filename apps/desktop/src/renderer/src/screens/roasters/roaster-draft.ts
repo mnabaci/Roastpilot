@@ -14,8 +14,12 @@ export interface RoasterDraft {
   targetKp: string;
   targetKi: string;
   targetLimitPct: string;
-  followKp: string;
-  followKi: string;
+  curveKp: string;
+  curveKi: string;
+  curveLimitPct: string;
+  curveLookAheadS: string;
+  curvePullPerC: string;
+  curveSlewPct: string;
   preheatKp: string;
   preheatKi: string;
   /** The usual speed of a drum that has one. */
@@ -45,8 +49,12 @@ export function toRoasterDraft(roaster: Roaster): RoasterDraft {
     targetKp: String(tuning.target.kp),
     targetKi: String(tuning.target.ki),
     targetLimitPct: String(tuning.targetLimitPct),
-    followKp: String(tuning.follow.kp),
-    followKi: String(tuning.follow.ki),
+    curveKp: String(tuning.curveFollow.gains.kp),
+    curveKi: String(tuning.curveFollow.gains.ki),
+    curveLimitPct: String(tuning.curveFollow.limitPct),
+    curveLookAheadS: String(tuning.curveFollow.lookAheadS),
+    curvePullPerC: String(tuning.curveFollow.pullPerC),
+    curveSlewPct: String(tuning.curveFollow.slewPctPer10s),
     preheatKp: String(tuning.preheat.kp),
     preheatKi: String(tuning.preheat.ki),
     drumSpeedPct: String(roaster.drumSpeedPct),
@@ -67,8 +75,12 @@ const CELL_OF: Readonly<Record<string, keyof RoasterDraft>> = {
   'tuning.target.kp': 'targetKp',
   'tuning.target.ki': 'targetKi',
   'tuning.targetLimitPct': 'targetLimitPct',
-  'tuning.follow.kp': 'followKp',
-  'tuning.follow.ki': 'followKi',
+  'tuning.curveFollow.gains.kp': 'curveKp',
+  'tuning.curveFollow.gains.ki': 'curveKi',
+  'tuning.curveFollow.limitPct': 'curveLimitPct',
+  'tuning.curveFollow.lookAheadS': 'curveLookAheadS',
+  'tuning.curveFollow.pullPerC': 'curvePullPerC',
+  'tuning.curveFollow.slewPctPer10s': 'curveSlewPct',
   'tuning.preheat.kp': 'preheatKp',
   'tuning.preheat.ki': 'preheatKi',
   drumSpeedPct: 'drumSpeedPct',
@@ -105,7 +117,13 @@ export function fromRoasterDraft(
       holdS: clock ? Number(clock[1]) * 60 + Number(clock[2]) : tuning.holdS,
       target: { ...tuning.target, kp: number('targetKp'), ki: number('targetKi') },
       targetLimitPct: number('targetLimitPct'),
-      follow: { ...tuning.follow, kp: number('followKp'), ki: number('followKi') },
+      curveFollow: {
+        gains: { ...tuning.curveFollow.gains, kp: number('curveKp'), ki: number('curveKi') },
+        limitPct: number('curveLimitPct'),
+        lookAheadS: number('curveLookAheadS'),
+        pullPerC: number('curvePullPerC'),
+        slewPctPer10s: number('curveSlewPct'),
+      },
       preheat: { ...tuning.preheat, kp: number('preheatKp'), ki: number('preheatKi') },
     },
   };

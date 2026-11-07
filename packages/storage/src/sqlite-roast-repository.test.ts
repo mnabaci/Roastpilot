@@ -71,6 +71,7 @@ describe('SqliteRoastRepository', () => {
         startedAt: '2026-11-04T10:00:00.000Z',
         endedAt: null,
         fcTimeS: null,
+        fcTemp: null,
         dropTimeS: 600,
         dropTemp: 205.5,
         samples: [
@@ -124,6 +125,28 @@ describe('SqliteRoastRepository', () => {
     expect(await repository.addSamples(id, samples)).toEqual({ ok: true, value: undefined });
     const read = await repository.get(id);
     expect(read.ok && read.value.samples).toHaveLength(1_234);
+  });
+
+  it('lists each roast with BT at its first crack, null without one or with no reading', async () => {
+    const { repository, sqlite } = setup();
+    const cracked = await created(repository, '2026-11-01T09:00:00.000Z');
+    await repository.addEvent(cracked, { kind: 'charge', tS: 0, bt: 180 });
+    await repository.addEvent(cracked, { kind: 'first-crack', tS: 480, bt: 196.4 });
+    const noReading = await created(repository, '2026-11-02T09:00:00.000Z');
+    await repository.addEvent(noReading, { kind: 'first-crack', tS: 470, bt: null });
+    const uncracked = await created(repository, '2026-11-03T09:00:00.000Z');
+    const unreadable = await created(repository, '2026-11-04T09:00:00.000Z');
+    sqlite.exec(
+      `INSERT INTO roast_events (roast_id, t_s, type, detail) VALUES (${String(unreadable)}, 1, 'first-crack', 'not json')`,
+    );
+    const list = await repository.list();
+    const byId = new Map(list.ok ? list.value.map((r) => [r.id, r.fcTemp]) : []);
+    expect(byId.get(cracked)).toBe(196.4);
+    expect(byId.get(noReading)).toBeNull();
+    expect(byId.get(uncracked)).toBeNull();
+    expect(byId.get(unreadable)).toBeNull();
+    const detail = await repository.get(cracked);
+    expect(detail.ok && detail.value.fcTemp).toBe(196.4);
   });
 
   it('lists roasts newest first', async () => {

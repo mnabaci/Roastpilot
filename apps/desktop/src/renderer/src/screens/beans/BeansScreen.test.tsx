@@ -15,6 +15,7 @@ const ROAST = {
   rating: 5,
   endedAt: 'x',
   fcTimeS: null,
+  fcTemp: null,
   dropTimeS: null,
   dropTemp: null,
   profileId: null,

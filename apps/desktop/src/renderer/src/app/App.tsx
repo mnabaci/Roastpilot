@@ -13,6 +13,7 @@ import { SafetyBanners } from './SafetyBanners';
 import { useDeps } from './app-context';
 import { LiveRoastStrip } from './LiveRoastStrip';
 import { TopBar } from './TopBar';
+import { useSounds } from './use-sounds';
 import { AppToaster } from './AppToaster';
 import { ScreenError } from './ScreenError';
 import { ErrorBoundary } from '../features/ErrorBoundary';
@@ -31,6 +32,8 @@ export function App() {
   // Settings reopens on the last section viewed until quit (docs/spec/ui.md, Settings).
   const [settingsSection, setSettingsSection] = useState<SettingsSection>('controls');
   const { api, logger } = useDeps();
+  // Here, mounted once, so the chimes play once and in this window only.
+  useSounds();
   // The app menu (Settings… ⌘,) opens screens too.
   useEffect(() => api.onNavigate(setScreen), [api]);
   const shown = screen ?? (connected ? 'roast' : 'roasters');

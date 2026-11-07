@@ -21,6 +21,7 @@ const detail: RoastDetail = {
   startedAt: '2026-11-04T17:37:20.466Z',
   endedAt: '2026-11-04T17:52:23.388Z',
   fcTimeS: 90,
+  fcTemp: null,
   dropTimeS: 120,
   dropTemp: 124,
   samples: Array.from({ length: 141 }, (_, i) => ({

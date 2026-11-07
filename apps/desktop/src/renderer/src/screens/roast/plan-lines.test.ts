@@ -1,4 +1,4 @@
-import type { AutoProfile } from '@roastpilot/shared';
+import { CURVE_FOLLOW_DEFAULTS, type AutoProfile } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { planLine, rorAimLine } from './plan-lines';
 
@@ -22,6 +22,7 @@ describe('planLine', () => {
 });
 
 const PROFILE = {
+  curve: PLAN,
   phases: [
     { name: 'Soak', heat: { mode: 'fixed', pct: 0 } },
     {
@@ -36,19 +37,39 @@ const PROFILE = {
   ],
 } as unknown as AutoProfile;
 
+const aim = (phaseName: string | null, firstCracked = false) => ({ phaseName, firstCracked });
+
 describe('rorAimLine', () => {
   it("gives a step's RoR range", () => {
-    expect(rorAimLine(PROFILE, 'Maillard', false)).toBe('Aim 8–10');
+    expect(rorAimLine(PROFILE, aim('Maillard'))).toBe('Aim 8–10');
   });
 
   it('aims for at least 5 until your first-crack tap', () => {
-    expect(rorAimLine(PROFILE, 'Development', false)).toBe('Aim 5–7');
-    expect(rorAimLine(PROFILE, 'Development', true)).toBe('Aim 3–7');
+    expect(rorAimLine(PROFILE, aim('Development'))).toBe('Aim 5–7');
+    expect(rorAimLine(PROFILE, aim('Development', true))).toBe('Aim 3–7');
   });
 
-  it('has nothing for a fixed or curve phase, or none running', () => {
-    expect(rorAimLine(PROFILE, 'Soak', false)).toBeUndefined();
-    expect(rorAimLine(PROFILE, 'Follow', false)).toBeUndefined();
-    expect(rorAimLine(PROFILE, null, false)).toBeUndefined();
+  it("gives a curve phase's aim now, as Auto works it out", () => {
+    // 5:00, on the plan at 150 °C: 30 s on, the smooth plan climbs 9.5 °C/min.
+    const onPlan = {
+      ...aim('Follow'),
+      elapsedS: 300,
+      btC: 150,
+      curveFollow: CURVE_FOLLOW_DEFAULTS,
+    };
+    expect(rorAimLine(PROFILE, onPlan)).toBe('Aim 10');
+    // 10 °C behind: 3 °C/min more.
+    expect(rorAimLine(PROFILE, { ...onPlan, btC: 140 })).toBe('Aim 13');
+  });
+
+  it('has no curve aim without the temperature or the tuning', () => {
+    expect(rorAimLine(PROFILE, { ...aim('Follow'), elapsedS: 300, btC: 150 })).toBeUndefined();
+    const noBt = { ...aim('Follow'), elapsedS: 300, curveFollow: CURVE_FOLLOW_DEFAULTS };
+    expect(rorAimLine(PROFILE, noBt)).toBeUndefined();
+  });
+
+  it('has nothing for a fixed phase, or none running', () => {
+    expect(rorAimLine(PROFILE, aim('Soak'))).toBeUndefined();
+    expect(rorAimLine(PROFILE, aim(null))).toBeUndefined();
   });
 });

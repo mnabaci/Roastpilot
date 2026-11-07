@@ -9,6 +9,7 @@ const ROAST: RoastSummary = {
   startedAt: '2026-11-04T10:00:00.000Z',
   endedAt: null,
   fcTimeS: null,
+  fcTemp: null,
   dropTimeS: null,
   dropTemp: null,
   roasterId: null,

@@ -86,6 +86,8 @@ export {
 export {
   AutoProfileSchema,
   AutoTuningSchema,
+  CURVE_FOLLOW_DEFAULTS,
+  CurveFollowSchema,
   CurvePointSchema,
   PhaseHeatSchema,
   PhaseNextSchema,
@@ -99,6 +101,7 @@ export {
   PROFILE_SCHEMA_VERSION,
   type AutoProfile,
   type AutoTuning,
+  type CurveFollow,
   type CurvePoint,
   type PhaseHeat,
   type PhaseNext,
@@ -160,6 +163,21 @@ export {
   type SoakTime,
   type SettingsWriteError,
 } from './settings';
+export {
+  DEFAULT_SOUNDS,
+  DEFAULT_STEP_SOUNDS,
+  SoundsSchema,
+  SoundRepeatSchema,
+  SoundStepSchema,
+  SoundVoiceSchema,
+  StepSoundSchema,
+  VolumePctSchema,
+  type SoundRepeat,
+  type Sounds,
+  type SoundStep,
+  type SoundVoice,
+  type StepSound,
+} from './sounds';
 export {
   AcknowledgeErrorSchema,
   SafetyActionSchema,

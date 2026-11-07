@@ -1,4 +1,9 @@
-import { PROFILE_SCHEMA_VERSION, type AutoProfile, type AutoTuning } from '@roastpilot/shared';
+import {
+  CURVE_FOLLOW_DEFAULTS,
+  PROFILE_SCHEMA_VERSION,
+  type AutoProfile,
+  type AutoTuning,
+} from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { PREHEAT, PreheatProtocol } from './preheat-protocol';
 
@@ -22,7 +27,7 @@ const PROFILE = {
 const TUNING: AutoTuning = {
   target: { kp: 1, ki: 0, kd: 0 },
   targetLimitPct: 20,
-  follow: { kp: 1, ki: 0, kd: 0 },
+  curveFollow: CURVE_FOLLOW_DEFAULTS,
   preheat: { kp: 2, ki: 0, kd: 0 },
   preheatFanPct: 30,
   holdS: 150,

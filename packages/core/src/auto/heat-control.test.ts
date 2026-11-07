@@ -1,11 +1,18 @@
 import type { AutoTuning } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import { heatControlFor, neededRor, type HeatInput } from './heat-control';
+import { heatControlFor, neededRor } from './heat-control';
+import type { HeatInput } from './output-controller';
 
 const TUNING: AutoTuning = {
   target: { kp: 2, ki: 0, kd: 0 },
   targetLimitPct: 20,
-  follow: { kp: 5, ki: 0, kd: 0 },
+  curveFollow: {
+    gains: { kp: 2, ki: 0, kd: 0 },
+    limitPct: 20,
+    lookAheadS: 30,
+    pullPerC: 0.3,
+    slewPctPer10s: 5,
+  },
   preheat: { kp: 1, ki: 0, kd: 0 },
   preheatFanPct: 30,
   holdS: 150,
@@ -136,13 +143,8 @@ describe('target', () => {
     expect(hot.maxed).toBe(true);
   });
 
-  it('a fixed step has no heat to add; a follow phase is maxed at 100%', () => {
+  it('a fixed step has no heat to add', () => {
     expect(heatControlFor({ mode: 'fixed', pct: 50 }, TUNING, CURVE).maxed).toBe(true);
-    const follow = heatControlFor({ mode: 'follow', pct: 60 }, TUNING, CURVE);
-    follow.next({ ...ON_COURSE, elapsedS: 300, btC: 250 });
-    expect(follow.maxed).toBe(false);
-    follow.next({ ...ON_COURSE, elapsedS: 300, btC: 100 });
-    expect(follow.maxed).toBe(true);
   });
 
   it('holds its last value with no RoR or temperature', () => {
@@ -155,31 +157,11 @@ describe('target', () => {
 });
 
 describe('follow', () => {
-  const FOLLOW = { mode: 'follow', pct: 50 } as const;
-
-  it('starts from its planned value on the curve', () => {
-    expect(heatControlFor(FOLLOW, TUNING, CURVE).next(ON_COURSE)).toBe(50);
-  });
-
-  it('adds heat below the curve and takes it away above', () => {
-    const control = heatControlFor(FOLLOW, TUNING, CURVE);
-    expect(control.next({ ...ON_COURSE, btC: 148 })).toBe(60);
-    expect(control.next({ ...ON_COURSE, btC: 152 })).toBe(40);
-  });
-
-  it('stays between 0 and 100', () => {
-    const control = heatControlFor(FOLLOW, TUNING, CURVE);
-    expect(control.next({ ...ON_COURSE, btC: 50 })).toBe(100);
-    expect(control.next({ ...ON_COURSE, btC: 250 })).toBe(0);
-  });
-
-  it('holds its last value with no temperature', () => {
-    const control = heatControlFor(FOLLOW, TUNING, CURVE);
-    control.next({ ...ON_COURSE, btC: 148 });
-    expect(control.next({ ...ON_COURSE, btC: undefined })).toBe(60);
-  });
-
-  it('holds its value with no curve to follow', () => {
-    expect(heatControlFor(FOLLOW, TUNING, []).next(ON_COURSE)).toBe(50);
+  it('starts from its estimate and trims it with the curve-following tuning', () => {
+    const control = heatControlFor({ mode: 'follow', pct: 50 }, TUNING, CURVE);
+    // The curve climbs 10 °C/min; on it at 10, nothing to change.
+    expect(control.next({ ...ON_COURSE, btC: 150, ror: 10 })).toBe(50);
+    // Its correction moves the heater at most 5% per 10 s.
+    expect(control.next({ ...ON_COURSE, btC: 150, ror: 0 })).toBe(50.5);
   });
 });

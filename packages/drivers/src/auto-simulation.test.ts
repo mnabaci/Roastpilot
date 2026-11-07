@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { simulateAutoRoast } from './auto-simulation.harness';
+import { simulateAutoRoast, type SimulatedRow } from './auto-simulation.harness';
 import { SKYWALKER_PROFILES, SKYWALKER_TUNING } from './skywalker-profiles';
 
 const STYLES = [SKYWALKER_PROFILES['light-steps'], SKYWALKER_PROFILES['light-curve']];
@@ -95,5 +95,56 @@ describe('Light · Steps', () => {
     expect(events.some((event) => event.kind === 'stall-guard' && event.tripped)).toBe(true);
     const development = rows.filter((row) => row.phase === 'Development');
     expect(development.some((row) => row.fan < 80)).toBe(true);
+  });
+});
+
+describe('Light · Curve', () => {
+  const profile = SKYWALKER_PROFILES['light-curve'];
+  /** Readings settled in their phase: the roaster reports a new phase's heater a moment late. */
+  const settledRows = (rows: readonly SimulatedRow[]) =>
+    rows.filter(
+      (row, i) =>
+        row.tS > 65 && rows.slice(Math.max(0, i - 3), i).every((r) => r.phase === row.phase),
+    );
+
+  it('stays within 30% above and 20% below its estimate', async () => {
+    const { rows } = await simulateAutoRoast({ profile, tuning, firstCrackAtC: 191 });
+    for (const row of settledRows(rows)) {
+      const planned = profile.phases.find((p) => p.name === row.phase)?.heat.pct ?? 0;
+      expect(row.heater).toBeLessThanOrEqual(planned + 30);
+      expect(row.heater).toBeGreaterThanOrEqual(planned - 20);
+    }
+  });
+
+  it('moves the heater at most 5% in any 10 s of a phase', async () => {
+    const { rows } = await simulateAutoRoast({ profile, tuning, firstCrackAtC: 191 });
+    const settled = settledRows(rows);
+    expect(settled.length).toBeGreaterThan(400);
+    for (const row of settled) {
+      const later = settled.filter(
+        (r) => r.phase === row.phase && r.tS > row.tS && r.tS <= row.tS + 10,
+      );
+      for (const r of later) expect(Math.abs(r.heater - row.heater)).toBeLessThanOrEqual(5);
+    }
+  });
+
+  it('after its peak, RoR never rises more than 1 °C/min in 30 s', async () => {
+    // The simulator gives under 0.2 even in a cold room: no kick from the heater.
+    const { rows } = await simulateAutoRoast({ profile, tuning, firstCrackAtC: 191 });
+    const withRor = rows.flatMap((row) =>
+      row.ror === undefined ? [] : [{ ...row, ror: row.ror }],
+    );
+    const peak = withRor.reduce((top, row) => (row.ror > top.ror ? row : top));
+    for (const row of withRor.filter((r) => r.tS >= peak.tS)) {
+      const later = withRor.find((r) => r.tS >= row.tS + 30);
+      if (later) expect(later.ror - row.ror).toBeLessThan(1);
+    }
+  });
+
+  it('reaches first crack within a minute of the curve', async () => {
+    const { finalState } = await simulateAutoRoast({ profile, tuning, firstCrackAtC: 191 });
+    const crackS = ((finalState.firstCrackAtMs ?? 0) - (finalState.chargedAtMs ?? 0)) / 1_000;
+    // The curve reaches 191 °C at 9:33.
+    expect(Math.abs(crackS - 573)).toBeLessThan(60);
   });
 });

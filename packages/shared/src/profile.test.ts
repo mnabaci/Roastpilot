@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { AutoProfileSchema, PROFILE_SCHEMA_VERSION, type AutoProfile } from './profile';
+import {
+  AutoProfileSchema,
+  AutoTuningSchema,
+  CURVE_FOLLOW_DEFAULTS,
+  PROFILE_SCHEMA_VERSION,
+  type AutoProfile,
+} from './profile';
 
 const profile: AutoProfile = {
   schemaVersion: PROFILE_SCHEMA_VERSION,
@@ -135,5 +141,34 @@ describe('AutoProfileSchema', () => {
 
   it('refuses a saved format from a different version', () => {
     expect(AutoProfileSchema.safeParse({ ...profile, schemaVersion: 99 }).success).toBe(false);
+  });
+});
+
+describe('AutoTuningSchema', () => {
+  /** As the first roaster migration saved it, before curve phases followed RoR. */
+  const saved = {
+    target: { kp: 1.5, ki: 0.02, kd: 0 },
+    targetLimitPct: 20,
+    follow: { kp: 1, ki: 0.01, kd: 0 },
+    preheat: { kp: 5, ki: 0.02, kd: 0 },
+    preheatFanPct: 30,
+    holdS: 150,
+    chargeCutS: 5,
+  };
+
+  it('reads a record saved before curve following, with its defaults', () => {
+    const parsed = AutoTuningSchema.parse(saved);
+    expect(parsed.curveFollow).toEqual(CURVE_FOLLOW_DEFAULTS);
+    expect(parsed).not.toHaveProperty('follow');
+  });
+
+  it('keeps curve following as saved', () => {
+    const curveFollow = { ...CURVE_FOLLOW_DEFAULTS, lookAheadS: 45 };
+    expect(AutoTuningSchema.parse({ ...saved, curveFollow }).curveFollow.lookAheadS).toBe(45);
+  });
+
+  it('refuses a slew limit of 0, which would freeze the heater', () => {
+    const curveFollow = { ...CURVE_FOLLOW_DEFAULTS, slewPctPer10s: 0 };
+    expect(AutoTuningSchema.safeParse({ ...saved, curveFollow }).success).toBe(false);
   });
 });

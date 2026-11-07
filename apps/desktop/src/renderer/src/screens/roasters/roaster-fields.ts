@@ -55,8 +55,12 @@ export const TUNING_FIELDS: readonly FieldGroup[] = [
   {
     title: 'Following a curve',
     cells: [
-      { key: 'followKp', label: 'Push (Kp)' },
-      { key: 'followKi', label: 'Catch-up (Ki)' },
+      { key: 'curveKp', label: 'Push (Kp)' },
+      { key: 'curveKi', label: 'Catch-up (Ki)' },
+      { key: 'curveLimitPct', label: 'Most it may change (limit)', unit: '%' },
+      { key: 'curveLookAheadS', label: 'Look ahead', unit: 's' },
+      { key: 'curvePullPerC', label: 'Pull to the curve', unit: 'per °C' },
+      { key: 'curveSlewPct', label: 'Heater change per 10 s', unit: '%' },
     ],
   },
 ];
