@@ -1,5 +1,6 @@
 import type { Bean, RoastSummary } from '@roastpilot/shared';
 import { SelectField } from '@roastpilot/ui';
+import { beanDetail } from '../beans/bean-detail';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
@@ -23,7 +24,7 @@ export function BeanLink({ roast, beans }: { roast: RoastSummary; beans: readonl
           { value: NONE, label: 'No bean' },
           ...beans
             .filter((b) => !b.archived || b.id === roast.beanId)
-            .map((b) => ({ value: String(b.id), label: b.name })),
+            .map((b) => ({ value: String(b.id), label: b.name, detail: beanDetail(b) })),
         ]}
         onChange={(value) => {
           setProblem(undefined);

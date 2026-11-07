@@ -94,7 +94,7 @@ export function RoastSetupPanel() {
               onChange={update}
             />
           ) : null}
-          <GhostField setup={setup} roasts={roasts} onChange={update} />
+          <GhostField setup={setup} roasts={roasts} beans={beans} onChange={update} />
         </div>
       ) : null}
     </section>
