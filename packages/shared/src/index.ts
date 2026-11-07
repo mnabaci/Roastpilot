@@ -207,6 +207,12 @@ export {
   type MakeProfileRequest,
 } from './make-profile';
 export {
+  MILESTONE_BACKUP_MARGIN_S,
+  MILESTONE_CAP_MARGIN_C,
+  MilestonesSchema,
+  type Milestones,
+} from './milestones';
+export {
   ExportRoastsRequestSchema,
   FileRoastSchema,
   ROAST_FILE_FORMAT,

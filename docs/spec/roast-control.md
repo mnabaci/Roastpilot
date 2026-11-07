@@ -116,14 +116,14 @@ A curve profile is usually: a fixed soak phase, then one `follow` phase until dr
 | Charge        | 0:00 | ✓    | Charge temp, first point      |
 | Turning point | ✓    | ✓    | The curve's lowest point      |
 | Dry end       | ✓    | ✓    | Dry-end temp                  |
-| Your points   | ✓    | ✓    | Optional, any number          |
 | First crack   | ✓    | ✓    | Development time = drop − FC  |
 | Drop          | ✓    | ✓    | Last point; BT cap = drop + 3 |
+| Your points   | ✓    | ✓    | Optional, any number          |
 
 - **Prefilled** from the roaster's built-in curve profile (Light · Curve on the Skywalker), so you change only what differs.
-- **Order:** times rise down the table and every point after the turning point is warmer than the one before; the turning point is cooler than charge. Each problem shows next to its cell, one line, and Create waits until there are none. Development time and charge temp keep the profile limits (0:30–10:00, 100–230 °C).
+- **Order:** the five milestones go forward in time; your points can sit anywhere between the turning point and drop. Taken in time order, every point after the turning point is warmer than the one before, and the turning point is cooler than charge. Drop is at most 18:00, so every backup fits under 19:00. Each problem shows next to its cell, one line, and Create waits until there are none. Development time and charge temp keep the profile limits (0:30–10:00, 100–230 °C).
 - **The curve:** a smooth curve through every milestone that never overshoots between two of them (monotone cubic), sampled every 30 s plus each milestone, so about 22 points for an 11-minute roast, each editable in the points table afterwards.
-- **The rest** comes from the built-in curve profile: batch, the soak, the fan steps and their BT triggers, the heat estimates and its "needs calibration". A fan step whose trigger is at or above the new cap is dropped, its fan moving to the step before. Each trigger's backup is when the new curve reaches it plus 1:00.
+- **The rest** comes from the built-in curve profile: batch, the soak, the fan steps and their BT triggers, the heat estimates and its "needs calibration". A phase that would start at or above the new cap is dropped, and the one before it runs to the end. Each trigger's backup is when the new curve reaches it plus 1:00.
 - **Saved** as a new profile of your own on the active roaster, named "Milestones", "Milestones 2" and so on, with no source.
 
 ## Roast phases end to end
