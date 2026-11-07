@@ -30,7 +30,11 @@ Releases are built by GitHub Actions from a tag, never on a laptop
      version: bump instead.
 7. Smoke-test the downloaded installers, not local builds:
    - macOS: install the DMG on a clean user, first open (System Settings → Privacy & Security → Open Anyway; never "damaged"), Simulator roast,
-     Settings › About shows the version; the previous version shows "Version X.Y.Z is out".
+     Settings › About shows the version. From 0.1.2 on, the previous version (in Applications)
+     downloads the new one ("Downloading X.Y.Z"), and Restart to update swaps it and reopens the
+     new version (refused mid-roast); About shows the new version and no "Couldn't update". Run
+     from the DMG, the previous version shows "Version X.Y.Z is out · move Roastpilot to
+     Applications…" with Download. Releases before 0.1.2 only show Download.
    - Windows: install, SmartScreen (More info → Run anyway), Simulator roast; the previous
      version downloads it and Restart to update installs it (refused mid-roast).
    - One real roast on the Skywalker.

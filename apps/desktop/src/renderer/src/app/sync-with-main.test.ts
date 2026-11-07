@@ -158,14 +158,17 @@ describe('syncWithMain', () => {
     it('loads the version and the update status', async () => {
       const api = fakeApi({
         getAppInfo: () =>
-          Promise.resolve({ version: '0.1.0', update: { state: 'available', version: '0.2.0' } }),
+          Promise.resolve({
+            version: '0.1.0',
+            update: { state: 'available', version: '0.2.0', reason: 'cant-replace' },
+          }),
       });
       const stores = createStores();
       syncWithMain(api, stores, logger());
       await vi.waitFor(() => {
         expect(stores.updates.getState()).toEqual({
           version: '0.1.0',
-          status: { state: 'available', version: '0.2.0' },
+          status: { state: 'available', version: '0.2.0', reason: 'cant-replace' },
         });
       });
     });

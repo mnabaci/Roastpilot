@@ -33,19 +33,47 @@ describe('AboutSection', () => {
     ['not checked yet', { state: 'idle', checkedAt: null }, 'Not checked yet', 'Check for updates'],
     ['checking', { state: 'checking' }, 'Checking…', 'Check for updates'],
     [
-      'downloading',
+      'downloading (Windows and macOS alike)',
       { state: 'downloading', version: '0.2.0', percent: 45 },
       'Downloading 0.2.0 · 45 %',
       null,
     ],
     [
-      'ready',
+      'ready (Windows and macOS alike)',
       { state: 'ready', version: '0.2.0' },
       '0.2.0 is ready · installs when you quit',
       'Restart to update',
     ],
-    ['out on macOS', { state: 'available', version: '0.2.0' }, 'Version 0.2.0 is out', 'Download'],
-    ["couldn't check", { state: 'failed' }, "Couldn't check · try again", 'Check for updates'],
+    [
+      'out on a Mac that cannot replace itself',
+      { state: 'available', version: '0.2.0', reason: 'cant-replace' },
+      'Version 0.2.0 is out · move Roastpilot to Applications to update by itself',
+      'Download',
+    ],
+    [
+      'out on a Mac whose last install of it failed',
+      { state: 'available', version: '0.2.0', reason: 'install-failed' },
+      "Version 0.2.0 is out · couldn't install it by itself",
+      'Download',
+    ],
+    [
+      "couldn't check",
+      { state: 'failed', stage: 'check' },
+      "Couldn't check · try again",
+      'Check for updates',
+    ],
+    [
+      "couldn't download",
+      { state: 'failed', stage: 'download' },
+      "Couldn't update · try again",
+      'Check for updates',
+    ],
+    [
+      "couldn't install (the last swap failed)",
+      { state: 'failed', stage: 'install' },
+      "Couldn't update · try again",
+      'Check for updates',
+    ],
     ['off in development', { state: 'off' }, 'Updates are off in development', null],
   ])('%s: one line and its one button', (_name, update, line, button) => {
     renderApp(<AboutSection />, { version: '0.1.0', update });
@@ -73,7 +101,7 @@ describe('AboutSection', () => {
   it('Check for updates asks main; it is disabled while checking', async () => {
     const { api } = renderApp(<AboutSection />, {
       version: '0.1.0',
-      update: { state: 'failed' },
+      update: { state: 'failed', stage: 'check' },
     });
     await userEvent.click(screen.getByRole('button', { name: 'Check for updates' }));
     expect(api.checkForUpdates).toHaveBeenCalledTimes(1);
@@ -81,10 +109,20 @@ describe('AboutSection', () => {
     expect(screen.getAllByRole('button', { name: 'Check for updates' }).at(-1)).toBeDisabled();
   });
 
+  it('after a failed install, Check for updates tries again', async () => {
+    const { api, stores } = renderApp(<AboutSection />, {
+      version: '0.1.0',
+      update: { state: 'failed', stage: 'install' },
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Check for updates' }));
+    expect(api.checkForUpdates).toHaveBeenCalledTimes(1);
+    expect(toasts(stores)).toEqual([]);
+  });
+
   it('a failed check is said in the line only, not in a toast', () => {
     const { stores } = renderApp(<AboutSection />, {
       version: '0.1.0',
-      update: { state: 'failed' },
+      update: { state: 'failed', stage: 'check' },
     });
     expect(screen.getByText("Couldn't check · try again")).toBeInTheDocument();
     expect(toasts(stores)).toEqual([]);
@@ -166,7 +204,7 @@ describe('AboutSection', () => {
   it('Download opens the page of the version that is out', async () => {
     const { api } = renderApp(<AboutSection />, {
       version: '0.1.0',
-      update: { state: 'available', version: '0.2.0' },
+      update: { state: 'available', version: '0.2.0', reason: 'cant-replace' },
     });
     await userEvent.click(screen.getByRole('button', { name: 'Download' }));
     expect(api.openReleasePage).toHaveBeenCalledWith('latest');
@@ -178,7 +216,10 @@ describe('AboutSection', () => {
     });
     const { stores } = renderApp(
       <AboutSection />,
-      { version: '0.1.0', update: { state: 'available', version: '0.2.0' } },
+      {
+        version: '0.1.0',
+        update: { state: 'available', version: '0.2.0', reason: 'cant-replace' },
+      },
       api,
     );
     await userEvent.click(screen.getByRole('button', { name: 'Download' }));

@@ -1,6 +1,19 @@
 import { serializeError, type Logger, type Updater, type UpdaterEvent } from '@roastpilot/core';
 import { err, ok } from '@roastpilot/shared';
 
+/** One file of a release as `latest-mac.yml` lists it: a name (or address), its SHA-512 in base64. */
+export interface ReleaseFile {
+  url: string;
+  sha512: string;
+  size?: number;
+}
+
+/** What a check found: the version, and on macOS the files our own installer downloads. */
+export interface ReleaseInfo {
+  version: string;
+  files?: readonly ReleaseFile[];
+}
+
 /** electron-updater's `autoUpdater`, narrowed to what Roastpilot uses (a fake in tests). */
 export interface AppUpdaterLike {
   autoDownload: boolean;
@@ -13,7 +26,7 @@ export interface AppUpdaterLike {
     error(message?: unknown): void;
     debug?(message: string): void;
   } | null;
-  checkForUpdates(): Promise<{ updateInfo: { version: string } } | null>;
+  checkForUpdates(): Promise<{ updateInfo: ReleaseInfo } | null>;
   downloadUpdate(): Promise<unknown>;
   quitAndInstall(isSilent?: boolean, isForceRunAfter?: boolean): void;
   on(event: 'error', listener: (error: Error) => void): unknown;
@@ -29,13 +42,10 @@ export interface AppUpdaterLike {
   ): unknown;
 }
 
-const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
+/** An error's message, whatever was thrown. */
+export const errorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
 
-/**
- * Sets electron-updater up so it never acts on its own: `UpdateService` decides when to download
- * (Windows only) and when to install (docs/spec/install-and-update.md). Its own chatter goes to
- * the app log at debug level; its failures come back as results.
- */
 export interface AdaptUpdaterOptions {
   canInstall: boolean;
   /** The quit guard's shutdown (safe stop, save, close), then `finish` instead of quitting. */
@@ -45,12 +55,16 @@ export interface AdaptUpdaterOptions {
   logger: Logger;
 }
 
-export function adaptUpdater(
+/**
+ * electron-updater never acts on its own: no download, no pre-release, no downgrade, install on
+ * quit only where it installs (Windows). Its chatter goes to the app log at debug level.
+ */
+export function quietUpdater(
   updater: AppUpdaterLike,
-  { canInstall, shutdownThen, quit, logger }: AdaptUpdaterOptions,
-): Updater {
+  { installOnQuit, logger }: { installOnQuit: boolean; logger: Logger },
+): void {
   updater.autoDownload = false;
-  updater.autoInstallOnAppQuit = canInstall;
+  updater.autoInstallOnAppQuit = installOnQuit;
   updater.allowPrerelease = false;
   updater.allowDowngrade = false;
   const say = (text: unknown) => {
@@ -62,13 +76,25 @@ export function adaptUpdater(
   updater.on('error', (error) => {
     logger.debug('updater.error-event', { error: serializeError(error) });
   });
+}
+
+/**
+ * Sets electron-updater up so it never acts on its own: `UpdateService` decides when to download
+ * (Windows only) and when to install (docs/spec/install-and-update.md). Its own chatter goes to
+ * the app log at debug level; its failures come back as results.
+ */
+export function adaptUpdater(
+  updater: AppUpdaterLike,
+  { canInstall, shutdownThen, quit, logger }: AdaptUpdaterOptions,
+): Updater {
+  quietUpdater(updater, { installOnQuit: canInstall, logger });
   return {
     async latestVersion() {
       try {
         const result = await updater.checkForUpdates();
         return result ? ok(result.updateInfo.version) : err({ message: 'The updater is off.' });
       } catch (error) {
-        return err({ message: message(error) });
+        return err({ message: errorMessage(error) });
       }
     },
     async download() {
@@ -76,7 +102,7 @@ export function adaptUpdater(
         await updater.downloadUpdate();
         return ok(undefined);
       } catch (error) {
-        return err({ message: message(error) });
+        return err({ message: errorMessage(error) });
       }
     },
     quitAndInstall() {

@@ -85,12 +85,13 @@ export function updateHarness({
   /** Wall time moves with the clock, plus whatever the computer slept through. */
   let sleptMs = 0;
   let roasting = false;
+  let installable = canInstall;
   const service = new UpdateService({
     updater: fake.updater,
     clock,
     wallNowMs: () => WALL_START_MS + clock.now() + sleptMs,
     installedVersion,
-    canInstall,
+    canInstall: () => installable,
     isRoasting: () => roasting,
     onStatus: (status) => statuses.push(status),
     logger: createLogger({ write: (entry) => logs.push(entry) }, 'updates'),
@@ -105,6 +106,10 @@ export function updateHarness({
     /** The computer slept: wall time moved on, the monotonic clock didn't. */
     sleep: (ms: number) => {
       sleptMs += ms;
+    },
+    /** The app moved (or became read-only): asked again at the next check. */
+    setCanInstall: (on: boolean) => {
+      installable = on;
     },
     setRoasting: (on: boolean) => {
       roasting = on;

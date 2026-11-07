@@ -3,6 +3,15 @@ import { z } from 'zod';
 /** A release version, `X.Y.Z` (no pre-releases: docs/spec/install-and-update.md). */
 export const VersionSchema = z.string().regex(/^\d+\.\d+\.\d+$/);
 
+/**
+ * Why a newer version can't install by itself (macOS): `cant-replace`, move Roastpilot to
+ * Applications; `install-failed`, installing this version failed last time.
+ */
+export const UpdateBlockedReasonSchema = z.enum(['cant-replace', 'install-failed']);
+
+/** Which step failed: About says "Couldn't check" or "Couldn't update". */
+export const UpdateStageSchema = z.enum(['check', 'download', 'install']);
+
 /** Where updates are (docs/spec/install-and-update.md, What you see): one state, one line in About. */
 export const UpdateStatusSchema = z.discriminatedUnion('state', [
   /** In development (`pnpm dev`): the updater is off. */
@@ -10,18 +19,26 @@ export const UpdateStatusSchema = z.discriminatedUnion('state', [
   /** Up to date as of `checkedAt` (ISO 8601); null before the first check. */
   z.object({ state: z.literal('idle'), checkedAt: z.iso.datetime().nullable() }),
   z.object({ state: z.literal('checking') }),
-  /** Windows: a newer version is downloading in the background. */
+  /** A newer version is downloading in the background. */
   z.object({
     state: z.literal('downloading'),
     version: VersionSchema,
     percent: z.number().min(0).max(100),
   }),
-  /** Windows: downloaded; installs on quit, or Restart to update. */
+  /** Downloaded (and on macOS checked); installs on quit, or Restart to update. */
   z.object({ state: z.literal('ready'), version: VersionSchema }),
-  /** macOS (unsigned): a newer version is out; Download opens its release page. */
-  z.object({ state: z.literal('available'), version: VersionSchema }),
-  /** The check or the download failed (logged in main); the next check tries again. */
-  z.object({ state: z.literal('failed') }),
+  /**
+   * A newer version is out but this copy can't install it (`reason`); Download opens its release
+   * page. `cant-replace`: macOS, run from the DMG, a translocated copy or a folder it can't write.
+   * `install-failed`: macOS, the last install of this version failed, so it isn't downloaded again.
+   */
+  z.object({
+    state: z.literal('available'),
+    version: VersionSchema,
+    reason: UpdateBlockedReasonSchema.default('cant-replace'),
+  }),
+  /** The check, the download or the last install failed (logged in main); the next check tries again. */
+  z.object({ state: z.literal('failed'), stage: UpdateStageSchema.default('check') }),
 ]);
 
 /** What About shows: the installed version and where updates are. */
@@ -47,6 +64,8 @@ export const OpenReleasePageErrorSchema = z.object({
 });
 
 export type UpdateStatus = z.infer<typeof UpdateStatusSchema>;
+export type UpdateBlockedReason = z.infer<typeof UpdateBlockedReasonSchema>;
+export type UpdateStage = z.infer<typeof UpdateStageSchema>;
 export type AppInfo = z.infer<typeof AppInfoSchema>;
 export type RestartToUpdateError = z.infer<typeof RestartToUpdateErrorSchema>;
 export type ReleasePage = z.infer<typeof ReleasePageSchema>;

@@ -19,5 +19,6 @@ One file per decision: context, decision, consequences. Add one with the `plan-f
 - [Compact Roastpilot roast files (version 2)](0015-compact-roast-files.md)
 - [Curve phases follow the curve's rate of rise](0016-curve-follows-rate-of-rise.md)
 - [GitHub releases and electron-updater, macOS unsigned for now](0017-releases-and-updates.md)
+- [Roastpilot installs its own Mac updates until it has a Developer ID](0018-own-mac-installer.md)
 
 Template: [template.md](template.md)

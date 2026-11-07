@@ -1,6 +1,6 @@
 # 0017: GitHub releases and electron-updater, macOS unsigned for now
 
-Status: accepted
+Status: accepted; its macOS update path is superseded by [0018](0018-own-mac-installer.md)
 Date: 2026-11-07
 
 ## Context

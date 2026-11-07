@@ -88,7 +88,7 @@ describe('App', () => {
 
   it.each([
     { state: 'ready', version: '0.2.0' },
-    { state: 'available', version: '0.2.0' },
+    { state: 'available', version: '0.2.0', reason: 'cant-replace' },
   ] as const)('the Settings tab carries an ember dot while an update is $state', (update) => {
     renderApp(<App />, { update });
     const tab = within(screen.getByRole('navigation', { name: 'Screens' })).getByRole('button', {
@@ -103,7 +103,7 @@ describe('App', () => {
     { state: 'idle', checkedAt: null },
     { state: 'checking' },
     { state: 'downloading', version: '0.2.0', percent: 45 },
-    { state: 'failed' },
+    { state: 'failed', stage: 'check' },
   ] as const)('no update dot while updates are $state', (update) => {
     renderApp(<App />, { update });
     expect(screen.queryByTitle('Update available')).toBeNull();
@@ -111,7 +111,9 @@ describe('App', () => {
   });
 
   it('the update dot goes away when the update is no longer waiting', () => {
-    const { stores } = renderApp(<App />, { update: { state: 'available', version: '0.2.0' } });
+    const { stores } = renderApp(<App />, {
+      update: { state: 'available', version: '0.2.0', reason: 'cant-replace' },
+    });
     expect(screen.getByTitle('Update available')).toBeInTheDocument();
     act(() => {
       stores.updates.setState({ status: { state: 'idle', checkedAt: null } });
