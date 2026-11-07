@@ -94,7 +94,12 @@ export function OutputControl({
           draft(Number(event.target.value));
         }}
         onBlur={commitNow}
-        className={cn('h-7 w-full cursor-pointer disabled:cursor-not-allowed', ACCENT[tone])}
+        // sm sits in a row of fields: as tall as they are, so the labels line up (and a 44 px target).
+        className={cn(
+          'w-full cursor-pointer disabled:cursor-not-allowed',
+          sm ? 'h-control-sm' : 'h-7',
+          ACCENT[tone],
+        )}
       />
       {manual && onResumeAuto ? (
         <Button variant="ghost" size="sm" className="self-start" onClick={onResumeAuto}>
