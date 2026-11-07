@@ -104,19 +104,33 @@ describe('SoundsSection', () => {
       vi.useRealTimers();
     });
 
-    it('plays 3 times, 3 s apart, for 3 times; pressing again restarts, never overlaps', () => {
+    it('3 times plays three times, a brief pause apart, showing Stop until the last', () => {
       vi.useFakeTimers();
       const { chime } = setup();
-      const play = screen.getByRole('button', { name: 'Play Auto stopped' });
-      fireEvent.click(play);
+      fireEvent.click(screen.getByRole('button', { name: 'Play Auto stopped' }));
+      expect(chime.play).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('button', { name: 'Stop Auto stopped' })).toBeVisible();
       act(() => {
-        vi.advanceTimersByTime(1_000);
+        vi.advanceTimersByTime(2_000);
       });
-      fireEvent.click(play);
+      expect(chime.play).toHaveBeenCalledTimes(3);
+      expect(screen.getByRole('button', { name: 'Play Auto stopped' })).toBeVisible();
+      expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('Stop cancels the plays still to come', () => {
+      vi.useFakeTimers();
+      const { chime } = setup();
+      fireEvent.click(screen.getByRole('button', { name: 'Play Charge soon' }));
+      act(() => {
+        vi.advanceTimersByTime(10_000);
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Stop Charge soon' }));
       act(() => {
         vi.advanceTimersByTime(60_000);
       });
-      expect(chime.play).toHaveBeenCalledTimes(4);
+      expect(chime.play).toHaveBeenCalledTimes(2);
+      expect(screen.getByRole('button', { name: 'Play Charge soon' })).toBeVisible();
       expect(vi.getTimerCount()).toBe(0);
     });
 

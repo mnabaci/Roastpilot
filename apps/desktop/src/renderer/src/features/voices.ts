@@ -100,3 +100,9 @@ export const VOICE_LABEL: Readonly<Record<SoundVoice, string>> = {
   beep: 'Beep',
   none: 'None',
 };
+
+/** How long a voice sounds, from its first note's start to its last note's end, in ms. */
+export function voiceLengthMs(voice: SoundVoice): number {
+  const ends = VOICES[voice].notes.map((note) => note.atS + note.forS);
+  return Math.round(Math.max(0, ...ends) * 1000);
+}

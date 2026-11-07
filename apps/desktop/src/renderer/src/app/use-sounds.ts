@@ -8,7 +8,8 @@ import {
   stillWaiting,
   type WaitState,
 } from '../features/sound-cues';
-import { createSoundRepeats } from '../features/sound-repeats';
+import { createSoundRepeats, playTimesMs } from '../features/sound-repeats';
+import { voiceLengthMs } from '../features/voices';
 import { useRoastList } from '../screens/history/use-roast-list';
 import { activeRoaster } from '../stores/roasters-store';
 import type { Stores } from '../stores/stores';
@@ -42,7 +43,7 @@ function playSounds(
   const start = (step: SoundStep, { voice, volumePct, repeat }: StepSound) => {
     repeats.start(
       step,
-      repeat,
+      playTimesMs(repeat, voiceLengthMs(voice)),
       () => {
         chime.play(voice, volumePct);
       },

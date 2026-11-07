@@ -246,7 +246,7 @@ describe('useSounds repeats', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it('Dump beans plays twice, 3 s apart; Auto stopped three times', () => {
+  it('Auto stopped plays three times, Dump beans twice, each a brief pause after the last', () => {
     const s = timed();
     s.roast(ROASTING);
     s.auto({});
@@ -255,7 +255,8 @@ describe('useSounds repeats', () => {
     expect(played(s.chime)).toEqual([AUTO_STOPPED, AUTO_STOPPED, AUTO_STOPPED]);
     s.roast({ ...ROASTING, phase: 'cooling', droppedAtMs: 3_000 });
     wait(10_000);
-    expect(timesOf(s.plays, s.startMs)).toEqual([0, 3_000, 6_000, 10_000, 13_000]);
+    // Alert sounds 580 ms and Chime 500 ms, then a 300 ms pause.
+    expect(timesOf(s.plays, s.startMs)).toEqual([0, 880, 1_760, 10_000, 10_800]);
   });
 
   it('a counted repeat stops early when its step stops waiting', () => {
@@ -263,7 +264,7 @@ describe('useSounds repeats', () => {
     s.roast(ROASTING);
     s.auto({});
     s.auto({ stopReason: 'disconnected' });
-    wait(3_000);
+    wait(880);
     // Resume auto clears the stop reason: the third play never comes.
     s.auto({});
     wait(10_000);
@@ -307,11 +308,11 @@ describe('useSounds repeats', () => {
     s.roast(ROASTING);
     s.auto({});
     s.auto({ stopReason: 'disconnected' });
-    wait(1_000);
+    wait(500);
     s.auto({});
     s.auto({ stopReason: 'disconnected' });
     wait(60_000);
-    expect(timesOf(s.plays, s.startMs)).toEqual([0, 1_000, 4_000, 7_000]);
+    expect(timesOf(s.plays, s.startMs)).toEqual([0, 500, 1_380, 2_260]);
   });
 
   it('unmounting leaves no timer behind', () => {

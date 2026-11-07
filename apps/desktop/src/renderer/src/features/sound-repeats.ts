@@ -1,23 +1,27 @@
 import type { SoundRepeat, SoundStep } from '@roastpilot/shared';
 
-/** Counted repeats play this far apart. */
-export const COUNTED_GAP_MS = 3_000;
+/** Counted repeats leave this brief pause after the sound ends, so they read as one call. */
+export const COUNTED_PAUSE_MS = 300;
 /** Until done plays this often while the step still waits… */
 export const UNTIL_DONE_GAP_MS = 10_000;
 /** …for at most this long after the first play. */
 export const UNTIL_DONE_FOR_MS = 60_000;
 
-/** When each play starts, in ms after the first (docs/spec/ui.md, Sounds). */
-export function playTimesMs(repeat: SoundRepeat): number[] {
+/**
+ * When each play starts, in ms after the first (docs/spec/ui.md, Sounds): counted repeats right
+ * after the sound (`soundMs` long) plus a brief pause; until done every 10 s.
+ */
+export function playTimesMs(repeat: SoundRepeat, soundMs: number): number[] {
+  const counted = soundMs + COUNTED_PAUSE_MS;
   const every = (gapMs: number, count: number) =>
     Array.from({ length: count }, (_, i) => i * gapMs);
   switch (repeat) {
     case 'once':
-      return every(COUNTED_GAP_MS, 1);
+      return every(counted, 1);
     case 'twice':
-      return every(COUNTED_GAP_MS, 2);
+      return every(counted, 2);
     case 'thrice':
-      return every(COUNTED_GAP_MS, 3);
+      return every(counted, 3);
     case 'until-done':
       return every(UNTIL_DONE_GAP_MS, UNTIL_DONE_FOR_MS / UNTIL_DONE_GAP_MS + 1);
   }
@@ -38,8 +42,17 @@ const windowTimers: Timers = {
 
 /** Each step's repeats; one timer per step at most, so two plays of a step never overlap. */
 export interface SoundRepeats {
-  /** Plays now, then on `repeat`'s schedule while `waiting()`; restarts a step already repeating. */
-  start(step: SoundStep, repeat: SoundRepeat, play: () => void, waiting: () => boolean): void;
+  /**
+   * Plays now, then at `timesMs` (playTimesMs) while `waiting()`; restarts a step already
+   * repeating. `onEnd` runs once no play is left to come, unless stopped first.
+   */
+  start(
+    step: SoundStep,
+    timesMs: readonly number[],
+    play: () => void,
+    waiting: () => boolean,
+    onEnd?: () => void,
+  ): void;
   /** Cancels a step's remaining plays. */
   stop(step: SoundStep): void;
   /** Cancels every step's remaining plays. */
@@ -55,19 +68,22 @@ export function createSoundRepeats(timers: Timers = windowTimers): SoundRepeats 
     next.delete(step);
   };
   return {
-    start(step, repeat, play, waiting) {
+    start(step, times, play, waiting, onEnd = () => undefined) {
       stop(step);
-      const times = playTimesMs(repeat);
       const schedule = (index: number) => {
         const atMs = times[index];
         const previousMs = times[index - 1];
         if (atMs === undefined || previousMs === undefined) {
           next.delete(step);
+          onEnd();
           return;
         }
         const handle = timers.set(() => {
           next.delete(step);
-          if (!waiting()) return;
+          if (!waiting()) {
+            onEnd();
+            return;
+          }
           play();
           schedule(index + 1);
         }, atMs - previousMs);
