@@ -44,6 +44,9 @@ export const SoakTimeSchema = z.union([
   z.literal(120),
 ]);
 
+/** Dark, Light, or whatever the computer is set to (docs/spec/ui.md, Settings). */
+export const ThemeSchema = z.enum(['dark', 'light', 'system']);
+
 /** The safety notice's wording; raise it when the wording changes so everyone reads it again. */
 export const SAFETY_NOTICE_VERSION = 1;
 
@@ -65,6 +68,8 @@ export const SettingsSchema = z.object({
   soakTimeS: SoakTimeSchema.catch(60).default(60),
   /** Sounds when something needs you, and before first crack (docs/spec/ui.md, Sounds). */
   sounds: SoundsSchema.catch(DEFAULT_SOUNDS).default(DEFAULT_SOUNDS),
+  /** Dark unless you choose otherwise, so an update never changes how the app looks. */
+  theme: ThemeSchema.catch('dark').default('dark'),
   /** The safety notice version you accepted; 0 until you do (docs/spec/safety.md, Safety notice). */
   safetyNoticeAccepted: z.number().int().min(0).catch(0).default(0),
 });
@@ -86,5 +91,6 @@ export type CoolingTime = z.infer<typeof CoolingTimeSchema>;
 export type RoasterCoolTo = z.infer<typeof RoasterCoolToSchema>;
 export type RoastMode = z.infer<typeof RoastModeSchema>;
 export type SoakTime = z.infer<typeof SoakTimeSchema>;
+export type Theme = z.infer<typeof ThemeSchema>;
 export type Settings = z.infer<typeof SettingsSchema>;
 export type SettingsWriteError = z.infer<typeof SettingsWriteErrorSchema>;

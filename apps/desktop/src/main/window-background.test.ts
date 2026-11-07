@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { WINDOW_BACKGROUND } from './window-background';
+import { windowBackground } from './window-background';
 
-describe('WINDOW_BACKGROUND', () => {
-  it('is the dark bg token, as a colour Electron accepts', () => {
-    expect(WINDOW_BACKGROUND).toMatch(/^#[0-9A-Fa-f]{6}$/);
+describe('windowBackground', () => {
+  it('is the bg token of each theme, as a colour Electron accepts', () => {
+    expect(windowBackground(true)).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    expect(windowBackground(false)).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    expect(windowBackground(true)).not.toBe(windowBackground(false));
   });
 });
