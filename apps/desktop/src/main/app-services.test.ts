@@ -106,8 +106,9 @@ describe('createAppServices', () => {
     await services.session.connect(new SimulatedDriver({ clock }), { kind: 'simulator' });
     await clock.runFor(2000);
     expect(services.roast.state.phase).toBe('preheat');
+    // The Simulator's drum has a speed: back at the roaster's usual 60 %.
     expect(services.snapshot().readings.at(-1)?.values).toMatchObject({
-      drum: 1,
+      drum: 60,
       filter: 1,
       heater: 0,
     });
@@ -123,7 +124,7 @@ describe('createAppServices', () => {
     sim.plugIn();
     await clock.runFor(3000);
     expect(services.snapshot().connection.status).toBe('connected');
-    expect(services.snapshot().readings.at(-1)?.values).toMatchObject({ drum: 1, filter: 1 });
+    expect(services.snapshot().readings.at(-1)?.values).toMatchObject({ drum: 60, filter: 1 });
   });
 
   it('cools the beans for the Cooling time setting', async () => {
@@ -166,7 +167,7 @@ describe('createAppServices', () => {
     expect(services.snapshot().readings.at(-1)?.values).toMatchObject({
       fan: 100,
       cooling: 100,
-      drum: 1,
+      drum: 60,
       filter: 0,
     });
   });

@@ -43,6 +43,7 @@ describe('SqliteRoasterRepository', () => {
       model: 'simulator',
       active: false,
       coolerHelpsDrum: false,
+      drumSpeedPct: 60,
       connection: { kind: 'simulator' },
     });
   });
@@ -58,12 +59,14 @@ describe('SqliteRoasterRepository', () => {
       name: 'Second',
       active: false,
       coolerHelpsDrum: false,
+      drumSpeedPct: 45,
     });
     expect(added).toMatchObject({ ok: true, value: { id: 3, name: 'Second' } });
     expect((await listed(repository)).at(-1)).toMatchObject({
       id: 3,
       name: 'Second',
       coolerHelpsDrum: false,
+      drumSpeedPct: 45,
     });
   });
 

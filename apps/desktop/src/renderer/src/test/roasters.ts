@@ -22,6 +22,7 @@ export const SKYWALKER: Roaster = {
   maxTimeS: 1200,
   tempOffsetC: 0,
   coolerHelpsDrum: true,
+  drumSpeedPct: 60,
   tuning: TUNING,
   active: true,
 };

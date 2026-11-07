@@ -166,6 +166,7 @@ export {
 } from './safety-event';
 export {
   CopyProfileRequestSchema,
+  DRUM_SPEED,
   MODEL_LIMITS,
   NewRoasterSchema,
   RoasterErrorSchema,

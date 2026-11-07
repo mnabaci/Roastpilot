@@ -14,8 +14,8 @@ import { guardListener } from '../logging/guard-listener';
 import { BeanCooling } from './bean-cooling';
 import type { ManualRoastDeps } from './manual-roast-deps';
 import { coolingOutputs } from './cooling-outputs';
-import { ALL_OFF, ROAST_ON, type Outputs } from './roast-outputs';
-import { ALLOWED_FROM, DEFAULT_OPTIONS, PHASE_OUTPUTS, type RoastOptions } from './roast-rules';
+import { ALL_OFF, roastOn, type Outputs } from './roast-outputs';
+import { ALLOWED_FROM, DEFAULT_OPTIONS, phaseOutputs, type RoastOptions } from './roast-rules';
 import { RoasterCooling } from './roaster-cooling';
 import { chargeFor, turningPointEvent } from './roast-detections';
 import { cleared, cracked, ended, preheated, preheatEnded, started } from './roast-transitions';
@@ -98,7 +98,7 @@ export class ManualRoast {
   async restoreOutputs(): Promise<void> {
     const { phase } = this.#state;
     const cooling = phase === 'cooling' || this.#cooling.running;
-    const outputs = cooling ? this.#coolingOutputs() : PHASE_OUTPUTS[phase];
+    const outputs = cooling ? this.#coolingOutputs() : phaseOutputs(phase, this.#options().drumOn);
     if (outputs.length === 0) return;
     this.#logger.info('roast.outputs-restored', { phase });
     await this.#send(outputs);
@@ -133,7 +133,7 @@ export class ManualRoast {
       const fanOff = this.#endCoolingForRoast('preheat');
       this.#deps.onNewRoast();
       this.#set(preheated(nowMs));
-      await this.#send([...fanOff, ...ROAST_ON]);
+      await this.#send([...fanOff, ...roastOn(this.#options().drumOn)]);
     },
     start: async (nowMs) => {
       const fanOff = this.#endCoolingForRoast('roast-started');
@@ -145,7 +145,7 @@ export class ManualRoast {
         this.#logger.info('roast.charge-found', { earlierMs: charge.earlierMs });
       this.#set(started(this.#state, charge, nowMs));
       this.#deps.onRoastStarted(charge.atMs);
-      await this.#send([...fanOff, ...ROAST_ON]);
+      await this.#send([...fanOff, ...roastOn(this.#options().drumOn)]);
     },
     'first-crack': (nowMs) => {
       this.#set(cracked(this.#state, this.#event('first-crack', nowMs)));
@@ -209,10 +209,12 @@ export class ManualRoast {
 
   /** Heater, fan, bean cooler, drum and filter for the coolings running now. */
   #coolingOutputs(): Outputs {
+    const { coolerHelpsDrum, drumOn } = this.#options();
     return coolingOutputs({
       beans: this.#state.phase === 'cooling',
       drum: this.#cooling.running,
-      coolerHelpsDrum: this.#options().coolerHelpsDrum,
+      coolerHelpsDrum,
+      drumOn,
     });
   }
 

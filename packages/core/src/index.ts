@@ -31,6 +31,7 @@ export {
 } from './roast/manual-roast';
 export { CHARGE_LOOKBACK_MS, findChargePoint } from './roast/charge-point';
 export { findTurningPoint } from './roast/turning-point';
+export { DRUM_ON, drumOnValue } from './roast/roast-outputs';
 export {
   DEFAULT_ROASTER_COOL_TO_C,
   ROASTER_COOL_AFTER_DROP_MAX_MS,
