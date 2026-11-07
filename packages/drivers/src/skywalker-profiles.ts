@@ -97,7 +97,8 @@ function lightProfile(
     batchG: 385,
     chargeC: 180,
     dryEndC: 150,
-    devTimeS: 90,
+    // Roast 7 dropped 1:31 after first crack (13.8 %); 1:45 (about 15.5 %) for a rounder cup.
+    devTimeS: 105,
     capC: 200,
     curve: LIGHT_CURVE,
     phases: [
