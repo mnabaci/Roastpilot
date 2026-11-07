@@ -269,6 +269,8 @@ export {
   ReleasePageSchema,
   RestartToUpdateErrorSchema,
   UPDATES_OFF,
+  UpdateBlockedReasonSchema,
+  UpdateStageSchema,
   UpdateStatusSchema,
   updateWaiting,
   VersionSchema,
@@ -276,5 +278,7 @@ export {
   type OpenReleasePageError,
   type ReleasePage,
   type RestartToUpdateError,
+  type UpdateBlockedReason,
+  type UpdateStage,
   type UpdateStatus,
 } from './update-status';

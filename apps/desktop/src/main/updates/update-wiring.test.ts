@@ -88,7 +88,11 @@ describe('createUpdates', () => {
   it('on macOS a newer version is only announced: no download, no install on quit', async () => {
     const { updates, clock, raw } = setup({ platform: 'darwin' });
     await clock.runFor(FIRST_CHECK_MS);
-    expect(updates.info().update).toEqual({ state: 'available', version: '0.2.0' });
+    expect(updates.info().update).toEqual({
+      state: 'available',
+      version: '0.2.0',
+      reason: 'cant-replace',
+    });
     expect(raw.downloadUpdate).not.toHaveBeenCalled();
     expect(raw.autoInstallOnAppQuit).toBe(false);
     raw.emit('update-downloaded', { version: '0.2.0' });

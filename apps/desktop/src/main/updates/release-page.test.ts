@@ -44,7 +44,11 @@ describe('release pages', () => {
   });
 
   it('Download opens the page of the version that is out', async () => {
-    const { deps, openExternal } = setup({ state: 'available', version: '0.2.0' });
+    const { deps, openExternal } = setup({
+      state: 'available',
+      version: '0.2.0',
+      reason: 'cant-replace',
+    });
     expect(await openReleasePage('latest', deps)).toEqual({ ok: true, value: undefined });
     expect(openExternal).toHaveBeenCalledWith(
       'https://github.com/mnabaci/Roastpilot/releases/tag/v0.2.0',

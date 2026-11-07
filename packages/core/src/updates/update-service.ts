@@ -84,7 +84,7 @@ export class UpdateService {
     if (this.#isDisposed()) return;
     if (!latest.ok) {
       this.#deps.logger.warn('update.check-failed', { error: latest.error });
-      if (!quiet) this.#set({ state: 'failed' });
+      if (!quiet) this.#set({ state: 'failed', stage: 'check' });
       return;
     }
     const version = latest.value;
@@ -94,7 +94,7 @@ export class UpdateService {
     }
     if (!this.#deps.canInstall) {
       if (shown !== version) this.#deps.logger.info('update.available', { version });
-      this.#set({ state: 'available', version });
+      this.#set({ state: 'available', version, reason: 'cant-replace' });
       return;
     }
     await this.#download(version);
@@ -131,7 +131,7 @@ export class UpdateService {
     if (this.#isDisposed()) return;
     if (!downloaded.ok) {
       this.#deps.logger.warn('update.download-failed', { version, error: downloaded.error });
-      this.#set({ state: 'failed' });
+      this.#set({ state: 'failed', stage: 'download' });
       return;
     }
     this.#ready(version);

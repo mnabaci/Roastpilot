@@ -109,7 +109,7 @@ describe('UpdateService: checking', () => {
     const h = updateHarness();
     h.latest(h.fail());
     await expect(h.service.check()).resolves.toBeUndefined();
-    expect(h.service.status).toEqual({ state: 'failed' });
+    expect(h.service.status).toEqual({ state: 'failed', stage: 'check' });
     expect(h.logs.find((e) => e.event === 'update.check-failed')).toMatchObject({
       level: 'warn',
       context: { error: { message: 'net::ERR_INTERNET_DISCONNECTED' } },
@@ -120,7 +120,7 @@ describe('UpdateService: checking', () => {
     const h = updateHarness();
     h.latest(new Error('boom'));
     await h.service.check();
-    expect(h.service.status).toEqual({ state: 'failed' });
+    expect(h.service.status).toEqual({ state: 'failed', stage: 'check' });
     expect(h.events()).toContain('update.check-failed');
   });
 
@@ -129,7 +129,7 @@ describe('UpdateService: checking', () => {
     h.latest(h.fail());
     h.service.start();
     await h.clock.runFor(FIRST_CHECK_MS);
-    expect(h.service.status).toEqual({ state: 'failed' });
+    expect(h.service.status).toEqual({ state: 'failed', stage: 'check' });
     await h.clock.runFor(CHECK_EVERY_MS + SCHEDULE_POLL_MS);
     expect(h.service.status).toMatchObject({ state: 'idle' });
   });
@@ -221,7 +221,7 @@ describe('UpdateService: Windows (can install)', () => {
     h.latest(ok('0.2.0'), ok('0.2.0'));
     h.downloads(h.fail('sha512 checksum mismatch'));
     await h.service.check();
-    expect(h.service.status).toEqual({ state: 'failed' });
+    expect(h.service.status).toEqual({ state: 'failed', stage: 'download' });
     expect(h.logs.find((e) => e.event === 'update.download-failed')).toMatchObject({
       context: { version: '0.2.0', error: { message: 'sha512 checksum mismatch' } },
     });
@@ -234,7 +234,7 @@ describe('UpdateService: Windows (can install)', () => {
     h.latest(ok('0.2.0'));
     h.downloads(new Error('ENOSPC'));
     await h.service.check();
-    expect(h.service.status).toEqual({ state: 'failed' });
+    expect(h.service.status).toEqual({ state: 'failed', stage: 'download' });
   });
 
   it('a downloaded event for the version downloading makes it ready once', async () => {
@@ -320,7 +320,11 @@ describe('UpdateService: macOS unsigned (cannot install)', () => {
     const h = updateHarness({ canInstall: false });
     h.latest(ok('0.2.0'));
     await h.service.check();
-    expect(h.service.status).toEqual({ state: 'available', version: '0.2.0' });
+    expect(h.service.status).toEqual({
+      state: 'available',
+      version: '0.2.0',
+      reason: 'cant-replace',
+    });
     expect(h.updater.download).not.toHaveBeenCalled();
     expect(h.events()).toEqual(['update.available']);
   });
@@ -330,7 +334,10 @@ describe('UpdateService: macOS unsigned (cannot install)', () => {
     h.latest(ok('0.2.0'), ok('0.2.0'));
     await h.service.check();
     await h.service.check();
-    expect(h.statuses).toEqual([{ state: 'checking' }, { state: 'available', version: '0.2.0' }]);
+    expect(h.statuses).toEqual([
+      { state: 'checking' },
+      { state: 'available', version: '0.2.0', reason: 'cant-replace' },
+    ]);
     expect(h.events()).toEqual(['update.available']);
   });
 
@@ -339,7 +346,11 @@ describe('UpdateService: macOS unsigned (cannot install)', () => {
     h.latest(ok('0.2.0'), ok('0.3.0'));
     await h.service.check();
     await h.service.check();
-    expect(h.service.status).toEqual({ state: 'available', version: '0.3.0' });
+    expect(h.service.status).toEqual({
+      state: 'available',
+      version: '0.3.0',
+      reason: 'cant-replace',
+    });
     expect(h.events()).toEqual(['update.available', 'update.available']);
   });
 
@@ -348,7 +359,11 @@ describe('UpdateService: macOS unsigned (cannot install)', () => {
     h.latest(ok('0.2.0'), h.fail());
     await h.service.check();
     await h.service.check();
-    expect(h.service.status).toEqual({ state: 'available', version: '0.2.0' });
+    expect(h.service.status).toEqual({
+      state: 'available',
+      version: '0.2.0',
+      reason: 'cant-replace',
+    });
     expect(h.events()).toContain('update.check-failed');
   });
 
@@ -357,7 +372,11 @@ describe('UpdateService: macOS unsigned (cannot install)', () => {
     h.latest(ok('0.2.0'));
     await h.service.check();
     h.emit({ kind: 'downloaded', version: '0.2.0' });
-    expect(h.service.status).toEqual({ state: 'available', version: '0.2.0' });
+    expect(h.service.status).toEqual({
+      state: 'available',
+      version: '0.2.0',
+      reason: 'cant-replace',
+    });
     expect(h.events()).toContain('update.downloaded-ignored');
     expect(h.service.restart()).toEqual({ ok: false, error: { kind: 'not-ready' } });
     expect(h.updater.download).not.toHaveBeenCalled();
