@@ -83,8 +83,17 @@ jobs:
       - name: Package (installers and the update files)
         run: pnpm --filter @roastpilot/desktop exec electron-builder ${{ matrix.target }} --publish never
         env:
-          # Unsigned for now (ADR 0017): don't look for a signing identity on the runner.
+          # No certificate yet (ADR 0017): don't look for a signing identity on the runner. macOS is
+          # ad-hoc signed (electron-builder.yml), on PRs too, so a PR proves what a tag will ship;
+          # ad-hoc signing uses no secrets.
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          CSC_FOR_PULL_REQUEST: 'true'
+      # Apple silicon calls an app with no signature "damaged" (0.1.0): never ship one again.
+      - name: Check the macOS signature
+        if: runner.os == 'macOS'
+        run: |
+          codesign --verify --deep --strict apps/desktop/dist/mac-arm64/Roastpilot.app
+          codesign -dv apps/desktop/dist/mac-arm64/Roastpilot.app 2>&1 | grep -q 'Signature=adhoc'
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ matrix.name }}
