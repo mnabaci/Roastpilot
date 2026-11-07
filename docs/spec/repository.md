@@ -19,8 +19,9 @@ roastpilot/
   docs/spec/             this spec, split by topic
   docs/adr/              decision records
   .claude/               skills, hooks, rules summary
-  .github/               CI and PR template
+  .github/               CI, PR template, issue templates
   CLAUDE.md              root rules for every session
+  README.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, CHANGELOG.md, LICENSE
 ```
 
 ## Dependency rules
@@ -68,3 +69,13 @@ Enforced by ESLint (`eslint-plugin-boundaries`) and CI. Only `apps/desktop` may 
 - GitHub Actions on every PR, on Ubuntu and Windows: install, format check, lint, typecheck, test, build.
 - commitlint checks commit messages; Dependabot opens grouped weekly update PRs.
 - Design tokens flow one way: design system → `packages/ui/tokens.json` (`sync-tokens`) → generated CSS.
+
+## Open source
+
+Roastpilot is public under the GPL-3.0-or-later ([`LICENSE`](../../LICENSE); every `package.json`
+says `"license": "GPL-3.0-or-later"`). The sketch in `firmware/` keeps its upstream GPL-3.0.
+Newcomers start at `README.md` and `CONTRIBUTING.md`; `CODE_OF_CONDUCT.md` is the Contributor
+Covenant 2.1; `SECURITY.md` sends security and safety bugs to GitHub's private vulnerability
+reporting; `CHANGELOG.md` follows Keep a Changelog. Issues use the forms in
+`.github/ISSUE_TEMPLATE` (bug, feature, new roaster). CI runs on `pull_request` with read-only
+permissions and no secrets, so fork PRs are safe to run.

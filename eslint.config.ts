@@ -44,6 +44,8 @@ export default defineConfig(
       'firmware/**',
       'packages/ui/src/styles/**',
       '.remember/**',
+      // Agents' temporary git worktrees: separate checkouts, not this tree's code.
+      '.claude/worktrees/**',
     ],
   },
 

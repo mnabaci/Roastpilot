@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Design-system React components (shadcn/ui based), tokens.json and the generated CSS variables and Tailwind preset.",
+  "license": "GPL-3.0-or-later",
   "exports": {
     ".": "./src/index.ts",
     "./globals.css": "./src/styles/globals.css",

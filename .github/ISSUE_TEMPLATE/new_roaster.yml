@@ -1,0 +1,60 @@
+name: New roaster
+description: Ask for (or offer) support for another roaster or controller board.
+labels: [roaster]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Roasters are added as drivers, without changes to the core ([extensibility.md](https://github.com/mnabaci/Roastpilot/blob/main/docs/spec/extensibility.md)). The more of the protocol you can share, the sooner it can happen.
+  - type: input
+    id: model
+    attributes:
+      label: Roaster model
+      placeholder: Kaleido M1, Gene Cafe, home-built ...
+    validations:
+      required: true
+  - type: input
+    id: controller
+    attributes:
+      label: Controller board and firmware
+      placeholder: TC4 with aArtisanQ_PID, Arduino with a custom sketch, built in ...
+    validations:
+      required: true
+  - type: input
+    id: connection
+    attributes:
+      label: Connection
+      placeholder: USB serial at 115200 baud, Bluetooth, Wi-Fi / WebSocket ...
+    validations:
+      required: true
+  - type: textarea
+    id: protocol
+    attributes:
+      label: Protocol docs
+      description: Links to the protocol, the firmware source, or the Artisan device settings that work with it. Example commands and replies help most.
+    validations:
+      required: true
+  - type: textarea
+    id: channels
+    attributes:
+      label: Channels
+      description: What it reads (bean temperature, environment temperature, ...) and what it controls (heater, fan, drum, cooling), with ranges and steps.
+      placeholder: |
+        Reads: BT, ET (°C)
+        Controls: heater 0–100, fan 0–100 in steps of 10, drum on/off
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Hardware safety
+      description: Thermal fuses, a firmware watchdog that turns the heater off when the computer goes quiet, anything else.
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Can you test on this roaster?
+      options:
+        - 'Yes'
+        - 'No'
+    validations:
+      required: true

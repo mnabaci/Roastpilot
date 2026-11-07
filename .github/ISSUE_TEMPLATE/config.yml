@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and ideas
+    url: https://github.com/mnabaci/Roastpilot/discussions
+    about: Ask how to do something or talk an idea through (needs Discussions turned on for the repo).
+  - name: Security or safety bug
+    url: https://github.com/mnabaci/Roastpilot/security/advisories/new
+    about: Heater left on, a safety rule bypassed, or a security hole. Report it privately, not as an issue.
