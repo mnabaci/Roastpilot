@@ -56,6 +56,7 @@ Each phase:
 - Curve points, from roast 7 (2026-11-04): 0:00 180 °C, 1:04 92 °C (turning point), 2:34 110 °C, 5:05 150 °C, 6:19 165 °C, 7:57 180 °C, 9:18 190 °C, 11:03 197 °C.
 - Drum at 100% throughout to agitate the beans.
 - A step profile's dashed curve comes from its steps: charge, the turning point, each step's end at its planned time, then the BT cap at the planned drop.
+- Every planned curve, curve or step, is one smooth monotone curve through its points: exact at each point, flat at the turning point, the same on the chart, in "vs plan" and in what Auto aims for.
 - These numbers come from roasts 6 and 7 and stay marked "needs calibration" until tuned on real roasts: first crack came at 191–193 °C and both roasts dropped near 197 °C.
 - The soak runs for the Soak time setting, in Settings under Auto: 0:30, 0:45, 1:00, 1:15, 1:30 or 2:00 (default 1:00). It applies to both Light profiles and is taken at Start. Roasts 6 and 7 turned the heater on at about 1:06 and 0:54.
 
@@ -84,7 +85,7 @@ Each phase:
   6. Anti-windup: the integral stops while the correction is at its limit, and never holds more than the limits allow, so heat built up while the stall guard allowed +30% is let go as soon as it clears. One time step counts at most 3 s, so a gap (Auto stopped, readings lost) can't land on the integral all at once after Resume auto.
 - **Follow phases** trace the curve the way a step traces its range (ADR 0016): the heater reacts to RoR, which moves within seconds, not to BT, which lags the heater by 30–60 s on a drum.
   1. **Estimate:** each phase starts from its heat %, the heater the source roast used there.
-  2. **Aim:** the curve's own RoR 30 s ahead (its slope over ±15 s, so a knee is met early) plus 0.3 °C/min for each °C BT is below the curve (minus when above), kept within 0–30 °C/min. Settled BT, as for steps. Past the last curve point the slope carries on. Until your first-crack tap never below the stall guard's 5 °C/min.
+  2. **Aim:** the curve's own RoR 30 s ahead (the smooth curve's slope, so the aim never steps at a point) plus 0.3 °C/min for each °C BT is below the curve (minus when above), kept within 0–30 °C/min. Settled BT, as for steps. Past the last curve point the slope carries on. Until your first-crack tap never below the stall guard's 5 °C/min.
   3. **Correction:** the same RoR PID as steps, with its own gains, limited to ±20% of the estimate (+30% while the stall guard trips) and the same anti-windup. It stays 0 until RoR has first reached 5 °C/min (or the aim, when lower), so the climb out of the turning point doesn't pin it.
   4. **Slew limit:** the heater moves at most 5% per 10 s, up or down, so a correction never kicks RoR. From one curve phase to the next it carries on from where the heater was and slews to the new estimate, as roast 7 stepped down 5% at a time; out of the soak it starts at the estimate at once.
   5. No RoR or BT: the heater holds. Rounded to the roaster's step like every output.
