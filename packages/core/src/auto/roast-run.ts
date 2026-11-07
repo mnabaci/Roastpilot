@@ -79,12 +79,19 @@ export class RoastRun {
 
   /**
    * Resume auto: the phase's heat control starts over from the live reading. The heater worked out
-   * while stopped never reached the roaster, so no curve phase carries on from it.
+   * while stopped never reached the roaster; the heater it reports, `heaterNowPct`, did. A curve
+   * phase slews from there to its estimate, so handing back never jumps the heater (ADR 0016);
+   * without a usable reading it starts at the estimate.
    */
-  restartControl(): void {
+  restartControl(heaterNowPct?: number): void {
+    const known =
+      heaterNowPct !== undefined && Number.isFinite(heaterNowPct)
+        ? Math.min(100, Math.max(0, heaterNowPct))
+        : undefined;
+    const follow = this.#profile.phases[this.#index]?.heat.mode === 'follow';
     this.#control = undefined;
-    this.#lastHeaterPct = undefined;
-    this.#carryPct = undefined;
+    this.#lastHeaterPct = known;
+    this.#carryPct = follow ? known : undefined;
   }
 
   /**
