@@ -65,8 +65,22 @@ drivers are plug-ins ([extensibility.md](docs/spec/extensibility.md)).
 
 ## Install
 
-Builds for macOS (DMG) and Windows (installer) will come through
-[GitHub Releases](https://github.com/mnabaci/Roastpilot/releases). For now, run it from source.
+Download the latest from [GitHub Releases](https://github.com/mnabaci/Roastpilot/releases): the
+`.dmg` for macOS, the `Setup .exe` for Windows. Builds aren't signed yet, so each system asks once:
+
+- **macOS:** Control-click Roastpilot in Applications → **Open** → **Open**. Or open it once, then
+  System Settings → Privacy & Security → **Open Anyway**.
+- **Windows:** SmartScreen says "Windows protected your PC": **More info** → **Run anyway**.
+
+Updates (Settings › About shows where you are):
+
+- **Windows:** downloads in the background and installs when you quit, or press **Restart to
+  update**. Never during a roast.
+- **macOS:** About says "Version X is out"; **Download** opens the release, install the new DMG
+  over the old app. Your roasts, beans and settings stay.
+- Before a new version changes the database, it saves a copy in the app's `backups` folder.
+
+How releases and updates work: [install-and-update.md](docs/spec/install-and-update.md).
 
 ## Quick start from source
 
