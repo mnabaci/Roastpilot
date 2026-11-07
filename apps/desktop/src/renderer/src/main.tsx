@@ -9,6 +9,7 @@ import { rendererLogger } from './lib/renderer-logger';
 import { AppProvider } from './app/AppProvider';
 import { createStores } from './stores/stores';
 import { syncWithMain } from './app/sync-with-main';
+import { createWebAudioChimePlayer } from './features/chime';
 import './styles.css';
 
 const api = window.roastpilot;
@@ -16,6 +17,7 @@ forwardErrors(window, api);
 const logger = rendererLogger(api);
 const stores = createStores();
 syncWithMain(api, stores, logger.child('sync'));
+const chime = createWebAudioChimePlayer(logger.child('sound'));
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root element');
@@ -39,7 +41,7 @@ createRoot(root).render(
         />
       )}
     >
-      <AppProvider deps={{ api, stores, logger }}>
+      <AppProvider deps={{ api, stores, logger, chime }}>
         <App />
       </AppProvider>
     </ErrorBoundary>

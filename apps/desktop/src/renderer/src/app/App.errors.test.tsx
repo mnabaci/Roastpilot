@@ -4,7 +4,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { createStores } from '../stores/stores';
-import { CONNECTED, fakeApi, renderApp } from '../test/render-app';
+import { CONNECTED, fakeApi, fakeChime, renderApp } from '../test/render-app';
 import { App } from './App';
 import { AppProvider } from './AppProvider';
 
@@ -27,7 +27,14 @@ describe('App when a screen fails to draw', () => {
     const write = vi.fn();
     const stores = createStores({ ready: true, connection: CONNECTED });
     render(
-      <AppProvider deps={{ api: fakeApi(), stores, logger: createLogger({ write }, 'renderer') }}>
+      <AppProvider
+        deps={{
+          api: fakeApi(),
+          stores,
+          logger: createLogger({ write }, 'renderer'),
+          chime: fakeChime(),
+        }}
+      >
         <App />
       </AppProvider>,
     );

@@ -4,12 +4,14 @@ import { AutoSection } from './AutoSection';
 import { ChartSection } from './ChartSection';
 import { ControlsSection } from './ControlsSection';
 import { RoastSection } from './RoastSection';
+import { SoundsSection } from './SoundsSection';
 import { SETTINGS_SECTIONS, type SettingsSection } from './settings-section';
 
 const SECTION: Readonly<Record<SettingsSection, () => ReactNode>> = {
   controls: () => <ControlsSection />,
   roast: () => <RoastSection />,
   auto: () => <AutoSection />,
+  sounds: () => <SoundsSection />,
   chart: () => <ChartSection />,
 };
 

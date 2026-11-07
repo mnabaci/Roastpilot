@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS, SettingsSchema } from './settings';
+import { DEFAULT_SOUNDS } from './sounds';
 
 const ROAST_DEFAULTS = {
   findChargePoint: true,
@@ -9,6 +10,7 @@ const ROAST_DEFAULTS = {
   roastMode: 'manual',
   autoProfile: 'light-steps',
   soakTimeS: 60,
+  sounds: DEFAULT_SOUNDS,
 };
 
 describe('SettingsSchema', () => {
@@ -52,6 +54,10 @@ describe('SettingsSchema', () => {
       roastMode: 'auto',
       autoProfile: 'light-curve',
       soakTimeS: 90,
+      sounds: {
+        enabled: false,
+        steps: { ...DEFAULT_SOUNDS.steps, 'beans-in': { voice: 'bell', volumePct: 55 } },
+      },
     };
     expect(SettingsSchema.parse(settings)).toEqual(settings);
   });
@@ -92,6 +98,36 @@ describe('SettingsSchema', () => {
       ROAST_DEFAULTS,
     );
     expect(SettingsSchema.parse({ coolingTimeMin: 2 }).coolingTimeMin).toBe(2);
+  });
+
+  it('an older file without sounds plays the default sound for each step', () => {
+    expect(SettingsSchema.parse({ controls: 'full' }).sounds).toEqual({
+      enabled: true,
+      steps: {
+        'charge-soon': { voice: 'chime', volumePct: 80 },
+        'beans-in': { voice: 'chime', volumePct: 80 },
+        'dump-beans': { voice: 'chime', volumePct: 80 },
+        'listen-first-crack': { voice: 'ping', volumePct: 70 },
+        'auto-stopped': { voice: 'alert', volumePct: 90 },
+      },
+    });
+    expect(SettingsSchema.parse({ sounds: 'loud' }).sounds).toEqual(DEFAULT_SOUNDS);
+  });
+
+  it('a bad voice or volume falls back for that step only', () => {
+    const { sounds } = SettingsSchema.parse({
+      sounds: {
+        enabled: false,
+        steps: {
+          'beans-in': { voice: 'trumpet', volumePct: 40 },
+          'dump-beans': { voice: 'bell', volumePct: 33 },
+        },
+      },
+    });
+    expect(sounds.enabled).toBe(false);
+    expect(sounds.steps['beans-in']).toEqual({ voice: 'chime', volumePct: 40 });
+    expect(sounds.steps['dump-beans']).toEqual({ voice: 'bell', volumePct: 80 });
+    expect(sounds.steps['auto-stopped']).toEqual({ voice: 'alert', volumePct: 90 });
   });
 
   it('cools the drum to 50 °C unless set; an odd value falls back', () => {

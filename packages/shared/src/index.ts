@@ -164,6 +164,19 @@ export {
   type SettingsWriteError,
 } from './settings';
 export {
+  DEFAULT_SOUNDS,
+  DEFAULT_STEP_SOUNDS,
+  SoundsSchema,
+  SoundStepSchema,
+  SoundVoiceSchema,
+  StepSoundSchema,
+  VolumePctSchema,
+  type Sounds,
+  type SoundStep,
+  type SoundVoice,
+  type StepSound,
+} from './sounds';
+export {
   AcknowledgeErrorSchema,
   SafetyActionSchema,
   SafetyEventSchema,

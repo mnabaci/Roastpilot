@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ConnectTargetSchema } from './connection';
 import { DEFAULT_PROFILE_ID, ProfileIdSchema } from './profile';
+import { DEFAULT_SOUNDS, SoundsSchema } from './sounds';
 
 /** How much of the Roast screen is live (docs/spec/manual-mode.md, Guided and Full control). */
 export const ControlsLevelSchema = z.enum(['guided', 'full']);
@@ -59,6 +60,8 @@ export const SettingsSchema = z.object({
   roastMode: RoastModeSchema.catch('manual').default('manual'),
   autoProfile: ProfileIdSchema.catch(DEFAULT_PROFILE_ID).default(DEFAULT_PROFILE_ID),
   soakTimeS: SoakTimeSchema.catch(60).default(60),
+  /** Sounds when something needs you, and before first crack (docs/spec/ui.md, Sounds). */
+  sounds: SoundsSchema.catch(DEFAULT_SOUNDS).default(DEFAULT_SOUNDS),
 });
 
 export const DEFAULT_SETTINGS = SettingsSchema.parse({});
