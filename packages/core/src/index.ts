@@ -49,6 +49,7 @@ export type {
   RoastPlan,
 } from './history/roast-repository';
 export { RoastRecorder, type RoastRecorderDeps } from './history/roast-recorder';
+export { expectedFirstCrackC, type FirstCrackRoast } from './history/expected-first-crack';
 export { AutoPilot, type AutoPilotDeps } from './auto/auto-pilot';
 export type { AutoEvent } from './auto/roast-run';
 export { curveTargetC, smoothCurve } from './auto/curve';

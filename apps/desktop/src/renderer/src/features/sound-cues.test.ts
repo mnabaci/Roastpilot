@@ -1,31 +1,11 @@
-import { AUTO_OFF, type RoastSummary } from '@roastpilot/shared';
+import { AUTO_OFF } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import {
-  expectedFirstCrackC,
-  listenDue,
-  stepsReached,
-  stillWaiting,
-  type CueState,
-  type WaitState,
-} from './sound-cues';
+import { listenDue, stepsReached, stillWaiting, type CueState, type WaitState } from './sound-cues';
 
 const state = (
   phase: CueState['roast']['phase'],
   auto: Partial<CueState['auto']> = {},
 ): CueState => ({ roast: { phase }, auto: { ...AUTO_OFF, enabled: true, ...auto } });
-
-const roast = (
-  id: number,
-  fcTemp: number | null,
-  roasterId: number | null = 1,
-): Pick<RoastSummary, 'id' | 'startedAt' | 'fcTemp' | 'roasterId'> => ({
-  id,
-  // A higher id is a newer roast.
-  startedAt: `2026-11-${String(id).padStart(2, '0')}T09:00:00.000Z`,
-  fcTemp,
-  roasterId,
-});
-const list = (...roasts: ReturnType<typeof roast>[]) => roasts as RoastSummary[];
 
 describe('stepsReached', () => {
   it('Charge soon when Auto says add beans, then Beans in, once each', () => {
@@ -69,37 +49,6 @@ describe('stepsReached', () => {
     expect(stepsReached(state('ready'), state('ready', { stopReason: 'disconnected' }))).toEqual(
       [],
     );
-  });
-});
-
-describe('expectedFirstCrackC', () => {
-  it('is the median BT at first crack of the last 5 roasts that had one', () => {
-    const roasts = list(
-      roast(1, 150), // sixth newest with a crack: left out
-      roast(2, 196),
-      roast(3, 194),
-      roast(4, null),
-      roast(5, 198),
-      roast(6, 195),
-      roast(7, 200),
-    );
-    expect(expectedFirstCrackC(roasts, 1)).toBe(196);
-  });
-
-  it('averages the two middle ones of an even count', () => {
-    expect(expectedFirstCrackC(list(roast(1, 194), roast(2, 198)), 1)).toBe(196);
-  });
-
-  it("prefers this roaster's roasts, and falls back on all of them", () => {
-    const roasts = list(roast(1, 190, 1), roast(2, 205, 2));
-    expect(expectedFirstCrackC(roasts, 2)).toBe(205);
-    expect(expectedFirstCrackC(roasts, 3)).toBe(197.5);
-    expect(expectedFirstCrackC(roasts, undefined)).toBe(197.5);
-  });
-
-  it('is undefined without a saved first crack', () => {
-    expect(expectedFirstCrackC([], 1)).toBeUndefined();
-    expect(expectedFirstCrackC(list(roast(1, null)), 1)).toBeUndefined();
   });
 });
 
