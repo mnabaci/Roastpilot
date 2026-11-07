@@ -3,6 +3,7 @@ import type * as Ui from '@roastpilot/ui';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { pick } from '../../test/pick';
 import { CONNECTED, fakeApi, renderApp } from '../../test/render-app';
 import { RoastScreen } from './RoastScreen';
 
@@ -81,10 +82,7 @@ describe('Roast side panel follows the roast', () => {
     expect(change).toHaveAttribute('aria-expanded', 'false');
     await userEvent.click(change);
     expect(setup.queryByLabelText('Bean')).toBeNull();
-    await vi.waitFor(() => {
-      expect(setup.getByRole('option', { name: /4 Nov|Nov 4/ })).toBeInTheDocument();
-    });
-    await userEvent.selectOptions(setup.getByLabelText('Ghost'), String(GHOST.id));
+    await pick(setup.getByLabelText('Ghost'), /4 Nov|Nov 4/);
     expect(api.setRoastSetup).toHaveBeenCalledWith(
       expect.objectContaining({ ghostRoastId: GHOST.id }),
     );

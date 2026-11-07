@@ -3,6 +3,7 @@ import { ChevronDown, Ellipsis } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '../lib/utils';
 import { Button } from './Button';
+import { DROPDOWN_PANEL, DROPDOWN_ROW } from './dropdown-panel';
 
 export interface MenuItem {
   label: string;
@@ -49,18 +50,15 @@ export function Menu({ label, text, items, className }: MenuProps) {
         )}
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          align="end"
-          sideOffset={4}
-          className="z-50 flex min-w-48 flex-col gap-0.5 rounded-lg border border-border-strong bg-surface-raised p-1"
-        >
+        <DropdownMenu.Content align="end" sideOffset={4} className={cn(DROPDOWN_PANEL, 'min-w-48')}>
           {items.map((item) => (
             <DropdownMenu.Item
               key={item.label}
               disabled={item.disabled}
               onSelect={item.onSelect}
               className={cn(
-                'flex h-control-sm cursor-pointer items-center gap-2 rounded-md px-3 text-body outline-none select-none data-disabled:cursor-not-allowed data-disabled:opacity-50 data-highlighted:bg-surface-hover [&_svg]:size-5',
+                DROPDOWN_ROW,
+                '[&_svg]:size-5',
                 item.destructive ? 'text-critical-text' : 'text-ink',
               )}
             >

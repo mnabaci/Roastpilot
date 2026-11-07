@@ -5,19 +5,35 @@ import { SelectField } from './SelectField';
 
 const OPTIONS = [
   { value: 'none', label: 'None' },
-  { value: '2', label: 'Mon 2 Nov · 18:20' },
+  { value: '2', label: 'Mon 2 Nov · 18:20', detail: 'Ethiopia Guji · ★★★★★' },
 ] as const;
 
 describe('SelectField', () => {
-  it('is a labelled select showing the value', () => {
+  it('is a button named by its label, showing the value', () => {
     render(<SelectField label="Compare with" value="2" options={OPTIONS} onChange={vi.fn()} />);
-    expect(screen.getByRole('combobox', { name: 'Compare with' })).toHaveValue('2');
+    expect(screen.getByRole('button', { name: 'Compare with' })).toHaveTextContent(
+      'Mon 2 Nov · 18:20',
+    );
   });
 
-  it('reports the picked value', async () => {
+  it('opens its list and reports the picked value', async () => {
     const onChange = vi.fn();
     render(<SelectField label="Compare with" value="none" options={OPTIONS} onChange={onChange} />);
-    await userEvent.selectOptions(screen.getByRole('combobox'), 'Mon 2 Nov · 18:20');
-    expect(onChange).toHaveBeenCalledWith('2');
+    await userEvent.click(screen.getByRole('button', { name: 'Compare with' }));
+    await userEvent.click(screen.getByRole('option', { name: /Mon 2 Nov/ }));
+    expect(onChange).toHaveBeenCalledExactlyOnceWith('2');
+  });
+
+  it('stays shut while disabled', () => {
+    render(
+      <SelectField
+        label="Compare with"
+        value="none"
+        options={OPTIONS}
+        onChange={vi.fn()}
+        disabled
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Compare with' })).toBeDisabled();
   });
 });
