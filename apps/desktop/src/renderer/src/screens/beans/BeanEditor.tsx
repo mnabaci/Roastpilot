@@ -1,10 +1,11 @@
 import type { Bean, BeanId, BeanProcess } from '@roastpilot/shared';
-import { Button, NumberField, SelectField, TextField } from '@roastpilot/ui';
+import { Button, cn, NumberField, SelectField, TextField } from '@roastpilot/ui';
 import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
 import { Choice } from '../../features/Choice';
 import { fromBeanDraft, toBeanDraft, type BeanDraft } from './bean-draft';
+import { PAGE_WIDTH } from '../../lib/page-width';
 
 const PROCESSES: readonly { value: BeanProcess; label: string }[] = [
   { value: 'washed', label: 'Washed' },
@@ -76,7 +77,10 @@ export function BeanEditor({
     </div>
   );
   return (
-    <section aria-label={bean ? 'Edit bean' : 'Add bean'} className="flex max-w-xl flex-col gap-4">
+    <section
+      aria-label={bean ? 'Edit bean' : 'Add bean'}
+      className={cn('flex flex-col gap-4', PAGE_WIDTH)}
+    >
       <h2 className="text-heading">{bean ? `Edit ${bean.name}` : 'Add a bean'}</h2>
       <div className="grid grid-cols-2 gap-3">
         {textCell('name', 'Name')}

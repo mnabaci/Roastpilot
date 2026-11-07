@@ -1,5 +1,5 @@
 import type { BeanId } from '@roastpilot/shared';
-import { Badge, Button, Menu, NavList, SidebarLayout } from '@roastpilot/ui';
+import { Badge, Button, cn, Menu, NavList, SidebarLayout } from '@roastpilot/ui';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useBeans } from '../../stores/use-stores';
@@ -8,6 +8,7 @@ import { BatchCalculator } from './BatchCalculator';
 import { beanDetail } from './bean-detail';
 import { BeanDetail } from './BeanDetail';
 import { BeanEditor } from './BeanEditor';
+import { PAGE_WIDTH } from '../../lib/page-width';
 
 type RightSide = { kind: 'bean' } | { kind: 'add' } | { kind: 'calculator' };
 
@@ -98,7 +99,7 @@ export function BeansScreen({
           onAdded={showBean}
         />
       ) : right.kind === 'calculator' ? (
-        <section aria-label="Batch calculator" className="flex max-w-xl flex-col gap-4">
+        <section aria-label="Batch calculator" className={cn('flex flex-col gap-4', PAGE_WIDTH)}>
           <h2 className="text-heading">Batch calculator</h2>
           <BatchCalculator orderG={orderG} onOrderG={setOrderG} />
         </section>

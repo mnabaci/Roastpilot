@@ -1,4 +1,6 @@
+import { cn } from '@roastpilot/ui';
 import type { ReactNode } from 'react';
+import { PAGE_WIDTH } from '../../lib/page-width';
 
 /**
  * One setting: its name and a one-line hint on the left, its control on the right. A row with
@@ -33,7 +35,7 @@ export function SettingRow({
 /** A section's rows in one card. */
 export function SettingCard({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section aria-label={title} className="flex max-w-6xl flex-col gap-3">
+    <section aria-label={title} className={cn('flex flex-col gap-3', PAGE_WIDTH)}>
       <h2 className="text-heading">{title}</h2>
       <div className="flex flex-col rounded-xl bg-surface px-5">{children}</div>
     </section>

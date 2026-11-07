@@ -1,5 +1,5 @@
 import type { Roaster } from '@roastpilot/shared';
-import { ConfirmDialog, Menu, type MenuItem } from '@roastpilot/ui';
+import { cn, ConfirmDialog, Menu, type MenuItem } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
@@ -8,6 +8,7 @@ import { ConnectPanel } from './ConnectPanel';
 import { RoasterEditor } from './RoasterEditor';
 import { modelNote } from './roaster-model';
 import { refusalText } from './roaster-refusal';
+import { PAGE_WIDTH } from '../../lib/page-width';
 
 /** One roaster: connect it, then its record (docs/spec/ui.md, Roasters screen). */
 export function RoasterPage({ roaster, onDeleted }: { roaster: Roaster; onDeleted: () => void }) {
@@ -66,7 +67,7 @@ export function RoasterPage({ roaster, onDeleted }: { roaster: Roaster; onDelete
           },
         ];
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className={cn('flex flex-col gap-6', PAGE_WIDTH)}>
       <header className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 flex-col gap-1">
           <h2 className="truncate text-title">{roaster.name}</h2>
