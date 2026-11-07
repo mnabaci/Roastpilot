@@ -11,6 +11,7 @@ ADR 0017 left macOS with a Download button: electron-updater hands Mac updates t
 
 - **Our own Mac installer** behind the core `Updater` interface: electron-updater still finds the release (`latest-mac.yml`); Roastpilot downloads the `.zip`, checks size and SHA-512 against `latest-mac.yml`, unpacks it with `ditto` and checks the app inside (`codesign --verify --deep --strict`, bundle id, version) before it counts as ready.
 - **Installed after the app has quit**, by a helper that swaps the bundle (keeping the old one until the new one is in place, and putting it back on any failure), after the quit guard's shutdown, never during a roast (`UpdateService` decides, as on Windows).
+- **The helper is a POSIX shell script** (`apps/desktop/resources/mac-update-swap.sh`, shipped as an extra resource), macOS only on purpose: it has to run after the app has exited, so it can't be the app, and `/bin/sh`, `mv` and `open` are on every Mac. The repo's "no shell scripts" rule is about cross-platform tooling; this one never runs on Windows. It is tested against real folders on macOS.
 - **Falls back to Download** when the app can't replace itself (DMG, App Translocation, a folder it can't write).
 - `UpdateService` and About don't change: `canInstall` becomes true on macOS when the installer can replace the app.
 

@@ -14,10 +14,15 @@ mac:
   # notarisation.
   identity: '-'
   hardenedRuntime: false
-  # The zip is what electron-updater reads (latest-mac.yml); the DMG is what people install.
+  # The zip is what the app's own Mac installer downloads (latest-mac.yml names it); the DMG is
+  # what people install.
   target:
     - dmg
     - zip
+  # The helper that swaps the app after it quits (ADR 0018), found via process.resourcesPath.
+  extraResources:
+    - from: resources/mac-update-swap.sh
+      to: mac-update-swap.sh
 win:
   target:
     - nsis
