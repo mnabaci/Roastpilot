@@ -16,6 +16,7 @@ import { attempt, parseJson } from './attempt';
 import { profiles } from './schema/profiles';
 import { roasters } from './schema/roasters';
 import { roasts } from './schema/roasts';
+import { transaction } from './transaction';
 
 type Row = typeof roasters.$inferSelect;
 
@@ -84,17 +85,18 @@ export class SqliteRoasterRepository implements RoasterRepository {
     });
   }
 
-  async setActive(id: RoasterId): Promise<Result<void, StorageError>> {
-    const known = await attempt(() =>
-      this.#db.select({ id: roasters.id }).from(roasters).where(eq(roasters.id, id)).all(),
-    );
-    if (!known.ok) return known;
-    if (known.value.length === 0) return err({ kind: 'not-found', id });
-    return attempt(async () => {
-      // Turn this one on first: a failure between the two leaves two active, which `list` shows,
-      // never none.
-      await this.#db.update(roasters).set({ isActive: true }).where(eq(roasters.id, id)).run();
-      await this.#db.update(roasters).set({ isActive: false }).where(ne(roasters.id, id)).run();
+  /** Makes this roaster the only active one, all or nothing. */
+  setActive(id: RoasterId): Promise<Result<void, StorageError>> {
+    return transaction(this.#db, async (tx) => {
+      const on = await tx
+        .update(roasters)
+        .set({ isActive: true })
+        .where(eq(roasters.id, id))
+        .returning({ id: roasters.id })
+        .all();
+      if (on.length === 0) return err({ kind: 'not-found', id });
+      await tx.update(roasters).set({ isActive: false }).where(ne(roasters.id, id)).run();
+      return ok(undefined);
     });
   }
 
