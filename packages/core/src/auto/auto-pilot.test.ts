@@ -506,6 +506,22 @@ describe('AutoPilot', () => {
       ]);
     });
 
+    it('gives way to the next preheat, so an old cut never lands over its heat', async () => {
+      const { pilot, feed, setOutput, setState, sent } = setup(ROASTING);
+      pilot.setEnabled(true);
+      setOutput.mockResolvedValueOnce(err({ kind: 'disconnected' }));
+      await feed(1_000, PROFILE.capC);
+      setState({ phase: 'preheat', chargedAtMs: null });
+      setOutput.mockClear();
+      await feed(2_000, 100);
+      await feed(3_000, 100);
+      // The preheat's own first step, then its climb: no old 0 in between.
+      expect(sent().filter(([c]) => c === 'heater')).toEqual([
+        ['heater', 0],
+        ['heater', 100],
+      ]);
+    });
+
     it('stops sending it once you set the heater yourself', async () => {
       const { pilot, feed, setOutput } = setup(ROASTING);
       pilot.setEnabled(true);
