@@ -82,9 +82,10 @@ function setup(
       return () => listeners.delete(listener);
     }),
   });
-  renderApp(<HistoryScreen onOpenProfile={() => undefined} />, seed, api);
+  const { stores } = renderApp(<HistoryScreen onOpenProfile={() => undefined} />, seed, api);
   return {
     api,
+    toasts: () => stores.toasts.getState().toasts.map((t) => [t.kind, t.text]),
     save: (roast: RoastSummary) => {
       list = [roast, ...list];
       act(() => {
@@ -293,10 +294,12 @@ describe('HistoryScreen', () => {
     expect(screen.queryByText(/Too little to go on/)).toBeNull();
   });
 
-  it('exports all and imports from the ⋯ beside the title, saying how it went', async () => {
-    const { api } = setup();
+  it('exports all and imports from the ⋯ beside the title, saying how it went in a toast', async () => {
+    const { api, toasts } = setup();
     api.exportRoasts.mockResolvedValue(ok({ status: 'saved' as const, fileName: 'roasts.json' }));
-    api.importRoasts.mockResolvedValue(ok({ status: 'imported' as const, added: 12, skipped: 3 }));
+    api.importRoasts.mockResolvedValue(
+      ok({ status: 'imported' as const, added: 12, skipped: 3, newestId: OLDER.id }),
+    );
     api.importArtisan.mockResolvedValue(err({ kind: 'not-artisan' as const }));
     await screen.findByRole('region', { name: 'Roast curve' });
     const pick = async (item: string) => {
@@ -305,13 +308,21 @@ describe('HistoryScreen', () => {
     };
     await pick('Export all · Roastpilot file');
     expect(api.exportRoasts).toHaveBeenLastCalledWith({ format: 'roastpilot' });
-    expect(await screen.findByText('Saved roasts.json')).toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(toasts()).toContainEqual(['success', 'Saved roasts.json']);
+    });
     await pick('Export all · CSV');
     expect(api.exportRoasts).toHaveBeenLastCalledWith({ format: 'csv' });
     await pick('Import a Roastpilot file');
-    expect(await screen.findByText('Imported 12 roasts · 3 were already here')).toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(toasts()).toContainEqual(['success', 'Imported 12 roasts · 3 were already here']);
+    });
+    // The newest roast it added opens.
+    expect(api.getRoast).toHaveBeenLastCalledWith(OLDER.id);
     await pick('Import from Artisan');
-    expect(await screen.findByRole('alert')).toHaveTextContent("isn't an Artisan roast");
+    await vi.waitFor(() => {
+      expect(toasts()).toContainEqual(['error', "That file isn't an Artisan roast"]);
+    });
   });
 
   it('Select ticks roasts, Shift ticks a range, and exports just those', async () => {

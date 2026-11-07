@@ -15,7 +15,7 @@ function setup(over: Partial<RoastFilesDeps> = {}) {
     },
     files: {
       exportFile: vi.fn(() => Promise.resolve(ok('{}'))),
-      importFile: vi.fn(() => Promise.resolve(ok({ added: 2, skipped: 1 }))),
+      importFile: vi.fn(() => Promise.resolve(ok({ added: 2, skipped: 1, newestId: 7 }))),
     },
     chooseExportPath: vi.fn(() => Promise.resolve('/tmp/roasts.json')),
     chooseImportPath: vi.fn(() => Promise.resolve('/tmp/roasts.json')),
@@ -63,7 +63,7 @@ describe('roast files', () => {
   it('imports a Roastpilot file and counts what came in and what was already here', async () => {
     const { files } = setup();
     expect(await files.importRoasts(WINDOW)).toEqual(
-      ok({ status: 'imported', added: 2, skipped: 1 }),
+      ok({ status: 'imported', added: 2, skipped: 1, newestId: 7 }),
     );
   });
 
