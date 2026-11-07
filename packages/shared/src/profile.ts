@@ -99,6 +99,7 @@ export const AutoProfileSchema = z
       issue(['devTimeS'], 'Between 0:30 and 10:00');
     }
     if (dryEndC >= capC) issue(['dryEndC'], 'Must be below the BT cap');
+    if (capC <= chargeC) issue(['capC'], `Above charge, ${String(chargeC)} °C`);
     let lastTriggerC = Number.NEGATIVE_INFINITY;
     let lastBackupS = 0;
     profile.phases.forEach((phase, index) => {

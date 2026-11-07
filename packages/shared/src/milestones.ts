@@ -51,6 +51,10 @@ function limits(m: Milestones, ctx: Ctx) {
     issue(ctx, ['drop', 'tS'], `At most ${mmss(MAX_DROP_S)}`);
   }
   if (m.drop.c > MAX_DROP_C) issue(ctx, ['drop', 'c'], `At most ${String(MAX_DROP_C)} °C`);
+  // The cap sits just above drop, and a cap under charge would drop the roast as it starts.
+  const minDropC = m.chargeC - MILESTONE_CAP_MARGIN_C;
+  const chargeOk = m.chargeC >= min && m.chargeC <= max;
+  if (chargeOk && m.drop.c <= minDropC) issue(ctx, ['drop', 'c'], `Above ${String(minDropC)} °C`);
 }
 
 /** Your points that sit at their own time between the turning point and drop. */

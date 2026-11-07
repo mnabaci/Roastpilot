@@ -1,7 +1,13 @@
 import { PROFILE_SCHEMA_VERSION, type AutoProfile } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { developmentTimeRule, btCapRule, dueEndRule } from './end-rules';
-import { advancePhase, dryEndReached, withSoakTime } from './phase-plan';
+import {
+  advancePhase,
+  CAP_BELOW_MAX_C,
+  dryEndReached,
+  withCapUnder,
+  withSoakTime,
+} from './phase-plan';
 
 const PROFILE: AutoProfile = {
   schemaVersion: PROFILE_SCHEMA_VERSION,
@@ -119,5 +125,16 @@ describe('end rules', () => {
 
   it('does not take a lost reading for the cap', () => {
     expect(dueEndRule({ ...INPUT, btC: undefined })).toBeUndefined();
+  });
+});
+
+describe('withCapUnder', () => {
+  it(`keeps the BT cap ${String(CAP_BELOW_MAX_C)} °C under the roaster's max`, () => {
+    expect(withCapUnder({ ...PROFILE, capC: 235 }, 220).capC).toBe(215);
+  });
+
+  it('leaves a cap that is already under it alone', () => {
+    const profile = { ...PROFILE, capC: 200 };
+    expect(withCapUnder(profile, 240)).toBe(profile);
   });
 });

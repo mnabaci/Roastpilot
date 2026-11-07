@@ -7,7 +7,8 @@ export interface PidLimits {
 
 /**
  * A PID on a caller-supplied error. Time comes in as `dtS`, so it stays pure. The integral stops
- * while the output is at a limit and the error would push it further (anti-windup).
+ * while the output is at a limit and the error would push it further, and it never holds more than
+ * the limits allow, so narrower limits take effect at once (anti-windup).
  */
 export class Pid {
   readonly #gains: PidGains;
@@ -28,7 +29,8 @@ export class Pid {
     const derivative = this.#lastError === undefined ? 0 : (error - this.#lastError) / dtS;
     this.#lastError = error;
 
-    const nextIntegral = this.#integral + ki * error * dtS;
+    this.#integral = clamp(this.#integral, limits);
+    const nextIntegral = clamp(this.#integral + ki * error * dtS, limits);
     const unclamped = kp * error + nextIntegral + kd * derivative;
     const output = clamp(unclamped, limits);
     const pushingFurther =
