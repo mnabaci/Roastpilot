@@ -198,12 +198,26 @@ describe('RoastScreen', () => {
     expect(screen.getByText('Cooling beans · heater off, fan at 100%')).toBeInTheDocument();
   });
 
+  const OFF = 'Heater, fan, drum and filter off now';
+  const ENDED = `${OFF} No bean cooling · dump the beans yourself The roast is saved as it is`;
   it.each([
-    ['preheat', 'End roast', 'End the roast?', 'everything turns off'],
-    ['roasting', 'End roast', 'End the roast?', 'everything turns off'],
-    ['development', 'End roast', 'End the roast?', 'everything turns off'],
-    ['cooling', 'Finish cooling now', 'Finish cooling the beans?', 'the countdown ends now'],
-  ] as const)('%s: %s asks once, then ends', async (phase, label, question, what) => {
+    [
+      'preheat',
+      'End roast',
+      'End the roast?',
+      `${OFF} Back to Ready · the preheat isn't saved`,
+      'Keep roasting',
+    ],
+    ['roasting', 'End roast', 'End the roast?', ENDED, 'Keep roasting'],
+    ['development', 'End roast', 'End the roast?', ENDED, 'Keep roasting'],
+    [
+      'cooling',
+      'Finish cooling now',
+      'Finish cooling the beans?',
+      'the countdown ends now',
+      'Cancel',
+    ],
+  ] as const)('%s: %s asks once, then ends', async (phase, label, question, what, keep) => {
     const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
       ...connected,
       roast: roast(phase),
@@ -212,7 +226,7 @@ describe('RoastScreen', () => {
     expect(api.roastAction).not.toHaveBeenCalled();
     const dialog = screen.getByRole('alertdialog', { name: question });
     expect(dialog).toHaveAccessibleDescription(what);
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: keep }));
     expect(api.roastAction).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole('button', { name: label }));
     await userEvent.click(

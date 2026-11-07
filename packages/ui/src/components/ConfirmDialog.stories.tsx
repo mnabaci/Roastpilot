@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { CircleStop } from 'lucide-react';
 import { ConfirmDialog } from './ConfirmDialog';
 
 const meta = {
@@ -22,8 +23,15 @@ export const Delete: Story = {};
 export const EndRoast: Story = {
   args: {
     question: 'End the roast?',
-    detail: 'everything turns off',
+    consequences: [
+      'Heater, fan, drum and filter off now',
+      'No bean cooling · dump the beans yourself',
+      'The roast is saved as it is',
+    ],
+    cancelLabel: 'Keep roasting',
     confirmLabel: 'End roast',
+    icon: <CircleStop />,
     destructive: false,
+    caution: true,
   },
 };
