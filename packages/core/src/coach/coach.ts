@@ -23,7 +23,7 @@ import { SetOutputs } from './set-outputs';
 export type { CoachDeps } from './coach-deps';
 
 /** Why the coach is quiet. */
-type Quiet = 'not-roasting' | 'off' | 'heater-locked';
+type Quiet = 'not-roasting' | 'off' | 'heater-locked' | 'failed';
 
 /** Apply refused by the coach itself: the card changed, or the roast no longer allows it. */
 export type CoachClaimError = { kind: 'stale' } | { kind: 'not-now' };
@@ -46,6 +46,8 @@ export class Coach {
   #phaseSeen: PhaseSeen | undefined;
   #lastReportedHeater: number | undefined;
   #lastStatus = '';
+  /** A tick failed and none has worked since: logged once when it starts and once when it ends. */
+  #failing = false;
 
   constructor(deps: CoachDeps) {
     this.#deps = deps;
@@ -66,9 +68,12 @@ export class Coach {
   onReading(reading: Reading): void {
     try {
       this.#tick(reading);
+      if (this.#failing) this.#logger.info('coach.tick-recovered');
+      this.#failing = false;
     } catch (error) {
-      this.#logger.error('coach.tick-failed', { error: serializeError(error) });
-      this.#stop('not-roasting');
+      if (!this.#failing) this.#logger.error('coach.tick-failed', { error: serializeError(error) });
+      this.#failing = true;
+      this.#stop('failed');
     }
     this.#publish();
   }

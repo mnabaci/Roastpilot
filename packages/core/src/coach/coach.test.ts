@@ -278,6 +278,23 @@ describe('Coach', () => {
       expect(advice()).toBeNull();
       expect(logger.error).toHaveBeenCalledWith('coach.tick-failed', expect.anything());
     });
+
+    it('logs a failing rule once while it keeps failing, and again when it works', () => {
+      let broken = true;
+      const flaky: CoachRule = {
+        id: 'flaky',
+        advise: () => {
+          if (broken) throw new Error('bug');
+          return undefined;
+        },
+      };
+      const { feed, logger, logged } = setup({ rules: [flaky] });
+      feed(0, 10);
+      expect(logger.error).toHaveBeenCalledTimes(1);
+      broken = false;
+      feed(11, 12);
+      expect(logged('coach.tick-recovered')).toHaveLength(1);
+    });
   });
 
   describe('heads-ups', () => {
