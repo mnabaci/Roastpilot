@@ -5,9 +5,11 @@ const pct = (value: number) => `${String(Math.round(value))}%`;
 const step = (name: string, change: CoachChange) =>
   `${name} ${pct(change.from)} → ${pct(change.to)}`;
 
-/** "Heater 65% → 75% · Fan 50% → 40%". */
-export function coachChange({ heater, fan }: Pick<CoachSetting, 'heater' | 'fan'>): string {
-  return [heater && step('Heater', heater), fan && step('Fan', fan)].filter(Boolean).join(' · ');
+/** One line per output it changes, heater first: ["Heater 65% → 75%", "Fan 50% → 40%"]. */
+export function coachChanges({ heater, fan }: Pick<CoachSetting, 'heater' | 'fan'>): string[] {
+  return [heater && step('Heater', heater), fan && step('Fan', fan)].filter(
+    (line): line is string => Boolean(line),
+  );
 }
 
 /** A heads-up's one line (docs/spec/manual-mode.md, Coach). */

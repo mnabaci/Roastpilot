@@ -9,7 +9,7 @@ describe('CoachCard', () => {
     const onDismiss = vi.fn();
     render(
       <CoachCard
-        change="Heater 65% → 75%"
+        changes={['Heater 65% → 75%']}
         reason="4 °C below target, RoR falling"
         onApply={onApply}
         onDismiss={onDismiss}
@@ -29,7 +29,7 @@ describe('CoachCard', () => {
   it('says when the profile needs calibration', () => {
     render(
       <CoachCard
-        change="Heater 65% → 75%"
+        changes={['Heater 65% → 75%']}
         reason="Maillard from 150 °C"
         note="Light · Steps needs calibration"
         onApply={vi.fn()}
@@ -52,5 +52,37 @@ describe('CoachCard', () => {
     expect(screen.queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
     expect(onDismiss).toHaveBeenCalledOnce();
+  });
+
+  it('writes each output on its own line', () => {
+    render(
+      <CoachCard
+        changes={['Heater 65% → 75%', 'Fan 50% → 40%']}
+        reason="Maillard from 150 °C"
+        onApply={vi.fn()}
+        onDismiss={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Heater 65% → 75%')).toBeInTheDocument();
+    expect(screen.getByText('Fan 50% → 40%')).toBeInTheDocument();
+  });
+
+  it('while applying, Apply says so and cannot be pressed again', async () => {
+    const onApply = vi.fn();
+    render(
+      <CoachCard
+        changes={['Heater 65% → 75%']}
+        reason="4 °C below target"
+        applying
+        onApply={onApply}
+        onDismiss={vi.fn()}
+      />,
+    );
+    const apply = screen.getByRole('button', { name: 'Applying…' });
+    expect(apply).toBeDisabled();
+    expect(apply).toHaveAttribute('aria-busy', 'true');
+    await userEvent.click(apply);
+    expect(onApply).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Dismiss' })).toBeEnabled();
   });
 });

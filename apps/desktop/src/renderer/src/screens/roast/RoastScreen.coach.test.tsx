@@ -1,6 +1,6 @@
 import { err, READY_ROAST, type CoachStatus } from '@roastpilot/shared';
 import type * as Ui from '@roastpilot/ui';
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { CONNECTED, fakeApi, renderApp } from '../../test/render-app';
@@ -46,7 +46,8 @@ describe('RoastScreen coach card', () => {
       .map((r) => r.getAttribute('aria-label'));
     expect(regions.indexOf('Coach suggestion')).toBeLessThan(regions.indexOf('Outputs'));
     const card = screen.getByRole('region', { name: 'Coach suggestion' });
-    expect(card).toHaveTextContent('Heater 65% → 75% · Fan 50% → 40%');
+    expect(within(card).getByText('Heater 65% → 75%')).toBeInTheDocument();
+    expect(within(card).getByText('Fan 50% → 40%')).toBeInTheDocument();
     expect(card).toHaveTextContent('4 °C below target, RoR falling');
   });
 
@@ -69,6 +70,38 @@ describe('RoastScreen coach card', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
     expect(api.coachApply).toHaveBeenCalledWith({ id: 7 });
     expect(api.coachDismiss).toHaveBeenCalledWith({ id: 7 });
+  });
+
+  it('sends Apply once while its call is on its way, then lets it be pressed again', async () => {
+    type Applied = Awaited<ReturnType<ReturnType<typeof fakeApi>['coachApply']>>;
+    let land: (value: Applied) => void = () => undefined;
+    const api = fakeApi({
+      coachApply: vi.fn(
+        () =>
+          new Promise<Applied>((resolve) => {
+            land = resolve;
+          }),
+      ),
+    });
+    show(SUGGESTION, api);
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    const busy = screen.getByRole('button', { name: 'Applying…' });
+    expect(busy).toBeDisabled();
+    await userEvent.click(busy);
+    expect(api.coachApply).toHaveBeenCalledOnce();
+    land(err({ kind: 'stale' as const }));
+    expect(await screen.findByRole('button', { name: 'Apply' })).toBeEnabled();
+  });
+
+  it('a double click in one go still sends Apply once', () => {
+    const api = fakeApi({ coachApply: vi.fn(() => new Promise<never>(() => undefined)) });
+    show(SUGGESTION, api);
+    const apply = screen.getByRole('button', { name: 'Apply' });
+    act(() => {
+      fireEvent.click(apply);
+      fireEvent.click(apply);
+    });
+    expect(api.coachApply).toHaveBeenCalledOnce();
   });
 
   it('says so when the card changed before Apply landed', async () => {

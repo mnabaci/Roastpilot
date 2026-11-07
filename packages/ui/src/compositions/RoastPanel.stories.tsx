@@ -29,7 +29,7 @@ function RoastPanel() {
           First crack
         </Button>
         <CoachCard
-          change="Heater 50% → 55%"
+          changes={['Heater 50% → 55%']}
           reason="RoR 7.6, below the 8–10 band"
           onApply={fn()}
           onDismiss={fn()}

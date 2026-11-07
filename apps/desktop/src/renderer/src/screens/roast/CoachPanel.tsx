@@ -1,10 +1,11 @@
 import { CoachCard } from '@roastpilot/ui';
+import { useRef, useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
 import { useToast } from '../../features/use-toast';
 import { useCoach } from '../../stores/use-stores';
 import { coachApplyFailed } from './coach-apply-failed';
-import { calibrationNote, coachChange, headsUpLine } from './coach-text';
+import { calibrationNote, coachChanges, headsUpLine } from './coach-text';
 
 /**
  * The coach card above the outputs in a manual roast (docs/spec/manual-mode.md, Coach). Main
@@ -15,6 +16,10 @@ export function CoachPanel() {
   const { api, logger } = useDeps();
   const run = useRun();
   const toast = useToast();
+  // The card whose Apply is on its way: a second click can't send it twice. The ref catches a
+  // second click before React has drawn the busy button; the state draws it.
+  const [applyingId, setApplyingId] = useState<number>();
+  const pending = useRef<number>(undefined);
   const { advice } = status;
   if (!advice) return null;
   const note = calibrationNote(status);
@@ -34,21 +39,30 @@ export function CoachPanel() {
     );
   }
   const apply = () => {
+    if (pending.current === advice.id) return;
+    pending.current = advice.id;
+    setApplyingId(advice.id);
     run(
       'coach.apply-failed',
       async () => {
-        const result = await api.coachApply({ id: advice.id });
-        if (result.ok) return;
-        logger.info('coach.apply-refused', { ...result.error });
-        const text = coachApplyFailed(result.error);
-        if (text) toast('error', text);
+        try {
+          const result = await api.coachApply({ id: advice.id });
+          if (result.ok) return;
+          logger.info('coach.apply-refused', { ...result.error });
+          const text = coachApplyFailed(result.error);
+          if (text) toast('error', text);
+        } finally {
+          pending.current = undefined;
+          setApplyingId(undefined);
+        }
       },
       { failed: "Couldn't apply the suggestion · try again" },
     );
   };
   return (
     <CoachCard
-      change={coachChange(advice)}
+      changes={coachChanges(advice)}
+      applying={applyingId === advice.id}
       reason={advice.reason}
       {...(note ? { note } : {})}
       onApply={apply}

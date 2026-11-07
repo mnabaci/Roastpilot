@@ -19,12 +19,18 @@ export default meta;
 type Story = StoryObj<typeof CoachCard>;
 
 /** A suggestion with its change, reason and actions. */
-const suggestion = (change: string, reason: string, note?: string): Story => ({
+const suggestion = (
+  changes: readonly string[],
+  reason: string,
+  note?: string,
+  applying = false,
+): Story => ({
   render: () => (
     <CoachCard
-      change={change}
+      changes={changes}
       reason={reason}
       {...(note ? { note } : {})}
+      applying={applying}
       onApply={fn()}
       onDismiss={fn()}
     />
@@ -40,10 +46,15 @@ const headsUp = (line: string, note?: string): Story => ({
 
 const CALIBRATE = 'Light · Steps needs calibration';
 
-export const HeatSuggestion = suggestion('Heater 65% → 75%', '4 °C below target, RoR falling');
-export const BothOutputs = suggestion('Heater 65% → 75% · Fan 50% → 40%', 'Maillard from 150 °C');
-export const StepPhase = suggestion('Heater 70% → 85%', 'RoR 6.5 · step wants 8–12');
-export const NeedsCalibration = suggestion('Heater 65% → 75%', 'RoR stalling', CALIBRATE);
+export const HeatSuggestion = suggestion(['Heater 65% → 75%'], '4 °C below target, RoR falling');
+export const BothOutputs = suggestion(
+  ['Heater 65% → 75%', 'Fan 50% → 40%'],
+  'Maillard from 150 °C',
+);
+export const StepPhase = suggestion(['Heater 70% → 85%'], 'RoR 6.5 · step wants 8–12');
+export const NeedsCalibration = suggestion(['Heater 65% → 75%'], 'RoR stalling', CALIBRATE);
+/** Apply was pressed and its call hasn't come back: it can't be pressed twice. */
+export const Applying = suggestion(['Heater 65% → 75%'], '4 °C below target', undefined, true);
 export const FirstCrackSoon = headsUp('First crack in ~45 s · listen');
 export const DropSoon = headsUp('Drop in ~30 s · 1:45 development');
 export const CapSoonNeedsCalibration = headsUp('BT cap 225 °C in ~30 s', CALIBRATE);

@@ -10,11 +10,13 @@ interface CoachCardBase {
 
 interface CoachSuggestionProps extends CoachCardBase {
   variant?: 'suggestion';
-  /** The suggested change, e.g. "Heater 65% → 75%". */
-  change: string;
+  /** The suggested change, one line per output: ["Heater 65% → 75%", "Fan 50% → 40%"]. */
+  changes: readonly string[];
   /** Why, in one line, e.g. "4 °C below target, RoR falling". */
   reason: string;
   onApply: () => void;
+  /** Apply's call is on its way: Apply says "Applying…" and can't be pressed again. */
+  applying?: boolean;
 }
 
 interface CoachHeadsUpProps extends CoachCardBase {
@@ -66,11 +68,25 @@ export function CoachCard(props: CoachCardProps) {
       )}
     >
       <Label text="Coach suggests" note={note} />
-      <p className="text-readout-lg text-ink">{props.change}</p>
-      <p className="text-body text-ink-muted">{props.reason}</p>
+      {/* The change and its reason read as one block; one line per output, so it never wraps mid-way. */}
+      <div className="flex flex-col gap-0.5">
+        {props.changes.map((change) => (
+          <p key={change} className="text-readout-lg text-ink">
+            {change}
+          </p>
+        ))}
+        <p className="text-body text-ink-muted">{props.reason}</p>
+      </div>
       <div className="flex gap-2.5">
-        <Button variant="primary" size="sm" className="flex-1" onClick={props.onApply}>
-          Apply
+        <Button
+          variant="primary"
+          size="sm"
+          className="flex-1"
+          disabled={props.applying}
+          aria-busy={props.applying}
+          onClick={props.onApply}
+        >
+          {props.applying ? 'Applying…' : 'Apply'}
         </Button>
         <Button variant="secondary" size="sm" className={DISMISS_CLASS} onClick={onDismiss}>
           Dismiss
