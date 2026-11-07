@@ -19,6 +19,8 @@ type SyncApi = Pick<
   | 'onSafetyEvent'
   | 'onRoast'
   | 'onAutoStatus'
+  | 'getAppInfo'
+  | 'onUpdateStatus'
 >;
 
 /**
@@ -28,6 +30,8 @@ type SyncApi = Pick<
 export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsubscribe {
   // Counts profile lists asked for, so an answer that arrives after a newer one is dropped.
   let profilesAsked = 0;
+  // An update status that arrives before the app info is newer than the info's.
+  let updateHeard = false;
   const stops = [
     api.onReading((reading) => {
       stores.roast.setState((data) => addReading(data, reading));
@@ -44,6 +48,10 @@ export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsu
     }),
     api.onAutoStatus((status) => {
       stores.auto.setState({ status });
+    }),
+    api.onUpdateStatus((status) => {
+      updateHeard = true;
+      stores.updates.setState({ status });
     }),
     api.onBeans((beans) => {
       stores.beans.setState({ beans });
@@ -70,6 +78,14 @@ export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsu
         });
     }),
   ];
+  api
+    .getAppInfo()
+    .then(({ version, update }) => {
+      stores.updates.setState(updateHeard ? { version } : { version, status: update });
+    })
+    .catch((error: unknown) => {
+      logger.error('sync.app-info-failed', { error: serializeError(error) });
+    });
   Promise.all([
     api.getSnapshot(),
     api.getSettings(),

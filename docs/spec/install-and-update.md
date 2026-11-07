@@ -36,6 +36,7 @@ How Roastpilot gets onto a computer and stays current, without ever touching a r
 
 | State                 | Line                                    | Button            |
 | --------------------- | --------------------------------------- | ----------------- |
+| Not checked yet       | Not checked yet (the first 10 s)        | Check for updates |
 | Up to date            | Up to date · checked 14:02              | Check for updates |
 | Checking              | Checking…                               | (disabled)        |
 | Downloading (Windows) | Downloading 0.2.0 · 45 %                | (none)            |
@@ -44,7 +45,8 @@ How Roastpilot gets onto a computer and stays current, without ever touching a r
 | Couldn't check        | Couldn't check · try again              | Check for updates |
 
 - **Settings tab dot:** while an update is ready (Windows) or out (macOS), the Settings tab carries a small ember dot, said to screen readers as "Update available". No pop-up, no toast.
-- What's new: a "What's new" link next to the version opens the release notes on GitHub.
+- What's new: a "What's new" link next to the version opens the release notes on GitHub (not in development, where there is no release).
+- A Restart to update or Download that fails, or is refused because a roast started meanwhile, says so in a toast; a failed check stays in the line.
 
 ## Your data across updates
 
