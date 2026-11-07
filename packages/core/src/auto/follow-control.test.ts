@@ -3,9 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { followAimRor, followControl } from './follow-control';
 import type { HeatInput } from './output-controller';
 
-/** 12 °C/min to 5:00, then 6 °C/min: a knee at 300 s. */
+/**
+ * A straight 12 °C/min to 2:30 (three points in a line keep the smooth curve straight), bending
+ * through a knee at 5:00 (8.3 °C/min there) towards 6 °C/min, which carries on past 10:00.
+ */
 const CURVE = [
   { tS: 0, c: 100 },
+  { tS: 150, c: 130 },
   { tS: 300, c: 160 },
   { tS: 600, c: 190 },
 ];
@@ -40,7 +44,7 @@ describe('followAimRor', () => {
   const AT = { elapsedS: 100, btC: 120, firstCracked: false };
 
   it("is the curve's own RoR 30 s ahead when BT is on it", () => {
-    expect(followAimRor(CURVE, TUNING, AT)).toBe(12);
+    expect(followAimRor(CURVE, TUNING, AT)).toBeCloseTo(12, 9);
   });
 
   it('pulls 0.3 °C/min per °C back towards the curve', () => {
@@ -49,10 +53,10 @@ describe('followAimRor', () => {
   });
 
   it('sees a knee coming 30 s ahead', () => {
-    // At 4:40 the curve still climbs 12 °C/min, but from 5:00 only 6.
-    const atKnee = { ...AT, elapsedS: 280, btC: 156 };
-    expect(followAimRor(CURVE, TUNING, atKnee)).toBeCloseTo(7);
-    expect(followAimRor(CURVE, { ...TUNING, lookAheadS: 0 }, atKnee)).toBeCloseTo(12);
+    // At 4:40 the curve (156.9 °C) climbs 10.1 °C/min, at 5:10 only 8.0; BT is 0.08 °C ahead.
+    const atKnee = { ...AT, elapsedS: 280, btC: 157 };
+    expect(followAimRor(CURVE, TUNING, atKnee)).toBeCloseTo(7.985, 3);
+    expect(followAimRor(CURVE, { ...TUNING, lookAheadS: 0 }, atKnee)).toBeCloseTo(10.057, 3);
   });
 
   it('carries the last slope on past the last point', () => {
@@ -83,7 +87,7 @@ describe('followControl', () => {
 
   it('stays on its estimate while the roast is on the curve', () => {
     const control = followControl(FOLLOW, TUNING, CURVE);
-    expect(run(control, ON_CURVE, 30).every((pct) => pct === 50)).toBe(true);
+    for (const pct of run(control, ON_CURVE, 30)) expect(pct).toBeCloseTo(50, 9);
   });
 
   it('behind the curve, adds heat no faster than 5% per 10 s', () => {
@@ -103,8 +107,8 @@ describe('followControl', () => {
 
   it('eases off before a knee in the curve', () => {
     const control = followControl(FOLLOW, TUNING, CURVE);
-    // On the curve at 4:40, still at 12 °C/min, with 7 the aim: 10% less, on its way down.
-    const heater = run(control, { ...ON_CURVE, elapsedS: 280, btC: 156 }, 10);
+    // At 4:40, RoR 12, with about 8 the aim 30 s ahead: 8% less, on its way down.
+    const heater = run(control, { ...ON_CURVE, elapsedS: 280, btC: 157 }, 10);
     expect(heater.at(-1)).toBeCloseTo(45);
   });
 

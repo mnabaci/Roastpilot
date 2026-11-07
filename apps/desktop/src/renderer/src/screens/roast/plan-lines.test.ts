@@ -50,16 +50,16 @@ describe('rorAimLine', () => {
   });
 
   it("gives a curve phase's aim now, as Auto works it out", () => {
-    // 5:00, on the plan at 150 °C: its next section climbs 8 °C/min.
+    // 5:00, on the plan at 150 °C: 30 s on, the smooth plan climbs 9.5 °C/min.
     const onPlan = {
       ...aim('Follow'),
       elapsedS: 300,
       btC: 150,
       curveFollow: CURVE_FOLLOW_DEFAULTS,
     };
-    expect(rorAimLine(PROFILE, onPlan)).toBe('Aim 8');
+    expect(rorAimLine(PROFILE, onPlan)).toBe('Aim 10');
     // 10 °C behind: 3 °C/min more.
-    expect(rorAimLine(PROFILE, { ...onPlan, btC: 140 })).toBe('Aim 11');
+    expect(rorAimLine(PROFILE, { ...onPlan, btC: 140 })).toBe('Aim 13');
   });
 
   it('has no curve aim without the temperature or the tuning', () => {

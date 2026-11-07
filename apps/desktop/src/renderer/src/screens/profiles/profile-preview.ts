@@ -1,6 +1,7 @@
-import { plannedCurve, timeAtC, withSoakTime } from '@roastpilot/core';
+import { plannedCurve, smoothCurve, timeAtC, withSoakTime } from '@roastpilot/core';
 import type { AutoProfile, CurvePoint, ProfilePhase } from '@roastpilot/shared';
 import type { ChartLayer, ChartMarker, ChartPoint } from '@roastpilot/ui';
+import { PLAN_STEP_S } from '../roast/roast-chart-data';
 
 /** The moment each phase is planned to end. */
 function phaseEnd(phase: ProfilePhase, startS: number, curve: readonly CurvePoint[]): number {
@@ -21,7 +22,8 @@ export function profilePreview(
   soakS: number,
 ): { layers: ChartLayer[]; markers: ChartMarker[] } {
   const timed = withSoakTime(profile, soakS);
-  const curve = plannedCurve(timed);
+  // Drawn and timed along the same smooth curve Auto follows.
+  const curve = smoothCurve(plannedCurve(timed), PLAN_STEP_S);
   const dropS = curve.at(-1)?.tS ?? 0;
   const heater: ChartPoint[] = [];
   const fan: ChartPoint[] = [];

@@ -82,11 +82,14 @@ describe('RoastRun', () => {
 
   it(`counts a gap of more than ${String(MAX_STEP_S)} s as ${String(MAX_STEP_S)} s`, () => {
     // Follow phase on a curve climbing 30 °C/min, RoR 10: the heater climbs at its 0.5% a second.
+    // Points in a line from 1:30 keep the smooth curve straight there.
     const steep = {
       ...PROFILE,
       curve: [
         { tS: 0, c: 180 },
         { tS: 60, c: 150 },
+        { tS: 90, c: 165 },
+        { tS: 120, c: 180 },
         { tS: 900, c: 570 },
       ],
     };

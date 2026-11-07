@@ -1,3 +1,4 @@
+import { curveTargetC } from '@roastpilot/core';
 import { READY_ROAST, type Reading } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { roastChartData } from './roast-chart-data';
@@ -254,5 +255,22 @@ describe('roastChartData', () => {
       RAW,
     );
     expect(layers[0]?.points.map((p) => p.v)).toEqual([20, 20.3]);
+  });
+
+  it('draws the plan as the smooth curve Auto follows, a point every 5 s', () => {
+    const plan = [
+      { tS: 0, c: 180 },
+      { tS: 60, c: 92 },
+      { tS: 300, c: 150 },
+    ];
+    const charged = { ...READY_ROAST, phase: 'roasting' as const, chargedAtMs: 10_000 };
+    const drawn = roastChartData(charged, readings, { ...RAW, plan }).layers.find(
+      (l) => l.id === 'plan',
+    );
+    expect(drawn?.points).toHaveLength(61);
+    expect(drawn?.points.filter((p) => p.t % 5 !== 0)).toEqual([]);
+    for (const p of drawn?.points ?? []) expect(p.v).toBeCloseTo(curveTargetC(plan, p.t) ?? 0, 9);
+    // Flat out of the turning point: 92.05 °C 5 s after it, where a straight line gives 93.2.
+    expect(drawn?.points.find((p) => p.t === 65)?.v).toBeCloseTo(92.05, 2);
   });
 });

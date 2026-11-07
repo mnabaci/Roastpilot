@@ -1,6 +1,6 @@
 import type { CurvePoint } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import { monotoneCurve } from './monotone-curve';
+import { monotoneCurve, pointSlopes } from './monotone-curve';
 
 const MILESTONES: CurvePoint[] = [
   { tS: 0, c: 180 },
@@ -58,5 +58,12 @@ describe('monotoneCurve', () => {
       { tS: 20, c: 120 },
     ];
     expect(monotoneCurve(two, 30)).toEqual(two);
+  });
+
+  it('works its slopes out once per curve, flat at the turning point', () => {
+    const slopes = pointSlopes(MILESTONES);
+    expect(pointSlopes(MILESTONES)).toBe(slopes);
+    expect(pointSlopes([...MILESTONES])).not.toBe(slopes);
+    expect(slopes[1]).toBe(0);
   });
 });
