@@ -21,6 +21,7 @@ The source of truth for what Roastpilot does and how it is built. Change the spe
 | [ui.md](ui.md)                                         | Screens                                                          |
 | [safety.md](safety.md)                                 | Safety rules                                                     |
 | [data-model.md](data-model.md)                         | SQLite tables                                                    |
+| [install-and-update.md](install-and-update.md)         | Releases, installers, updates, data across updates               |
 | [build-order.md](build-order.md)                       | Milestones and open questions                                    |
 
 Design system: [Roastpilot](https://claude.ai/artifact/66HZ9N2dqd7ULbqovZktYe) (tokens synced into `packages/ui/tokens.json`).

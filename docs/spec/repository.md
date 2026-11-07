@@ -60,7 +60,7 @@ Enforced by ESLint (`eslint-plugin-boundaries`) and CI. Only `apps/desktop` may 
 | `pid-tune`              | Reads roast logs and suggests PID gains per roaster                              |
 | `code-review`           | Checks a change against the principles, boundaries and tests                     |
 | `design-review`         | Checks a screen against the design system                                        |
-| `release`               | Version bump, changelog, build and sign the macOS DMG                            |
+| `release`               | Version bump, changelog, tag; CI builds and publishes the release                |
 
 ## Workflow
 
