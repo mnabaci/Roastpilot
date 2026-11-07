@@ -139,8 +139,14 @@ describe('Tc4SkywalkerDriver', () => {
 
     it('reports a bad reply without throwing', async () => {
       const { transport, driver, run } = await connected();
-      transport.reply = () => 'garbage';
-      expect(await run(driver.read())).toEqual(err({ kind: 'bad-reply', line: 'garbage' }));
+      transport.reply = () => '0.00,garbage';
+      expect(await run(driver.read())).toEqual(err({ kind: 'bad-reply', line: '0.00,garbage' }));
+    });
+
+    it('does not take a line with no commas as the READ reply', async () => {
+      const { transport, driver, run } = await connected();
+      transport.reply = () => '1';
+      expect(await run(driver.read())).toEqual(err({ kind: 'no-reply', command: 'READ' }));
     });
 
     it('reports no reply after the timeout', async () => {
