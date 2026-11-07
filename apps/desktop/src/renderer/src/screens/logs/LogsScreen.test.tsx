@@ -2,6 +2,7 @@ import type { LogDayRead, LogRecord } from '@roastpilot/shared';
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { pick } from '../../test/pick';
 import { fakeApi, renderApp } from '../../test/render-app';
 import { localDay } from './log-days';
 import { LogsScreen } from './LogsScreen';
@@ -115,10 +116,7 @@ describe('LogsScreen', () => {
 
   it('another day reads that day and is not live', async () => {
     const { api } = setup();
-    await userEvent.selectOptions(
-      await screen.findByRole('combobox', { name: 'Day' }),
-      '2026-10-30',
-    );
+    await pick(await screen.findByRole('button', { name: /^Day:/ }), /30 Oct|Oct 30/);
     expect(api.readLogDay).toHaveBeenLastCalledWith('2026-10-30');
     expect(screen.queryByText('Live')).not.toBeInTheDocument();
   });

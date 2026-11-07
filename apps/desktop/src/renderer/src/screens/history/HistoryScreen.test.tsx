@@ -10,6 +10,7 @@ import type * as Ui from '@roastpilot/ui';
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { pick } from '../../test/pick';
 import { READY_ROAST } from '@roastpilot/shared';
 import { BEAN } from '../../test/beans';
 import { STEPS } from '../../test/profiles';
@@ -140,8 +141,10 @@ describe('HistoryScreen', () => {
     setup();
     await screen.findByRole('region', { name: 'Roast curve' });
     expect(chartLayers()).not.toContain('compare-bt');
-    const compare = screen.getByRole('combobox', { name: 'Compare' });
-    await userEvent.selectOptions(compare, '1');
+    await userEvent.click(screen.getByRole('button', { name: 'Compare: None' }));
+    const [, other] = screen.getAllByRole('option');
+    if (!other) throw new Error('expected another roast to compare with');
+    await userEvent.click(other);
     await vi.waitFor(() => {
       expect(chartLayers()).toContain('compare-bt');
     });
@@ -311,7 +314,7 @@ describe('HistoryScreen', () => {
     );
     await screen.findByRole('region', { name: 'Roast curve' });
     const roast = within(screen.getByRole('region', { name: 'Roast' }));
-    await userEvent.selectOptions(roast.getByRole('combobox', { name: 'Bean' }), '4');
+    await pick(roast.getByRole('button', { name: 'Bean' }), /^Ethiopia Guji/);
     expect(api.setRoastBean).toHaveBeenCalledWith({ id: NEWER.id, beanId: 4 });
   });
 });

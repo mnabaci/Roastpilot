@@ -15,6 +15,25 @@ if (typeof (window as Partial<Window>).matchMedia !== 'function') {
   });
 }
 
+// jsdom has no ResizeObserver or scrollIntoView; cmdk and Radix Popover call them (Select).
+const nothing = (): undefined => undefined;
+if (!('ResizeObserver' in globalThis)) {
+  Object.defineProperty(globalThis, 'ResizeObserver', {
+    configurable: true,
+    value: class {
+      observe = nothing;
+      unobserve = nothing;
+      disconnect = nothing;
+    },
+  });
+}
+if (!('scrollIntoView' in Element.prototype)) {
+  Object.defineProperty(Element.prototype, 'scrollIntoView', {
+    configurable: true,
+    value: nothing,
+  });
+}
+
 afterEach(() => {
   cleanup();
 });
