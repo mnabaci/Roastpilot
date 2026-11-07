@@ -265,6 +265,22 @@ describe('RoastersScreen', () => {
       );
     });
 
+    it('offers Drum speed only on a roaster whose drum has one, and saves it', async () => {
+      const { api } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
+      expect(screen.queryByRole('group', { name: 'Drum' })).toBeNull();
+      await userEvent.click(sidebar().getByRole('button', { name: /^Simulator/ }));
+      const drum = within(screen.getByRole('group', { name: 'Drum' }));
+      expect(drum.getByText('Usual speed · from Preheat, and while cooling')).toBeInTheDocument();
+      const speed = drum.getByLabelText('Drum speed');
+      expect(speed).toHaveValue('60');
+      await userEvent.clear(speed);
+      await userEvent.type(speed, '45');
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      expect(api.saveRoaster).toHaveBeenCalledWith(
+        expect.objectContaining({ model: 'simulator', drumSpeedPct: 45 }),
+      );
+    });
+
     it('keeps the tuning closed, in plain words, until asked', async () => {
       const { api } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
       expect(screen.queryByRole('group', { name: 'Reaching step temperatures' })).toBeNull();

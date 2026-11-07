@@ -13,6 +13,15 @@ export const MODEL_LIMITS: Readonly<
   simulator: { maxTempC: 240, maxTimeS: 20 * 60 },
 };
 
+/**
+ * Whether a model's drum has a speed rather than only on/off, known without connecting, so the
+ * Roasters page can offer Drum speed. Matches the drivers' channels (roaster-models.test.ts).
+ */
+export const MODEL_DRUM_SPEED: Readonly<Record<z.infer<typeof RoasterModelSchema>, boolean>> = {
+  skywalker: false,
+  simulator: true,
+};
+
 export const RoasterIdSchema = z.number().int().positive();
 
 const MAX_OFFSET_C = 20;

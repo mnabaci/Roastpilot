@@ -2,6 +2,8 @@ import type { TextCell } from './roaster-draft';
 
 export interface FieldGroup {
   title: string;
+  /** One line under the title. */
+  hint?: string;
   cells: readonly { key: TextCell; label: string; unit?: string }[];
 }
 
@@ -25,6 +27,13 @@ export const EVERYDAY_FIELDS: readonly FieldGroup[] = [
   },
   { title: 'Preheat', cells: [{ key: 'hold', label: 'Hold' }] },
 ];
+
+/** Only on a roaster whose drum has a speed (docs/spec/roasters.md, Drum speed). */
+export const DRUM_FIELDS: FieldGroup = {
+  title: 'Drum',
+  hint: 'Usual speed · from Preheat, and while cooling',
+  cells: [{ key: 'drumSpeedPct', label: 'Drum speed', unit: '%' }],
+};
 
 /** The PID gains in plain words, each with its usual name in brackets for those who know it. */
 export const TUNING_FIELDS: readonly FieldGroup[] = [

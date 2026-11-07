@@ -1,4 +1,4 @@
-import { RoasterSchema } from '@roastpilot/shared';
+import { MODEL_DRUM_SPEED, RoasterSchema } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { BUILT_IN_ROASTERS, newRoaster, ROASTER_MODELS } from './roaster-models';
 
@@ -28,6 +28,14 @@ describe('ROASTER_MODELS', () => {
   it("knows each model's drum without connecting: on/off on a Skywalker, a speed on the Simulator", () => {
     expect(drum('skywalker')).toMatchObject({ unit: 'on-off', max: 1 });
     expect(drum('simulator')).toMatchObject({ unit: 'percent', min: 0, max: 100, step: 5 });
+  });
+
+  it('agrees with what the screens know about each drum', () => {
+    for (const model of ['skywalker', 'simulator'] as const) {
+      expect(drum(model)?.kind === 'output' && drum(model)?.unit === 'percent').toBe(
+        MODEL_DRUM_SPEED[model],
+      );
+    }
   });
 });
 
