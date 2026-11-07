@@ -4,8 +4,8 @@ import {
   type SoundStep,
   type StepSound,
 } from '@roastpilot/shared';
-import { Button, OutputControl, SelectField } from '@roastpilot/ui';
-import { Play } from 'lucide-react';
+import { Button, cn, OutputControl, SelectField } from '@roastpilot/ui';
+import { Play, RotateCcw } from 'lucide-react';
 import { useDeps } from '../../app/app-context';
 import { LISTEN_BEFORE_C } from '../../features/sound-cues';
 import { VOICE_LABEL } from '../../features/voices';
@@ -74,18 +74,21 @@ export function SoundStepRow({
             chime.play(sound.voice, sound.volumePct);
           }}
         />
-        {changed ? (
-          <Button
-            size="sm"
-            variant="ghost"
-            aria-label={`Reset ${name} to default`}
-            onClick={() => {
-              onChange({ ...fallback });
-            }}
-          >
-            Reset
-          </Button>
-        ) : null}
+        {/* Always takes its place, so changing a value never reflows the row; hidden at default. */}
+        <Button
+          size="sm"
+          variant="ghost"
+          aria-label={`Reset ${name} to default`}
+          title="Reset to default"
+          icon={<RotateCcw aria-hidden="true" />}
+          disabled={!changed}
+          aria-hidden={!changed}
+          tabIndex={changed ? undefined : -1}
+          className={cn(!changed && 'invisible')}
+          onClick={() => {
+            onChange({ ...fallback });
+          }}
+        />
       </div>
     </SettingRow>
   );
