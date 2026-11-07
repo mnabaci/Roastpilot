@@ -47,37 +47,44 @@ const TUNING: AutoTuning = {
 const tick = (run: RoastRun, s: number, btC: number) =>
   run.tick({ nowMs: s * 1_000, btC, ror: 10, firstCrackAtMs: null });
 
+/** Soak, then two curve phases: the heater carries from one curve phase to the next. */
+const CURVES: AutoProfile = {
+  ...PROFILE,
+  phases: [
+    { name: 'Soak', heat: { mode: 'fixed', pct: 0 }, fanPct: 30, next: { on: 'time', afterS: 60 } },
+    {
+      name: 'Heat on',
+      heat: { mode: 'follow', pct: 85 },
+      fanPct: 30,
+      next: { on: 'time', afterS: 120 },
+    },
+    { name: 'Maillard', heat: { mode: 'follow', pct: 50 }, fanPct: 65, next: { on: 'end' } },
+  ],
+};
+
+/** RoR 3 keeps the correction out (it waits for RoR to climb), so only the slew moves it. */
+const curveTick = (run: RoastRun) => (s: number) =>
+  run.tick({ nowMs: s * 1_000, btC: 92 + (s - 60) * 0.18, ror: 3, firstCrackAtMs: null }).heaterPct;
+
 describe('RoastRun', () => {
   it('slews the heater from one curve phase to the next, but leaves the soak at once', () => {
-    const curves: AutoProfile = {
-      ...PROFILE,
-      phases: [
-        {
-          name: 'Soak',
-          heat: { mode: 'fixed', pct: 0 },
-          fanPct: 30,
-          next: { on: 'time', afterS: 60 },
-        },
-        {
-          name: 'Heat on',
-          heat: { mode: 'follow', pct: 85 },
-          fanPct: 30,
-          next: { on: 'time', afterS: 120 },
-        },
-        { name: 'Maillard', heat: { mode: 'follow', pct: 50 }, fanPct: 65, next: { on: 'end' } },
-      ],
-    };
-    const run = new RoastRun(curves, TUNING, 0);
-    // RoR 3 keeps the correction out (it waits for RoR to climb), so only the slew moves it.
-    const at = (s: number) =>
-      run.tick({ nowMs: s * 1_000, btC: 92 + (s - 60) * 0.18, ror: 3, firstCrackAtMs: null })
-        .heaterPct;
+    const run = new RoastRun(CURVES, TUNING, 0);
+    const at = curveTick(run);
     for (let s = 1; s < 60; s++) at(s);
     expect(at(60)).toBe(85);
     for (let s = 61; s < 120; s++) at(s);
     expect(at(120)).toBe(84.5);
     for (let s = 121; s < 129; s++) at(s);
     expect(at(129)).toBe(80);
+  });
+
+  it('after Resume auto, a curve phase starts on its estimate, not from a heater never sent', () => {
+    const run = new RoastRun(CURVES, TUNING, 0);
+    const at = curveTick(run);
+    for (let s = 1; s < 120; s++) at(s);
+    // Auto was stopped, so the last heater it worked out never reached the roaster.
+    run.restartControl();
+    expect(at(120)).toBe(50);
   });
 
   it(`counts a gap of more than ${String(MAX_STEP_S)} s as ${String(MAX_STEP_S)} s`, () => {

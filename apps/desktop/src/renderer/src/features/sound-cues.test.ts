@@ -148,8 +148,12 @@ describe('stillWaiting', () => {
     expect(stillWaiting('dump-beans', at({ phase: 'ready' }))).toBe(false);
   });
 
-  it('Auto stopped waits until the stop reason clears', () => {
+  it('Auto stopped waits until the stop reason clears, or you switch to Manual', () => {
     expect(stillWaiting('auto-stopped', at({}, { stopReason: 'disconnected' }))).toBe(true);
     expect(stillWaiting('auto-stopped', at({}))).toBe(false);
+    // Manual keeps the reason until Auto is back on, but nothing is waiting for Resume auto.
+    expect(
+      stillWaiting('auto-stopped', at({}, { enabled: false, stopReason: 'disconnected' })),
+    ).toBe(false);
   });
 });

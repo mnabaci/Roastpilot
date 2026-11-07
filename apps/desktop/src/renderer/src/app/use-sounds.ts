@@ -1,4 +1,4 @@
-import { SoundStepSchema, type Sounds, type SoundStep, type StepSound } from '@roastpilot/shared';
+import { sameStepSound, SoundStepSchema, type Sounds, type SoundStep } from '@roastpilot/shared';
 import { useEffect, useMemo, useRef, type RefObject } from 'react';
 import type { ChimePlayer } from '../features/chime';
 import {
@@ -8,8 +8,8 @@ import {
   stillWaiting,
   type WaitState,
 } from '../features/sound-cues';
-import { createSoundRepeats, playTimesMs } from '../features/sound-repeats';
-import { voiceLengthMs } from '../features/voices';
+import { createSoundRepeats, type SoundRepeats } from '../features/sound-repeats';
+import { playStepSound } from '../features/step-sound';
 import { useRoastList } from '../screens/history/use-roast-list';
 import { activeRoaster } from '../stores/roasters-store';
 import type { Stores } from '../stores/stores';
@@ -23,8 +23,42 @@ const cueState = (stores: Stores): WaitState => ({
 
 const soundsOf = (stores: Stores): Sounds => stores.settings.getState().settings.sounds;
 
-const sameSound = (a: StepSound, b: StepSound) =>
-  a.voice === b.voice && a.volumePct === b.volumePct && a.repeat === b.repeat;
+/**
+ * The steps each store change has just reached, the listen cue once per roast among them. Main's
+ * snapshot arriving isn't a change: a window opened mid-roast stays quiet.
+ */
+function stepWatch(stores: Stores, expected: RefObject<number | undefined>): () => SoundStep[] {
+  let before = cueState(stores);
+  // The charge time of the roast already cued, so each roast hears it once.
+  let listenedFor: number | null = null;
+  return () => {
+    const was = before;
+    before = cueState(stores);
+    if (!stores.sync.getState().ready) return [];
+    const due = stepsReached(was, before);
+    const { roast, readings } = stores.roast.getState();
+    if (
+      roast.chargedAtMs !== listenedFor &&
+      listenDue(roast, readings.at(-1)?.values.bt, expected.current)
+    ) {
+      listenedFor = roast.chargedAtMs;
+      due.push('listen-first-crack');
+    }
+    return due;
+  };
+}
+
+/** Sounds off, or a step's setting changed: its repeats stop at once. */
+function settingsWatch(stores: Stores, repeats: SoundRepeats): () => void {
+  let seen = soundsOf(stores);
+  return () => {
+    const sounds = soundsOf(stores);
+    if (!sounds.enabled) repeats.stopAll();
+    for (const step of SoundStepSchema.options)
+      if (!sameStepSound(sounds.steps[step], seen.steps[step])) repeats.stop(step);
+    seen = sounds;
+  };
+}
 
 /**
  * Plays each step's sound when it is reached, then repeats it as set while the step still waits;
@@ -36,54 +70,20 @@ function playSounds(
   expected: RefObject<number | undefined>,
 ): () => void {
   const repeats = createSoundRepeats();
-  let before = cueState(stores);
-  let seen = soundsOf(stores);
-  // The charge time of the roast already cued, so each roast hears it once.
-  let listenedFor: number | null = null;
-  const start = (step: SoundStep, { voice, volumePct, repeat }: StepSound) => {
-    repeats.start(
-      step,
-      playTimesMs(repeat, voiceLengthMs(voice)),
-      () => {
-        chime.play(voice, volumePct);
-      },
-      () => stillWaiting(step, cueState(stores)),
-    );
-  };
+  const reached = stepWatch(stores, expected);
+  const waiting = (step: SoundStep) => () => stillWaiting(step, cueState(stores));
   const check = () => {
-    const after = cueState(stores);
-    for (const step of SoundStepSchema.options) if (!stillWaiting(step, after)) repeats.stop(step);
-    // Main's snapshot arriving isn't a change: a window opened mid-roast stays quiet.
-    if (!stores.sync.getState().ready) {
-      before = after;
-      return;
-    }
-    const due: SoundStep[] = stepsReached(before, after);
-    before = after;
-    const { roast, readings } = stores.roast.getState();
-    if (
-      roast.chargedAtMs !== listenedFor &&
-      listenDue(roast, readings.at(-1)?.values.bt, expected.current)
-    ) {
-      listenedFor = roast.chargedAtMs;
-      due.push('listen-first-crack');
-    }
+    const now = cueState(stores);
+    for (const step of SoundStepSchema.options) if (!stillWaiting(step, now)) repeats.stop(step);
+    const due = reached();
     const sounds = soundsOf(stores);
     if (!sounds.enabled) return;
-    for (const step of due) start(step, sounds.steps[step]);
-  };
-  // Sounds off, or a step's setting changed: its repeats stop at once.
-  const settingsChanged = () => {
-    const sounds = soundsOf(stores);
-    if (!sounds.enabled) repeats.stopAll();
-    for (const step of SoundStepSchema.options)
-      if (!sameSound(sounds.steps[step], seen.steps[step])) repeats.stop(step);
-    seen = sounds;
+    for (const step of due) playStepSound(repeats, chime, step, sounds.steps[step], waiting(step));
   };
   const stops = [
     stores.roast.subscribe(check),
     stores.auto.subscribe(check),
-    stores.settings.subscribe(settingsChanged),
+    stores.settings.subscribe(settingsWatch(stores, repeats)),
   ];
   return () => {
     for (const stop of stops) stop();
