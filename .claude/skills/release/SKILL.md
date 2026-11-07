@@ -20,11 +20,14 @@ Releases are built by GitHub Actions from a tag, never on a laptop
 6. The `Release` workflow (`.github/workflows/release.yml`) runs:
    - **Verify:** fails if the tag doesn't match `apps/desktop/package.json` or `CHANGELOG.md` has
      no section for it; then `pnpm check`.
-   - **Build:** a macOS runner (DMG + zip) and a Windows runner (NSIS installer), each uploading
-     to a draft release with the update files (`latest-mac.yml`, `latest.yml`).
-   - **Publish:** sets the changelog section as the notes and publishes the release.
-   - If it fails, fix on a branch, delete the tag (`git push origin :refs/tags/vX.Y.Z`) and any
-     draft release, merge, and tag again. Never re-use a published version: bump instead.
+   - **Build:** a macOS runner (DMG + zip) and a Windows runner (NSIS installer) package the
+     app and the update files (`latest-mac.yml`, `latest.yml`) as workflow artifacts. They have no
+     write access.
+   - **Publish:** the only job that can write: creates the GitHub release in one step, with the
+     changelog section as the notes and every installer and update file attached.
+   - If it fails before Publish, nothing is released: fix on a branch, delete the tag
+     (`git push origin :refs/tags/vX.Y.Z`), merge, and tag again. Never re-use a published
+     version: bump instead.
 7. Smoke-test the downloaded installers, not local builds:
    - macOS: install the DMG on a clean user, first open (Control-click → Open), Simulator roast,
      Settings › About shows the version; the previous version shows "Version X.Y.Z is out".

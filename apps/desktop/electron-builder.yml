@@ -16,12 +16,13 @@ win:
   target:
     - nsis
 nsis:
+  # No spaces: GitHub renames them on upload, and latest.yml must name the file as uploaded.
+  artifactName: ${productName}-Setup-${version}.${ext}
   oneClick: false
   allowToChangeInstallationDirectory: true
-# Releases and updates come from GitHub (ADR 0017). The macOS and Windows jobs upload into one
-# draft; the release workflow adds the changelog section and publishes it.
+# Updates come from GitHub releases (ADR 0017): this goes into the app (app-update.yml) and the
+# update files. The release workflow builds with --publish never and uploads them itself.
 publish:
   provider: github
   owner: mnabaci
   repo: Roastpilot
-  releaseType: draft

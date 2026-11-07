@@ -12,7 +12,7 @@ How Roastpilot gets onto a computer and stays current, without ever touching a r
 | Tag and version don't match | The workflow fails before building                                                                                          |
 
 - Built by GitHub Actions only, never on a laptop, so every release comes from a tagged commit.
-- The release token is `GITHUB_TOKEN` with `contents: write`, only in the release workflow, which runs on tags (never on fork PRs).
+- The release token is `GITHUB_TOKEN` with `contents: write`, only in the release workflow's publish job, which checks out and installs nothing; the build jobs, which run install scripts, are read-only. The workflow runs on tags (never on fork PRs) and pins every action to a commit.
 - No signing yet: macOS asks once to open an app from an unidentified developer (Control-click → Open, or System Settings → Privacy & Security → Open Anyway); Windows SmartScreen asks once (More info → Run anyway). The README says how.
 
 ## Updates
