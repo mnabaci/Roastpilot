@@ -20,6 +20,7 @@ import {
   RoasterSchema,
   RoastActionSchema,
   ExportRoastsRequestSchema,
+  ReleasePageSchema,
   RoastIdSchema,
   SetRoastBeanRequestSchema,
   SetOutputRequestSchema,
@@ -55,6 +56,7 @@ export function createIpcHandlers({
   snapshot,
   listPorts,
   createDriver,
+  updates,
   logs,
 }: IpcDeps): Record<string, IpcHandler> {
   return {
@@ -147,6 +149,12 @@ export function createIpcHandlers({
     ),
     [IPC_CHANNELS.chooseConnection]: handler((payload) =>
       roasters.chooseConnection(ConnectTargetSchema.parse(payload)),
+    ),
+    [IPC_CHANNELS.getAppInfo]: handler(() => updates.info()),
+    [IPC_CHANNELS.checkForUpdates]: handler(() => updates.check()),
+    [IPC_CHANNELS.restartToUpdate]: handler(() => updates.restart()),
+    [IPC_CHANNELS.openReleasePage]: handler((payload) =>
+      updates.openReleasePage(ReleasePageSchema.parse(payload)),
     ),
   };
 }

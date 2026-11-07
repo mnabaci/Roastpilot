@@ -1,7 +1,8 @@
 import { silentLogger } from '@roastpilot/core';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 import { afterEach, describe, expect, it } from 'vitest';
 import { openStores } from './storage-wiring';
 import { systemClock } from './system-clock';
@@ -40,5 +41,24 @@ describe('openStores', () => {
     expect(() => {
       stores.close();
     }).not.toThrow();
+  });
+
+  it('a backup that fails before migrating leaves the stores failing with the reason', async () => {
+    const dir = tempDir();
+    const path = join(dir, 'roastpilot.db');
+    // An older app's database: one migration in, so there is something to back up.
+    const old = new DatabaseSync(path);
+    old.exec('CREATE TABLE t (x); PRAGMA user_version = 1');
+    old.close();
+    writeFileSync(join(dir, 'backups'), 'a file where the folder should be');
+    const stores = openStores(path, systemClock, silentLogger, {
+      dir: join(dir, 'backups'),
+      appVersion: '0.2.0',
+      now: new Date(2026, 10, 7),
+    });
+    const listed = await stores.roasts.list();
+    expect(!listed.ok && listed.error.kind === 'storage-failed' && listed.error.message).toContain(
+      "Couldn't back up",
+    );
   });
 });
