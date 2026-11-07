@@ -33,6 +33,10 @@ const api: RoastpilotApi = {
   onSafetyEvent: (listener) => subscribe(IPC_CHANNELS.safetyEvent, listener),
   getSnapshot: () => ipcRenderer.invoke(IPC_CHANNELS.getSnapshot),
   onNavigate: (listener) => subscribe(IPC_CHANNELS.navigate, listener),
+  onShowSafetyNotice: (listener) =>
+    subscribe(IPC_CHANNELS.showSafetyNotice, () => {
+      listener();
+    }),
   listRoasts: () => ipcRenderer.invoke(IPC_CHANNELS.listRoasts),
   getRoast: (id) => ipcRenderer.invoke(IPC_CHANNELS.getRoast, id),
   deleteRoast: (id) => ipcRenderer.invoke(IPC_CHANNELS.deleteRoast, id),

@@ -152,6 +152,8 @@ export {
   RoastModeSchema,
   SoakTimeSchema,
   DEFAULT_SETTINGS,
+  needsSafetyNotice,
+  SAFETY_NOTICE_VERSION,
   SettingsSchema,
   SettingsWriteErrorSchema,
   type ChartSmoothing,

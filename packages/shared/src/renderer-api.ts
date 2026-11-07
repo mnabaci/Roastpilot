@@ -190,6 +190,8 @@ export interface AppApi {
   getSnapshot(): Promise<Snapshot>;
   /** The app menu asked for a screen (Settings… ⌘,). */
   onNavigate(listener: (screen: Screen) => void): Unsubscribe;
+  /** Help → Safety notice. */
+  onShowSafetyNotice(listener: () => void): Unsubscribe;
 }
 
 /** The typed API the preload script exposes to the renderer as `window.roastpilot`. */

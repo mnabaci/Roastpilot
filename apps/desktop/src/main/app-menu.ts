@@ -8,6 +8,7 @@ export interface AppMenuOptions {
   /** Reload and developer tools only in development. */
   dev: boolean;
   navigate: (screen: Screen) => void;
+  showSafetyNotice: () => void;
   openLogFolder: () => void;
 }
 
@@ -68,6 +69,12 @@ export function buildAppMenu(options: AppMenuOptions): MenuItemConstructorOption
     {
       role: 'help',
       submenu: [
+        {
+          label: 'Safety notice',
+          click: () => {
+            options.showSafetyNotice();
+          },
+        },
         {
           label: 'Open log folder',
           click: () => {

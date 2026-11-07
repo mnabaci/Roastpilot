@@ -210,6 +210,9 @@ app
           navigate: (screen) => {
             broadcast(IPC_CHANNELS.navigate, screen);
           },
+          showSafetyNotice: () => {
+            broadcast(IPC_CHANNELS.showSafetyNotice, null);
+          },
           openLogFolder: () => {
             openLogFolder().catch((error: unknown) => {
               logger.error('menu.open-log-folder-failed', { error: serializeError(error) });

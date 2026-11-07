@@ -4,7 +4,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { createStores } from '../stores/stores';
-import { CONNECTED, fakeApi, fakeChime, renderApp } from '../test/render-app';
+import { ACCEPTED_SETTINGS, CONNECTED, fakeApi, fakeChime, renderApp } from '../test/render-app';
 import { App } from './App';
 import { AppProvider } from './AppProvider';
 
@@ -25,7 +25,11 @@ describe('App when a screen fails to draw', () => {
 
   it("shows that screen's error page, logs it, and keeps the top bar working", async () => {
     const write = vi.fn();
-    const stores = createStores({ ready: true, connection: CONNECTED });
+    const stores = createStores({
+      ready: true,
+      connection: CONNECTED,
+      settings: ACCEPTED_SETTINGS,
+    });
     render(
       <AppProvider
         deps={{

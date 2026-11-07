@@ -6,8 +6,8 @@ import { useDeps } from '../../app/app-context';
 
 const NOT_SAVED = "Couldn't save settings · kept until you quit";
 
-/** Saves a change to the settings and keeps what main actually saved. */
-export function useSaveSettings(): (change: Partial<Settings>) => void {
+/** Saves a change to the settings and keeps what main actually saved; `notSaved` is its error toast. */
+export function useSaveSettings(notSaved = NOT_SAVED): (change: Partial<Settings>) => void {
   const { api, stores, logger } = useDeps();
   const store = stores.settings;
   const run = useRun();
@@ -26,11 +26,11 @@ export function useSaveSettings(): (change: Partial<Settings>) => void {
           }
           // Kept in memory for this session; the file write is what failed.
           logger.warn('settings.not-saved', { error: saved.error });
-          toast('error', NOT_SAVED);
+          toast('error', notSaved);
         },
-        { failed: NOT_SAVED },
+        { failed: notSaved },
       );
     },
-    [api, store, logger, run, toast],
+    [api, store, logger, run, toast, notSaved],
   );
 }

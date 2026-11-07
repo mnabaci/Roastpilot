@@ -1,4 +1,4 @@
-import type { Screen } from '@roastpilot/shared';
+import { needsSafetyNotice, SAFETY_NOTICE_VERSION, type Screen } from '@roastpilot/shared';
 import { useEffect, useState, type ReactNode } from 'react';
 import { BeansScreen } from '../screens/beans/BeansScreen';
 import { HistoryScreen } from '../screens/history/HistoryScreen';
@@ -8,7 +8,9 @@ import { RoastersScreen } from '../screens/roasters/RoastersScreen';
 import { RoastScreen } from '../screens/roast/RoastScreen';
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import type { SettingsSection } from '../screens/settings/settings-section';
-import { useConnection, useSync } from '../stores/use-stores';
+import { useConnection, useSettings, useSync } from '../stores/use-stores';
+import { useSaveSettings } from '../screens/settings/use-save-settings';
+import { SafetyNotice } from './SafetyNotice';
 import { SafetyBanners } from './SafetyBanners';
 import { useDeps } from './app-context';
 import { LiveRoastStrip } from './LiveRoastStrip';
@@ -18,6 +20,8 @@ import { AppToaster } from './AppToaster';
 import { ScreenError } from './ScreenError';
 import { ErrorBoundary } from '../features/ErrorBoundary';
 import { serializeError } from '@roastpilot/core';
+
+const SAFETY_NOTICE_NOT_SAVED = "Couldn't save · the safety notice shows again next launch";
 
 /** The app shell: top bar, safety banners, and the current screen. */
 export function App() {
@@ -32,10 +36,28 @@ export function App() {
   // Settings reopens on the last section viewed until quit (docs/spec/ui.md, Settings).
   const [settingsSection, setSettingsSection] = useState<SettingsSection>('controls');
   const { api, logger } = useDeps();
+  const firstLaunch = useSettings((s) => needsSafetyNotice(s.settings));
+  // Help → Safety notice: shown in the screen area, under the top bar and banners.
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const saveSettings = useSaveSettings(SAFETY_NOTICE_NOT_SAVED);
   // Here, mounted once, so the chimes play once and in this window only.
   useSounds();
-  // The app menu (Settings… ⌘,) opens screens too.
-  useEffect(() => api.onNavigate(setScreen), [api]);
+  // The app menu (Settings… ⌘,) opens screens too; opening one closes the safety notice.
+  useEffect(
+    () =>
+      api.onNavigate((next) => {
+        setNoticeOpen(false);
+        setScreen(next);
+      }),
+    [api],
+  );
+  useEffect(
+    () =>
+      api.onShowSafetyNotice(() => {
+        setNoticeOpen(true);
+      }),
+    [api],
+  );
   const shown = screen ?? (connected ? 'roast' : 'roasters');
   const screens: Readonly<Record<Screen, () => ReactNode>> = {
     roast: () => (
@@ -69,12 +91,27 @@ export function App() {
     settings: () => <SettingsScreen section={settingsSection} onSection={setSettingsSection} />,
     logs: () => <LogsScreen />,
   };
+  // First launch: the notice fills the window before anything else (docs/spec/safety.md).
+  if (ready && firstLaunch) {
+    return (
+      <div className="flex h-screen flex-col overflow-y-auto bg-bg font-sans text-ink">
+        <SafetyNotice
+          action="accept"
+          onDone={() => {
+            saveSettings({ safetyNoticeAccepted: SAFETY_NOTICE_VERSION });
+          }}
+        />
+        <AppToaster screen={shown} />
+      </div>
+    );
+  }
   return (
     // A fixed frame: the top bar and safety banners never scroll away; each screen scrolls inside.
     <div className="flex h-screen flex-col overflow-hidden bg-bg font-sans text-ink">
       <TopBar
         screen={shown}
         onNavigate={(next) => {
+          setNoticeOpen(false);
           setProfileToOpen(undefined);
           setScreen(next);
         }}
@@ -101,7 +138,18 @@ export function App() {
           }}
           fallback={(error) => <ScreenError screen={shown} error={error} />}
         >
-          {ready ? screens[shown]() : null}
+          {noticeOpen ? (
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <SafetyNotice
+                action="close"
+                onDone={() => {
+                  setNoticeOpen(false);
+                }}
+              />
+            </div>
+          ) : ready ? (
+            screens[shown]()
+          ) : null}
         </ErrorBoundary>
       </div>
       <AppToaster screen={shown} />

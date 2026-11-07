@@ -44,6 +44,9 @@ export const SoakTimeSchema = z.union([
   z.literal(120),
 ]);
 
+/** The safety notice's wording; raise it when the wording changes so everyone reads it again. */
+export const SAFETY_NOTICE_VERSION = 1;
+
 /** Missing or unknown fields fall back to defaults, so an older settings file still loads. */
 export const SettingsSchema = z.object({
   /** The roaster last picked in Settings; the app never connects by itself. */
@@ -62,7 +65,13 @@ export const SettingsSchema = z.object({
   soakTimeS: SoakTimeSchema.catch(60).default(60),
   /** Sounds when something needs you, and before first crack (docs/spec/ui.md, Sounds). */
   sounds: SoundsSchema.catch(DEFAULT_SOUNDS).default(DEFAULT_SOUNDS),
+  /** The safety notice version you accepted; 0 until you do (docs/spec/safety.md, Safety notice). */
+  safetyNoticeAccepted: z.number().int().min(0).catch(0).default(0),
 });
+
+/** True while the safety notice in this version still needs accepting. */
+export const needsSafetyNotice = (settings: Settings): boolean =>
+  settings.safetyNoticeAccepted < SAFETY_NOTICE_VERSION;
 
 export const DEFAULT_SETTINGS = SettingsSchema.parse({});
 
