@@ -18,26 +18,33 @@ export function useMakeProfile(onOpenProfile: (id: string) => void): {
   const [note, setNote] = useState<{ roastId: RoastId; text: string }>();
   const make = (roastId: RoastId, style: ProfileStyle) => {
     setNote(undefined);
-    run('history.make-profile-failed', async () => {
-      const made = await api.makeProfileFromRoast({ roastId, style });
-      if (!made.ok) {
-        logger.info('history.make-profile-refused', { ...made.error });
-        setNote({
-          roastId,
-          text:
-            made.error.kind === 'too-short'
-              ? 'Too little to go on · it needs a first crack, and a drop hotter than its charge'
-              : "Couldn't make the profile · see Logs",
-        });
-        return;
-      }
-      const profiles = await api.listProfiles();
-      stores.auto.setState({ profiles });
-      const { id } = made.value.profile;
-      if (profiles.some((e) => e.profile.id === id)) onOpenProfile(id);
-      else
-        setNote({ roastId, text: 'Made on the roaster this roast ran on · switch to it to edit' });
-    });
+    run(
+      'history.make-profile-failed',
+      async () => {
+        const made = await api.makeProfileFromRoast({ roastId, style });
+        if (!made.ok) {
+          logger.info('history.make-profile-refused', { ...made.error });
+          setNote({
+            roastId,
+            text:
+              made.error.kind === 'too-short'
+                ? 'Too little to go on · it needs a first crack, and a drop hotter than its charge'
+                : "Couldn't make the profile · see Logs",
+          });
+          return;
+        }
+        const profiles = await api.listProfiles();
+        stores.auto.setState({ profiles });
+        const { id } = made.value.profile;
+        if (profiles.some((e) => e.profile.id === id)) onOpenProfile(id);
+        else
+          setNote({
+            roastId,
+            text: 'Made on the roaster this roast ran on · switch to it to edit',
+          });
+      },
+      { failed: "Couldn't make the profile · try again" },
+    );
   };
   return {
     make,

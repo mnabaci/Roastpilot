@@ -17,7 +17,9 @@ export function ScreenError({ screen, error }: { screen: Screen; error: unknown 
         window.location.reload();
       }}
       onOpenLogs={() => {
-        run('logs.open-folder-failed', () => api.openLogFolder());
+        run('logs.open-folder-failed', () => api.openLogFolder(), {
+          failed: "Couldn't open the log folder · try again",
+        });
       }}
     />
   );

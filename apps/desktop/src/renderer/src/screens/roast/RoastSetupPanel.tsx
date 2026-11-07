@@ -35,7 +35,9 @@ export function RoastSetupPanel() {
   const [open, setOpen] = useState(false);
   const update = (next: RoastSetup) => {
     stores.beans.setState({ setup: next });
-    run('roast.setup-failed', () => api.setRoastSetup(next));
+    run('roast.setup-failed', () => api.setRoastSetup(next), {
+      failed: "Couldn't save the setup · try again",
+    });
   };
   const idle = phase === 'ready' || phase === 'done';
   const bean = beans.find((b) => b.id === setup.beanId);

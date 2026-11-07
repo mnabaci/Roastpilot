@@ -45,17 +45,21 @@ export function BeanEditor({
   const save = () => {
     if (!checked.ok) return;
     const fields = checked.value;
-    run('beans.save-failed', async () => {
-      if (bean) {
-        const updated = await api.updateBean({ id: bean.id, fields, profileId: bean.profileId });
-        if (updated.ok) onDone();
+    run(
+      'beans.save-failed',
+      async () => {
+        if (bean) {
+          const updated = await api.updateBean({ id: bean.id, fields, profileId: bean.profileId });
+          if (updated.ok) onDone();
+          else setProblem("Couldn't save this bean · see Logs");
+          return;
+        }
+        const added = await api.addBean(fields);
+        if (added.ok) onAdded(added.value);
         else setProblem("Couldn't save this bean · see Logs");
-        return;
-      }
-      const added = await api.addBean(fields);
-      if (added.ok) onAdded(added.value);
-      else setProblem("Couldn't save this bean · see Logs");
-    });
+      },
+      { failed: "Couldn't save the bean · try again" },
+    );
   };
   const textCell = (key: 'name' | 'origin' | 'variety' | 'supplier', label: string) => (
     <div className="flex flex-col gap-1">

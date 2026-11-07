@@ -20,28 +20,36 @@ export function RoasterPage({ roaster, onDeleted }: { roaster: Roaster; onDelete
   const [problem, setProblem] = useState<string>();
   const use = () => {
     setProblem(undefined);
-    run('roasters.activate-failed', async () => {
-      const set = await api.setActiveRoaster(roaster.id);
-      if (set.ok) return;
-      logger.warn('roasters.refused', { ...set.error });
-      setProblem(refusalText(set.error, 'switch roasters'));
-    });
+    run(
+      'roasters.activate-failed',
+      async () => {
+        const set = await api.setActiveRoaster(roaster.id);
+        if (set.ok) return;
+        logger.warn('roasters.refused', { ...set.error });
+        setProblem(refusalText(set.error, 'switch roasters'));
+      },
+      { failed: "Couldn't switch roasters · try again" },
+    );
   };
   const remove = () => {
     setProblem(undefined);
-    run('roasters.delete-failed', async () => {
-      const result = await api.deleteRoaster(roaster.id);
-      if (result.ok) {
-        onDeleted();
-        return;
-      }
-      logger.warn('roasters.refused', { ...result.error });
-      setProblem(
-        result.error.kind === 'has-roasts'
-          ? 'It has saved roasts or profiles · it stays'
-          : refusalText(result.error, 'delete'),
-      );
-    });
+    run(
+      'roasters.delete-failed',
+      async () => {
+        const result = await api.deleteRoaster(roaster.id);
+        if (result.ok) {
+          onDeleted();
+          return;
+        }
+        logger.warn('roasters.refused', { ...result.error });
+        setProblem(
+          result.error.kind === 'has-roasts'
+            ? 'It has saved roasts or profiles · it stays'
+            : refusalText(result.error, 'delete'),
+        );
+      },
+      { failed: "Couldn't delete the roaster · try again" },
+    );
   };
   // Nothing changes while a roaster is in use (docs/spec/roasters.md); the active one can't go.
   const more: MenuItem[] =

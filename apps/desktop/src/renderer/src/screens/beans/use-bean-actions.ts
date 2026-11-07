@@ -46,10 +46,14 @@ export function useBeanActions({
       profileId: stores.settings.getState().settings.autoProfile,
     });
     stores.beans.setState({ setup });
-    run('beans.setup-failed', async () => {
-      await api.setRoastSetup(setup);
-      onRoast();
-    });
+    run(
+      'beans.setup-failed',
+      async () => {
+        await api.setRoastSetup(setup);
+        onRoast();
+      },
+      { failed: "Couldn't set up the roast · try again" },
+    );
   };
 
   /** Duplicates the suggested profile, names it after the bean and opens it in the editor. */
@@ -62,27 +66,36 @@ export function useBeanActions({
     });
     if (!suggested) return;
     setProblem(undefined);
-    run('beans.make-profile-failed', async () => {
-      const copy = await api.duplicateProfile(suggested.profileId);
-      const named = copy.ok && (await api.saveProfile({ ...copy.value.profile, name: bean.name }));
-      const profileId = named && named.ok ? named.value.profile.id : undefined;
-      const linked =
-        profileId !== undefined &&
-        (await api.updateBean({ id: bean.id, fields: BeanFieldsSchema.parse(bean), profileId }));
-      if (profileId === undefined || !linked || !linked.ok) {
-        setProblem("Couldn't make the profile · see Logs");
-        return;
-      }
-      stores.auto.setState({ profiles: await api.listProfiles() });
-      onOpenProfile(profileId);
-    });
+    run(
+      'beans.make-profile-failed',
+      async () => {
+        const copy = await api.duplicateProfile(suggested.profileId);
+        const named =
+          copy.ok && (await api.saveProfile({ ...copy.value.profile, name: bean.name }));
+        const profileId = named && named.ok ? named.value.profile.id : undefined;
+        const linked =
+          profileId !== undefined &&
+          (await api.updateBean({ id: bean.id, fields: BeanFieldsSchema.parse(bean), profileId }));
+        if (profileId === undefined || !linked || !linked.ok) {
+          setProblem("Couldn't make the profile · see Logs");
+          return;
+        }
+        stores.auto.setState({ profiles: await api.listProfiles() });
+        onOpenProfile(profileId);
+      },
+      { failed: "Couldn't make the profile · try again" },
+    );
   };
 
   const archive = () => {
-    run('beans.archive-failed', async () => {
-      const done = await api.setBeanArchived({ id: bean.id, archived: !bean.archived });
-      setProblem(done.ok ? undefined : "Couldn't change that · see Logs");
-    });
+    run(
+      'beans.archive-failed',
+      async () => {
+        const done = await api.setBeanArchived({ id: bean.id, archived: !bean.archived });
+        setProblem(done.ok ? undefined : "Couldn't change that · see Logs");
+      },
+      { failed: "Couldn't change the bean · try again" },
+    );
   };
 
   return {

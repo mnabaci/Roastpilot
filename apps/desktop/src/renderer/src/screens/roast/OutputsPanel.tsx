@@ -35,10 +35,15 @@ export function OutputsPanel() {
   // Auto drives both outputs from Preheat until Drop; outside that the sliders are simply yours.
   const driving = auto.enabled && isAutoDriven(phase);
   const resume = () => {
-    run('auto.resume-failed', async () => {
-      const result = await api.autoResume();
-      if (!result.ok) logger.info('auto.resume-refused', { ...result.error });
-    });
+    run(
+      'auto.resume-failed',
+      async () => {
+        const result = await api.autoResume();
+        // Refused only by the safety lock, which its banner already says.
+        if (!result.ok) logger.info('auto.resume-refused', { ...result.error });
+      },
+      { failed: "Couldn't hand back to Auto · try again" },
+    );
   };
   // The badge only means something while Auto drives; in a manual roast every output is yours.
   const owner = (output: 'heater' | 'fan') =>

@@ -28,13 +28,17 @@ export function BeanLink({ roast, beans }: { roast: RoastSummary; beans: readonl
         ]}
         onChange={(value) => {
           setProblem(undefined);
-          run('history.set-bean-failed', async () => {
-            const set = await api.setRoastBean({
-              id: roast.id,
-              beanId: value === NONE ? null : Number(value),
-            });
-            if (!set.ok) setProblem("Couldn't change the bean · see Logs");
-          });
+          run(
+            'history.set-bean-failed',
+            async () => {
+              const set = await api.setRoastBean({
+                id: roast.id,
+                beanId: value === NONE ? null : Number(value),
+              });
+              if (!set.ok) setProblem("Couldn't change the bean · see Logs");
+            },
+            { failed: "Couldn't change the bean · try again" },
+          );
         }}
       />
       {problem ? (

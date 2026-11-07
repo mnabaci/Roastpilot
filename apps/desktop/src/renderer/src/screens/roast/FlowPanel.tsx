@@ -6,6 +6,8 @@ import { flowHint, flowStep, isConnected } from './flow-step';
 import { useActiveProfile } from './use-active-profile';
 import { DrumCooling } from './DrumCooling';
 import { useRun } from '../../features/use-run';
+import { useToast } from '../../features/use-toast';
+import { roastActionFailed, roastActionRefused } from './roast-action-failed';
 import { useDeps } from '../../app/app-context';
 import { useAuto, useConnection, useRoast } from '../../stores/use-stores';
 
@@ -23,6 +25,7 @@ export function FlowPanel({
 }) {
   const { api, logger } = useDeps();
   const run = useRun();
+  const toast = useToast();
   const connected = useConnection((s) => isConnected(s.connection));
   const lost = useConnection((s) => s.connection.status === 'lost');
   const roast = useRoast((s) => s.roast);
@@ -32,10 +35,16 @@ export function FlowPanel({
   const autoStep = autoFlowStep(roast, auto, profile?.profile, { developmentS, heaterPct });
   const step = autoStep ?? flowStep(roast);
   const act = (action: RoastAction) => {
-    run('roast.action-failed', async () => {
-      const result = await api.roastAction(action);
-      if (!result.ok) logger.info('roast.action-refused', { ...result.error });
-    });
+    run(
+      'roast.action-failed',
+      async () => {
+        const result = await api.roastAction(action);
+        if (result.ok) return;
+        logger.info('roast.action-refused', { ...result.error });
+        toast('error', roastActionRefused(action));
+      },
+      { failed: roastActionFailed(action) },
+    );
   };
   if (lost) {
     // Main is already reopening the port; there is nothing to press until readings are back.
@@ -64,10 +73,16 @@ export function FlowPanel({
           variant="primary"
           size="lg"
           onClick={() => {
-            run('auto.charge-soon-failed', async () => {
-              const result = await api.autoChargeSoon();
-              if (!result.ok) logger.info('auto.charge-soon-refused', { ...result.error });
-            });
+            run(
+              'auto.charge-soon-failed',
+              async () => {
+                const result = await api.autoChargeSoon();
+                if (result.ok) return;
+                logger.info('auto.charge-soon-refused', { ...result.error });
+                toast('error', "Can't charge soon now · the roast has moved on");
+              },
+              { failed: "Couldn't charge soon · try again" },
+            );
           }}
         >
           Charge soon

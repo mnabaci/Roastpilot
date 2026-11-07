@@ -55,16 +55,20 @@ export function AddStockForm({ bean, onDone }: { bean: Bean; onDone: () => void 
           variant="primary"
           disabled={!valid}
           onClick={() => {
-            run('beans.add-stock-failed', async () => {
-              const added = await api.addStock({
-                beanId: bean.id,
-                grams,
-                purchasedAt: purchasedAt.trim(),
-                plan,
-              });
-              if (added.ok) onDone();
-              else setProblem(FAILED);
-            });
+            run(
+              'beans.add-stock-failed',
+              async () => {
+                const added = await api.addStock({
+                  beanId: bean.id,
+                  grams,
+                  purchasedAt: purchasedAt.trim(),
+                  plan,
+                });
+                if (added.ok) onDone();
+                else setProblem(FAILED);
+              },
+              { failed: "Couldn't add the stock · try again" },
+            );
           }}
         >
           {grams > 0 ? `Add ${formatGrams(grams)}` : 'Add stock'}
@@ -110,11 +114,15 @@ export function AdjustStockForm({ bean, onDone }: { bean: Bean; onDone: () => vo
           variant="primary"
           disabled={!valid}
           onClick={() => {
-            run('beans.adjust-stock-failed', async () => {
-              const adjusted = await api.adjustStock({ beanId: bean.id, greenG, roastedG });
-              if (adjusted.ok) onDone();
-              else setProblem(FAILED);
-            });
+            run(
+              'beans.adjust-stock-failed',
+              async () => {
+                const adjusted = await api.adjustStock({ beanId: bean.id, greenG, roastedG });
+                if (adjusted.ok) onDone();
+                else setProblem(FAILED);
+              },
+              { failed: "Couldn't save the stock · try again" },
+            );
           }}
         >
           Save
