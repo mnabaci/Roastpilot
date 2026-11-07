@@ -1,16 +1,9 @@
 import {
-  serializeError,
-  type AutoPilot,
-  type Logger,
-  type ManualRoast,
-  type RoasterDriver,
-  type RoasterSession,
-} from '@roastpilot/core';
-import {
   AddStockSchema,
   AdjustStockSchema,
   AutoProfileSchema,
   BeanFieldsSchema,
+  MakeBeanProfileRequestSchema,
   MakeProfileRequestSchema,
   RoastResultSchema,
   RoastSetupSchema,
@@ -25,70 +18,21 @@ import {
   ProfileIdSchema,
   RoasterIdSchema,
   RoasterSchema,
-  RendererLogEntrySchema,
   RoastActionSchema,
   ExportRoastsRequestSchema,
   RoastIdSchema,
   SetRoastBeanRequestSchema,
   SetOutputRequestSchema,
   SettingsSchema,
-  type ConnectTarget,
-  type LogDay,
-  type LogDayRead,
-  type MakeProfileError,
-  type MakeProfileRequest,
-  type ProfileEntry,
-  type Result,
-  type SerialPortInfo,
-  type Snapshot,
 } from '@roastpilot/shared';
-import type { BeanService } from './beans/bean-service';
-import type { HistoryService } from './history/history-service';
-import type { RoastFiles } from './history/roast-files';
-import type { ProfileService } from './profiles/profile-service';
-import type { RoasterService } from './roasters/roaster-service';
-import type { SettingsService } from './settings/settings-service';
+import type { IpcCaller, IpcDeps, IpcHandler } from './ipc-deps';
 
-export interface IpcDeps {
-  session: Pick<
-    RoasterSession,
-    'connect' | 'disconnect' | 'setOutput' | 'emergencyStop' | 'acknowledgeSafety'
-  >;
-  roast: Pick<ManualRoast, 'act' | 'outputRequested'>;
-  settings: Pick<SettingsService, 'get' | 'set'>;
-  history: Pick<HistoryService, 'list' | 'get' | 'delete' | 'saveResult' | 'setBean'>;
-  roastFiles: RoastFiles;
-  pilot: Pick<AutoPilot, 'chargeSoon' | 'outputRequested' | 'resume'>;
-  profiles: Pick<
-    ProfileService,
-    'list' | 'duplicate' | 'copyTo' | 'save' | 'delete' | 'fromMilestones'
-  >;
-  roasters: Pick<
-    RoasterService,
-    'load' | 'add' | 'save' | 'delete' | 'setActive' | 'chooseConnection'
-  >;
-  beans: Pick<
-    BeanService,
-    'list' | 'add' | 'update' | 'setArchived' | 'addStock' | 'adjustStock' | 'setSetup'
-  >;
-  makeProfile: (request: MakeProfileRequest) => Promise<Result<ProfileEntry, MakeProfileError>>;
-  /** The clock's now, for Charge soon. */
-  nowMs: () => number;
-  snapshot: () => Snapshot;
-  listPorts: () => Promise<SerialPortInfo[]>;
-  createDriver: (target: ConnectTarget) => RoasterDriver;
-  logs: {
-    listDays: () => Promise<LogDay[]>;
-    readDay: (day: LogDay) => Promise<LogDayRead>;
-    openFolder: () => Promise<void>;
-  };
-}
-
-export type IpcHandler = (payload: unknown) => Promise<unknown>;
+export type { IpcCaller, IpcDeps, IpcHandler } from './ipc-deps';
+export { handleRendererLog, withErrorLogging } from './ipc-logging';
 
 /** Runs `fn` so that anything it throws, a failed validation included, becomes a rejected promise. */
-function handler(fn: (payload: unknown) => unknown): IpcHandler {
-  return (payload) => Promise.resolve().then(() => fn(payload));
+function handler(fn: (payload: unknown, caller: IpcCaller) => unknown): IpcHandler {
+  return (payload, caller) => Promise.resolve().then(() => fn(payload, caller));
 }
 
 /**
@@ -106,6 +50,7 @@ export function createIpcHandlers({
   roasters,
   beans,
   makeProfile,
+  makeBeanProfile,
   nowMs,
   snapshot,
   listPorts,
@@ -139,15 +84,17 @@ export function createIpcHandlers({
     [IPC_CHANNELS.listRoasts]: handler(() => history.list()),
     [IPC_CHANNELS.getRoast]: handler((payload) => history.get(RoastIdSchema.parse(payload))),
     [IPC_CHANNELS.deleteRoast]: handler((payload) => history.delete(RoastIdSchema.parse(payload))),
-    [IPC_CHANNELS.exportRoasts]: handler((payload) =>
-      roastFiles.exportRoasts(ExportRoastsRequestSchema.parse(payload)),
+    [IPC_CHANNELS.exportRoasts]: handler((payload, { window }) =>
+      roastFiles.exportRoasts(ExportRoastsRequestSchema.parse(payload), window),
     ),
-    [IPC_CHANNELS.importRoasts]: handler(() => roastFiles.importRoasts()),
+    [IPC_CHANNELS.importRoasts]: handler((_payload, { window }) => roastFiles.importRoasts(window)),
     [IPC_CHANNELS.setRoastBean]: handler((payload) => {
       const { id, beanId } = SetRoastBeanRequestSchema.parse(payload);
       return history.setBean(id, beanId);
     }),
-    [IPC_CHANNELS.importArtisan]: handler(() => roastFiles.importArtisan()),
+    [IPC_CHANNELS.importArtisan]: handler((_payload, { window }) =>
+      roastFiles.importArtisan(window),
+    ),
     [IPC_CHANNELS.autoChargeSoon]: handler(() => pilot.chargeSoon(nowMs())),
     [IPC_CHANNELS.autoResume]: handler(() => pilot.resume()),
     [IPC_CHANNELS.listProfiles]: handler(() => profiles.list()),
@@ -177,6 +124,9 @@ export function createIpcHandlers({
     [IPC_CHANNELS.adjustStock]: handler((payload) =>
       beans.adjustStock(AdjustStockSchema.parse(payload)),
     ),
+    [IPC_CHANNELS.makeBeanProfile]: handler((payload) =>
+      makeBeanProfile(MakeBeanProfileRequestSchema.parse(payload)),
+    ),
     [IPC_CHANNELS.setRoastSetup]: handler((payload) => {
       beans.setSetup(RoastSetupSchema.parse(payload));
     }),
@@ -199,35 +149,4 @@ export function createIpcHandlers({
       roasters.chooseConnection(ConnectTargetSchema.parse(payload)),
     ),
   };
-}
-
-/** Logs every failing handler with its channel, then rethrows so the renderer's call rejects too. */
-export function withErrorLogging(
-  handlers: Record<string, IpcHandler>,
-  logger: Logger,
-): Record<string, IpcHandler> {
-  return Object.fromEntries(
-    Object.entries(handlers).map(([channel, handler]) => [
-      channel,
-      async (payload: unknown) => {
-        try {
-          return await handler(payload);
-        } catch (error) {
-          logger.error('ipc.handler-failed', { channel, error: serializeError(error) });
-          throw error;
-        }
-      },
-    ]),
-  );
-}
-
-/** A log entry from the renderer: validated, then written under the `renderer` scope. */
-export function handleRendererLog(payload: unknown, logger: Logger): void {
-  const parsed = RendererLogEntrySchema.safeParse(payload);
-  if (!parsed.success) {
-    logger.warn('ipc.bad-renderer-log', { issues: parsed.error.issues.map((i) => i.message) });
-    return;
-  }
-  const { level, event, context } = parsed.data;
-  logger[level](event, context);
 }
