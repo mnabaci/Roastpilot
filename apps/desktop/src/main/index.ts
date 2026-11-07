@@ -15,6 +15,7 @@ import { createRoastFiles } from './history/roast-files';
 import { broadcast, registerIpcHandlers, registerIpcListener } from './ipc';
 import { createIpcHandlers, handleRendererLog, withErrorLogging } from './ipc-handlers';
 import { appPage, createMainWindow, devIcon } from './main-window';
+import { installWindowTheme } from './window-theme';
 import { createAppLogger } from './logging/app-logger';
 import { listLogDays, readLogDay } from './logging/log-reader';
 import { pruneOldLogsLater } from './logging/prune';
@@ -67,6 +68,8 @@ const power = createPowerGuard({
 });
 
 const simulatorBeans = new SimulatorBeans();
+// The Theme setting: Electron's theme and the window colour (docs/spec/ui.md, Settings).
+const applyTheme = installWindowTheme();
 
 const {
   session,
@@ -94,6 +97,9 @@ const {
   nowIso: () => new Date().toISOString(),
   onConnectionChange: (state) => {
     power.onConnection(state);
+  },
+  onSettingsChange: (latest) => {
+    applyTheme(latest.theme);
   },
   onRoastChange: (state) => {
     power.onRoast(state);

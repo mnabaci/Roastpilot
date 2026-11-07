@@ -151,6 +151,7 @@ export {
   RoasterCoolToSchema,
   RoastModeSchema,
   SoakTimeSchema,
+  ThemeSchema,
   DEFAULT_SETTINGS,
   needsSafetyNotice,
   SAFETY_NOTICE_VERSION,
@@ -164,6 +165,7 @@ export {
   type Settings,
   type SoakTime,
   type SettingsWriteError,
+  type Theme,
 } from './settings';
 export {
   DEFAULT_SOUNDS,

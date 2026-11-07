@@ -16,6 +16,7 @@ const ROAST_DEFAULTS = {
   autoProfile: 'light-steps',
   soakTimeS: 60,
   sounds: DEFAULT_SOUNDS,
+  theme: 'dark',
   safetyNoticeAccepted: 0,
 };
 
@@ -53,6 +54,12 @@ describe('SettingsSchema', () => {
     expect(SettingsSchema.parse({ safetyNoticeAccepted: 1.5 }).safetyNoticeAccepted).toBe(0);
   });
 
+  it('stays dark unless you choose a theme, and falls back to dark on an unknown one', () => {
+    expect(DEFAULT_SETTINGS.theme).toBe('dark');
+    expect(SettingsSchema.parse({ theme: 'light' }).theme).toBe('light');
+    expect(SettingsSchema.parse({ theme: 'sepia' }).theme).toBe('dark');
+  });
+
   it('defaults to Guided and no roaster', () => {
     expect(DEFAULT_SETTINGS).toEqual({
       connection: null,
@@ -81,6 +88,7 @@ describe('SettingsSchema', () => {
           'beans-in': { voice: 'bell', volumePct: 55, repeat: 'twice' },
         },
       },
+      theme: 'system',
       safetyNoticeAccepted: 1,
     };
     expect(SettingsSchema.parse(settings)).toEqual(settings);
