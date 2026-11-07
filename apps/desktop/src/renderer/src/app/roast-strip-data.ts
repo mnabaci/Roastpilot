@@ -8,6 +8,7 @@ import {
 import { formatClock, formatNumber, type RoastStripProps } from '@roastpilot/ui';
 import { STOP_REASON } from '../screens/roast/auto-flow';
 import { roastNumbers } from '../screens/roast/roast-numbers';
+import { isAutoDriven } from '../lib/roast-phases';
 import { PHASE_LABEL } from './phase-label';
 
 /** Dump beans leads the strip for the first minute of cooling: the one prompt that can't wait. */
@@ -18,11 +19,9 @@ const RUNNING: readonly RoastPhase[] = ['preheat', 'roasting', 'development', 'c
 const clock = (s: number | undefined) => (s === undefined ? '–' : formatClock(s));
 const percent = (v: number | undefined) => (v === undefined ? undefined : `${String(v)} %`);
 
-const DRIVEN: readonly RoastPhase[] = ['preheat', 'roasting', 'development'];
-
 /** Auto's steps that wait for you lead the strip, like Dump beans: the hold's limit is running. */
 function autoPrompt(phase: RoastPhase, auto: AutoStatus | undefined): string | undefined {
-  if (!auto?.enabled || !DRIVEN.includes(phase)) return undefined;
+  if (!auto?.enabled || !isAutoDriven(phase)) return undefined;
   if (auto.stopReason !== null) return `${STOP_REASON[auto.stopReason]} · Auto stopped`;
   if (phase !== 'preheat') return undefined;
   switch (auto.preheatStep) {

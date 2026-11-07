@@ -18,12 +18,14 @@ export function SafetyBanners() {
   const run = useRun();
   const locked = useSafety((s) => s.locked);
   const tripped = useSafety((s) => s.tripped);
-  const [refused, setRefused] = useState<string | undefined>();
+  // A refusal is about the trips it was asked over: once they change, the banners speak again.
+  const [refusal, setRefusal] = useState<{ text: string; over: readonly string[] }>();
+  const refused = refusal?.over === tripped ? refusal.text : undefined;
   if (!locked && tripped.length === 0) return null;
   const acknowledge = () => {
     run('safety.acknowledge-failed', async () => {
       const result = await api.acknowledgeSafety();
-      setRefused(result.ok ? undefined : refusedText(result.error));
+      setRefusal(result.ok ? undefined : { text: refusedText(result.error), over: tripped });
     });
   };
   const acknowledgeOn = locked ? tripped.findIndex((r) => safetyCopy(r).kind === 'critical') : -1;

@@ -1,5 +1,5 @@
 import { err } from '@roastpilot/shared';
-import { screen } from '@testing-library/react';
+import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { fakeApi, renderApp } from '../test/render-app';
@@ -38,6 +38,25 @@ describe('SafetyBanners', () => {
     renderApp(<SafetyBanners />, { safety: { locked: true, tripped: ['max-temperature'] } }, api);
     await userEvent.click(screen.getByRole('button', { name: 'Acknowledge' }));
     expect(await screen.findByText('Still tripped: Too hot')).toBeInTheDocument();
+  });
+
+  it('drops the refusal once the trips change, so it never names a cleared rule', async () => {
+    const api = fakeApi({
+      acknowledgeSafety: () =>
+        Promise.resolve(err({ kind: 'still-tripped', rules: ['max-temperature'] })),
+    });
+    const { stores } = renderApp(
+      <SafetyBanners />,
+      { safety: { locked: true, tripped: ['max-temperature'] } },
+      api,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Acknowledge' }));
+    expect(await screen.findByText('Still tripped: Too hot')).toBeInTheDocument();
+    act(() => {
+      stores.safety.setState({ locked: true, tripped: [] });
+    });
+    expect(screen.queryByText(/Still tripped/)).not.toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('Heater locked');
   });
 
   it('an alarm alone has no Acknowledge', () => {

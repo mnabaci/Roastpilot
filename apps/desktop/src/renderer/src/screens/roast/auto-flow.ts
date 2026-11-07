@@ -6,6 +6,7 @@ import type {
   RoastState,
 } from '@roastpilot/shared';
 import { formatClock } from '@roastpilot/ui';
+import { isAutoDriven } from '../../lib/roast-phases';
 import { END_ROAST, type FlowButton, type FlowStep } from './flow-step';
 
 const START: FlowButton = { action: 'start', label: 'Beans in · Start' };
@@ -28,8 +29,6 @@ export interface AutoFlowLive {
   developmentS?: number | undefined;
   heaterPct?: number | undefined;
 }
-
-const DRIVEN: readonly RoastState['phase'][] = ['preheat', 'roasting', 'development'];
 
 /** Auto stopped: why, and what is yours now. Never Start after a preheat ran out: the drum cools. */
 function stoppedStep(roast: RoastState, reason: AutoStopReason): FlowStep | undefined {
@@ -114,7 +113,7 @@ export function autoFlowStep(
   live: AutoFlowLive = {},
 ): FlowStep | undefined {
   if (!status.enabled) return switchedOffStep(roast, live.heaterPct);
-  if (status.stopReason !== null && DRIVEN.includes(roast.phase)) {
+  if (status.stopReason !== null && isAutoDriven(roast.phase)) {
     return stoppedStep(roast, status.stopReason);
   }
   if (!profile) return undefined;
