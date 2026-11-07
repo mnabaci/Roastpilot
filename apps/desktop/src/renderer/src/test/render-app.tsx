@@ -3,6 +3,7 @@ import {
   AUTO_OFF,
   DEFAULT_SETTINGS,
   NO_ROAST_SETUP,
+  SAFETY_NOTICE_VERSION,
   err,
   ok,
   type AutoProfile,
@@ -52,6 +53,7 @@ export function fakeApi(overrides: Partial<RoastpilotApi> = {}): Mocked<Roastpil
     onLogEntries: vi.fn(() => unsubscribe),
     openLogFolder: vi.fn(() => Promise.resolve()),
     onNavigate: vi.fn(() => unsubscribe),
+    onShowSafetyNotice: vi.fn(() => unsubscribe),
     listRoasts: vi.fn(() => Promise.resolve([])),
     getRoast: vi.fn((id: number) => Promise.resolve(err({ kind: 'not-found' as const, id }))),
     deleteRoast: vi.fn(() => Promise.resolve(ok(undefined))),
@@ -116,9 +118,15 @@ export const CONNECTED: ConnectionState = {
 /** A chime player that only remembers what it was asked to play. */
 export const fakeChime = (): Mocked<ChimePlayer> => ({ play: vi.fn() });
 
+/** Settings once the safety notice is accepted, as on every launch after the first. */
+export const ACCEPTED_SETTINGS = {
+  ...DEFAULT_SETTINGS,
+  safetyNoticeAccepted: SAFETY_NOTICE_VERSION,
+};
+
 /** Renders `ui` with stores already seeded (and ready), and returns the fakes. */
 export function renderApp(ui: ReactNode, seed: StoresSeed = {}, api = fakeApi()) {
-  const stores = createStores({ ready: true, ...seed });
+  const stores = createStores({ ready: true, settings: ACCEPTED_SETTINGS, ...seed });
   const chime = fakeChime();
   const view = render(
     <AppProvider deps={{ api, stores, logger: silentLogger, chime }}>{ui}</AppProvider>,

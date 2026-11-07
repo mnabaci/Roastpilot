@@ -5,15 +5,17 @@ import { buildAppMenu, type AppMenuOptions } from './app-menu';
 function build(overrides: Partial<AppMenuOptions> = {}) {
   const navigate = vi.fn();
   const openLogFolder = vi.fn();
+  const showSafetyNotice = vi.fn();
   const menu = buildAppMenu({
     appName: 'Roastpilot',
     platform: 'darwin',
     dev: false,
     navigate,
+    showSafetyNotice,
     openLogFolder,
     ...overrides,
   });
-  return { menu, navigate, openLogFolder };
+  return { menu, navigate, showSafetyNotice, openLogFolder };
 }
 
 /** Every item in the menu, nested ones included. */
@@ -44,6 +46,12 @@ describe('buildAppMenu', () => {
       expect(navigate).toHaveBeenCalledWith('settings');
     },
   );
+
+  it('Help → Safety notice shows it', () => {
+    const { menu, showSafetyNotice } = build();
+    click(byLabel(menu, 'Safety notice'));
+    expect(showSafetyNotice).toHaveBeenCalledOnce();
+  });
 
   it('Open log folder opens it', () => {
     const { menu, openLogFolder } = build();

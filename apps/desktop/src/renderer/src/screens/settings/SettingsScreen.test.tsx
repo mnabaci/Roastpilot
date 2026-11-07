@@ -1,9 +1,9 @@
-import { err, DEFAULT_SETTINGS } from '@roastpilot/shared';
+import { err } from '@roastpilot/shared';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
-import { fakeApi, renderApp } from '../../test/render-app';
+import { ACCEPTED_SETTINGS, fakeApi, renderApp } from '../../test/render-app';
 import { SettingsScreen } from './SettingsScreen';
 import type { SettingsSection } from './settings-section';
 
@@ -82,7 +82,7 @@ describe('SettingsScreen', () => {
     expect(screen.getByText(/any time the roaster is connected/)).toBeInTheDocument();
     expect(stores.settings.getState().settings.controls).toBe('full');
     expect(api.setSettings).toHaveBeenCalledWith({
-      ...DEFAULT_SETTINGS,
+      ...ACCEPTED_SETTINGS,
       connection: null,
       controls: 'full',
       chartSmoothingS: 3,

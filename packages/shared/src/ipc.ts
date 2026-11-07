@@ -39,6 +39,7 @@ export const IPC_CHANNELS = {
   logEntries: 'logs:entries',
   openLogFolder: 'logs:open-folder',
   navigate: 'app:navigate',
+  showSafetyNotice: 'app:show-safety-notice',
   listRoasts: 'history:list',
   getRoast: 'history:get',
   deleteRoast: 'history:delete',
@@ -98,6 +99,7 @@ export interface IpcEventPayloads {
   [IPC_CHANNELS.roast]: RoastState;
   [IPC_CHANNELS.logEntries]: LogRecord[];
   [IPC_CHANNELS.navigate]: Screen;
+  [IPC_CHANNELS.showSafetyNotice]: null;
   [IPC_CHANNELS.roastsChanged]: RoastsChange;
   [IPC_CHANNELS.autoStatus]: AutoStatus;
   [IPC_CHANNELS.roastersChanged]: Roaster[];

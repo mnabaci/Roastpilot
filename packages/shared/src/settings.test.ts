@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SETTINGS, SettingsSchema } from './settings';
+import {
+  DEFAULT_SETTINGS,
+  needsSafetyNotice,
+  SAFETY_NOTICE_VERSION,
+  SettingsSchema,
+} from './settings';
 import { DEFAULT_SOUNDS } from './sounds';
 
 const ROAST_DEFAULTS = {
@@ -11,6 +16,7 @@ const ROAST_DEFAULTS = {
   autoProfile: 'light-steps',
   soakTimeS: 60,
   sounds: DEFAULT_SOUNDS,
+  safetyNoticeAccepted: 0,
 };
 
 describe('SettingsSchema', () => {
@@ -31,6 +37,20 @@ describe('SettingsSchema', () => {
       autoProfile: 'light-steps',
       soakTimeS: 60,
     });
+  });
+
+  it('shows the safety notice until this version is accepted', () => {
+    expect(needsSafetyNotice(DEFAULT_SETTINGS)).toBe(true);
+    const accepted = { ...DEFAULT_SETTINGS, safetyNoticeAccepted: SAFETY_NOTICE_VERSION };
+    expect(needsSafetyNotice(accepted)).toBe(false);
+    expect(
+      needsSafetyNotice({ ...accepted, safetyNoticeAccepted: SAFETY_NOTICE_VERSION - 1 }),
+    ).toBe(true);
+  });
+
+  it('asks again for a safety notice version that is not a whole number', () => {
+    expect(SettingsSchema.parse({ safetyNoticeAccepted: 'yes' }).safetyNoticeAccepted).toBe(0);
+    expect(SettingsSchema.parse({ safetyNoticeAccepted: 1.5 }).safetyNoticeAccepted).toBe(0);
   });
 
   it('defaults to Guided and no roaster', () => {
@@ -61,6 +81,7 @@ describe('SettingsSchema', () => {
           'beans-in': { voice: 'bell', volumePct: 55, repeat: 'twice' },
         },
       },
+      safetyNoticeAccepted: 1,
     };
     expect(SettingsSchema.parse(settings)).toEqual(settings);
   });
