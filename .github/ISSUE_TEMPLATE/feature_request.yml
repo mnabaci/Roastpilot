@@ -1,0 +1,31 @@
+name: Feature request
+description: An idea that would make roasting with Roastpilot better.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The roasting problem, not the solution yet.
+      placeholder: When I roast back to back, I can't tell ...
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help
+      description: How you picture it working. One sketch or example beats a page of text.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you do today instead
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Would you like to build it?
+      options:
+        - 'No'
+        - Yes, with some guidance
+        - Yes
