@@ -54,7 +54,7 @@ export function stillWaiting(step: SoundStep, { roast, auto }: WaitState): boole
     case 'dump-beans':
       return roast.phase === 'cooling';
     case 'auto-stopped':
-      return auto.stopReason !== null;
+      return auto.enabled && auto.stopReason !== null;
   }
 }
 
