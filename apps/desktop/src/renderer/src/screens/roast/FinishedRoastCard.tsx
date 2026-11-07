@@ -28,6 +28,7 @@ export function FinishedRoastCard() {
           <p className="text-label text-ink-muted">{roastTitle(saved.startedAt)}</p>
         </div>
         <Button
+          variant="outline"
           size="sm"
           onClick={() => {
             setDismissedId(saved.id);

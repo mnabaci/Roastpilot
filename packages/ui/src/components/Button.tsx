@@ -9,6 +9,9 @@ const buttonVariants = cva(
       variant: {
         primary: 'bg-heat-fill text-on-heat hover:bg-heat-fill-hover',
         secondary: 'bg-surface-raised text-ink hover:bg-surface-hover',
+        // Secondary with an outline: Dismiss and Done that close a card. The outline keeps it a
+        // button on any background (heat tint, surface-raised, surface in Dark).
+        outline: 'border border-border-strong bg-surface-raised text-ink hover:bg-surface-hover',
         ghost: 'bg-transparent text-ink hover:bg-surface-hover',
         danger: 'bg-critical text-on-critical hover:brightness-110',
       },
@@ -30,7 +33,8 @@ export interface ButtonProps extends ComponentProps<'button'>, VariantProps<type
 
 /**
  * Compact, tonal button. Use one `primary` per screen state (size `lg` for the phase action),
- * `secondary` for other actions, `ghost` for low-priority ones and `danger` only for Emergency stop.
+ * `secondary` for other actions, `outline` for Dismiss / Done that close a card, `ghost` for
+ * low-priority ones and `danger` only for Emergency stop.
  */
 export function Button({
   variant,

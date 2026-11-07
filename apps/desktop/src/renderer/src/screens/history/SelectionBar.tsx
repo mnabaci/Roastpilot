@@ -27,7 +27,7 @@ export function SelectionBar({
           },
         }))}
       />
-      <Button size="sm" variant="ghost" onClick={onDone}>
+      <Button size="sm" variant="outline" onClick={onDone}>
         Done
       </Button>
     </div>

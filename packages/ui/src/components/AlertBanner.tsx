@@ -41,7 +41,7 @@ export function AlertBanner({
         {children}
       </p>
       {onDismiss ? (
-        <Button variant="ghost" size="sm" onClick={onDismiss}>
+        <Button variant="outline" size="sm" onClick={onDismiss}>
           {dismissLabel}
         </Button>
       ) : null}

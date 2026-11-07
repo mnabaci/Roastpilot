@@ -28,9 +28,6 @@ interface CoachHeadsUpProps extends CoachCardBase {
 
 export type CoachCardProps = CoachSuggestionProps | CoachHeadsUpProps;
 
-/** On the heat tint and on surface-raised alike, the outline makes Dismiss read as a button. */
-const DISMISS_CLASS = 'border border-border-strong';
-
 /** "Coach suggests", then the note when there is one. */
 function Label({ text, note }: { text: string; note: string | undefined }) {
   return <p className="text-label text-ink-muted">{note ? `${text} · ${note}` : text}</p>;
@@ -53,7 +50,7 @@ export function CoachCard(props: CoachCardProps) {
       >
         <Label text="Heads-up" note={note} />
         <p className="text-body text-ink">{props.line}</p>
-        <Button variant="secondary" size="sm" className={DISMISS_CLASS} onClick={onDismiss}>
+        <Button variant="outline" size="sm" onClick={onDismiss}>
           Dismiss
         </Button>
       </section>
@@ -88,7 +85,7 @@ export function CoachCard(props: CoachCardProps) {
         >
           {props.applying ? 'Applying…' : 'Apply'}
         </Button>
-        <Button variant="secondary" size="sm" className={DISMISS_CLASS} onClick={onDismiss}>
+        <Button variant="outline" size="sm" onClick={onDismiss}>
           Dismiss
         </Button>
       </div>
