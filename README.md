@@ -84,10 +84,12 @@ Download the latest from [GitHub Releases](https://github.com/mnabaci/Roastpilot
 
 Updates (Settings › About shows where you are):
 
-- **Windows:** downloads in the background and installs when you quit, or press **Restart to
-  update**. Never during a roast.
-- **macOS:** About says "Version X is out"; **Download** opens the release, install the new DMG
-  over the old app. Your roasts, beans and settings stay.
+- **Windows and macOS:** downloads in the background and installs when you quit, or press
+  **Restart to update**. Never during a roast.
+- **macOS:** from 0.1.2 on, once Roastpilot is in Applications. Run from the DMG or Downloads,
+  About says "Version X is out · move Roastpilot to Applications to update by itself" and
+  **Download** opens the release. 0.1.1 and older only show Download: install 0.1.2 over the old
+  app once. Your roasts, beans and settings stay.
 - Before a new version changes the database, it saves a copy in the app's `backups` folder.
 
 How releases and updates work: [install-and-update.md](docs/spec/install-and-update.md).
