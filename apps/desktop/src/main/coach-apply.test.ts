@@ -14,12 +14,16 @@ const BOTH: CoachSetting = {
 function setup(
   claimed: ReturnType<typeof ok<CoachSetting>> | ReturnType<typeof err> = ok(BOTH),
   refuse?: { channel: string; error: DriverError },
+  /** What happens while an output is being set: Drop, a switch to Auto. */
+  whileSetting: (world: { allowed: boolean }) => void = () => undefined,
 ) {
+  const world = { allowed: true };
   const sent: [string, number][] = [];
   const noted: [string, string | undefined][] = [];
   const logger = { ...silentLogger, info: vi.fn(), warn: vi.fn() };
   const coach = {
     claim: vi.fn(() => claimed as Result<CoachSetting, { kind: 'stale' } | { kind: 'not-now' }>),
+    canApply: () => world.allowed,
     dismiss: vi.fn(),
   };
   const actions = coachActions({
@@ -27,6 +31,7 @@ function setup(
     setOutput: (channel, value) => {
       if (refuse?.channel === channel) return Promise.resolve(err(refuse.error));
       sent.push([channel, value]);
+      whileSetting(world);
       return Promise.resolve(ok(undefined));
     },
     roast: { note: (kind, detail) => noted.push([kind, detail]) },
@@ -74,6 +79,15 @@ describe('coach Apply', () => {
     const refused: DriverError = { kind: 'no-reply', command: 'FAN' };
     const { actions, sent, noted } = setup(ok(BOTH), { channel: 'fan', error: refused });
     expect(await actions.apply(4)).toEqual(err(refused));
+    expect(sent).toEqual([['heater', 75]]);
+    expect(noted).toEqual([['coach-applied', 'heater 65→75']]);
+  });
+
+  it('sets no more once the roast stops allowing it while the heater is set (Drop)', async () => {
+    const { actions, sent, noted } = setup(ok(BOTH), undefined, (world) => {
+      world.allowed = false;
+    });
+    expect(await actions.apply(4)).toEqual(err({ kind: 'not-now' }));
     expect(sent).toEqual([['heater', 75]]);
     expect(noted).toEqual([['coach-applied', 'heater 65→75']]);
   });

@@ -98,9 +98,14 @@ export class Coach {
     if (channel === 'heater') this.#run?.restartControl(value);
   }
 
+  /** The roast still allows Apply: Manual, coach on, roasting, connected and not locked. */
+  canApply(): boolean {
+    return this.#quiet(this.#deps.roast()) === undefined;
+  }
+
   /** Takes the setting suggestion `id` off the card for Apply, while the roast still allows it. */
   claim(id: number): Result<CoachSetting, CoachClaimError> {
-    if (this.#quiet(this.#deps.roast())) return err({ kind: 'not-now' });
+    if (!this.canApply()) return err({ kind: 'not-now' });
     const setting = this.#card.claim(id);
     this.#publish();
     return setting ? ok(setting) : err({ kind: 'stale' });

@@ -20,6 +20,7 @@ export interface CoachActions {
 /**
  * Apply sets the card's outputs through the sliders' path, heater first, and records a
  * `coach-applied` event with what changed. A refused output stops there: what was set is recorded.
+ * A roast that stops allowing it while an output is being set (Drop, Auto, a lock) gets no more.
  */
 export function coachActions({
   coach,
@@ -27,7 +28,7 @@ export function coachActions({
   roast,
   logger,
 }: {
-  coach: Pick<Coach, 'claim' | 'dismiss'>;
+  coach: Pick<Coach, 'claim' | 'canApply' | 'dismiss'>;
   setOutput: HandOutput;
   roast: Pick<ManualRoast, 'note'>;
   logger: Logger;
@@ -44,6 +45,11 @@ export function coachActions({
       for (const output of CoachOutputSchema.options) {
         const change = claimed.value[output];
         if (!change || refused) continue;
+        // After an earlier output's await: Drop may have set the cooling fan, which Apply must keep.
+        if (Object.keys(changed).length > 0 && !coach.canApply()) {
+          refused = { kind: 'not-now' };
+          continue;
+        }
         const sent = await setOutput(output, change.to);
         if (sent.ok) changed[output] = change;
         else refused = sent.error;

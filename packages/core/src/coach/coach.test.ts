@@ -376,6 +376,13 @@ describe('Coach', () => {
       expect(coach.claim(id)).toEqual({ ok: false, error: { kind: 'stale' } });
     });
 
+    it('Apply is allowed only while the roast allows it', () => {
+      const { coach, world } = suggesting();
+      expect(coach.canApply()).toBe(true);
+      world.roast = { ...ROASTING, phase: 'cooling' };
+      expect(coach.canApply()).toBe(false);
+    });
+
     it('Apply refuses once the roast no longer allows it', () => {
       const { coach, world, advice } = suggesting();
       world.locked = true;
