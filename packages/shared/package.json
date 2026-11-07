@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Types, the IPC contract with zod schemas, units and constants shared by every package.",
+  "license": "GPL-3.0-or-later",
   "exports": {
     ".": "./src/index.ts"
   },
