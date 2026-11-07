@@ -107,9 +107,12 @@ export function MilestoneBuilder({
       <div className="flex flex-wrap items-start gap-5">
         <section aria-label="Milestones" className="flex min-w-96 max-w-lg flex-1 flex-col gap-2">
           <div className="flex items-start gap-2">
-            <span className="w-32 shrink-0 pt-2 text-body text-ink">Charge</span>
-            <span className="flex-1 pt-2 text-body text-ink-muted tabular-nums">
-              {formatClock(0)}
+            <span className="flex min-h-control-sm w-32 shrink-0 items-center text-body text-ink">
+              Charge
+            </span>
+            {/* Fixed: its text in line with the time fields under it. */}
+            <span className="flex min-h-control-sm flex-1 items-center text-body text-ink-muted tabular-nums">
+              <span className="border border-transparent px-2.5">{formatClock(0)}</span>
             </span>
             <NumberField
               label="Charge temperature"

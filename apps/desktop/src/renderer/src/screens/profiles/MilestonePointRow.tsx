@@ -20,7 +20,9 @@ export function MilestonePointRow({
 }) {
   return (
     <div className="flex items-start gap-2">
-      <span className="w-32 shrink-0 pt-2 text-body text-ink">{label}</span>
+      <span className="flex min-h-control-sm w-32 shrink-0 items-center text-body text-ink">
+        {label}
+      </span>
       <NumberField
         label={`${label} time`}
         hideLabel
