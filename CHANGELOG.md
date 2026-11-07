@@ -6,6 +6,13 @@ All notable changes to Roastpilot are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-07
+
+### Fixed
+
+- **Security:** build tools updated for three security alerts (esbuild, glob, minimatch). Nothing
+  changes in the app.
+
 ## [0.1.0] - 2026-11-07
 
 The first release.
