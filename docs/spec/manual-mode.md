@@ -1,11 +1,25 @@
 # Manual mode with live coach
 
 - Switch between Auto and Manual at any time. In Manual you set heater and fan.
-- A coach card shows the next suggested setting, the reason and an Apply button: "Heater 65% → 75% · 4 °C below target, RoR falling".
-- Suggestions come from the same phase plan and PID running in the background, so Manual and Auto never disagree: "Next step at 150 °C: heat 65%, fan 50%".
-- At most one new suggestion every 15 s, and only when it differs by 10% or more.
-- Milestone nudges: first crack expected soon (from the ghost), drop temp approaching.
+- A coach card suggests the next setting while you roast by hand (see [Coach](#coach)).
 - All safety rules apply in Manual mode too.
+
+## Coach
+
+In a manual roast, a card above the heater and fan sliders suggests what Auto would do now, and why, with **Apply**: "Heater 65% → 75% · 4 °C below target, RoR falling".
+
+- **Where it comes from:** the profile picked for Auto (the setup card) runs in the background from Start, with the same phases and heat control as Auto ([roast-control.md](roast-control.md)), so Manual and Auto never disagree. It never sends anything to the roaster. Whenever you set the heater (by hand or with Apply), it starts again from your setting, as Resume auto does, so a suggestion is always a step from where you are, not from where Auto would have been.
+- **When:** from Start until Drop (Roasting and Development), while the roast is Manual, connected and not locked by a safety stop. Not in Preheat: the Preheat hint already says to set the heater yourself.
+- **How often:** at most one new suggestion every 15 s, and only when it differs from what is set by 10 % or more (heater or fan). One card can carry both: "Heater 65% → 75% · Fan 50% → 40%".
+- **Why, in one line:** on a curve phase, the gap to the curve and the RoR trend ("4 °C below target, RoR falling"); on a step phase, the RoR against the step's range ("RoR 6.5 · step wants 8–12"); at a phase change, its name ("Maillard from 150 °C"). A roast with the stall guard tripped says so ("RoR stalling").
+- **Apply:** sets the suggested heater and fan through the same path as the sliders, so every safety rule applies, and records a `coach_applied` event (detail: output, from, to). The card goes away until the next suggestion.
+- **Dismiss:** hides that suggestion until the next phase, or until the coach wants something 10 % or more further from what is set than the one you dismissed.
+- **Heads-ups (no Apply, Dismiss only), when no setting is suggested:**
+  - "First crack in ~45 s · listen": in Roasting with no first-crack tap, once BT is within 60 s of the expected first crack at the current RoR. Expected first crack is the same as for the Listen for first crack sound ([ui.md](ui.md#sounds)); without one, no heads-up.
+  - "Drop in ~30 s · 1:45 development": in Development, 30 s before the profile's development time; or "BT cap 225 °C in ~30 s" when BT will reach the cap first at the current RoR.
+- **Needs calibration:** with a profile that needs calibration, the card's first line says so ("Coach · Light · Steps needs calibration"), so you weigh its advice.
+- **Off:** a setting, Settings › Roast "Coach in manual roasts", on by default. Off, Manual looks as it does without a coach.
+- **Gone:** at Drop, a switch to Auto, a disconnect or a safety stop the card disappears at once.
 
 ## Manual roast flow
 

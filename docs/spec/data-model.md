@@ -42,7 +42,7 @@ before charge (preheat) have negative times.
 
 ## Auto mode (milestone 4)
 
-One migration: `roasts.profile`, a JSON copy of the profile the roast ran (with its `schemaVersion`), empty for manual roasts; `mode` is `auto` when Auto was on at charge. New `roast_events` types: `dry-end`, `phase` (detail: its name), `override` (detail: output and value) and `stall-guard` (detail: tripped or cleared). Later, without a migration: `mode` (detail: auto or manual), when Auto is switched mid-roast; switched on, the roast's `mode` and `profile` are set as if it had charged in Auto.
+One migration: `roasts.profile`, a JSON copy of the profile the roast ran (with its `schemaVersion`), empty for manual roasts; `mode` is `auto` when Auto was on at charge. New `roast_events` types: `dry-end`, `phase` (detail: its name), `override` (detail: output and value) and `stall-guard` (detail: tripped or cleared). `coach_applied` (detail: each output changed, with from and to) when you press Apply on the coach card. Later, without a migration: `mode` (detail: auto or manual), when Auto is switched mid-roast; switched on, the roast's `mode` and `profile` are set as if it had charged in Auto.
 
 The same migration adds `profiles` (`id`, `doc`, `updated_at`), your own profiles, each one JSON document checked against the profile format on the way in and out. Built-ins stay data in code ([ADR 0011](../adr/0011-built-in-profile-as-data.md)). A row that no longer parses is skipped and logged.
 
