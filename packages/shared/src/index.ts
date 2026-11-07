@@ -64,6 +64,7 @@ export type {
   SafetyApi,
   SettingsApi,
   Unsubscribe,
+  UpdatesApi,
 } from './renderer-api';
 export {
   LOG_LEVELS,
@@ -262,3 +263,18 @@ export {
   type SampleColumns,
   type SetRoastBeanRequest,
 } from './roast-file';
+export {
+  AppInfoSchema,
+  OpenReleasePageErrorSchema,
+  ReleasePageSchema,
+  RestartToUpdateErrorSchema,
+  UPDATES_OFF,
+  UpdateStatusSchema,
+  updateWaiting,
+  VersionSchema,
+  type AppInfo,
+  type OpenReleasePageError,
+  type ReleasePage,
+  type RestartToUpdateError,
+  type UpdateStatus,
+} from './update-status';
