@@ -3,6 +3,7 @@ import { serializeError } from '@roastpilot/core';
 import { app, BrowserWindow } from 'electron';
 import { join } from 'node:path';
 import { WINDOW_BACKGROUND } from './window-background';
+import { isAppNavigation } from './window-navigation';
 
 /**
  * The app icon (docs/spec/ui.md, Brand). Packaged builds get it from electron-builder; in
@@ -41,7 +42,7 @@ export function createMainWindow({
   // Never open new windows or navigate away from the app's own pages.
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', (event, url) => {
-    if (!devUrl || !url.startsWith(devUrl)) {
+    if (!isAppNavigation(url, devUrl)) {
       logger.warn('window.navigation-blocked', { url });
       event.preventDefault();
     }

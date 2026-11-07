@@ -15,12 +15,16 @@ export function registerIpcListener(channel: string, listener: (payload: unknown
   });
 }
 
-/** Sends an event to every open window. */
+/**
+ * Sends an event to every open window. A window closing, or one whose page has crashed, is skipped:
+ * sending to it would throw into the roaster loop that published the event.
+ */
 export function broadcast<C extends IpcEventChannel>(
   channel: C,
   payload: IpcEventPayloads[C],
 ): void {
   for (const win of BrowserWindow.getAllWindows()) {
-    if (!win.isDestroyed()) win.webContents.send(channel, payload);
+    if (!win.isDestroyed() && !win.webContents.isDestroyed())
+      win.webContents.send(channel, payload);
   }
 }
