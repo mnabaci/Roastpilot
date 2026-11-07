@@ -64,7 +64,7 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
   return (
     // The two columns scroll on their own, so the action and sliders never leave with the chart.
     <main className="grid min-h-0 flex-1 grid-cols-[1fr_auto] gap-6 overflow-hidden p-6">
-      <div className="flex min-h-0 min-w-0 flex-col gap-5 overflow-y-auto">
+      <div className="flex min-h-0 min-w-0 flex-col gap-4 overflow-y-auto">
         <div className="flex items-start justify-between gap-4">
           <PhaseStepper
             steps={STEPS}
@@ -89,7 +89,7 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
         />
       </div>
       {/* The panel shows what the moment needs (docs/spec/ui.md, Side panel follows the roast). */}
-      <aside aria-label="Controls" className="flex min-h-0 w-80 flex-col gap-5 overflow-y-auto">
+      <aside aria-label="Controls" className="flex min-h-0 w-80 flex-col gap-4 overflow-y-auto">
         {!hasRoaster ? (
           <>
             {flow}

@@ -12,7 +12,7 @@ export function SavedRoastStats({ roast }: { roast: RoastSummary }) {
       ? formatNumber((developmentS / dropTimeS) * 100, 0)
       : undefined;
   return (
-    <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
       <StatCard label="Total" value={clock(dropTimeS)} context="Charge to drop" />
       <StatCard label="First crack" value={clock(fcTimeS)} context="Since charge" />
       <StatCard
