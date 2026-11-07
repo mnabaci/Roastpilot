@@ -18,8 +18,11 @@ export interface UpdateServiceDeps {
   /** Wall-clock milliseconds (epoch), for "checked 14:02" and the daily check. */
   wallNowMs: () => number;
   installedVersion: string;
-  /** False on unsigned macOS: a newer version is only announced, never downloaded or installed. */
-  canInstall: boolean;
+  /**
+   * Asked at each check: false when this copy can't replace itself (macOS from the DMG, a
+   * translocated copy, a folder it can't write), so a newer version is only announced.
+   */
+  canInstall: () => boolean;
   /** Preheat to Cooling, or drum cooling: Restart to update waits. */
   isRoasting: () => boolean;
   onStatus: (status: UpdateStatus) => void;
@@ -92,7 +95,7 @@ export class UpdateService {
       this.#set({ state: 'idle', checkedAt: new Date(this.#deps.wallNowMs()).toISOString() });
       return;
     }
-    if (!this.#deps.canInstall) {
+    if (!this.#deps.canInstall()) {
       if (shown !== version) this.#deps.logger.info('update.available', { version });
       this.#set({ state: 'available', version, reason: 'cant-replace' });
       return;
@@ -102,7 +105,8 @@ export class UpdateService {
 
   /** Quits and installs the downloaded update, unless a roast runs or nothing is ready. */
   restart(): Result<void, RestartToUpdateError> {
-    if (this.#status.state !== 'ready' || !this.#deps.canInstall) return err({ kind: 'not-ready' });
+    if (this.#status.state !== 'ready' || !this.#deps.canInstall())
+      return err({ kind: 'not-ready' });
     if (this.#deps.isRoasting()) {
       this.#deps.logger.info('update.restart-refused', { reason: 'roasting' });
       return err({ kind: 'roasting' });
@@ -115,6 +119,16 @@ export class UpdateService {
       this.#deps.logger.error('update.install-failed', { error: serializeError(error) });
       return err({ kind: 'install-failed' });
     }
+  }
+
+  /**
+   * The last install (macOS: the swap after quitting) failed, as main read from its log: shown as
+   * "Couldn't update" until the next check, which downloads it again. Ignored once a check runs.
+   */
+  installFailed(detail: { version: string | null; reason: string }): void {
+    if (this.#disposed || this.#status.state !== 'idle' || this.#status.checkedAt !== null) return;
+    this.#deps.logger.warn('update.last-install-failed', detail);
+    this.#set({ state: 'failed', stage: 'install' });
   }
 
   /** No more checks or events. */
@@ -145,7 +159,7 @@ export class UpdateService {
         this.#set({ ...status, percent: Math.min(100, Math.max(0, Math.round(event.percent))) });
       return;
     }
-    if (!this.#deps.canInstall) {
+    if (!this.#deps.canInstall()) {
       this.#deps.logger.warn('update.downloaded-ignored', { version: event.version });
       return;
     }

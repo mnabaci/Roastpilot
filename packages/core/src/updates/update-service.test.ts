@@ -383,3 +383,66 @@ describe('UpdateService: macOS unsigned (cannot install)', () => {
     expect(h.updater.quitAndInstall).not.toHaveBeenCalled();
   });
 });
+
+describe('UpdateService: can it install is asked each time', () => {
+  it('a copy moved into Applications downloads at the next check', async () => {
+    const h = updateHarness({ canInstall: false });
+    h.latest(ok('0.2.0'), ok('0.2.0'));
+    await h.service.check();
+    expect(h.service.status).toEqual({
+      state: 'available',
+      version: '0.2.0',
+      reason: 'cant-replace',
+    });
+    h.setCanInstall(true);
+    await h.service.check();
+    expect(h.service.status).toEqual({ state: 'ready', version: '0.2.0' });
+    expect(h.updater.download).toHaveBeenCalledTimes(1);
+  });
+
+  it('a copy that can no longer replace itself never restarts into the installer', async () => {
+    const h = updateHarness();
+    h.latest(ok('0.2.0'));
+    await h.service.check();
+    h.setCanInstall(false);
+    expect(h.service.restart()).toEqual({ ok: false, error: { kind: 'not-ready' } });
+    expect(h.updater.quitAndInstall).not.toHaveBeenCalled();
+  });
+});
+
+describe('UpdateService: the last install failed', () => {
+  const FAILED = { version: '0.2.0', reason: 'mv failed' };
+
+  it('shows failed at the install step and logs it once', () => {
+    const h = updateHarness();
+    h.service.installFailed(FAILED);
+    h.service.installFailed(FAILED);
+    expect(h.service.status).toEqual({ state: 'failed', stage: 'install' });
+    expect(h.statuses).toEqual([{ state: 'failed', stage: 'install' }]);
+    expect(h.logs.filter((e) => e.event === 'update.last-install-failed')).toEqual([
+      expect.objectContaining({ level: 'warn', context: FAILED }),
+    ]);
+  });
+
+  it('stays on screen until the first check, which downloads it again', async () => {
+    const h = updateHarness();
+    h.latest(ok('0.2.0'));
+    h.service.installFailed(FAILED);
+    h.service.start();
+    await h.clock.runFor(FIRST_CHECK_MS - 1);
+    expect(h.service.status).toEqual({ state: 'failed', stage: 'install' });
+    await h.clock.runFor(1);
+    expect(h.service.status).toEqual({ state: 'ready', version: '0.2.0' });
+  });
+
+  it('arriving after a check has begun, or after dispose, changes nothing', async () => {
+    const h = updateHarness();
+    await h.service.check();
+    h.service.installFailed(FAILED);
+    expect(h.service.status).toMatchObject({ state: 'idle' });
+    const late = updateHarness();
+    late.service.dispose();
+    late.service.installFailed(FAILED);
+    expect(late.statuses).toEqual([]);
+  });
+});

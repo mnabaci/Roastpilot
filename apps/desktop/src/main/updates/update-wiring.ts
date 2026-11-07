@@ -74,7 +74,7 @@ export function createUpdates(deps: UpdatesDeps): Updates {
     clock: deps.clock,
     wallNowMs: deps.wallNowMs,
     installedVersion: version,
-    canInstall,
+    canInstall: () => canInstall,
     isRoasting: deps.isRoasting,
     onStatus: deps.publish,
     logger,
