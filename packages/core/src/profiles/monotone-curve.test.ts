@@ -66,4 +66,10 @@ describe('monotoneCurve', () => {
     expect(pointSlopes([...MILESTONES])).not.toBe(slopes);
     expect(slopes[1]).toBe(0);
   });
+
+  it('refuses a step that is not above 0, rather than sampling forever', () => {
+    for (const stepS of [0, -5, Number.NaN]) {
+      expect(() => monotoneCurve(MILESTONES, stepS)).toThrow(RangeError);
+    }
+  });
 });

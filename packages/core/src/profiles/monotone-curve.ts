@@ -73,9 +73,11 @@ export function monotoneAt(
 
 /**
  * The smooth curve through `points` (in time order) sampled every `stepS` plus each point
- * (docs/spec/roast-control.md, Profile format).
+ * (docs/spec/roast-control.md, Profile format). Throws for a `stepS` that is not above 0.
  */
 export function sampleMonotone(points: readonly CurvePoint[], stepS: number): CurvePoint[] {
+  // A programmer error: a step of 0 or less would never reach the next point.
+  if (!(stepS > 0)) throw new RangeError(`stepS must be above 0, got ${String(stepS)}`);
   const curve: CurvePoint[] = [];
   points.forEach((to, i) => {
     const from = points[i - 1];
