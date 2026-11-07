@@ -1,14 +1,12 @@
 import {
   err,
   ok,
-  type AutoProfile,
   type CoachSetting,
   type CoachStatus,
   type Reading,
   type Result,
   type RoastState,
 } from '@roastpilot/shared';
-import { startRoastRun, type RoastRun } from '../auto/roast-run';
 import { guardListener } from '../logging/guard-listener';
 import { silentLogger, type Logger } from '../logging/logger';
 import { serializeError } from '../logging/serialize-error';
@@ -16,7 +14,8 @@ import { rateOfRise, rorReadings } from '../roast/rate-of-rise';
 import { BEAN_TEMP } from '../safety/safety-rule';
 import { CoachCard } from './coach-card';
 import type { CoachDeps } from './coach-deps';
-import { coachInput, gapsOf, type PhaseSeen } from './coach-input';
+import { coachInput, gapsOf } from './coach-input';
+import { CoachRun } from './coach-run';
 import { rorTrend } from './ror-trend';
 import { SetOutputs } from './set-outputs';
 
@@ -39,12 +38,9 @@ export class Coach {
   readonly #notify: (status: CoachStatus) => void;
   readonly #card = new CoachCard();
   readonly #set = new SetOutputs();
-  #run: RoastRun | undefined;
-  #profile: AutoProfile | undefined;
+  #run: CoachRun | undefined;
   /** The roast the card's memory belongs to. */
   #chargedAtMs: number | null = null;
-  #phaseSeen: PhaseSeen | undefined;
-  #lastReportedHeater: number | undefined;
   #lastStatus = '';
   /** A tick failed and none has worked since: logged once when it starts and once when it ends. */
   #failing = false;
@@ -57,7 +53,7 @@ export class Coach {
 
   get status(): CoachStatus {
     const advice = this.#card.shown;
-    const profile = this.#profile;
+    const profile = this.#run?.profile;
     return {
       advice,
       needsCalibration: advice && profile?.needsCalibration ? profile.name : null,
@@ -145,25 +141,28 @@ export class Coach {
       this.#run = undefined;
       this.#card.reset();
     }
-    const run = this.#run ?? this.#start(chargedAtMs, reading);
-    const profile = this.#profile ?? this.#deps.profile();
-    this.#followReportedHeater(run, reading);
+    const coachRun = this.#run ?? this.#start(chargedAtMs, reading);
+    coachRun.followReportedHeater(reading, this.#set.pending('heater', reading.atMs));
     const sinceCharge = rorReadings(this.#deps.readings(), chargedAtMs);
     const btC = reading.values[BEAN_TEMP];
     const ror = rateOfRise(sinceCharge);
-    const tick = run.tick({ nowMs: reading.atMs, btC, ror, firstCrackAtMs: roast.firstCrackAtMs });
-    if (tick.events.some((e) => e.kind === 'phase'))
-      this.#phaseSeen = { index: run.phaseIndex, atMs: reading.atMs, btC };
+    const tick = coachRun.tick({
+      nowMs: reading.atMs,
+      btC,
+      ror,
+      firstCrackAtMs: roast.firstCrackAtMs,
+    });
     const { round } = this.#deps;
+    const { run } = coachRun;
     const input = coachInput({
       run,
-      profile,
+      profile: coachRun.profile,
       roast,
       reading,
       now: { btC, ror, trend: rorTrend(sinceCharge) },
       set: { heater: this.#set.value('heater', reading), fan: this.#set.value('fan', reading) },
       wants: { heater: round('heater', tick.heaterPct), fan: round('fan', tick.fanPct) },
-      phaseSeen: this.#phaseSeen,
+      phaseSeen: coachRun.phaseSeen,
       expectedFirstCrackC: this.#deps.expectedFirstCrackC(),
     });
     const posted = this.#card.update({
@@ -177,33 +176,18 @@ export class Coach {
   }
 
   /** A run for this roast, caught up from charge and starting from your heater. */
-  #start(chargedAtMs: number, reading: Reading): RoastRun {
-    const profile = this.#deps.profile();
-    const earlier = this.#deps.readings().filter((r) => r.atMs < reading.atMs);
-    const run = startRoastRun(profile, this.#deps.tuning(), chargedAtMs, earlier);
-    run.restartControl(this.#set.value('heater', reading));
+  #start(chargedAtMs: number, reading: Reading): CoachRun {
+    const run = new CoachRun({
+      profile: this.#deps.profile(),
+      tuning: this.#deps.tuning(),
+      chargedAtMs,
+      readings: this.#deps.readings(),
+      reading,
+      heaterPct: this.#set.value('heater', reading),
+    });
     this.#run = run;
-    this.#profile = profile;
-    // The phase it caught up into began before the coach was watching.
-    const startMs = chargedAtMs + run.phaseStartedS * 1_000;
-    const began = this.#deps.readings().find((r) => r.atMs >= startMs);
-    this.#phaseSeen = {
-      index: run.phaseIndex,
-      atMs: Number.NEGATIVE_INFINITY,
-      btC: began?.values[BEAN_TEMP],
-    };
-    this.#lastReportedHeater = reading.values.heater;
-    this.#logger.info('coach.started', { profileId: profile.id, phase: run.phaseName });
+    this.#logger.info('coach.started', { profileId: run.profile.id, phase: run.run.phaseName });
     return run;
-  }
-
-  /** The heater changed without you (a safety rule, the roaster): start again from there too. */
-  #followReportedHeater(run: RoastRun, reading: Reading): void {
-    const reported = reading.values.heater;
-    const before = this.#lastReportedHeater;
-    this.#lastReportedHeater = reported;
-    if (reported === undefined || before === undefined || reported === before) return;
-    if (!this.#set.pending('heater', reading.atMs)) run.restartControl(reported);
   }
 
   #publish(): void {
