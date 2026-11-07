@@ -6,7 +6,9 @@ All notable changes to Roastpilot are listed here. The format follows
 
 ## [Unreleased]
 
-Everything so far; there is no release yet.
+## [0.1.0] - 2026-11-07
+
+The first release.
 
 ### Added
 
@@ -39,4 +41,7 @@ Everything so far; there is no release yet.
 - **Install and update:** installers on GitHub Releases. Windows updates in the background and
   installs on quit or Restart to update, never mid-roast; macOS says when a new version is out.
   Settings › About shows the version and updates. The database is backed up before migrations.
+- **Safety notice** on first launch: Roastpilot switches a heater, so stay with the roaster.
+  Help → Safety notice shows it again.
+- **Theme:** Dark, Light or Match system, in Settings › Appearance.
 - **Toasts** for actions that fail or are refused, and for import and export results.
