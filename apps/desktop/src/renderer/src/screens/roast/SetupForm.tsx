@@ -1,6 +1,7 @@
 import { beanHints, suggestProfile } from '@roastpilot/core';
 import type { Bean, Roaster, RoastSetup, RoastSummary } from '@roastpilot/shared';
 import { Button, NumberField, SelectField } from '@roastpilot/ui';
+import { beanDetail } from '../beans/bean-detail';
 import { useState } from 'react';
 import { useAuto, useSettings } from '../../stores/use-stores';
 import { useSaveSettings } from '../settings/use-save-settings';
@@ -50,7 +51,7 @@ export function SetupForm({
           { value: NONE, label: 'No bean' },
           ...beans
             .filter((b) => !b.archived || b.id === setup.beanId)
-            .map((b) => ({ value: String(b.id), label: b.name })),
+            .map((b) => ({ value: String(b.id), label: b.name, detail: beanDetail(b) })),
         ]}
         onChange={(value) => {
           if (!roaster) return;
