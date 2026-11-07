@@ -12,7 +12,7 @@ import {
   type SavedSample,
   type StorageError,
 } from '@roastpilot/shared';
-import { asc, desc, eq, sql } from 'drizzle-orm';
+import { asc, desc, eq } from 'drizzle-orm';
 import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy';
 import { attempt } from './attempt';
 import {
@@ -23,8 +23,9 @@ import {
   toSavedProfile,
   toSavedSamples,
 } from './roast-rows';
-import { beans } from './schema/beans';
+import { moveStock } from './stock';
 import { roastEvents, roasts, roastSamples } from './schema/roasts';
+import { transaction } from './transaction';
 
 /** Rows per INSERT, well under SQLite's bound-parameter limit. */
 const INSERT_CHUNK = 500;
@@ -39,36 +40,40 @@ export class SqliteRoastRepository implements RoastRepository {
     this.#logger = logger;
   }
 
+  /** The roast row and the batch off the bean's green stock, all or nothing. */
   create(roast: NewRoast): Promise<Result<RoastId, StorageError>> {
-    return attempt(async () => {
-      const values = {
-        startedAt: roast.startedAt,
-        mode: roast.mode,
-        profile: roast.profile && JSON.stringify(roast.profile),
-        roasterId: roast.roasterId,
-        beanId: roast.beanId,
-        batchG: roast.batchG,
-        ghostRoastId: roast.ghostRoastId,
-        imported: roast.imported ?? false,
-      };
-      const row = await this.#db.insert(roasts).values(values).returning({ id: roasts.id }).get();
+    const values = {
+      startedAt: roast.startedAt,
+      mode: roast.mode,
+      profile: roast.profile && JSON.stringify(roast.profile),
+      roasterId: roast.roasterId,
+      beanId: roast.beanId,
+      batchG: roast.batchG,
+      ghostRoastId: roast.ghostRoastId,
+      imported: roast.imported ?? false,
+    };
+    return transaction(this.#db, async (tx) => {
+      const row = await tx.insert(roasts).values(values).returning({ id: roasts.id }).get();
       if (!values.imported && roast.beanId !== null && roast.batchG !== null) {
-        await this.#moveStock(roast.beanId, { greenG: -roast.batchG });
+        const moved = await moveStock(tx, roast.beanId, { greenG: -roast.batchG });
+        if (!moved.ok) return moved;
       }
-      return row.id;
+      return ok(row.id);
     });
   }
 
+  /** Every sample or none: a roast never keeps half a batch of them. */
   addSamples(id: RoastId, samples: readonly SavedSample[]): Promise<Result<void, StorageError>> {
-    return attempt(async () => {
+    return transaction(this.#db, async (tx) => {
       for (let i = 0; i < samples.length; i += INSERT_CHUNK) {
         const rows = samples.slice(i, i + INSERT_CHUNK).map((sample) => ({
           roastId: id,
           tS: sample.tS,
           values: JSON.stringify(sample.values),
         }));
-        await this.#db.insert(roastSamples).values(rows).run();
+        await tx.insert(roastSamples).values(rows).run();
       }
+      return ok(undefined);
     });
   }
 
@@ -96,53 +101,38 @@ export class SqliteRoastRepository implements RoastRepository {
     });
   }
 
-  /** Moves stock by a difference; it stops at 0. */
-  async #moveStock(beanId: number, { greenG = 0, roastedG = 0 }): Promise<void> {
-    await this.#db
-      .update(beans)
-      .set({
-        greenG: sql`max(0, ${beans.greenG} + ${greenG})`,
-        roastedG: sql`max(0, ${beans.roastedG} + ${roastedG})`,
-      })
-      .where(eq(beans.id, beanId))
-      .run();
-  }
-
-  /** Saves what you say about the roast; stock moves only by what changed. */
-  async saveResult({ id, ...result }: RoastResult): Promise<Result<void, StorageError>> {
-    const before = await attempt(() =>
-      this.#db.select(stockColumns).from(roasts).where(eq(roasts.id, id)).get(),
-    );
-    if (!before.ok) return before;
-    const row = before.value;
-    if (!row) return err({ kind: 'not-found', id });
-    return attempt(async () => {
-      await this.#db.update(roasts).set(result).where(eq(roasts.id, id)).run();
-      if (row.beanId !== null && !row.imported) {
-        await this.#moveStock(row.beanId, {
-          greenG: (row.batchG ?? 0) - (result.batchG ?? 0),
-          roastedG: (result.roastedG ?? 0) - (row.roastedG ?? 0),
-        });
-      }
+  /** Saves what you say about the roast; stock moves only by what changed, all or nothing. */
+  saveResult({ id, ...result }: RoastResult): Promise<Result<void, StorageError>> {
+    return transaction(this.#db, async (tx) => {
+      const row = await tx.select(stockColumns).from(roasts).where(eq(roasts.id, id)).get();
+      if (!row) return err({ kind: 'not-found', id });
+      await tx.update(roasts).set(result).where(eq(roasts.id, id)).run();
+      if (row.beanId === null || row.imported) return ok(undefined);
+      return moveStock(tx, row.beanId, {
+        greenG: (row.batchG ?? 0) - (result.batchG ?? 0),
+        roastedG: (result.roastedG ?? 0) - (row.roastedG ?? 0),
+      });
     });
   }
 
-  async setBean(id: RoastId, beanId: BeanId | null): Promise<Result<void, StorageError>> {
-    const before = await attempt(() =>
-      this.#db.select(stockColumns).from(roasts).where(eq(roasts.id, id)).get(),
-    );
-    if (!before.ok) return before;
-    const row = before.value;
-    if (!row) return err({ kind: 'not-found', id });
-    return attempt(async () => {
-      await this.#db.update(roasts).set({ beanId }).where(eq(roasts.id, id)).run();
-      if (row.imported || row.beanId === beanId) return;
+  /** Links the roast to another bean, moving its weights between the two, all or nothing. */
+  setBean(id: RoastId, beanId: BeanId | null): Promise<Result<void, StorageError>> {
+    return transaction(this.#db, async (tx) => {
+      const row = await tx.select(stockColumns).from(roasts).where(eq(roasts.id, id)).get();
+      if (!row) return err({ kind: 'not-found', id });
+      await tx.update(roasts).set({ beanId }).where(eq(roasts.id, id)).run();
+      if (row.imported || row.beanId === beanId) return ok(undefined);
       // The beans went from one bag to the other: give them back, then take them again.
       const moved = { greenG: row.batchG ?? 0, roastedG: row.roastedG ?? 0 };
-      if (row.beanId !== null)
-        await this.#moveStock(row.beanId, { greenG: moved.greenG, roastedG: -moved.roastedG });
-      if (beanId !== null)
-        await this.#moveStock(beanId, { greenG: -moved.greenG, roastedG: moved.roastedG });
+      if (row.beanId !== null) {
+        const back = await moveStock(tx, row.beanId, {
+          greenG: moved.greenG,
+          roastedG: -moved.roastedG,
+        });
+        if (!back.ok) return back;
+      }
+      if (beanId === null) return ok(undefined);
+      return moveStock(tx, beanId, { greenG: -moved.greenG, roastedG: moved.roastedG });
     });
   }
 

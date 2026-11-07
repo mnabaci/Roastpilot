@@ -18,6 +18,7 @@ import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy';
 import { attempt, parseJson } from './attempt';
 import { beanPurchases, beans } from './schema/beans';
 import { roasts } from './schema/roasts';
+import { transaction } from './transaction';
 
 /** Beans and stock in SQLite (docs/spec/data-model.md, Roasters and beans). */
 export class SqliteBeanRepository implements BeanRepository {
@@ -109,26 +110,21 @@ export class SqliteBeanRepository implements BeanRepository {
     );
   }
 
-  async addStock({
-    beanId,
-    grams,
-    purchasedAt,
-    plan,
-  }: AddStock): Promise<Result<void, StorageError>> {
-    const added = await this.#changed(beanId, () =>
-      this.#db
+  /** More green stock and its purchase row, all or nothing. */
+  addStock({ beanId, grams, purchasedAt, plan }: AddStock): Promise<Result<void, StorageError>> {
+    return transaction(this.#db, async (tx) => {
+      const added = await tx
         .update(beans)
         .set({ greenG: sql`${beans.greenG} + ${grams}` })
         .where(eq(beans.id, beanId))
         .returning({ id: beans.id })
-        .all(),
-    );
-    if (!added.ok) return added;
-    return attempt(async () => {
-      await this.#db
+        .all();
+      if (added.length === 0) return err({ kind: 'not-found', id: beanId });
+      await tx
         .insert(beanPurchases)
         .values({ beanId, grams, purchasedAt, batchPlan: plan && JSON.stringify(plan) })
         .run();
+      return ok(undefined);
     });
   }
 

@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "SQLite persistence: Drizzle schema, migrations and repositories (better-sqlite3).",
+  "description": "SQLite persistence: Drizzle schema, migrations and repositories (node:sqlite).",
   "exports": {
     ".": "./src/index.ts"
   },
