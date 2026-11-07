@@ -5,6 +5,7 @@ import {
   type AutoProfile,
   type AutoResumeError,
   type AutoStatus,
+  type AutoStopReason,
   type AutoTuning,
   type DriverError,
   type Reading,
@@ -17,9 +18,11 @@ import { serializeError } from '../logging/serialize-error';
 import { rateOfRise, rorReadings } from '../roast/rate-of-rise';
 import { BEAN_TEMP } from '../safety/safety-rule';
 import { AutoOutputs, isDriven } from './auto-outputs';
+import { HeaterCut } from './heater-cut';
 import { withSoakTime } from './phase-plan';
 import { PreheatProtocol } from './preheat-protocol';
-import { RoastRun, type AutoEvent } from './roast-run';
+import { startRoastRun, type AutoEvent, type RoastRun } from './roast-run';
+import { TickGate } from './tick-gate';
 
 /** What AutoPilot needs from the app (docs/spec/roast-control.md, Auto mode). */
 export interface AutoPilotDeps {
@@ -50,18 +53,21 @@ export class AutoPilot {
   readonly #notify: (status: AutoStatus) => void;
   readonly #event: (event: AutoEvent) => void;
   #enabled = false;
-  #stopped = false;
+  #stopReason: AutoStopReason | null = null;
   readonly #outputs: AutoOutputs;
+  readonly #heaterCut: HeaterCut;
   #preheat: PreheatProtocol | undefined;
   #run: RoastRun | undefined;
   #dropping = false;
-  #busy = false;
+  readonly #gate: TickGate;
   #lastStatus = '';
 
   constructor(deps: AutoPilotDeps) {
     this.#deps = deps;
     this.#logger = deps.logger ?? silentLogger;
     this.#outputs = new AutoOutputs(deps.setOutput, deps.round, this.#logger);
+    this.#heaterCut = new HeaterCut(deps.setOutput, this.#logger);
+    this.#gate = new TickGate(this.#logger);
     this.#notify = guardListener(this.#logger, 'auto.listener-failed', deps.onChange);
     this.#event = guardListener(this.#logger, 'auto.listener-failed', deps.onEvent);
   }
@@ -70,7 +76,7 @@ export class AutoPilot {
     return {
       enabled: this.#enabled,
       profileId: this.#deps.profile().id,
-      stopped: this.#stopped,
+      stopReason: this.#stopReason,
       heater: this.#outputs.owner('heater'),
       fan: this.#outputs.owner('fan'),
       preheatStep: this.#preheat?.step ?? null,
@@ -91,14 +97,19 @@ export class AutoPilot {
     this.#logger.info('auto.mode-changed', { enabled });
     this.#outputs.forgetSent();
     if (enabled) {
-      this.#stopped = false;
+      this.#stopReason = null;
       this.#outputs.handBack();
+    }
+    // Mid-roast the switch goes on the roast's timeline, and an Auto roast is saved as one.
+    if (this.#deps.roast().chargedAtMs !== null && this.#isDriving()) {
+      this.#event({ kind: 'mode', auto: enabled });
     }
     this.#publish();
   }
 
   /** You set an output by hand: it stays yours until Resume auto. */
   outputRequested(channel: string, value: number): void {
+    if (channel === 'heater') this.#heaterCut.forget();
     if (!this.#enabled || !isDriven(channel) || !this.#isDriving()) return;
     if (this.#outputs.owner(channel) === 'manual') return;
     this.#outputs.takeOver(channel);
@@ -108,9 +119,9 @@ export class AutoPilot {
   }
 
   /** A safe stop or a lost connection: both outputs are yours, and nothing more is sent. */
-  stop(reason: string): void {
-    if (!this.#enabled || this.#stopped) return;
-    this.#stopped = true;
+  stop(reason: AutoStopReason): void {
+    if (!this.#enabled || this.#stopReason !== null) return;
+    this.#stopReason = reason;
     this.#outputs.takeOver('heater');
     this.#outputs.takeOver('fan');
     this.#logger.warn('auto.stopped', { reason });
@@ -123,7 +134,7 @@ export class AutoPilot {
       this.#logger.info('auto.resume-refused', { reason: 'safety-locked' });
       return err({ kind: 'safety-locked' });
     }
-    this.#stopped = false;
+    this.#stopReason = null;
     this.#outputs.handBack();
     this.#run?.restartControl();
     this.#logger.info('auto.resumed');
@@ -131,29 +142,35 @@ export class AutoPilot {
     return ok(undefined);
   }
 
-  /** Heater 0 and the countdown before the beans go in. */
+  /** Heater 0 at once, and the countdown before the beans go in. */
   chargeSoon(nowMs: number): Result<void, AutoChargeSoonError> {
-    if (!this.#enabled || this.#stopped || !this.#preheat?.chargeSoon(nowMs)) {
+    if (!this.#enabled || this.#stopReason !== null || !this.#preheat?.chargeSoon(nowMs)) {
       return err({ kind: 'not-now' });
     }
     this.#logger.info('auto.charge-soon');
+    // Not on the next reading: the beans may land in the next second.
+    if (this.#outputs.owner('heater') === 'auto') {
+      this.#outputs.forgetSent();
+      this.#heaterCut.cut('charge-soon').catch((error: unknown) => {
+        this.#logger.error('auto.heater-cut-failed', { error: serializeError(error) });
+      });
+    }
     this.#publish();
     return ok(undefined);
   }
 
-  /** Every reading. One at a time: a slow roaster skips a tick rather than queueing commands. */
-  async onReading(reading: Reading): Promise<void> {
-    if (this.#busy) return;
-    this.#busy = true;
-    try {
-      await this.#tick(reading);
-    } catch (error) {
-      this.#logger.error('auto.tick-failed', { error: serializeError(error) });
-      await this.#cutHeater();
-      this.stop('tick-failed');
-    } finally {
-      this.#busy = false;
-    }
+  /** Every reading, one at a time (TickGate). */
+  onReading(reading: Reading): Promise<void> {
+    return this.#gate.run(reading.atMs, async () => {
+      try {
+        await this.#heaterCut.retry();
+        await this.#tick(reading);
+      } catch (error) {
+        this.#logger.error('auto.tick-failed', { error: serializeError(error) });
+        if (this.#outputs.owner('heater') === 'auto') await this.#heaterCut.cut('tick-failed');
+        this.stop('tick-failed');
+      }
+    });
   }
 
   #isDriving(): boolean {
@@ -171,7 +188,7 @@ export class AutoPilot {
       return;
     }
     const state = this.#deps.roast();
-    this.#syncWithFlow(state);
+    this.#syncWithFlow(state, reading.atMs);
     if (this.#deps.heaterLocked()) this.stop('heater-locked');
     const btC = reading.values[BEAN_TEMP];
     if (state.phase === 'preheat') await this.#tickPreheat(reading.atMs, btC);
@@ -180,7 +197,7 @@ export class AutoPilot {
   }
 
   /** Follows the flow: a new preheat or roast starts fresh, and nothing runs outside them. */
-  #syncWithFlow(state: RoastState): void {
+  #syncWithFlow(state: RoastState, nowMs: number): void {
     if (state.phase === 'preheat') {
       this.#run = undefined;
       this.#preheat ??= new PreheatProtocol(this.#deps.profile(), this.#deps.tuning());
@@ -191,28 +208,34 @@ export class AutoPilot {
       this.#run = undefined;
       this.#dropping = false;
       // The roast is over: a stop or an override doesn't carry into the next one.
-      this.#stopped = false;
+      this.#stopReason = null;
       this.#outputs.handBack();
       return;
     }
     const chargedAtMs = state.chargedAtMs;
     if (chargedAtMs !== null && this.#run?.chargedAtMs !== chargedAtMs) {
       const profile = withSoakTime(this.#deps.profile(), this.#deps.soakS());
-      this.#run = new RoastRun(profile, this.#deps.tuning(), chargedAtMs);
+      // The newest reading is left for the tick that follows.
+      const earlier = this.#deps.readings().filter((r) => r.atMs < nowMs);
+      this.#run = startRoastRun(profile, this.#deps.tuning(), chargedAtMs, earlier);
       this.#event({ kind: 'phase', name: this.#run.phaseName ?? '' });
     }
   }
 
   async #tickPreheat(nowMs: number, btC: number | undefined): Promise<void> {
-    if (!this.#preheat || this.#stopped) return;
+    if (!this.#preheat || this.#stopReason !== null) return;
     const outputs = this.#preheat.next(nowMs, btC);
-    await this.#outputs.send('heater', outputs.heaterPct);
     await this.#outputs.send('fan', outputs.fanPct);
-    if (outputs.gaveUp) this.stop('preheat-limit');
+    if (outputs.gaveUp) {
+      if (this.#outputs.owner('heater') === 'auto') await this.#heaterCut.cut('preheat-limit');
+      this.stop('preheat-limit');
+      return;
+    }
+    await this.#outputs.send('heater', outputs.heaterPct);
   }
 
   async #tickRoast(state: RoastState, reading: Reading, btC: number | undefined): Promise<void> {
-    if (!this.#run || this.#stopped) return;
+    if (!this.#run || this.#stopReason !== null) return;
     const readings = rorReadings(this.#deps.readings(), state.chargedAtMs);
     const tick = this.#run.tick({
       nowMs: reading.atMs,
@@ -228,21 +251,12 @@ export class AutoPilot {
       this.#dropping = true;
       this.#logger.info('auto.drop', { rule: tick.endRule.id, bt: btC });
       await this.#deps.drop();
+      // Drop sends heater 0 itself; this one keeps trying through cooling if that write failed.
+      await this.#heaterCut.cut('drop');
       return;
     }
     await this.#outputs.send('heater', tick.heaterPct);
     await this.#outputs.send('fan', tick.fanPct);
-  }
-
-  /** Auto itself failed, so nothing is steering the heater it set: leave it at 0, not on. */
-  async #cutHeater(): Promise<void> {
-    if (this.#outputs.owner('heater') !== 'auto') return;
-    try {
-      const cut = await this.#deps.setOutput('heater', 0);
-      if (!cut.ok) this.#logger.warn('auto.heater-cut-failed', { error: cut.error });
-    } catch (error) {
-      this.#logger.error('auto.heater-cut-failed', { error: serializeError(error) });
-    }
   }
 
   #publish(): void {

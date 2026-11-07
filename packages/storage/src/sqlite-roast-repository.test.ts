@@ -30,6 +30,16 @@ async function created(repository: SqliteRoastRepository, startedAt: string) {
 }
 
 describe('SqliteRoastRepository', () => {
+  it('turns a manual roast into an Auto one with its profile copy', async () => {
+    const { repository } = setup();
+    const id = await created(repository, '2026-11-04T10:00:00.000Z');
+    await repository.update(id, { mode: 'auto', profile: TEST_PROFILE });
+    expect(await repository.get(id)).toMatchObject({
+      ok: true,
+      value: { mode: 'auto', profile: TEST_PROFILE },
+    });
+  });
+
   it('saves a roast as it goes and reads it back whole', async () => {
     const { repository } = setup();
     const id = await created(repository, '2026-11-04T10:00:00.000Z');
