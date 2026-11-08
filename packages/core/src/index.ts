@@ -90,3 +90,13 @@ export type { Updater, UpdaterEvent, UpdaterFailure } from './updates/updater';
 export { UpdateService, type UpdateServiceDeps } from './updates/update-service';
 export { CHECK_EVERY_MS, FIRST_CHECK_MS } from './updates/update-schedule';
 export { isNewerVersion } from './updates/version';
+export { DEFAULT_ROAST_END_S, expectedRoastEndS, plannedDropS } from './chart/roast-end';
+export {
+  FOCUS_AHEAD_S,
+  FOCUS_BEFORE_CHARGE_S,
+  focusWindow,
+  savedRoastWindow,
+  type TimeWindow,
+} from './chart/focus-window';
+export { PROJECTION_AHEAD_S, projection, type ProjectedPoint } from './chart/projection';
+export { DEFAULT_DRY_END_C, phaseBandEdges, type PhaseBandEdges } from './chart/phase-bands';
