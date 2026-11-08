@@ -13,7 +13,7 @@ side by side. You pick one, and it's saved with the bean purchase.
 - Both plans show expected roasted output, using the bean's average weight loss (default 15%).
 - Runs automatically when you add a bean or new stock, and as a standalone tool.
 - **The next roast's batch:** picking a bean (or Roast this bean) starts the batch at the bean's next planned batch; without a plan, at the batch the profile the roast follows was tuned for (Auto's, or the coach's in Manual); with neither, at the roaster's ideal.
-- **Off the profile's batch:** when the batch is more than 10 % from the batch the profile was tuned for (exactly 10 % is fine), one quiet line under it: "Profile tuned for 385 g · a 300 g batch runs hotter and faster" (smaller) or "… a 450 g batch runs cooler and slower" (bigger): the same heat on fewer beans climbs faster. A note, not an error: Preheat and Start stay.
+- **Off the profile's batch:** when the batch is more than 10 % from the batch the profile was tuned for (exactly 10 % is fine), one quiet line under it: "Profile tuned for 356 g · a 300 g batch runs hotter and faster" (smaller) or "… a 450 g batch runs cooler and slower" (bigger): the same heat on fewer beans climbs faster. A note, not an error: Preheat and Start stay.
 
 ## Stock
 
