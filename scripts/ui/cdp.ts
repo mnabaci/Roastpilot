@@ -52,7 +52,10 @@ export async function connect(port: number): Promise<CdpSession> {
   const pending = new Map<number, (reply: Reply) => void>();
   ws.addEventListener('message', (event) => {
     const reply = JSON.parse(String(event.data)) as Reply;
-    if (reply.id !== undefined) pending.get(reply.id)?.(reply);
+    // Only a whole-number id of a call this client made picks a handler; events and anything else are ignored.
+    if (typeof reply.id !== 'number' || !Number.isInteger(reply.id)) return;
+    const handler = pending.get(reply.id);
+    if (typeof handler === 'function') handler(reply);
   });
   let nextId = 0;
 
