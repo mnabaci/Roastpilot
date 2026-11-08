@@ -35,3 +35,12 @@ export const EndRoast: Story = {
     caution: true,
   },
 };
+export const TwoAnswers: Story = {
+  args: {
+    question: 'Clear the screen?',
+    detail: 'The roast stays in History. Return 356 g of African Moon to stock too?',
+    confirmLabel: 'Return to stock',
+    destructive: false,
+    alternative: { label: 'Keep deducted', onSelect: () => undefined },
+  },
+};

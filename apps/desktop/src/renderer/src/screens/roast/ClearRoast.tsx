@@ -69,8 +69,9 @@ export function ClearRoast() {
       <ConfirmDialog
         open={asking}
         onOpenChange={setAsking}
-        question="Clear this roast?"
-        detail={`Return ${String(batchG)} g of ${beanName ?? 'beans'} to stock?`}
+        // Clear only empties the screen: the saved roast stays, which "Clear this roast?" hid.
+        question="Clear the screen?"
+        detail={`The roast stays in History. Return ${String(batchG)} g of ${beanName ?? 'beans'} to stock too?`}
         confirmLabel="Return to stock"
         onConfirm={() => {
           clear(true);

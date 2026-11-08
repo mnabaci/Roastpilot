@@ -50,7 +50,13 @@ export function ConfirmDialog({
     <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
       <AlertDialog.Portal>
         <AlertDialog.Overlay className="fixed inset-0 z-50 bg-bg/70" />
-        <AlertDialog.Content className="fixed top-1/2 left-1/2 z-50 flex w-full max-w-100 -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-xl border border-border-strong bg-surface p-5">
+        <AlertDialog.Content
+          className={cn(
+            'fixed top-1/2 left-1/2 z-50 flex w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-xl border border-border-strong bg-surface p-5',
+            // Three answers need the room to stay on one line each.
+            alternative ? 'max-w-120' : 'max-w-100',
+          )}
+        >
           <div className="flex flex-col gap-1">
             <AlertDialog.Title className="flex items-center gap-2 text-heading">
               {icon ? (
@@ -76,7 +82,7 @@ export function ConfirmDialog({
               <AlertDialog.Description className="sr-only">{question}</AlertDialog.Description>
             )}
           </div>
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-wrap justify-end gap-2 [&>button]:whitespace-nowrap">
             <AlertDialog.Cancel asChild>
               <Button variant="ghost">{cancelLabel}</Button>
             </AlertDialog.Cancel>

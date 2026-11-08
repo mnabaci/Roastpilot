@@ -93,6 +93,77 @@ describe('RoastScreen', () => {
     expect(card).not.toContainElement(screen.getByRole('button', { name: 'Preheat' }));
   });
 
+  describe('the finished roast card, after you leave Roast and come back', () => {
+    const finished = {
+      id: 1,
+      startedAt: '2026-11-04T10:00:00.000Z',
+      endedAt: '2026-11-04T10:12:00.000Z',
+      fcTimeS: 480,
+      fcTemp: null,
+      dropTimeS: 570,
+      dropTemp: 205,
+      roasterId: null,
+      beanId: null,
+      ghostRoastId: null,
+      batchG: 400,
+      roastedG: 340,
+      rating: 5,
+      isFavourite: false,
+      notes: null,
+      profileId: null,
+      profileName: null,
+      imported: false,
+    };
+    /** Roast and another screen, as the tabs swap them. */
+    function Tabs() {
+      const [onRoast, setOnRoast] = useState(true);
+      return (
+        <>
+          <button
+            onClick={() => {
+              setOnRoast((was) => !was);
+            }}
+          >
+            Switch
+          </button>
+          {onRoast ? <RoastScreen onConnect={onConnect} /> : <p>History</p>}
+        </>
+      );
+    }
+    const switchTwice = async () => {
+      await userEvent.click(screen.getByRole('button', { name: 'Switch' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Switch' }));
+    };
+    const seed = {
+      ...connected,
+      roast: { ...roast('done'), chargedAtMs: 1000 },
+      currentRoastId: 1,
+    };
+
+    it('stays hidden after Done', async () => {
+      const api = fakeApi({ listRoasts: vi.fn(() => Promise.resolve([finished])) });
+      renderApp(<Tabs />, seed, api);
+      const card = await screen.findByRole('region', { name: 'Roast just finished' });
+      await userEvent.click(within(card).getByRole('button', { name: 'Done' }));
+      const loads = vi.mocked(api.listRoasts).mock.calls.length;
+      await switchTwice();
+      // The list loaded again, and the card still waits for nothing.
+      await waitFor(() => {
+        expect(vi.mocked(api.listRoasts).mock.calls.length).toBeGreaterThan(loads);
+      });
+      expect(screen.queryByRole('region', { name: 'Roast just finished' })).toBeNull();
+    });
+
+    it('is there at once, without waiting for the saved roasts to load again', async () => {
+      const listRoasts = vi.fn(() => Promise.resolve([finished]));
+      renderApp(<Tabs />, seed, fakeApi({ listRoasts }));
+      await screen.findByRole('region', { name: 'Roast just finished' });
+      listRoasts.mockReturnValue(new Promise(() => undefined));
+      await switchTwice();
+      expect(screen.getByRole('region', { name: 'Roast just finished' })).toBeInTheDocument();
+    });
+  });
+
   it('while roasting, Drop now is there too, for a roast without a first crack', async () => {
     const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
       ...connected,
@@ -401,7 +472,7 @@ describe('RoastScreen', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
       expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument();
       expect(
-        screen.getByText(/Return 350 g of Ethiopia Yirgacheffe to stock\?/),
+        screen.getByText(/Return 350 g of Ethiopia Yirgacheffe to stock too\?/),
       ).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Return to stock' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Keep deducted' })).toBeInTheDocument();
