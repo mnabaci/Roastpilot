@@ -99,14 +99,15 @@ function roastHint(
   unit: TemperatureUnit,
   developmentS?: number,
 ): string {
-  const name = status.phaseName ?? 'Auto';
+  // "Step", so the profile's step names can't pass for the roast's phases.
+  const name = status.phaseName === null ? 'Auto' : `Step: ${status.phaseName}`;
   if (status.stallTripped) return `${name} · RoR low · more heat`;
   if (developmentS !== undefined) {
     const leftS = Math.max(0, profile.devTimeS - developmentS);
     return `${name} · drops in ${formatClock(leftS)} or at ${formatPlainTemp(profile.capC, unit)}`;
   }
   return status.nextPhaseAtC === null
-    ? name
+    ? `${name} · last step`
     : `${name} · next at ${formatPlainTemp(status.nextPhaseAtC, unit)}`;
 }
 
