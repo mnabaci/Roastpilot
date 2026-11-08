@@ -1,4 +1,6 @@
 // Composition root: wires core, drivers, logging and IPC (docs/spec/architecture.md).
+// First: a development run may move the data folder before anything reads it.
+import { userDataChoice } from './user-data-override';
 import { serializeError } from '@roastpilot/core';
 import { listSerialPorts } from '@roastpilot/drivers';
 import { IPC_CHANNELS, isRoastRunning } from '@roastpilot/shared';
@@ -54,6 +56,14 @@ logger.info('app.started', {
   platform: process.platform,
   arch: process.arch,
 });
+if (userDataChoice.kind === 'override') {
+  logger.info('app.user-data-override', { dir: userDataChoice.dir });
+} else if (userDataChoice.kind === 'ignored') {
+  logger.warn('app.user-data-override-ignored', {
+    reason: userDataChoice.reason,
+    value: userDataChoice.value,
+  });
+}
 pruneOldLogsLater(logDir, logger);
 
 async function openLogFolder(): Promise<void> {
