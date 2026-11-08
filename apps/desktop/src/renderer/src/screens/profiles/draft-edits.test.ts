@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { movePoint } from './draft-edits';
-import type { ProfileDraft } from './profile-draft';
+import { movePoint, moveStep } from './draft-edits';
+import type { ProfileDraft, StepDraft } from './profile-draft';
 
 const PROFILE = {
   capC: 200,
@@ -41,5 +41,49 @@ describe('movePoint', () => {
   it('stays under the BT cap and above zero', () => {
     expect(movePoint(DRAFT, PROFILE, 2, { t: 600, v: 240 }).points[2]?.c).toBe('200');
     expect(movePoint(DRAFT, PROFILE, 0, { t: 60, v: -3 }).points[0]?.c).toBe('0');
+  });
+});
+
+const step = (name: string, endC: string): StepDraft => ({
+  name,
+  endC,
+  time: '1:00',
+  rorMin: '10',
+  rorMax: '12',
+  heat: '60',
+  fan: '40',
+  backup: '6:00',
+});
+const STEPS = {
+  steps: [
+    step('Heat on', '150'),
+    step('Yellowing', '165'),
+    step('Maillard', '180'),
+    step('Development', '191'),
+  ],
+} as ProfileDraft;
+const names = (draft: ProfileDraft) => draft.steps.map((s) => s.name);
+
+describe('moveStep', () => {
+  it('moves a step up or down among the middle ones, keeping its values', () => {
+    const up = moveStep(STEPS, 2, 1);
+    expect(names(up)).toEqual(['Heat on', 'Maillard', 'Yellowing', 'Development']);
+    expect(up.steps[1]).toEqual(step('Maillard', '180'));
+    expect(names(moveStep(STEPS, 0, 2))).toEqual([
+      'Yellowing',
+      'Maillard',
+      'Heat on',
+      'Development',
+    ]);
+  });
+
+  it('keeps Development last: nothing moves onto it or off it', () => {
+    expect(moveStep(STEPS, 2, 3)).toBe(STEPS);
+    expect(moveStep(STEPS, 3, 1)).toBe(STEPS);
+  });
+
+  it('stays in the table: no move past the first step, or to where it already is', () => {
+    expect(moveStep(STEPS, 0, -1)).toBe(STEPS);
+    expect(moveStep(STEPS, 1, 1)).toBe(STEPS);
   });
 });

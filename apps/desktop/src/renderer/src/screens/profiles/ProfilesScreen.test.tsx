@@ -6,7 +6,7 @@ import {
   READY_ROAST,
   type AutoProfile,
 } from '@roastpilot/shared';
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { BUILT_INS, CURVE, STEPS } from '../../test/profiles';
@@ -184,6 +184,100 @@ describe('ProfilesScreen', () => {
     open(fakeApi(), [...BUILT_INS, curve], 'custom-c');
     expect(screen.getByRole('heading', { name: 'Curve points' })).toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'RoR min' })).toBeNull();
+  });
+
+  describe('moving a step', () => {
+    const name = (n: number) => screen.getByRole('textbox', { name: `Step ${String(n)} name` });
+    // Mine runs Soak · Heat on · New step · Development once a step is added.
+    const openWithThree = async () => {
+      const api = fakeApi({ listProfiles: vi.fn(() => Promise.resolve(withMine)) });
+      open(api);
+      await userEvent.click(screen.getByRole('button', { name: 'Add step' }));
+      return api;
+    };
+    const press = async (handle: string, key: 'ArrowUp' | 'ArrowDown') => {
+      screen.getByRole('button', { name: `Move ${handle}` }).focus();
+      await userEvent.keyboard(`{Alt>}{${key}}{/Alt}`);
+    };
+
+    it('only the steps between Soak and Development have a handle', async () => {
+      await openWithThree();
+      expect(screen.getByRole('button', { name: 'Move Heat on' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Move New step' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Move Soak' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Move Development' })).toBeNull();
+    });
+
+    it('a built-in has no handles', () => {
+      open(fakeApi(), BUILT_INS, 'light-steps');
+      expect(screen.queryByRole('button', { name: /^Move / })).toBeNull();
+    });
+
+    it('Alt+↑ and Alt+↓ move it one place, keep focus on it and say so', async () => {
+      await openWithThree();
+      await press('New step', 'ArrowUp');
+      expect(name(1)).toHaveValue('New step');
+      expect(name(2)).toHaveValue('Heat on');
+      expect(screen.getByRole('button', { name: 'Move New step' })).toHaveFocus();
+      expect(screen.getByText('Moved New step to step 1')).toBeInTheDocument();
+      await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}');
+      expect(name(2)).toHaveValue('New step');
+      expect(screen.getByRole('button', { name: 'Move New step' })).toHaveFocus();
+    });
+
+    it('keeps Soak first and Development last', async () => {
+      await openWithThree();
+      await press('Heat on', 'ArrowUp');
+      expect(name(1)).toHaveValue('Heat on');
+      await press('New step', 'ArrowDown');
+      expect(name(2)).toHaveValue('New step');
+      expect(name(3)).toHaveValue('Development');
+    });
+
+    it('an arrow without Alt does nothing', async () => {
+      await openWithThree();
+      await press('New step', 'ArrowUp');
+      await userEvent.keyboard('{ArrowDown}');
+      expect(name(1)).toHaveValue('New step');
+    });
+
+    it('a move into an order that makes no sense says so on the cell, and Save waits', async () => {
+      const api = await openWithThree();
+      await press('New step', 'ArrowUp');
+      // Heat on ends at 150 °C, now after New step's 171 °C, with the same backup time.
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Heat on: Must be above the step before · Must be after the step before',
+      );
+      expect(screen.getByRole('textbox', { name: 'Heat on end temperature' })).toBeInvalid();
+      expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+      expect(api.saveProfile).not.toHaveBeenCalled();
+    });
+
+    it('drags a step to another row, values and all', async () => {
+      await openWithThree();
+      const handle = screen.getByRole('button', { name: 'Move New step' });
+      const target = name(1).closest('tr');
+      if (!target) throw new Error('no row for step 1');
+      const dataTransfer = { setData: vi.fn(), effectAllowed: '', dropEffect: '' };
+      fireEvent.dragStart(handle, { dataTransfer });
+      fireEvent.dragOver(target, { dataTransfer });
+      fireEvent.drop(target, { dataTransfer });
+      fireEvent.dragEnd(handle, { dataTransfer });
+      expect(name(1)).toHaveValue('New step');
+      expect(screen.getByRole('textbox', { name: 'New step end temperature' })).toHaveValue('171');
+    });
+
+    it('Development is no place to drop a step', async () => {
+      await openWithThree();
+      const handle = screen.getByRole('button', { name: 'Move Heat on' });
+      const target = name(3).closest('tr');
+      if (!target) throw new Error('no row for Development');
+      const dataTransfer = { setData: vi.fn(), effectAllowed: '', dropEffect: '' };
+      fireEvent.dragStart(handle, { dataTransfer });
+      fireEvent.drop(target, { dataTransfer });
+      expect(name(3)).toHaveValue('Development');
+      expect(name(1)).toHaveValue('Heat on');
+    });
   });
 
   it('shows the preview right under the top values, then the steps, then the curve points', () => {

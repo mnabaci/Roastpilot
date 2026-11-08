@@ -44,6 +44,10 @@ export interface ProfileDraft {
   points: PointDraft[];
 }
 
+/** A step's name, or its place when it has none yet. */
+export const stepName = (step: StepDraft, index: number): string =>
+  step.name || `Step ${String(index + 1)}`;
+
 /** Which cell a message belongs to, e.g. `capC` or `steps.1.endC`. */
 export type DraftErrors = Readonly<Record<string, string>>;
 
