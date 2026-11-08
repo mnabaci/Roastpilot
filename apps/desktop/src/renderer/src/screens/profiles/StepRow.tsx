@@ -1,8 +1,7 @@
 import { Button, NumberField } from '@roastpilot/ui';
 import { X } from 'lucide-react';
 import type { DraftErrors, StepDraft } from './profile-draft';
-
-const CELL = 'px-1 py-1 align-middle';
+import { CELL, FIXED } from './step-cells';
 
 const ROR_CELLS = [
   { key: 'rorMin', label: 'RoR min' },
@@ -70,16 +69,13 @@ export function StepRow({
             className="h-control-sm w-full min-w-30 rounded-md border border-border bg-surface px-2.5 text-body text-ink hover:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50"
           />
         </td>
-        <td className={CELL}>
-          {steps || !last ? (
-            field('endC', 'end temperature')
-          ) : (
-            // In line with the text of the fields above it.
-            <span className="block border border-transparent px-2.5 text-body text-ink-muted">
-              –
-            </span>
-          )}
-        </td>
+        {steps || !last ? (
+          <td className={CELL}>{field('endC', 'end temperature')}</td>
+        ) : (
+          <td className={FIXED}>
+            <span>–</span>
+          </td>
+        )}
         {steps ? <td className={CELL}>{field('time', 'time')}</td> : null}
         {steps
           ? ROR_CELLS.map(({ key, label }) => (
