@@ -12,11 +12,14 @@ import {
   type ProfilePhase,
 } from '@roastpilot/shared';
 
-/** Roast 7 of 2026-11-04 (docs/spec/roast-control.md, Built-in Skywalker profiles). */
+/**
+ * Roast 7 of 2026-11-04, its start moved to where Auto roasts 15–17 turned (2026-11-08)
+ * (docs/spec/roast-control.md, Built-in Skywalker profiles).
+ */
 const LIGHT_CURVE: readonly CurvePoint[] = [
   { tS: 0, c: 180 },
-  { tS: 64, c: 92 },
-  { tS: 154, c: 110 },
+  { tS: 75, c: 87 },
+  { tS: 185, c: 110 },
   { tS: 305, c: 150 },
   { tS: 379, c: 165 },
   { tS: 477, c: 180 },
@@ -39,8 +42,9 @@ const LIGHT_STEPS: readonly PlannedStep[] = [
   {
     name: 'Heat on',
     endC: 150,
-    durationS: 245,
-    heatPct: 85,
+    // 4:05 was more than this drum does: RoR sat at the top of its range and dry end came 5:18–5:31.
+    durationS: 260,
+    heatPct: 90,
     rorMin: 14,
     rorMax: 18,
     fanPct: 30,
@@ -50,7 +54,7 @@ const LIGHT_STEPS: readonly PlannedStep[] = [
     name: 'Yellowing',
     endC: 165,
     durationS: 74,
-    heatPct: 65,
+    heatPct: 55,
     rorMin: 12,
     rorMax: 14,
     fanPct: 50,
@@ -60,17 +64,18 @@ const LIGHT_STEPS: readonly PlannedStep[] = [
     name: 'Maillard',
     endC: 180,
     durationS: 98,
-    heatPct: 50,
+    heatPct: 45,
     rorMin: 8,
     rorMax: 10,
     fanPct: 65,
     next: { on: 'bt', c: 180, backupS: 660 },
   },
   {
-    name: 'Development',
+    // Not "Development": it starts at 180 °C, before first crack, and the roast's phase has that name.
+    name: 'To first crack',
     endC: 191,
     durationS: 94,
-    heatPct: 40,
+    heatPct: 35,
     rorMin: 3,
     rorMax: 7,
     fanPct: 80,
@@ -95,7 +100,7 @@ function lightProfile(
     id,
     name,
     needsCalibration: true,
-    batchG: 385,
+    batchG: 356,
     chargeC: 180,
     dryEndC: 150,
     // Roast 7 dropped 1:31 after first crack (13.8 %); 1:45 (about 15.5 %) for a rounder cup.
@@ -135,11 +140,11 @@ export const SKYWALKER_PROFILES = {
 } as const satisfies Readonly<Record<string, AutoProfile>>;
 
 /**
- * Cautious starting gains, set on the simulator and to be tuned on real roasts (`pid-tune`). They
- * move to the roaster record in milestone 5.
+ * Starting gains, from Auto roasts 15–17 (`pid-tune`): `ki` 0.05, as at 0.02 a steady error of a few
+ * °C/min outlasted whole steps. New roasters start with these; each roaster keeps its own.
  */
 export const SKYWALKER_TUNING: AutoTuning = AutoTuningSchema.parse({
-  target: { kp: 1.5, ki: 0.02, kd: 0 },
+  target: { kp: 1.5, ki: 0.05, kd: 0 },
   targetLimitPct: 20,
   // The shared defaults are the Skywalker's (ADR 0016).
   curveFollow: CURVE_FOLLOW_DEFAULTS,

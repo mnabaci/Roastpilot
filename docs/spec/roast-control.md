@@ -42,21 +42,22 @@ Each phase:
 
 ## Built-in Skywalker profiles
 
-**Light** is the user's own step profile ("Soak" technique). Temperatures are from this modded Skywalker's sensor. Written for 385 g; the default batch is 375 g:
+**Light** is the user's own step profile ("Soak" technique). Temperatures are from this modded Skywalker's sensor. Written for 356 g, the batch Auto roasts 15–17 used (2026-11-08); the default batch is 375 g:
 
-| Phase       | Ends at | Duration | RoR range | Heat estimate | Fan | Next phase when           |
-| ----------- | ------- | -------- | --------- | ------------- | --- | ------------------------- |
-| Soak        | –       | –        | –         | 0%, fixed     | 30% | 1:00 (the profile's soak) |
-| Heat on     | 150 °C  | 4:05     | 14–18     | 85%           | 30% | BT 150 °C (backup 6:30)   |
-| Yellowing   | 165 °C  | 1:14     | 12–14     | 65%           | 50% | BT 165 °C (backup 8:00)   |
-| Maillard    | 180 °C  | 1:38     | 8–10      | 50%           | 65% | BT 180 °C (backup 11:00)  |
-| Development | 191 °C  | 1:34     | 3–7       | 40%           | 80% | End rule                  |
+| Phase          | Ends at | Duration | RoR range | Heat estimate | Fan | Next phase when           |
+| -------------- | ------- | -------- | --------- | ------------- | --- | ------------------------- |
+| Soak           | –       | –        | –         | 0%, fixed     | 30% | 1:00 (the profile's soak) |
+| Heat on        | 150 °C  | 4:20     | 14–18     | 90%           | 30% | BT 150 °C (backup 6:30)   |
+| Yellowing      | 165 °C  | 1:14     | 12–14     | 55%           | 50% | BT 165 °C (backup 8:00)   |
+| Maillard       | 180 °C  | 1:38     | 8–10      | 45%           | 65% | BT 180 °C (backup 11:00)  |
+| To first crack | 191 °C  | 1:34     | 3–7       | 35%           | 80% | End rule                  |
 
 - Charge temp 180 °C. Dry end at BT 150 °C. Drop at 1:45 after first crack (about 15.5 % development; roast 7 dropped at 1:31, 13.8 %), or at BT 200 °C, whichever comes first.
-- Curve points, from roast 7 (2026-11-04): 0:00 180 °C, 1:04 92 °C (turning point), 2:34 110 °C, 5:05 150 °C, 6:19 165 °C, 7:57 180 °C, 9:18 190 °C, 11:03 197 °C.
+- Curve points, from roast 7 (2026-11-04) with its start where Auto roasts 15–17 turned: 0:00 180 °C, 1:15 87 °C (turning point), 3:05 110 °C, 5:05 150 °C, 6:19 165 °C, 7:57 180 °C, 9:18 190 °C, 11:03 197 °C.
 - Drum at 100% throughout to agitate the beans.
 - A step profile's dashed curve comes from its steps: charge, the turning point, each step's end at its planned time, then the BT cap at the planned drop.
 - Every planned curve, curve or step, is one smooth monotone curve through its points: exact at each point, flat at the turning point, the same on the chart, in "vs plan" and in what Auto aims for.
+- **From Auto roasts 15–17 (2026-11-08):** each heat estimate is where the PID settled, so a step starts with no correction to make; Heat on got 4:20, as at 4:05 RoR sat at the top of its range and dry end came 5:18–5:31. The last step is "To first crack", not "Development": it starts at 180 °C, and the roast's own Development phase starts at first crack.
 - These numbers come from roasts 6 and 7 and stay marked "needs calibration" until tuned on real roasts: first crack came at 191–193 °C and both roasts dropped near 197 °C.
 - **The soak is part of each profile:** Off, 0:30, 0:45, 1:00, 1:15, 1:30 or 2:00 (both Light profiles: 1:00). Off leaves it out: the first step starts at charge with its own heat. Roasts 6 and 7 turned the heater on at about 1:06 and 0:54.
 - **From the old setting:** the soak used to be one setting for every profile (Settings › Auto › Soak time). The first launch of the version that moves it writes a value other than 1:00 into your own profiles that soak, once, then the setting is gone; built-ins stay 1:00 (duplicate one to change it).
@@ -86,7 +87,7 @@ Each phase:
   6. Anti-windup: the integral stops while the correction is at its limit, and never holds more than the limits allow, so heat built up while the stall guard allowed +30% is let go as soon as it clears. One time step counts at most 3 s, so a gap (Auto stopped, readings lost) can't land on the integral all at once after Resume auto.
 - **Follow phases** trace the curve the way a step traces its range (ADR 0016): the heater reacts to RoR, which moves within seconds, not to BT, which lags the heater by 30–60 s on a drum.
   1. **Estimate:** each phase starts from its heat %, the heater the source roast used there.
-  2. **Aim:** the curve's own RoR 30 s ahead (the smooth curve's slope, so the aim never steps at a point) plus 0.3 °C/min for each °C BT is below the curve (minus when above), kept within 0–30 °C/min. Settled BT, as for steps. Past the last curve point the slope carries on. Until your first-crack tap never below the stall guard's 5 °C/min.
+  2. **Aim:** the curve's own RoR 45 s ahead (the smooth curve's slope, so the aim never steps at a point) plus 0.3 °C/min for each °C BT is below the curve (minus when above), kept within 0–30 °C/min. Settled BT, as for steps. Past the last curve point the slope carries on. Until your first-crack tap never below the stall guard's 5 °C/min.
   3. **Correction:** the same RoR PID as steps, with its own gains, limited to ±20% of the estimate (+30% while the stall guard trips) and the same anti-windup. It stays 0 until RoR has first reached 5 °C/min (or the aim, when lower), so the climb out of the turning point doesn't pin it.
   4. **Slew limit:** the heater moves at most 5% per 10 s, up or down, so a correction never kicks RoR. From one curve phase to the next it carries on from where the heater was and slews to the new estimate, as roast 7 stepped down 5% at a time; out of the soak it starts at the estimate at once. After Resume auto it starts from the heater the roaster reports (what you left it at) and slews from there, so handing back never jumps the heater; with no heater reading, at the estimate.
   5. No RoR or BT: the heater holds. Rounded to the roaster's step like every output.
