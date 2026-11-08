@@ -1,5 +1,5 @@
 import { plannedCurve } from '@roastpilot/core';
-import type { CurvePoint, ProfileEntry } from '@roastpilot/shared';
+import type { AutoProfile, CurvePoint, ProfileEntry } from '@roastpilot/shared';
 import { useMemo } from 'react';
 import { isAutoDriven } from '../../lib/roast-phases';
 import { useAuto, useRoast, useSettings } from '../../stores/use-stores';
@@ -33,4 +33,15 @@ export function useRunningPlan(): readonly CurvePoint[] | undefined {
     () => (enabled && entry ? plannedCurve(entry.profile) : undefined),
     [enabled, entry],
   );
+}
+
+/**
+ * The profile this roast follows: the one Auto runs, or in a manual roast the coach's, while the
+ * coach is on (ADR 0019); undefined in a manual roast without the coach.
+ */
+export function useProfileInUse(): AutoProfile | undefined {
+  const auto = useAuto((s) => s.status.enabled);
+  const coach = useSettings((s) => s.settings.coachInManual);
+  const entry = useActiveProfile();
+  return auto || coach ? entry?.profile : undefined;
 }

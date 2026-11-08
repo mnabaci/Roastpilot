@@ -10,6 +10,7 @@ import { FlowPanel } from './FlowPanel';
 import { FinishedRoastCard } from './FinishedRoastCard';
 import { useRunningPlan } from './use-active-profile';
 import { usePlanLines } from './use-plan-lines';
+import { useRoastView } from './use-roast-view';
 import { OutputsPanel } from './OutputsPanel';
 import { CoachPanel } from './CoachPanel';
 import { RoastNumbersRow } from './RoastNumbersRow';
@@ -48,6 +49,12 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
   );
   const ghost = useGhost(roast, { elapsedS: numbers.elapsedS, bt: shown.bt, smoothingS });
   const planLines = usePlanLines(shown.bt, numbers.elapsedS);
+  const view = useRoastView({
+    roast,
+    lines: chart.layers,
+    rorCPerMin: shown.ror,
+    ghostDropS: ghost.dropS,
+  });
   // Connected, or lost and reconnecting: either way the outputs stay, with dashes while lost.
   const hasRoaster = connected || lost;
   const idle = roast.phase === 'ready' || roast.phase === 'done';
@@ -84,8 +91,10 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
         <FinishedRoastCard />
         <RoastChart
           title="Roast curve"
-          layers={[...ghost.layers, ...chart.layers]}
+          layers={[...ghost.layers, ...chart.layers, ...view.aids]}
           markers={[...ghost.markers, ...chart.markers]}
+          timeWindow={view.timeWindow}
+          temperatureFloorC={view.temperatureFloorC}
         />
       </div>
       {/* The panel shows what the moment needs (docs/spec/ui.md, Side panel follows the roast). */}
