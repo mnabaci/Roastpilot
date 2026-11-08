@@ -20,8 +20,8 @@ describe('file messages', () => {
 
   it('says which item failed its checks and why', () => {
     expect(
-      importProblemText({ kind: 'bad-item', name: 'Light', reason: 'At most 235 °C (capC)' }),
-    ).toBe('"Light" can\'t come in · At most 235 °C (capC)');
+      importProblemText({ kind: 'bad-item', name: 'Light', reason: 'BT cap: At most 235 °C' }),
+    ).toBe('"Light" can\'t come in · BT cap: At most 235 °C');
   });
 
   it.each([

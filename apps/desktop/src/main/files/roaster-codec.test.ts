@@ -84,7 +84,7 @@ describe('roaster files', () => {
       err({
         kind: 'bad-item',
         name: 'Skywalker',
-        reason: 'At most 240 °C on this model (maxTempC)',
+        reason: 'Max temp: At most 240 °C on this model',
       }),
     );
     const unknown = await filesOf('roasters', codec).importFile(

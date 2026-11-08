@@ -105,7 +105,7 @@ describe('profile files', () => {
   it('refuses a profile that fails the checks Save makes', async () => {
     const bad = without({ ...MINE, capC: 250 }, 'id');
     expect(await filesOf('profiles', setup().codec).importFile(fileOf([bad]))).toEqual(
-      err({ kind: 'bad-item', name: 'Mine', reason: 'At most 235 °C (capC)' }),
+      err({ kind: 'bad-item', name: 'Mine', reason: 'BT cap: At most 235 °C' }),
     );
   });
 

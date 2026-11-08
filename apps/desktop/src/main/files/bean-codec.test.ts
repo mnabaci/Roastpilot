@@ -142,7 +142,7 @@ describe('bean files', () => {
     });
     expect(await filesOf('beans', setup([]).codec).importFile(text)).toEqual({
       ok: false,
-      error: { kind: 'bad-item', name: 'Guji', reason: 'Enter an origin (origin)' },
+      error: { kind: 'bad-item', name: 'Guji', reason: 'Origin: Enter an origin' },
     });
   });
 });

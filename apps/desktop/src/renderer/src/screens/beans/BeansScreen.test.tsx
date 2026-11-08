@@ -313,7 +313,7 @@ describe('BeansScreen', () => {
       const api = fakeApi({
         importLibrary: vi.fn(() =>
           Promise.resolve(
-            err({ kind: 'bad-item' as const, name: 'Guji', reason: 'Enter an origin (origin)' }),
+            err({ kind: 'bad-item' as const, name: 'Guji', reason: 'Origin: Enter an origin' }),
           ),
         ),
       });
@@ -323,7 +323,7 @@ describe('BeansScreen', () => {
       await waitFor(() => {
         expect(toasts(stores)).toContainEqual([
           'error',
-          '"Guji" can\'t come in · Enter an origin (origin)',
+          '"Guji" can\'t come in · Origin: Enter an origin',
         ]);
       });
     });
