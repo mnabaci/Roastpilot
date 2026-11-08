@@ -49,9 +49,11 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
   );
   const ghost = useGhost(roast, { elapsedS: numbers.elapsedS, bt: shown.bt, smoothingS });
   const planLines = usePlanLines(shown.bt, numbers.elapsedS);
+  // Ghost behind today's lines; one array, so the view only works itself out again on new lines.
+  const lines = useMemo(() => [...ghost.layers, ...chart.layers], [ghost.layers, chart.layers]);
   const view = useRoastView({
     roast,
-    lines: [...ghost.layers, ...chart.layers],
+    lines,
     rorCPerMin: shown.ror,
     ghost,
   });
@@ -91,7 +93,7 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
         <FinishedRoastCard />
         <RoastChart
           title="Roast curve"
-          layers={[...ghost.layers, ...chart.layers, ...view.aids]}
+          layers={[...lines, ...view.aids]}
           markers={[...ghost.markers, ...chart.markers]}
           timeWindow={view.timeWindow}
           temperatureFloorC={view.temperatureFloorC}
