@@ -59,11 +59,34 @@ One migration per milestone.
 
 ## Roastpilot roast files
 
-- **Export** writes a Roastpilot file (`.rpr`, JSON inside, as Artisan's `.alog`) or a CSV, of every roast ("Export all"), the ones ticked in Select, or the open roast. A Roastpilot file is `{ format: "roastpilot-roasts", version: 2, exportedAt, roasts }` without indentation, each roast in full (its summary, mode, profile copy, samples and events) plus the bean's and roaster's names; ids stay behind, as they mean nothing on another computer. Samples go as columns, `{ tS: […], values: { bt: […], heater: […] } }`, rounded to 0.1, `null` where a sample had no value ([ADR 0015](../adr/0015-compact-roast-files.md)): about 90% smaller than version 1, which still imports.
+- **Export** writes a Roastpilot file (`.rpr`, JSON inside, as Artisan's `.alog`, in the shape every Roastpilot file shares: [Beans, profiles and roasters files](#beans-profiles-and-roasters-files)) or a CSV, of every roast ("Export all"), the ones ticked in Select, or the open roast. A Roastpilot file is `{ format: "roastpilot-roasts", version: 2, exportedAt, roasts }` without indentation, each roast in full (its summary, mode, profile copy, samples and events) plus the bean's and roaster's names; ids stay behind, as they mean nothing on another computer. Samples go as columns, `{ tS: […], values: { bt: […], heater: […] } }`, rounded to 0.1, `null` where a sample had no value ([ADR 0015](../adr/0015-compact-roast-files.md)): about 90% smaller than version 1, which still imports.
 - **Import** reads a Roastpilot file (`.rpr`). A roast whose start time is already in History is skipped; the rest are added. A toast says both counts ("Imported 12 roasts · 3 were already here") and History opens the newest roast added, clearing any filter that would hide it. A file that isn't one, or a newer `version`, is refused as a whole with an error toast. Export says "Saved roasts.rpr" in a toast too.
 - **Links:** an imported roast links to a bean or roaster with exactly the same name, else to none; it never touches stock, as those beans were roasted elsewhere.
 - **Migration 0004:** `roasts.imported` (0 or 1). Existing roasts with no roaster are Artisan imports and get 1. Stock never moves for an imported roast: not at import, not when its weights change, not when its bean changes.
 - **Changing a saved roast's bean** (History): for a roast made here, its batch goes back to the old bean's green stock and comes off the new one's, and the roasted weight moves the same way; for an imported roast, only the link changes.
+
+## Beans, profiles and roasters files
+
+Every Roastpilot file follows one shape and one flow, roasts included ([ADR 0021](../adr/0021-one-roastpilot-file-shape.md)):
+
+| Part    | Rule                                                                                                                                                            |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| File    | `.rpr`, JSON without indentation: `{ format, version, exportedAt, <items> }`; `format` says the kind, `version` its own version, from 1                         |
+| Kinds   | `roastpilot-roasts` (`roasts`, version 2), `roastpilot-beans` (`beans`), `roastpilot-profiles` (`profiles`), `roastpilot-roasters` (`roasters`), version 1 each |
+| Units   | Always °C, grams and seconds, whatever the °F setting: a file reads the same on any computer                                                                    |
+| Ids     | Stay behind; links go by name                                                                                                                                   |
+| Export  | Each screen's title "⋯": Export all; each item's "⋯": Export this <kind>. Toast: "Saved profiles.rpr"                                                           |
+| Import  | Each screen's title "⋯": Import a Roastpilot file. Toast: "Imported 3 profiles · 1 was already here"; the screen opens the newest one added                     |
+| Same    | Something with the same name and the same content is skipped and counted as already here                                                                        |
+| Clash   | Same name, different content: added as "<name> (imported)", then "(imported 2)"…; nothing of yours is ever overwritten                                          |
+| Refused | A file that isn't one, a newer `version`, or one item that doesn't pass its checks refuses the whole file, with an error toast saying why                       |
+| Kind    | Another kind is refused by name: "This is a beans file · import it on Beans"                                                                                    |
+
+What each kind carries:
+
+- **Beans:** the bean's fields (name, origin, process, variety, altitude, density, moisture, screen, decaf, supplier, low-stock line, notes) and its profile's name. Not stock or purchases: those are your bags, not the bean's. Its profile links by name among the active roaster's profiles, else none. An imported bean starts with 0 g and is not archived.
+- **Profiles:** the profile in full, without its id or roaster. It joins the active roaster's profiles marked "needs calibration", as a copy to another roaster is: it was made on someone else's machine. It passes the same checks as Save, and the active roaster's limits.
+- **Roasters:** the record (name, model, batch sizes, limits and calibration, preheat hold, drum speed, bean cooler helps drum, PID gains). Not the port, which belongs to one computer, and never active: an imported Skywalker asks for its port on Connect.
 
 ## Bean and drum cooling
 
