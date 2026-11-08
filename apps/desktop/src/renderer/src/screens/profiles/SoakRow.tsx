@@ -32,7 +32,8 @@ export function SoakRow({
       <SelectField
         label="Soak length"
         hideLabel
-        className="min-w-24"
+        numeric
+        className="min-w-20"
         value={soakValue(draft.soakS)}
         options={soakOptions(draft.soakS)}
         onChange={(value) => {
