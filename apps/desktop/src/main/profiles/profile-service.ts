@@ -1,7 +1,6 @@
 import {
   builderBase,
   profileFromMilestones,
-  soakLengthS,
   type Logger,
   type ProfileRepository,
 } from '@roastpilot/core';
@@ -146,35 +145,19 @@ export class ProfileService {
     return this.#store(profile, owner ?? this.#deps.activeRoaster().id);
   }
 
-  /**
-   * Your own profiles that soak, on every roaster, set to soak `soakS`; how many changed. Built-ins
-   * and profiles without a soak stay as they are (docs/spec/roast-control.md, From the old setting).
-   */
-  async setOwnSoaks(soakS: number): Promise<Result<number, ProfileError>> {
-    const read = await this.#deps.store.list();
-    if (!read.ok) return this.#failed(read.error);
-    this.#own = read.value;
-    const changing = read.value.filter(({ profile }) => {
-      const lengthS = soakLengthS(profile);
-      return lengthS > 0 && lengthS !== soakS;
-    });
-    for (const { profile, roasterId } of changing) {
-      const [soak, ...steps] = profile.phases;
-      if (!soak) continue;
-      const phases = [{ ...soak, next: { on: 'time' as const, afterS: soakS } }, ...steps];
-      const saved = await this.#store({ ...profile, phases }, roasterId);
-      if (!saved.ok) return saved;
-    }
-    return ok(changing.length);
+  delete(id: ProfileId): Promise<Result<void, ProfileError>> {
+    return this.deleteMany([id]);
   }
 
-  async delete(id: ProfileId): Promise<Result<void, ProfileError>> {
-    if (this.#isBuiltIn(id)) return err({ kind: 'built-in', id });
-    const deleted = await this.#deps.store.delete(id);
+  /** Your own, in one write, all or nothing; a built-in among them refuses them all. */
+  async deleteMany(ids: readonly ProfileId[]): Promise<Result<void, ProfileError>> {
+    const builtIn = ids.find((id) => this.#isBuiltIn(id));
+    if (builtIn !== undefined) return err({ kind: 'built-in', id: builtIn });
+    const deleted = await this.#deps.store.deleteMany(ids);
     if (!deleted.ok) return this.#failed(deleted.error);
-    if (!deleted.value) return err({ kind: 'not-found', id });
-    this.#own = this.#own.filter((own) => own.profile.id !== id);
-    this.#deps.logger.info('profiles.deleted', { id });
+    if (deleted.value === 0) return err({ kind: 'not-found', id: ids.join(', ') });
+    this.#own = this.#own.filter((own) => !ids.includes(own.profile.id));
+    this.#deps.logger.info('profiles.deleted', { ids });
     return ok(undefined);
   }
 

@@ -25,10 +25,10 @@ function setup({
       return Promise.resolve(ok(undefined));
     },
     saveAll: () => Promise.resolve(ok(undefined)),
-    delete: (id) => {
+    deleteMany: (ids) => {
       if (deleteFails) return Promise.resolve(FAILED);
-      const had = stored.includes(id);
-      stored = stored.filter((s) => s !== id);
+      const had = stored.filter((s) => ids.includes(s)).length;
+      stored = stored.filter((s) => !ids.includes(s));
       return Promise.resolve(ok(had));
     },
   };

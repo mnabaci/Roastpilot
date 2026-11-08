@@ -31,3 +31,17 @@ type Story = StoryObj<typeof meta>;
 
 export const Roasters: Story = {};
 export const NothingOpen: Story = { args: { openId: undefined } };
+export const SelectMode: Story = {
+  args: {
+    label: 'Profiles',
+    items: [
+      { id: 1, label: 'Light · Steps', detail: 'Built-in', locked: true },
+      { id: 2, label: 'Guji light', detail: 'Auto uses this one', locked: true },
+      { id: 3, label: 'Huila medium' },
+      { id: 4, label: 'Milestones' },
+    ],
+    openId: undefined,
+    checked: new Set([3]),
+    onCheck: () => undefined,
+  },
+};

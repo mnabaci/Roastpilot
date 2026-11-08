@@ -80,7 +80,7 @@ export function createAppServices({
     logger: logger.child('profiles'),
   });
   // Before the first roast, so a chosen profile of your own is there without opening a window.
-  startLoading({ settings, retiredSoak: settingsStore, roasters, profiles, logger });
+  startLoading({ settings, retiredSoak: settingsStore, roasters, profiles, profileStore, logger });
   const saved = createHistory({
     roasts,
     beans,

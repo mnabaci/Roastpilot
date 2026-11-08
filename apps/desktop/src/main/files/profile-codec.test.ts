@@ -28,7 +28,7 @@ function setup(own: AutoProfile[] = [], limits: Partial<Roaster> = {}, saveFails
       stored = [...stored, ...list.map((profile) => ({ profile, roasterId }))];
       return Promise.resolve(ok(undefined));
     },
-    delete: () => Promise.resolve(ok(false)),
+    deleteMany: () => Promise.resolve(ok(0)),
   };
   const profiles = new ProfileService({
     store,

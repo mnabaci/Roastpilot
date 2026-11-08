@@ -68,14 +68,19 @@ export class SqliteProfileRepository implements ProfileRepository {
       .run();
   }
 
-  delete(id: ProfileId): Promise<Result<boolean, StorageError>> {
-    return attempt(async () => {
-      const deleted = await this.#db
-        .delete(profiles)
-        .where(eq(profiles.id, id))
-        .returning({ id: profiles.id })
-        .all();
-      return deleted.length > 0;
+  deleteMany(ids: readonly ProfileId[]): Promise<Result<number, StorageError>> {
+    return transaction(this.#db, async (tx) => {
+      let removed = 0;
+      // One statement per id, so a failure part way rolls back the ones before it.
+      for (const id of ids) {
+        const deleted = await tx
+          .delete(profiles)
+          .where(eq(profiles.id, id))
+          .returning({ id: profiles.id })
+          .all();
+        removed += deleted.length;
+      }
+      return ok(removed);
     });
   }
 }

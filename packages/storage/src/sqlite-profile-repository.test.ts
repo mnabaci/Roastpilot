@@ -50,12 +50,18 @@ describe('SqliteProfileRepository', () => {
     });
   });
 
-  it('says whether there was one to delete', async () => {
+  it('deletes several at once and says how many were there to delete', async () => {
     const { repository } = setup();
     await repository.save(MINE, 1);
-    expect(await repository.delete(MINE.id)).toEqual({ ok: true, value: true });
-    expect(await repository.delete(MINE.id)).toEqual({ ok: true, value: false });
-    expect(await repository.list()).toEqual({ ok: true, value: [] });
+    await repository.save({ ...MINE, id: 'custom-2' }, 1);
+    await repository.save({ ...MINE, id: 'custom-3' }, 1);
+    expect(await repository.deleteMany([MINE.id, 'custom-2', 'gone'])).toEqual({
+      ok: true,
+      value: 2,
+    });
+    expect(await repository.deleteMany([MINE.id])).toEqual({ ok: true, value: 0 });
+    const left = await repository.list();
+    expect(left.ok && left.value.map((own) => own.profile.id)).toEqual(['custom-3']);
   });
 
   it('skips and logs a row it can no longer read, and keeps the rest', async () => {

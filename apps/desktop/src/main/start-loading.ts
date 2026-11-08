@@ -1,4 +1,4 @@
-import { serializeError, type Logger } from '@roastpilot/core';
+import { serializeError, type Logger, type ProfileRepository } from '@roastpilot/core';
 import type { ProfileService } from './profiles/profile-service';
 import type { RoasterService } from './roasters/roaster-service';
 import { moveRetiredSoak, type RetiredSoakSetting } from './settings/move-soak';
@@ -14,12 +14,14 @@ export function startLoading({
   retiredSoak,
   roasters,
   profiles,
+  profileStore,
   logger,
 }: {
   settings: SettingsService;
   retiredSoak: RetiredSoakSetting;
   roasters: RoasterService;
   profiles: ProfileService;
+  profileStore: Pick<ProfileRepository, 'list'>;
   logger: Logger;
 }): void {
   const load = async () => {
@@ -31,7 +33,7 @@ export function startLoading({
       else logger.warn('settings.connection-not-moved', { error: moved.error });
     }
     await profiles.list();
-    await moveRetiredSoak({ retired: retiredSoak, settings, profiles, logger });
+    await moveRetiredSoak({ retired: retiredSoak, settings, profiles, profileStore, logger });
   };
   load().catch((error: unknown) => {
     logger.error('app.load-failed', { error: serializeError(error) });
