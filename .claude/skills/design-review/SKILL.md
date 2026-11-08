@@ -5,12 +5,29 @@ description: Review a Roastpilot screen or component against the design system a
 
 # Design review
 
+Judge a component in the full screen, not on its own: run the app (`ui-check`) and look at every screen it appears on at 960 × 640 and at 1600 × 1000, in Dark and Light. Open and look at every screenshot before calling it done. List each issue with the exact fix.
+
+## Tokens and hierarchy
+
 1. **Tokens:** colours, radii, spacing and type from tokens only; no hex or arbitrary values.
-2. **Hierarchy:** one primary action per state, using the primary button; everything else tonal or ghost.
+2. **Hierarchy:** one primary action per state, using the primary button; everything else tonal, outline or ghost.
 3. **No walls of text:** numbers before sentences; hints are one line; no modals during a roast except the confirmation dialog after the user's own click.
 4. **Readability:** live values use the readout styles with tabular numerals; readable from 1–2 m.
 5. **Colour meaning:** ember = heat, cyan = air, grey = reference, state colours only for real states, red only for safety.
 6. **Accessibility:** 4.5:1 text contrast in dark and light, focus ring visible, 44px targets, labels on inputs, `aria-label` on icon-only buttons.
 7. **Copy:** sentence case, value then unit (`212 °C`, `1:58`), verbs on buttons.
-8. **Layout:** the top bar and safety banners never scroll; each screen scrolls inside its own area (on Logs only the list). Run the app (`run` skill) at the minimum window size (960 × 640) and at full screen and open every screen: no page-level scrolling, no horizontal scroll, nothing clipped (big numbers fit their cards, long text truncates). Measure, don't eyeball: `document.documentElement.scrollWidth === clientWidth` and `scrollHeight === clientHeight`.
-9. Check both themes in Storybook (`pnpm storybook`, theme switch in the toolbar) and the a11y panel. List issues with the exact fix.
+
+## Consistency (`docs/spec/ui.md`, [App frame](../../../docs/spec/ui.md#app-frame))
+
+8. **Choice buttons:** at the right end, the quiet choice first (Cancel, Discard, Dismiss), the action last (Save, Apply); one alone also at the right.
+9. **Closing buttons:** anything that closes or acknowledges (Dismiss, Done, Acknowledge) uses the Outline button.
+10. **Headers:** actions in a page header are `sm`; the open item's title sits on the sidebar title's line, in a `control-sm` row, in the `title` type.
+11. **Spacing:** `space-4` between cards, in columns and grids.
+12. **Values:** right-aligned in their row, tabular numerals, lining up down a column.
+13. **Design system:** a changed component's look, sizes or rules are written in `docs/design-system/components/<Name>.md` (screen-wide rules in `docs/design-system/README.md`) in the same PR (ADR 0020).
+
+## Measure, don't eyeball
+
+14. **Alignment:** compare `getBoundingClientRect()` of the things that should line up: left edges, text baselines, right edges. Equal to the pixel, or it's a finding. Example: `pnpm ui eval "[...document.querySelectorAll('h1')].map(e => e.getBoundingClientRect().top)"`.
+15. **Layout:** the top bar and safety banners never scroll; each screen scrolls inside its own area (on Logs only the list). On every screen at both sizes: `scrollWidth === clientWidth` and `scrollHeight === clientHeight` on the page (`pnpm ui shot` prints both), nothing clipped (big numbers fit their cards, long text truncates).
+16. **Storybook:** both themes (toolbar switch) and the a11y panel for each changed component.
