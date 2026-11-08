@@ -50,7 +50,10 @@ export function AddStockForm({ bean, onDone }: { bean: Bean; onDone: () => void 
           {problem}
         </p>
       ) : null}
-      <div className="flex gap-2">
+      <div className="flex justify-end gap-2">
+        <Button variant="ghost" onClick={onDone}>
+          Cancel
+        </Button>
         <Button
           variant="primary"
           disabled={!valid}
@@ -72,9 +75,6 @@ export function AddStockForm({ bean, onDone }: { bean: Bean; onDone: () => void 
           }}
         >
           {grams > 0 ? `Add ${formatGrams(grams)}` : 'Add stock'}
-        </Button>
-        <Button variant="ghost" onClick={onDone}>
-          Cancel
         </Button>
       </div>
     </section>
@@ -109,7 +109,10 @@ export function AdjustStockForm({ bean, onDone }: { bean: Bean; onDone: () => vo
           {problem}
         </p>
       ) : null}
-      <div className="flex gap-2">
+      <div className="flex justify-end gap-2">
+        <Button variant="ghost" onClick={onDone}>
+          Cancel
+        </Button>
         <Button
           variant="primary"
           disabled={!valid}
@@ -126,9 +129,6 @@ export function AdjustStockForm({ bean, onDone }: { bean: Bean; onDone: () => vo
           }}
         >
           Save
-        </Button>
-        <Button variant="ghost" onClick={onDone}>
-          Cancel
         </Button>
       </div>
     </section>
