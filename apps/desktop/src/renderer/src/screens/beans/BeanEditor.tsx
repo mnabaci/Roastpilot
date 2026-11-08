@@ -144,12 +144,12 @@ export function BeanEditor({
           {problem}
         </p>
       ) : null}
-      <div className="flex gap-2">
-        <Button variant="primary" disabled={!checked.ok} onClick={save}>
-          {bean ? 'Save' : 'Add bean'}
-        </Button>
+      <div className="flex justify-end gap-2">
         <Button variant="ghost" onClick={onDone}>
           Cancel
+        </Button>
+        <Button variant="primary" disabled={!checked.ok} onClick={save}>
+          {bean ? 'Save' : 'Add bean'}
         </Button>
       </div>
     </section>
