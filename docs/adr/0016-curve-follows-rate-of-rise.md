@@ -12,7 +12,7 @@ Date: 2026-11-07
 Curve phases work like steps, with the curve as the plan:
 
 - **Feed-forward:** each phase starts from its heat %, the heater the source roast used there.
-- **Aim:** the curve's own RoR, taken 30 s ahead to cover the lag, plus 0.3 °C/min per °C BT is behind the curve (less when ahead), kept within 0–30 °C/min and, before the first-crack tap, never under the stall guard's 5.
+- **Aim:** the curve's own RoR, taken 45 s ahead to cover the lag (30 s at first; Auto roast 17 still overshot the dry-end bend), plus 0.3 °C/min per °C BT is behind the curve (less when ahead), kept within 0–30 °C/min and, before the first-crack tap, never under the stall guard's 5.
 - **Correction:** a RoR PID (its own gains) limited to ±20% of the estimate, +30% while the stall guard trips, with the usual anti-windup.
 - **Slew limit:** the heater moves at most 5% per 10 s either way, also across a change from one curve phase to the next (the new phase starts where the heater was). Only the hand-over from the soak is immediate.
 - **Smooth curve:** the curve is a monotone cubic (Fritsch–Butland, as the milestone builder draws) through its points, not straight lines between them, so its RoR is continuous instead of a staircase. Past the last point the last section's slope carries on, which is also the cubic's end slope. The chart's dashed plan and "vs plan" read the same curve, step profiles' planned curves too.
