@@ -20,7 +20,9 @@ export function ghostChart(
   const fade = (id: string, label: string, width: number): LineLayer[] => {
     const layer = layers.find((l) => l.id === id);
     if (!layer) return [];
-    const points = layer.points.filter((p) => p.t >= 0);
+    // Charge to drop: its cooling is no comparison, and would pull the fitted floor down.
+    const dropS = detail.dropTimeS ?? Infinity;
+    const points = layer.points.filter((p) => p.t >= 0 && p.t <= dropS);
     return [{ ...layer, id: `ghost-${id}`, label, tone: 'ghost', width, points }];
   };
   return {
