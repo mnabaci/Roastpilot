@@ -50,6 +50,21 @@ describe('SqliteProfileRepository', () => {
     });
   });
 
+  it('unlinks the beans of a deleted profile in the same write, and no others', async () => {
+    const { repository, sqlite } = setup();
+    await repository.save(MINE, 1);
+    await repository.save({ ...MINE, id: 'custom-2' }, 1);
+    sqlite.exec(`INSERT INTO beans (name, origin, process, profile_id) VALUES
+      ('Guji', 'Ethiopia', 'washed', '${MINE.id}'), ('Huila', 'Colombia', 'washed', 'custom-2'),
+      ('Kenya', 'Kenya', 'washed', '${MINE.id}')`);
+    expect(await repository.deleteMany([MINE.id])).toEqual({ ok: true, value: 1 });
+    expect(sqlite.prepare('SELECT name, profile_id AS p FROM beans ORDER BY id').all()).toEqual([
+      { name: 'Guji', p: null },
+      { name: 'Huila', p: 'custom-2' },
+      { name: 'Kenya', p: null },
+    ]);
+  });
+
   it('deletes several at once and says how many were there to delete', async () => {
     const { repository } = setup();
     await repository.save(MINE, 1);

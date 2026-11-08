@@ -12,6 +12,7 @@ import { asc, eq } from 'drizzle-orm';
 import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy';
 import { attempt, parseJson } from './attempt';
 import { transaction } from './transaction';
+import { beans } from './schema/beans';
 import { profiles } from './schema/profiles';
 
 /** Your own profiles in SQLite, one JSON document each (docs/adr/0011-built-in-profile-as-data.md). */
@@ -79,6 +80,8 @@ export class SqliteProfileRepository implements ProfileRepository {
           .returning({ id: profiles.id })
           .all();
         removed += deleted.length;
+        // No bean points at a profile that isn't there (docs/spec/data-model.md).
+        await tx.update(beans).set({ profileId: null }).where(eq(beans.profileId, id)).run();
       }
       return ok(removed);
     });
