@@ -83,3 +83,29 @@ describe('labelSpot', () => {
     ).toBeUndefined();
   });
 });
+
+describe('labelSpot with marker labels', () => {
+  it('keeps clear of a marker label, taking the next free spot', () => {
+    const charge: Box = { left: 30, top: 118, right: 90, bottom: 136 };
+    const under: Box = { left: 40, top: 140, right: 120, bottom: 158 };
+    const lines = [
+      [
+        { x: 60, y: 150 },
+        { x: 64, y: 260 },
+      ],
+    ];
+    expect(
+      labelSpot(
+        [bottom, top, under],
+        [
+          [
+            { x: 0, y: 210 },
+            { x: 200, y: 210 },
+          ],
+        ],
+        [charge],
+      ),
+    ).toBe(under);
+    expect(labelSpot([top], lines, [charge])).toBeUndefined();
+  });
+});

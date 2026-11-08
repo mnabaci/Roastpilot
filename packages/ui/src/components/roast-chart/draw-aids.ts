@@ -86,10 +86,16 @@ function canvasLines(u: uPlot, rightPx: number): CanvasLine[] {
 
 /**
  * Each band's name, once, at its left edge (just right of the Charge line when it is in view): at
- * the bottom of the band, or its top when a curve runs there, on a chip of the band's own shade
- * so the grid and markers never cut through it. A band with no free spot has no name.
+ * the bottom of the band, or its top when a curve runs there (under the marker labels when they
+ * sit there), on a chip of the band's own shade so the grid never cuts through it. A band with no
+ * free spot has no name.
  */
-export function drawBandLabels(u: uPlot, aids: readonly ChartAid[], colors: ChartColors): void {
+export function drawBandLabels(
+  u: uPlot,
+  aids: readonly ChartAid[],
+  taken: readonly Box[],
+  colors: ChartColors,
+): void {
   const boxes = bandBoxes(u, aids);
   if (boxes.length === 0) return;
   const { ctx, bbox } = u;
@@ -105,11 +111,17 @@ export function drawBandLabels(u: uPlot, aids: readonly ChartAid[], colors: Char
   const lines = canvasLines(u, left + Math.max(...widths) + inset);
   boxes.forEach((box, i) => {
     const right = left + (widths[i] ?? 0);
+    // Under the marker labels that reach across this name's span, for the top spot's second try.
+    const below = Math.max(
+      box.top,
+      ...taken.filter((t) => t.left <= right && t.right >= left).map((t) => t.bottom),
+    );
     const spots: Box[] = [
       { left, right, bottom: box.bottom - inset / 2, top: box.bottom - inset / 2 - height },
       { left, right, top: box.top + inset / 2, bottom: box.top + inset / 2 + height },
+      { left, right, top: below + inset / 2, bottom: below + inset / 2 + height },
     ].filter((spot) => spot.top >= box.top && spot.bottom <= box.bottom);
-    const spot = labelSpot(spots, lines);
+    const spot = labelSpot(spots, lines, taken);
     if (!spot) return;
     const chip = { x: spot.left - inset / 2, w: spot.right - spot.left + inset };
     ctx.globalAlpha = 1;

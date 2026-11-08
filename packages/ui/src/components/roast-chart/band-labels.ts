@@ -31,10 +31,20 @@ export function crossesAny(box: Box, lines: readonly CanvasLine[]): boolean {
   );
 }
 
+const overlaps = (a: Box, b: Box): boolean =>
+  a.left <= b.right && a.right >= b.left && a.top <= b.bottom && a.bottom >= b.top;
+
 /**
  * Where a band's name goes: the first of its spots (bottom of the band, then its top) that no line
- * passes through; undefined when every spot is taken, so a name never hides a curve.
+ * passes through and no other label (a marker's) covers; undefined when every spot is taken, so a
+ * name never hides a curve or another name.
  */
-export function labelSpot(spots: readonly Box[], lines: readonly CanvasLine[]): Box | undefined {
-  return spots.find((spot) => !crossesAny(spot, lines));
+export function labelSpot(
+  spots: readonly Box[],
+  lines: readonly CanvasLine[],
+  taken: readonly Box[] = [],
+): Box | undefined {
+  return spots.find(
+    (spot) => !crossesAny(spot, lines) && !taken.some((box) => overlaps(spot, box)),
+  );
 }

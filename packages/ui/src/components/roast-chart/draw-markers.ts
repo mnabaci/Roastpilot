@@ -1,5 +1,6 @@
 import type uPlot from 'uplot';
 import type { ChartColors } from './chart-colors';
+import type { Box } from './band-labels';
 import type { LineLayer, ChartMarker } from './chart-layer';
 
 const LABEL_GAP = 8;
@@ -24,20 +25,30 @@ export function labelX(x: number, width: number, right: number, gap: number): nu
   return x + gap + width > right ? x - gap - width : x + gap;
 }
 
-/** Event markers: 1.5px dashed vertical lines, labelled at the top unless `labels` is off (the strip). */
-export function drawMarkers(
-  u: uPlot,
-  markers: readonly ChartMarker[],
-  colors: ChartColors,
-  { labels }: { labels: boolean },
-): void {
+interface PlacedMarker {
+  marker: ChartMarker;
+  /** Canvas x of the line. */
+  x: number;
+  /** Canvas x where its label starts, its width and its row. */
+  textX: number;
+  width: number;
+  row: number;
+}
+
+const markerFont = (colors: ChartColors, ratio: number) =>
+  `600 ${String(13 * ratio)}px ${colors.font}`;
+const labelBaseline = (u: uPlot, row: number, ratio: number) =>
+  u.bbox.top + (16 + row * LINE_HEIGHT) * ratio;
+
+/**
+ * The markers in view with their labels: each beside its line, or left of it near the edge; rows
+ * from where the labels really are, so one flipped left never runs into the label before it.
+ * Measured in the markers' font, which `ctx` must be set to.
+ */
+function placeMarkers(u: uPlot, markers: readonly ChartMarker[]): PlacedMarker[] {
   const { ctx, bbox } = u;
   const ratio = devicePixelRatio;
-  ctx.save();
-  ctx.font = `600 ${String(13 * ratio)}px ${colors.font}`;
   const right = bbox.left + bbox.width;
-  // Each label beside its line, or left of it near the edge; rows from where the labels really
-  // are, so one flipped left never runs into the label before it.
   const shown = markers
     .map((marker) => ({ marker, x: u.valToPos(marker.t, 'x', true) }))
     .filter(({ x }) => x >= bbox.left && x <= right)
@@ -50,7 +61,43 @@ export function drawMarkers(
     shown.map(({ textX, width }) => ({ x: textX, width })),
     LABEL_GAP * ratio,
   );
-  shown.forEach(({ marker, x, textX }, i) => {
+  return shown.map((placed, i) => ({ ...placed, row: rows[i] ?? 0 }));
+}
+
+/** Where the markers' labels sit on the canvas, so other names keep clear of them. */
+export function markerLabelBoxes(
+  u: uPlot,
+  markers: readonly ChartMarker[],
+  colors: ChartColors,
+): Box[] {
+  const ratio = devicePixelRatio;
+  u.ctx.save();
+  u.ctx.font = markerFont(colors, ratio);
+  const boxes = placeMarkers(u, markers).map(({ textX, width, row }) => {
+    const baseline = labelBaseline(u, row, ratio);
+    return {
+      left: textX,
+      right: textX + width,
+      top: baseline - 14 * ratio,
+      bottom: baseline + 4 * ratio,
+    };
+  });
+  u.ctx.restore();
+  return boxes;
+}
+
+/** Event markers: 1.5px dashed vertical lines, labelled at the top unless `labels` is off (the strip). */
+export function drawMarkers(
+  u: uPlot,
+  markers: readonly ChartMarker[],
+  colors: ChartColors,
+  { labels }: { labels: boolean },
+): void {
+  const { ctx, bbox } = u;
+  const ratio = devicePixelRatio;
+  ctx.save();
+  ctx.font = markerFont(colors, ratio);
+  for (const { marker, x, textX, row } of placeMarkers(u, markers)) {
     ctx.strokeStyle = colors.tone[marker.tone];
     ctx.fillStyle = colors.tone[marker.tone];
     ctx.lineWidth = 1.5 * ratio;
@@ -59,10 +106,8 @@ export function drawMarkers(
     ctx.moveTo(x, bbox.top);
     ctx.lineTo(x, bbox.top + bbox.height);
     ctx.stroke();
-    if (!labels) return;
-    const row = rows[i] ?? 0;
-    ctx.fillText(marker.label, textX, bbox.top + (16 + row * LINE_HEIGHT) * ratio);
-  });
+    if (labels) ctx.fillText(marker.label, textX, labelBaseline(u, row, ratio));
+  }
   ctx.restore();
 }
 

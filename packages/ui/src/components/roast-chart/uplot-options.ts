@@ -4,7 +4,7 @@ import type { ChartColors } from './chart-colors';
 import type { ChartAid, ChartMarker, LineLayer } from './chart-layer';
 import { drawBandLabels, drawNowLines, drawPhaseBands, drawProjections } from './draw-aids';
 import { attachDrag, drawDragHandles, type ChartDrag, type TimeRange } from './drag-handles';
-import { drawLatestDot, drawMarkers } from './draw-markers';
+import { drawLatestDot, drawMarkers, markerLabelBoxes } from './draw-markers';
 import { hoverCursor } from './hover-cursor';
 import {
   OUTPUT_RANGE,
@@ -173,8 +173,9 @@ export function buildChartOptions({
       ],
       draw: [
         (u) => {
+          // Band names first, clear of the marker labels, so marker lines still cross them.
+          drawBandLabels(u, aids(), markerLabelBoxes(u, markers(), colors), colors);
           drawMarkers(u, markers(), colors, { labels: true });
-          drawBandLabels(u, aids(), colors);
           drawProjections(u, aids(), colors);
           drawNowLines(u, aids(), colors);
           const layer = layers[latestDotLayer];
