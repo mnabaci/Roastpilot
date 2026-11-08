@@ -110,6 +110,15 @@ describe('Coach', () => {
       });
     });
 
+    it("without a soak, from charge: the first step's heat", () => {
+      const { feed, advice } = setup({
+        profile: { ...COACH_PROFILE, phases: COACH_PROFILE.phases.slice(1) },
+      });
+      feed(0);
+      // Drying, not a later step: BT is above Drying's 150 °C only because it was just charged.
+      expect(advice()).toMatchObject({ kind: 'setting', heater: { from: 0, to: 80 } });
+    });
+
     it('heads-ups still come during the soak', () => {
       const longSoak: AutoProfile = {
         ...COACH_PROFILE,

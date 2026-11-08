@@ -152,6 +152,8 @@ describe('RoastRun', () => {
     const heaterAfter = (gapS: number) => {
       const run = new RoastRun(steep, TUNING, 0);
       run.catchUp([
+        // Turned at 92 °C, so 150 °C is a climb to the trigger.
+        { atMs: 60_000, btC: 92 },
         { atMs: 100_000, btC: 150 },
         { atMs: 101_000, btC: 150 },
       ]);
@@ -175,6 +177,50 @@ describe('RoastRun', () => {
     expect(run.phaseStartedS).toBe(61);
     const next = tick(run, 63, 97);
     expect(next.events).toEqual([]);
+  });
+
+  describe('without a soak', () => {
+    const NO_SOAK: AutoProfile = { ...CURVES, phases: CURVES.phases.slice(1) };
+
+    it('runs the first step from charge, on its own heat', () => {
+      const run = new RoastRun(NO_SOAK, TUNING, 0);
+      expect(run.phaseName).toBe('Heat on');
+      expect(curveTick(run)(1)).toBe(85);
+    });
+
+    it('skips no step at charge, though BT comes in above its trigger', () => {
+      const run = new RoastRun({ ...PROFILE, phases: PROFILE.phases.slice(1) }, TUNING, 0);
+      [1, 2, 3, 4].forEach((s) => tick(run, s, 180));
+      expect(run.phaseName).toBe('Heat on');
+      [5, 6, 7].forEach((s) => tick(run, s, 95));
+      [8, 9, 10].forEach((s) => tick(run, s, 150));
+      expect(run.phaseName).toBe('Follow');
+    });
+
+    it('records dry end once BT has dipped and climbed back, not at charge', () => {
+      const run = new RoastRun(NO_SOAK, TUNING, 0);
+      // BT is settled over three readings, so each temperature holds for three.
+      const series = [180, 160, 120, 95, 130, 150].flatMap((c) => [c, c, c]);
+      const events = series.map((c, i) => tick(run, i + 1, c).events);
+      expect(events.flat().filter((e) => e.kind === 'dry-end')).toHaveLength(1);
+      expect(events.findIndex((e) => e.some((x) => x.kind === 'dry-end'))).toBe(16);
+    });
+
+    it('has the stall guard watching from charge', () => {
+      const run = new RoastRun(NO_SOAK, TUNING, 0);
+      const at = (s: number, ror: number) =>
+        run.tick({ nowMs: s * 1_000, btC: 120, ror, firstCrackAtMs: null });
+      at(1, 10);
+      expect(at(2, 2).events).toContainEqual({ kind: 'stall-guard', tripped: true });
+    });
+  });
+
+  it('keeps the stall guard out of the soak', () => {
+    const run = new RoastRun(CURVES, TUNING, 0);
+    const at = (s: number, ror: number) =>
+      run.tick({ nowMs: s * 1_000, btC: 120, ror, firstCrackAtMs: null });
+    at(1, 10);
+    expect(at(2, 2).events).toEqual([]);
   });
 
   it('does not move on for one bad reading at a trigger', () => {

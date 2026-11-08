@@ -104,7 +104,6 @@ function setup(initial: Partial<RoastState> = {}, profile: AutoProfile = PROFILE
     drop,
     profile: () => profile,
     tuning: () => TUNING,
-    soakS: () => 60,
     onEvent: (event) => events.push(event),
     onChange,
     logger,

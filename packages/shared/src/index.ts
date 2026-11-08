@@ -116,6 +116,7 @@ export {
   ProfileErrorSchema,
   ProfileIdSchema,
   PROFILE_LIMITS,
+  SOAK_LENGTHS_S,
   ProfilePhaseSchema,
   PROFILE_SCHEMA_VERSION,
   type AutoProfile,
@@ -170,7 +171,6 @@ export {
   CoolingTimeSchema,
   RoasterCoolToSchema,
   RoastModeSchema,
-  SoakTimeSchema,
   ThemeSchema,
   DEFAULT_SETTINGS,
   needsSafetyNotice,
@@ -183,7 +183,6 @@ export {
   type RoasterCoolTo,
   type RoastMode,
   type Settings,
-  type SoakTime,
   type SettingsWriteError,
   type Theme,
 } from './settings';

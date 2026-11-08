@@ -1,4 +1,4 @@
-import { plannedCurve, withSoakTime } from '@roastpilot/core';
+import { plannedCurve } from '@roastpilot/core';
 import type { CurvePoint, ProfileEntry } from '@roastpilot/shared';
 import { useMemo } from 'react';
 import { isAutoDriven } from '../../lib/roast-phases';
@@ -28,10 +28,9 @@ export function useProfileLocked(): boolean {
 /** The dashed curve on the Roast chart: only while Auto is on (docs/spec/ui.md). */
 export function useRunningPlan(): readonly CurvePoint[] | undefined {
   const enabled = useAuto((s) => s.status.enabled);
-  const soakS = useSettings((s) => s.settings.soakTimeS);
   const entry = useActiveProfile();
   return useMemo(
-    () => (enabled && entry ? plannedCurve(withSoakTime(entry.profile, soakS)) : undefined),
-    [enabled, entry, soakS],
+    () => (enabled && entry ? plannedCurve(entry.profile) : undefined),
+    [enabled, entry],
   );
 }

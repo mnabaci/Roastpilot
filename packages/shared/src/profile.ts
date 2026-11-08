@@ -48,6 +48,12 @@ export const CurvePointSchema = z.object({ tS: z.number().nonnegative(), c: z.nu
 /** Built-ins have fixed ids; your own get a generated one. */
 export const ProfileIdSchema = z.string().min(1).max(64);
 
+/**
+ * How long a profile's soak can run, in seconds; no soak at all is the other choice
+ * (docs/spec/roast-control.md, The soak is part of each profile).
+ */
+export const SOAK_LENGTHS_S = [30, 45, 60, 75, 90, 120] as const;
+
 /** The profile Auto falls back to when the chosen one is gone. */
 export const DEFAULT_PROFILE_ID = 'light-steps';
 

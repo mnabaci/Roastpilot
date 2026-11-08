@@ -15,30 +15,29 @@ const ROAST_DEFAULTS = {
   roasterCoolToC: 50,
   roastMode: 'manual',
   autoProfile: 'light-steps',
-  soakTimeS: 60,
   sounds: DEFAULT_SOUNDS,
   theme: 'dark',
   safetyNoticeAccepted: 0,
 };
 
 describe('SettingsSchema', () => {
-  it('stays on Manual with a 1:00 soak unless you choose otherwise', () => {
+  it('stays on Manual unless you choose otherwise', () => {
     expect(DEFAULT_SETTINGS.roastMode).toBe('manual');
-    expect(DEFAULT_SETTINGS.soakTimeS).toBe(60);
   });
 
   it('keeps a chosen Auto setup', () => {
-    const chosen = { roastMode: 'auto', autoProfile: 'light-curve', soakTimeS: 90 };
+    const chosen = { roastMode: 'auto', autoProfile: 'light-curve' };
     expect(SettingsSchema.parse(chosen)).toMatchObject(chosen);
   });
 
-  it('falls back on a soak time that is not offered, or an unknown profile', () => {
-    const parsed = SettingsSchema.parse({ soakTimeS: 7, autoProfile: 5, roastMode: 'auto' });
-    expect(parsed).toMatchObject({
-      roastMode: 'auto',
-      autoProfile: 'light-steps',
-      soakTimeS: 60,
-    });
+  it('falls back on an unknown profile', () => {
+    const parsed = SettingsSchema.parse({ autoProfile: 5, roastMode: 'auto' });
+    expect(parsed).toMatchObject({ roastMode: 'auto', autoProfile: 'light-steps' });
+  });
+
+  it('reads a file from before the soak moved into profiles, without the old setting', () => {
+    const parsed = SettingsSchema.parse({ roastMode: 'auto', soakTimeS: 90 });
+    expect(parsed).toEqual({ ...DEFAULT_SETTINGS, roastMode: 'auto' });
   });
 
   it('shows the safety notice until this version is accepted', () => {
@@ -82,7 +81,6 @@ describe('SettingsSchema', () => {
       roasterCoolToC: 40,
       roastMode: 'auto',
       autoProfile: 'light-curve',
-      soakTimeS: 90,
       sounds: {
         enabled: false,
         steps: {

@@ -3,7 +3,7 @@ import { BEAN_TEMP } from '../safety/safety-rule';
 import { dueEndRule, type EndRule } from './end-rules';
 import { heatControlFor } from './heat-control';
 import type { OutputController } from './output-controller';
-import { advancePhase, dryEndReached } from './phase-plan';
+import { advancePhase, dryEndReached, isSoak, type PhaseClock } from './phase-plan';
 import { SettledBt } from './settled-bt';
 import { StallGuard } from './stall-guard';
 
@@ -48,6 +48,7 @@ export class RoastRun {
   #control: OutputController | undefined;
   #lastMs: number;
   #dryEnd = false;
+  #lowestC: number | undefined;
   #stallTripped = false;
   /** The heater sent last, and what a following curve phase starts from. */
   #lastHeaterPct: number | undefined;
@@ -111,15 +112,21 @@ export class RoastRun {
   catchUp(readings: readonly { atMs: number; btC: number | undefined }[]): void {
     for (const { atMs, btC: rawBtC } of readings) {
       const elapsedS = (atMs - this.#chargedAtMs) / 1_000;
-      const btC = this.#bt.next(rawBtC);
-      const nextIndex = advancePhase(this.#profile, this.#index, { elapsedS, btC });
+      const clock = this.#clock(elapsedS, this.#bt.next(rawBtC));
+      const nextIndex = advancePhase(this.#profile, this.#index, clock);
       if (nextIndex !== this.#index) {
         this.#index = nextIndex;
         this.#phaseStartedS = elapsedS;
       }
-      if (dryEndReached(this.#profile, this.#index, btC)) this.#dryEnd = true;
+      if (dryEndReached(this.#profile, this.#index, clock)) this.#dryEnd = true;
       this.#lastMs = atMs;
     }
+  }
+
+  /** Where the roast is for the phase plan, keeping the lowest BT since charge. */
+  #clock(elapsedS: number, btC: number | undefined): PhaseClock {
+    if (btC !== undefined) this.#lowestC = Math.min(this.#lowestC ?? btC, btC);
+    return { elapsedS, btC, lowestC: this.#lowestC };
   }
 
   tick({ nowMs, btC: rawBtC, ror, firstCrackAtMs }: RoastTickInput): RoastTick {
@@ -127,10 +134,11 @@ export class RoastRun {
     const elapsedS = (nowMs - this.#chargedAtMs) / 1_000;
     const dtS = Math.min(MAX_STEP_S, (nowMs - this.#lastMs) / 1_000);
     this.#lastMs = nowMs;
-    const btC = this.#bt.next(rawBtC);
+    const clock = this.#clock(elapsedS, this.#bt.next(rawBtC));
+    const { btC } = clock;
     const firstCracked = firstCrackAtMs !== null;
 
-    const nextIndex = advancePhase(this.#profile, this.#index, { elapsedS, btC });
+    const nextIndex = advancePhase(this.#profile, this.#index, clock);
     if (nextIndex !== this.#index) {
       // Curve to curve, the heater goes on from where it was (ADR 0016); a soak hands over at once.
       const wasFollow = this.#profile.phases[this.#index]?.heat.mode === 'follow';
@@ -140,25 +148,24 @@ export class RoastRun {
       this.#control = undefined;
       events.push({ kind: 'phase', name: this.phaseName ?? '' });
     }
-    if (!this.#dryEnd && dryEndReached(this.#profile, this.#index, btC)) {
+    if (!this.#dryEnd && dryEndReached(this.#profile, this.#index, clock)) {
       this.#dryEnd = true;
       events.push({ kind: 'dry-end' });
     }
 
     const phase = this.#profile.phases[this.#index];
     const plannedFanPct = phase?.fanPct ?? 0;
-    // The soak is fixed by design: the guard starts when the soak ends.
-    const guarded =
-      this.#index > 0
-        ? this.#guard.update({
-            elapsedS,
-            ror,
-            plannedFanPct,
-            firstCracked,
-            // How the heat control ended the last reading: heat goes first, the fan last.
-            heaterMaxed: this.#control?.maxed ?? false,
-          })
-        : { tripped: false, fanPct: plannedFanPct };
+    // The soak is fixed by design: the guard starts when the soak ends, or at charge without one.
+    const guarded = !isSoak(this.#profile, this.#index)
+      ? this.#guard.update({
+          elapsedS,
+          ror,
+          plannedFanPct,
+          firstCracked,
+          // How the heat control ended the last reading: heat goes first, the fan last.
+          heaterMaxed: this.#control?.maxed ?? false,
+        })
+      : { tripped: false, fanPct: plannedFanPct };
     if (guarded.tripped !== this.#stallTripped) {
       this.#stallTripped = guarded.tripped;
       events.push({ kind: 'stall-guard', tripped: guarded.tripped });

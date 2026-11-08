@@ -101,6 +101,54 @@ describe('ProfilesScreen', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(/^Soak: /);
   });
 
+  describe('the soak', () => {
+    const pick = async (option: string) => {
+      await userEvent.click(screen.getByRole('button', { name: 'Soak length' }));
+      await userEvent.click(screen.getByRole('option', { name: option }));
+    };
+
+    it('sets its length from a list, and saves it', async () => {
+      const api = fakeApi({ listProfiles: vi.fn(() => Promise.resolve(withMine)) });
+      open(api);
+      expect(screen.getByRole('button', { name: 'Soak length' })).toHaveTextContent('1:00');
+      await pick('1:30');
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      const saved = vi.mocked(api.saveProfile).mock.calls[0]?.[0];
+      expect(saved?.phases[0]?.next).toEqual({ on: 'time', afterS: 90 });
+    });
+
+    it('Off keeps the row but greys its fan, and saves a profile without one', async () => {
+      const api = fakeApi({ listProfiles: vi.fn(() => Promise.resolve(withMine)) });
+      open(api);
+      await pick('Off');
+      expect(screen.getByRole('textbox', { name: 'Soak fan' })).toBeDisabled();
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      const saved = vi.mocked(api.saveProfile).mock.calls[0]?.[0];
+      expect(saved?.phases.map((p) => p.name)).toEqual(['Heat on', 'Development']);
+    });
+
+    it('comes back with its fan when you pick a length again', async () => {
+      open();
+      await edit('Soak fan', '40');
+      await pick('Off');
+      await pick('0:45');
+      expect(screen.getByRole('textbox', { name: 'Soak fan' })).toBeEnabled();
+      expect(screen.getByRole('textbox', { name: 'Soak fan' })).toHaveValue('40');
+    });
+
+    it('a built-in shows its length as text', () => {
+      open(fakeApi(), BUILT_INS, 'light-steps');
+      expect(screen.queryByRole('button', { name: 'Soak length' })).toBeNull();
+      expect(screen.getByRole('cell', { name: '1:00' })).toBeInTheDocument();
+    });
+
+    it('a curve profile has its length too', () => {
+      const curve = { profile: { ...CURVE, id: 'custom-c', name: 'My curve' }, builtIn: false };
+      open(fakeApi(), [...BUILT_INS, curve], 'custom-c');
+      expect(screen.getByRole('button', { name: 'Soak length' })).toHaveTextContent('1:00');
+    });
+  });
+
   it('Discard goes back to what is saved', async () => {
     open();
     await edit('BT cap', '205');

@@ -70,7 +70,7 @@ export {
 export { profileFromRoast, type ProfileStyle } from './profiles/profile-from-roast';
 export type { ProfileRepository } from './profiles/profile-repository';
 export type { RoasterRepository } from './roasters/roaster-repository';
-export { CAP_BELOW_MAX_C, withCapUnder, withSoakTime } from './auto/phase-plan';
+export { CAP_BELOW_MAX_C, soakLengthS, withCapUnder } from './auto/phase-plan';
 export {
   batchPlans,
   DEFAULT_LOSS_PCT,

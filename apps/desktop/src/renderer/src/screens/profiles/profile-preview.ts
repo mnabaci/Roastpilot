@@ -1,4 +1,4 @@
-import { plannedCurve, smoothCurve, timeAtC, withSoakTime } from '@roastpilot/core';
+import { plannedCurve, smoothCurve, timeAtC } from '@roastpilot/core';
 import type { AutoProfile, CurvePoint, ProfilePhase } from '@roastpilot/shared';
 import type { ChartLayer, ChartMarker, ChartPoint } from '@roastpilot/ui';
 import { PLAN_STEP_S } from '../roast/roast-chart-data';
@@ -17,23 +17,22 @@ const heatPct = (phase: ProfilePhase) => phase.heat.pct;
  * The Profiles screen's chart: the planned curve dashed, heater and fan as planned steps, and the
  * dry end and planned drop (docs/spec/ui.md, Profiles screen).
  */
-export function profilePreview(
-  profile: AutoProfile,
-  soakS: number,
-): { layers: ChartLayer[]; markers: ChartMarker[] } {
-  const timed = withSoakTime(profile, soakS);
+export function profilePreview(profile: AutoProfile): {
+  layers: ChartLayer[];
+  markers: ChartMarker[];
+} {
   // Drawn and timed along the same smooth curve Auto follows.
-  const curve = smoothCurve(plannedCurve(timed), PLAN_STEP_S);
+  const curve = smoothCurve(plannedCurve(profile), PLAN_STEP_S);
   const dropS = curve.at(-1)?.tS ?? 0;
   const heater: ChartPoint[] = [];
   const fan: ChartPoint[] = [];
   let startS = 0;
-  for (const phase of timed.phases) {
+  for (const phase of profile.phases) {
     heater.push({ t: startS, v: heatPct(phase) });
     fan.push({ t: startS, v: phase.fanPct });
     startS = phaseEnd(phase, startS, curve);
   }
-  const last = timed.phases.at(-1);
+  const last = profile.phases.at(-1);
   if (last) {
     heater.push({ t: dropS, v: heatPct(last) });
     fan.push({ t: dropS, v: last.fanPct });

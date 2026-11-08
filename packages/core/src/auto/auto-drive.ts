@@ -5,7 +5,6 @@ import { BEAN_TEMP } from '../safety/safety-rule';
 import type { AutoOutputs } from './auto-outputs';
 import type { AutoPilotDeps } from './auto-pilot-deps';
 import type { HeaterCut } from './heater-cut';
-import { withSoakTime } from './phase-plan';
 import { PreheatProtocol } from './preheat-protocol';
 import { startRoastRun, type AutoEvent, type RoastRun } from './roast-run';
 
@@ -72,7 +71,7 @@ export class AutoDrive {
     }
     const chargedAtMs = state.chargedAtMs;
     if (chargedAtMs !== null && this.#run?.chargedAtMs !== chargedAtMs) {
-      const profile = withSoakTime(deps.profile(), deps.soakS());
+      const profile = deps.profile();
       // The newest reading is left for the tick that follows.
       const earlier = deps.readings().filter((r) => r.atMs < nowMs);
       this.#run = startRoastRun(profile, deps.tuning(), chargedAtMs, earlier);

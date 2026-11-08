@@ -53,6 +53,15 @@ describe('plannedCurve', () => {
     expect(curve[2]).toEqual({ tS: 335, c: 150 });
   });
 
+  it('starts the first step at charge without a soak', () => {
+    const curve = plannedCurve({ ...PROFILE, phases: PROFILE.phases.slice(1) });
+    expect(curve.slice(1, 4)).toEqual([
+      { tS: 64, c: 92 },
+      { tS: 245, c: 150 },
+      { tS: 339, c: 191 },
+    ]);
+  });
+
   it('keeps the curve it was given with no target steps', () => {
     const phases = [
       { name: 'Only', heat: { mode: 'follow', pct: 50 }, fanPct: 30, next: { on: 'end' } },

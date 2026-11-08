@@ -44,13 +44,13 @@ Each phase:
 
 **Light** is the user's own step profile ("Soak" technique). Temperatures are from this modded Skywalker's sensor. Written for 385 g; the default batch is 375 g:
 
-| Phase       | Ends at | Duration | RoR range | Heat estimate | Fan | Next phase when          |
-| ----------- | ------- | -------- | --------- | ------------- | --- | ------------------------ |
-| Soak        | –       | –        | –         | 0%, fixed     | 30% | 1:00 (Soak time setting) |
-| Heat on     | 150 °C  | 4:05     | 14–18     | 85%           | 30% | BT 150 °C (backup 6:30)  |
-| Yellowing   | 165 °C  | 1:14     | 12–14     | 65%           | 50% | BT 165 °C (backup 8:00)  |
-| Maillard    | 180 °C  | 1:38     | 8–10      | 50%           | 65% | BT 180 °C (backup 11:00) |
-| Development | 191 °C  | 1:34     | 3–7       | 40%           | 80% | End rule                 |
+| Phase       | Ends at | Duration | RoR range | Heat estimate | Fan | Next phase when           |
+| ----------- | ------- | -------- | --------- | ------------- | --- | ------------------------- |
+| Soak        | –       | –        | –         | 0%, fixed     | 30% | 1:00 (the profile's soak) |
+| Heat on     | 150 °C  | 4:05     | 14–18     | 85%           | 30% | BT 150 °C (backup 6:30)   |
+| Yellowing   | 165 °C  | 1:14     | 12–14     | 65%           | 50% | BT 165 °C (backup 8:00)   |
+| Maillard    | 180 °C  | 1:38     | 8–10      | 50%           | 65% | BT 180 °C (backup 11:00)  |
+| Development | 191 °C  | 1:34     | 3–7       | 40%           | 80% | End rule                  |
 
 - Charge temp 180 °C. Dry end at BT 150 °C. Drop at 1:45 after first crack (about 15.5 % development; roast 7 dropped at 1:31, 13.8 %), or at BT 200 °C, whichever comes first.
 - Curve points, from roast 7 (2026-11-04): 0:00 180 °C, 1:04 92 °C (turning point), 2:34 110 °C, 5:05 150 °C, 6:19 165 °C, 7:57 180 °C, 9:18 190 °C, 11:03 197 °C.
@@ -58,7 +58,8 @@ Each phase:
 - A step profile's dashed curve comes from its steps: charge, the turning point, each step's end at its planned time, then the BT cap at the planned drop.
 - Every planned curve, curve or step, is one smooth monotone curve through its points: exact at each point, flat at the turning point, the same on the chart, in "vs plan" and in what Auto aims for.
 - These numbers come from roasts 6 and 7 and stay marked "needs calibration" until tuned on real roasts: first crack came at 191–193 °C and both roasts dropped near 197 °C.
-- The soak runs for the Soak time setting, in Settings under Auto: 0:30, 0:45, 1:00, 1:15, 1:30 or 2:00 (default 1:00). It applies to both Light profiles and is taken at Start. Roasts 6 and 7 turned the heater on at about 1:06 and 0:54.
+- **The soak is part of each profile:** Off, 0:30, 0:45, 1:00, 1:15, 1:30 or 2:00 (both Light profiles: 1:00). Off leaves it out: the first step starts at charge with its own heat. Roasts 6 and 7 turned the heater on at about 1:06 and 0:54.
+- **From the old setting:** the soak used to be one setting for every profile (Settings › Auto › Soak time). The first launch of the version that moves it writes a value other than 1:00 into your own profiles that soak, once, then the setting is gone; built-ins stay 1:00 (duplicate one to change it).
 
 **Medium** and **Dark** use the same structure with lower heat step-downs and longer development. Their numbers are placeholders until calibrated:
 
@@ -143,7 +144,7 @@ A curve profile is usually: a fixed soak phase, then one `follow` phase until dr
    4. Heater off before charge, so the beans don't scorch on landing: at "Add beans" you press Charge soon. The heater goes to 0 at once (not on the next reading), whichever way the phases will control heat, and a per-roaster countdown runs (Skywalker: 5 s), then the flow panel says "Beans in". You charge and press Start, and the heater stays at 0 through the soak. With no Start within 30 s of the countdown ending, the hold resumes and Charge soon is offered again. Start without Charge soon also works, as a heater cut at that moment. A heater you set by hand stays yours.
    5. Limits: the cool step and the climb each give up after 15 min, and when the hold's 10 min run out the heater goes to 0 and Auto hands the outputs to you. Both are logged, so a stuck probe or a forgotten roaster can't keep running. The flow panel then says "Preheat ran out · heater off · end, then Preheat again" and offers no Start: the drum is cooling.
 2. **Charge:** you press Start (beans in). The clock starts at 0 and the first phase begins.
-3. **Phases:** the controller runs each phase and moves on when its trigger fires (or its backup time passes). Dry end is marked automatically at the dry-end temp.
+3. **Phases:** the controller runs each phase and moves on when its trigger fires (or its backup time passes). Dry end is marked automatically at the dry-end temp. BT comes in hot at charge and falls through these temperatures, so a temperature trigger or dry end counts only once BT has been below it (and dry end never in the soak): a profile without a soak skips no step at charge.
 4. **First crack:** you press First crack; the app records time and BT and starts the development timer. Only your tap starts the timer: the Development heat and fan step can begin earlier, on its BT trigger, but it never counts as a crack. With no tap, the BT cap ends the roast.
 5. **Drop:** at the development time, or when BT reaches the cap. Heater 0%, fan 100%, bean cooler on, prompt "Dump beans"; drum cooling starts too ([manual-mode.md](manual-mode.md)).
 6. **Cooling:** the beans cool for the bean cooling time (default 4 min), then the roast is saved; the drum keeps cooling to its target unless the next batch's preheat starts (back-to-back session).

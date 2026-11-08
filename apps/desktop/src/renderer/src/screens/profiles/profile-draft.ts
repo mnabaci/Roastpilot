@@ -1,3 +1,4 @@
+import { soakLengthS } from '@roastpilot/core';
 import {
   AutoProfileSchema,
   err,
@@ -9,7 +10,7 @@ import {
 import { formatClock } from '@roastpilot/ui';
 import { reader, type Reader } from './draft-reader';
 
-/** One editable step, as typed. Soak is kept apart: only its fan is yours to change here. */
+/** One editable step, as typed. The soak is kept apart: its length and fan are yours to change. */
 export interface StepDraft {
   name: string;
   endC: string;
@@ -34,6 +35,9 @@ export interface ProfileDraft {
   dryEndC: string;
   devTime: string;
   capC: string;
+  /** The soak's length in seconds; null for none, the first step starting at charge. */
+  soakS: number | null;
+  /** Kept while the soak is off, so it comes back with the same fan. */
   soakFan: string;
   steps: StepDraft[];
   /** The curve after its first point, which is always charge temp at 0:00. */
@@ -62,8 +66,16 @@ function toStep(phase: ProfilePhase): StepDraft {
   };
 }
 
+/** The fan a soak comes back with when the profile never had one (the built-ins' 30 %). */
+const DEFAULT_SOAK_FAN = '30';
+
+/** The profile's opening soak, which ends on time; undefined when it starts without one. */
+const soakOf = (profile: AutoProfile): ProfilePhase | undefined =>
+  soakLengthS(profile) > 0 ? profile.phases[0] : undefined;
+
 export function toDraft(profile: AutoProfile): ProfileDraft {
-  const [soak, ...steps] = profile.phases;
+  const soak = soakOf(profile);
+  const steps = soak ? profile.phases.slice(1) : profile.phases;
   return {
     name: profile.name,
     batchG: String(profile.batchG),
@@ -71,7 +83,8 @@ export function toDraft(profile: AutoProfile): ProfileDraft {
     dryEndC: String(profile.dryEndC),
     devTime: formatClock(profile.devTimeS),
     capC: String(profile.capC),
-    soakFan: String(soak?.fanPct ?? ''),
+    soakS: soak ? soakLengthS(profile) : null,
+    soakFan: soak ? String(soak.fanPct) : DEFAULT_SOAK_FAN,
     steps: steps.map(toStep),
     points: profile.curve.slice(1).map((p) => ({ time: formatClock(p.tS), c: String(p.c) })),
   };
@@ -104,11 +117,11 @@ function toPhase(step: StepDraft, i: number, last: boolean, steps: boolean, read
 }
 
 /** The cell a schema issue belongs to, by its path in the profile. */
-function cellOf(path: readonly PropertyKey[]): string {
+function cellOf(path: readonly PropertyKey[], soaks: boolean): string {
   const [head, index, part, leaf] = path;
   if (head === 'phases' && typeof index === 'number') {
-    const step = `steps.${String(index - 1)}`;
-    if (index === 0) return 'soakFan';
+    if (soaks && index === 0) return 'soakFan';
+    const step = `steps.${String(soaks ? index - 1 : index)}`;
     if (part === 'name') return `${step}.name`;
     if (part === 'fanPct') return `${step}.fan`;
     if (part === 'next') return `${step}.${leaf === 'backupS' ? 'backup' : 'endC'}`;
@@ -124,6 +137,18 @@ function cellOf(path: readonly PropertyKey[]): string {
   return typeof head === 'string' ? head : 'name';
 }
 
+/** The draft's soak: the base's own, at the length and fan chosen; a fixed 0 % one if it had none. */
+function soakPhase(draft: ProfileDraft, base: AutoProfile, read: Reader): ProfilePhase | undefined {
+  if (draft.soakS === null) return undefined;
+  const kept = soakOf(base);
+  return {
+    name: kept?.name ?? 'Soak',
+    heat: kept?.heat ?? { mode: 'fixed', pct: 0 },
+    fanPct: read.number('soakFan', draft.soakFan),
+    next: { on: 'time', afterS: draft.soakS },
+  };
+}
+
 /** The profile a draft makes, or a message per cell. `base` keeps what the draft doesn't hold. */
 export function fromDraft(
   draft: ProfileDraft,
@@ -132,11 +157,14 @@ export function fromDraft(
   const read = reader();
   const steps = isStepProfile(base);
   const chargeC = read.number('chargeC', draft.chargeC);
-  const [soak] = base.phases;
-  if (!soak) return err({ name: 'This profile has no steps' });
+  const soak = soakPhase(draft, base, read);
   const phases = draft.steps.map((step, i) =>
     toPhase(step, i, i === draft.steps.length - 1, steps, read),
   );
+  const firstNext = phases[0]?.next;
+  if (draft.soakS !== null && firstNext?.on === 'bt' && firstNext.backupS <= draft.soakS) {
+    read.errors['steps.0.backup'] ??= 'Must be after the soak';
+  }
   const points = draft.points.map((point, i) => ({
     tS: read.clock(`points.${String(i)}.time`, point.time),
     c: read.number(`points.${String(i)}.c`, point.c),
@@ -150,12 +178,14 @@ export function fromDraft(
     devTimeS: read.clock('devTime', draft.devTime),
     capC: read.number('capC', draft.capC),
     curve: [{ tS: 0, c: chargeC }, ...points],
-    phases: [{ ...soak, fanPct: read.number('soakFan', draft.soakFan) }, ...phases],
+    phases: soak ? [soak, ...phases] : phases,
   };
   if (Object.keys(read.errors).length > 0) return err(read.errors);
   const parsed = AutoProfileSchema.safeParse(candidate);
   if (parsed.success) return ok(parsed.data);
   const errors: Record<string, string> = {};
-  for (const issue of parsed.error.issues) errors[cellOf(issue.path)] ??= issue.message;
+  for (const issue of parsed.error.issues) {
+    errors[cellOf(issue.path, soak !== undefined)] ??= issue.message;
+  }
   return err(errors);
 }

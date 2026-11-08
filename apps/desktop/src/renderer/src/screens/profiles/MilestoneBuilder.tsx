@@ -5,7 +5,6 @@ import { Button, formatClock, NumberField, RoastChart } from '@roastpilot/ui';
 import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
-import { useSettings } from '../../stores/use-stores';
 import {
   addMilestonePoint,
   fromMilestoneDraft,
@@ -39,7 +38,6 @@ export function MilestoneBuilder({
 }) {
   const { api, stores, logger } = useDeps();
   const run = useRun();
-  const soakS = useSettings((s) => s.settings.soakTimeS);
   const [draft, setDraft] = useState(() => toMilestoneDraft(milestonesFrom(base)));
   const [problem, setProblem] = useState<string>();
   const [busy, setBusy] = useState(false);
@@ -56,7 +54,7 @@ export function MilestoneBuilder({
   // While a cell has a problem the chart keeps the last curve that worked.
   const [shown, setShown] = useState<AutoProfile | undefined>(latest);
   if (latest && latest !== shown) setShown(latest);
-  const preview = useMemo(() => profilePreview(shown ?? base, soakS), [shown, base, soakS]);
+  const preview = useMemo(() => profilePreview(shown ?? base), [shown, base]);
   const create = () => {
     if (!valid) return;
     setBusy(true);

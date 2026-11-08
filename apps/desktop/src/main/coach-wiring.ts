@@ -3,7 +3,6 @@ import {
   autoSettingRule,
   dropSoonRule,
   firstCrackSoonRule,
-  withSoakTime,
   type Clock,
   type CoachRule,
   type Logger,
@@ -70,7 +69,7 @@ export function createCoach({
     roast: () => roast.state,
     readings,
     // The profile picked for Auto, as Auto would run it (ADR 0019).
-    profile: () => withSoakTime(autoProfile(profiles, roasters), settings.latest.soakTimeS),
+    profile: () => autoProfile(profiles, roasters),
     tuning: () => roasters.active().tuning,
     wanted: () => settings.latest.roastMode === 'manual' && settings.latest.coachInManual,
     heaterLocked: heaterLocked(session),
