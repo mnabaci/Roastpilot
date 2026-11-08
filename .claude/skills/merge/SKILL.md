@@ -19,6 +19,10 @@ duplicated or orphaned, and every rule in `AGENTS.md` still passes.
   after the bottom PR merged.) List local commits not on the remote
   (`git log origin/<branch>..HEAD`). Keep any that hold work; only then take the remote version
   (`git reset --hard origin/<branch>`) and merge those commits back. Never push over the remote.
+- **GitHub says "out of date with its base" after the PR below merged?** A merge-commit merge adds
+  one commit to main that the next PR lacks. If
+  `git diff <main's new merge commit> origin/<parent branch>` is empty, the code is the same: the
+  warning is cosmetic, merge as is. Sync only when that diff isn't empty.
 - Know your side: `git log --oneline <base>..HEAD` and the spec/ADR changes on your branch.
 
 ## 2. Scan
