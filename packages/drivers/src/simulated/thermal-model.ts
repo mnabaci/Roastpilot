@@ -80,3 +80,14 @@ export function stepRoaster(
   const follow = Math.min(1, dtS / constants.probeLagS);
   return { drumC, beansC: nextBeans, probeC: temps.probeC + (nextBeans - temps.probeC) * follow };
 }
+
+/**
+ * Beans out. The probe reads the drum again, but never hotter than it read with the beans in: a
+ * reading doesn't jump in a moment, and the real Skywalker falls from its drop temperature
+ * (docs/spec/hardware.md, Simulator). The drum carries on from there, so a heater left on still
+ * heats it.
+ */
+export function removeBeans(temps: RoasterTemps): RoasterTemps {
+  const drumC = Math.min(temps.drumC, temps.probeC);
+  return { drumC, beansC: undefined, probeC: drumC };
+}

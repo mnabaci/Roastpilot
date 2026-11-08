@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_THERMAL_CONSTANTS,
+  removeBeans,
   stepRoaster,
   stepTemperature,
   type RoasterTemps,
@@ -64,5 +65,23 @@ describe('stepRoaster', () => {
     expect(at).toBeGreaterThan(50);
     expect(at).toBeLessThan(100);
     expect(probe.at(-1)).toBeGreaterThan(low + 10);
+  });
+});
+
+describe('removeBeans', () => {
+  it('reads the drum again from where the probe was, never jumping up to a hotter drum', () => {
+    expect(removeBeans({ drumC: 252, beansC: 235, probeC: 225 })).toEqual({
+      drumC: 225,
+      beansC: undefined,
+      probeC: 225,
+    });
+  });
+
+  it('keeps a drum cooler than the probe as it is', () => {
+    expect(removeBeans({ drumC: 192, beansC: 194, probeC: 194 })).toEqual({
+      drumC: 192,
+      beansC: undefined,
+      probeC: 192,
+    });
   });
 });
