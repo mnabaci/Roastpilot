@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react';
-import { Button } from '@roastpilot/ui';
+import { Button, cn } from '@roastpilot/ui';
 import type { ProfileDraft, StepDraft, DraftErrors } from './profile-draft';
 import { addStep, removeStep } from './draft-edits';
 import { SoakRow } from './SoakRow';
@@ -14,10 +14,18 @@ interface StepsTableProps {
   steps: boolean;
   readOnly: boolean;
   onChange: (next: ProfileDraft) => void;
+  className?: string;
 }
 
 /** One row per step (docs/spec/ui.md, Profiles screen). The Soak row and the last step stay. */
-export function StepsTable({ draft, errors, steps, readOnly, onChange }: StepsTableProps) {
+export function StepsTable({
+  draft,
+  errors,
+  steps,
+  readOnly,
+  onChange,
+  className,
+}: StepsTableProps) {
   const columns = steps ? 9 : 6;
   const setStep = (index: number, change: Partial<StepDraft>) => {
     onChange({
@@ -26,7 +34,10 @@ export function StepsTable({ draft, errors, steps, readOnly, onChange }: StepsTa
     });
   };
   return (
-    <section aria-labelledby="steps-heading" className="flex flex-col gap-2">
+    <section
+      aria-labelledby="steps-heading"
+      className={cn('flex min-w-0 flex-col gap-2', className)}
+    >
       <h2 id="steps-heading" className="text-heading">
         Steps
       </h2>

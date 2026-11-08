@@ -186,6 +186,16 @@ describe('ProfilesScreen', () => {
     expect(screen.queryByRole('columnheader', { name: 'RoR min' })).toBeNull();
   });
 
+  it('shows the preview right under the top values, then the steps, then the curve points', () => {
+    const curve = { profile: { ...CURVE, id: 'custom-c', name: 'My curve' }, builtIn: false };
+    open(fakeApi(), [...BUILT_INS, curve], 'custom-c');
+    const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
+    expect(headings).toEqual(['Preview', 'Steps', 'Curve points']);
+    const batch = screen.getByRole('textbox', { name: 'Batch' });
+    const preview = screen.getByRole('heading', { name: 'Preview' });
+    expect(batch.compareDocumentPosition(preview) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('asks once before deleting, then goes back to the one Auto uses', async () => {
     const api = fakeApi({ listProfiles: vi.fn(() => Promise.resolve(BUILT_INS)) });
     open(api);
