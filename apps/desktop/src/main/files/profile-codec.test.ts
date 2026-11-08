@@ -33,6 +33,7 @@ function setup(own: AutoProfile[] = [], limits: Partial<Roaster> = {}) {
     newId: () => 'unused',
     chosenId: () => 'light-steps',
     activeRoaster: () => ({ id: 1, model: 'skywalker' }),
+    roaster: () => ({ name: 'Skywalker', model: 'skywalker' }),
     logger: silentLogger,
   });
   let n = 0;

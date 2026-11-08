@@ -46,6 +46,7 @@ async function launch(file: object, { saveFails = false } = {}) {
     newId: () => 'x',
     chosenId: () => 'light-steps',
     activeRoaster: () => ({ id: 1, model: 'skywalker' }),
+    roaster: () => ({ name: 'Skywalker', model: 'skywalker' }),
     logger: silentLogger,
   });
   const move = () => moveRetiredSoak({ retired, settings, profiles, logger });

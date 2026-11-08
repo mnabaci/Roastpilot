@@ -35,4 +35,4 @@ and never move between roasters on their own (see [roast-control.md](roast-contr
 - **Offset:** added to the temperature reading before anything else sees it, safety rules included.
 - **Deleting:** a roaster with saved roasts or your own profiles can't be deleted, and neither can the active one.
 - **Capabilities:** an output or switch the connected roaster doesn't have is hidden on the Roast screen.
-- **Copy to another roaster:** on the Profiles screen, makes a copy there marked "needs calibration".
+- **Copy to another roaster:** on the Profiles screen, makes a copy there marked "needs calibration", named after the roaster it came from ("Light · Steps (from Simulator)", then "… 2" if that name is taken there), so it never passes for that roaster's own built-in. A roaster holds one copy of a profile: copying it again names the copy it already has instead. Copies run one at a time, so clicks in quick succession make one.

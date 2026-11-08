@@ -157,6 +157,8 @@ export const ProfileErrorSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('built-in'), id: ProfileIdSchema }),
   z.object({ kind: z.literal('not-found'), id: ProfileIdSchema }),
   z.object({ kind: z.literal('storage-failed'), message: z.string() }),
+  /** That roaster already has a copy of this profile: `id` and `name` are the copy's. */
+  z.object({ kind: z.literal('already-copied'), id: ProfileIdSchema, name: z.string() }),
 ]);
 
 export type ProfileEntry = z.infer<typeof ProfileEntrySchema>;

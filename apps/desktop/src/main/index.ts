@@ -39,7 +39,7 @@ import { createPowerGuard } from './power-guard';
 import { createQuitGuard } from './quit-guard';
 import { JsonSettingsStore } from './settings/json-settings-store';
 import { openStores } from './storage-wiring';
-import { systemClock } from './system-clock';
+import { systemClock, wallClock } from './system-clock';
 import electronUpdater from 'electron-updater';
 import { macEnvironment } from './updates/mac/mac-environment';
 import { createUpdates } from './updates/update-wiring';
@@ -78,7 +78,7 @@ async function openLogFolder(): Promise<void> {
 // A database about to be migrated is backed up first (docs/spec/install-and-update.md).
 const stores = openStores(
   join(app.getPath('userData'), 'roastpilot.db'),
-  systemClock,
+  wallClock,
   logger.child('storage'),
   { dir: join(app.getPath('userData'), 'backups'), appVersion: app.getVersion(), now: new Date() },
 );

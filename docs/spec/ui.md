@@ -104,7 +104,7 @@ Visual language: the [Roastpilot design system](../design-system/README.md) (ADR
 - **Drag points:** on your own curve profile, drag a point on the preview chart; it stays between its neighbours and under the BT cap.
 - New profile from a roast: "Make step profile" (phases from its heat/fan changes) or "Make curve profile" (its BT curve).
 - Import an Artisan `.alog` as a curve profile.
-- "Copy to another roaster" makes a copy marked "needs calibration".
+- "Copy to another roaster" makes a copy marked "needs calibration" ([roasters.md](roasters.md)). The line under the header names it and where it went: `Copied to Skywalker as "Light · Steps (from Simulator)" · make Skywalker active to see it`, or `Skywalker already has it as "…"`.
 
 ## History screen
 

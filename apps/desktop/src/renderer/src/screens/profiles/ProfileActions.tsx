@@ -79,12 +79,20 @@ export function ProfileActions({
       'profiles.copy-failed',
       async () => {
         const copy = await api.copyProfile({ id, roasterId });
+        if (!copy.ok && copy.error.kind === 'already-copied') {
+          setProblem(undefined);
+          onCopied(`${name} already has it as "${copy.error.name}"`);
+          return;
+        }
         if (!copy.ok) {
           refused(copy.error);
           return;
         }
         setProblem(undefined);
-        onCopied(`Copied to ${name} · needs calibration there`);
+        // The copy isn't in this list: profiles belong to a roaster.
+        onCopied(
+          `Copied to ${name} as "${copy.value.profile.name}" · make ${name} active to see it`,
+        );
       },
       { failed: "Couldn't copy the profile · try again" },
     );

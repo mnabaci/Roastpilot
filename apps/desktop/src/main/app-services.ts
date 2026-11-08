@@ -77,6 +77,7 @@ export function createAppServices({
     newId: newProfileId,
     chosenId: () => settings.latest.autoProfile,
     activeRoaster: () => roasters.active(),
+    roaster: (id) => roasters.all.find((r) => r.id === id),
     logger: logger.child('profiles'),
   });
   // Before the first roast, so a chosen profile of your own is there without opening a window.
