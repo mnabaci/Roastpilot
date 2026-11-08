@@ -1,7 +1,7 @@
 import type uPlot from 'uplot';
 import type { ChartColors } from './chart-colors';
-import type { Box } from './band-labels';
-import type { LineLayer, ChartMarker } from './chart-layer';
+import { overlaps, type Box } from './band-labels';
+import type { ChartMarker } from './chart-layer';
 import { plotPixelRatio } from './pixel-ratio';
 
 const LABEL_GAP = 8;
@@ -9,13 +9,19 @@ const LINE_HEIGHT = 18;
 
 /**
  * Label rows, one per marker in time order: a label goes to the first row where it doesn't
- * run into the label before it, so close events (first crack, then drop) never overlap.
+ * run into the label before it, so close events (first crack, then drop) never overlap. A row
+ * `blocked` for a label (the current-point dot is there) is skipped; `blocked` must clear for the
+ * rows below whatever it guards, as a box on the plot does.
  */
-export function labelRows(labels: readonly { x: number; width: number }[], gap: number): number[] {
+export function labelRows(
+  labels: readonly { x: number; width: number }[],
+  gap: number,
+  blocked: (row: number, index: number) => boolean = () => false,
+): number[] {
   const rowEnds: number[] = [];
-  return labels.map(({ x, width }) => {
-    let row = rowEnds.findIndex((end) => x >= end + gap);
-    if (row === -1) row = rowEnds.length;
+  return labels.map(({ x, width }, index) => {
+    let row = 0;
+    while (x < (rowEnds[row] ?? Number.NEGATIVE_INFINITY) + gap || blocked(row, index)) row++;
     rowEnds[row] = x + width;
     return row;
   });
@@ -41,12 +47,28 @@ const markerFont = (colors: ChartColors, ratio: number) =>
 const labelBaseline = (u: uPlot, row: number, ratio: number) =>
   u.bbox.top + (16 + row * LINE_HEIGHT) * ratio;
 
+/** The box a label of this width takes in this row. */
+function labelBox(u: uPlot, textX: number, width: number, row: number, ratio: number): Box {
+  const baseline = labelBaseline(u, row, ratio);
+  return {
+    left: textX,
+    right: textX + width,
+    top: baseline - 14 * ratio,
+    bottom: baseline + 4 * ratio,
+  };
+}
+
 /**
  * The markers in view with their labels: each beside its line, or left of it near the edge; rows
- * from where the labels really are, so one flipped left never runs into the label before it.
- * Measured in the markers' font, which `ctx` must be set to.
+ * from where the labels really are, so one flipped left never runs into the label before it, and
+ * none covers a `keepClear` box (the current-point dot). Measured in the markers' font, which
+ * `ctx` must be set to.
  */
-function placeMarkers(u: uPlot, markers: readonly ChartMarker[]): PlacedMarker[] {
+function placeMarkers(
+  u: uPlot,
+  markers: readonly ChartMarker[],
+  keepClear: readonly Box[],
+): PlacedMarker[] {
   const { ctx, bbox } = u;
   const ratio = plotPixelRatio(u);
   const right = bbox.left + bbox.width;
@@ -61,6 +83,12 @@ function placeMarkers(u: uPlot, markers: readonly ChartMarker[]): PlacedMarker[]
   const rows = labelRows(
     shown.map(({ textX, width }) => ({ x: textX, width })),
     LABEL_GAP * ratio,
+    (row, i) => {
+      const label = shown[i];
+      if (!label) return false;
+      const box = labelBox(u, label.textX, label.width, row, ratio);
+      return keepClear.some((clear) => overlaps(box, clear));
+    },
   );
   return shown.map((placed, i) => ({ ...placed, row: rows[i] ?? 0 }));
 }
@@ -70,19 +98,14 @@ export function markerLabelBoxes(
   u: uPlot,
   markers: readonly ChartMarker[],
   colors: ChartColors,
+  keepClear: readonly Box[] = [],
 ): Box[] {
   const ratio = plotPixelRatio(u);
   u.ctx.save();
   u.ctx.font = markerFont(colors, ratio);
-  const boxes = placeMarkers(u, markers).map(({ textX, width, row }) => {
-    const baseline = labelBaseline(u, row, ratio);
-    return {
-      left: textX,
-      right: textX + width,
-      top: baseline - 14 * ratio,
-      bottom: baseline + 4 * ratio,
-    };
-  });
+  const boxes = placeMarkers(u, markers, keepClear).map(({ textX, width, row }) =>
+    labelBox(u, textX, width, row, ratio),
+  );
   u.ctx.restore();
   return boxes;
 }
@@ -99,18 +122,21 @@ export function markerLineBoxes(u: uPlot, markers: readonly ChartMarker[]): Box[
   });
 }
 
-/** Event markers: 1.5px dashed vertical lines, labelled at the top unless `labels` is off (the strip). */
+/**
+ * Event markers: 1.5px dashed vertical lines, labelled at the top unless `labels` is off (the
+ * strip). Labels keep off the `keepClear` boxes (the current-point dot).
+ */
 export function drawMarkers(
   u: uPlot,
   markers: readonly ChartMarker[],
   colors: ChartColors,
-  { labels }: { labels: boolean },
+  { labels, keepClear = [] }: { labels: boolean; keepClear?: readonly Box[] },
 ): void {
   const { ctx, bbox } = u;
   const ratio = plotPixelRatio(u);
   ctx.save();
   ctx.font = markerFont(colors, ratio);
-  for (const { marker, x, textX, row } of placeMarkers(u, markers)) {
+  for (const { marker, x, textX, row } of placeMarkers(u, markers, keepClear)) {
     ctx.strokeStyle = colors.tone[marker.tone];
     ctx.fillStyle = colors.tone[marker.tone];
     ctx.lineWidth = 1.5 * ratio;
@@ -121,36 +147,5 @@ export function drawMarkers(
     ctx.stroke();
     if (labels) ctx.fillText(marker.label, textX, labelBaseline(u, row, ratio));
   }
-  ctx.restore();
-}
-
-/** The live temperature's current point: a 6px dot ringed in the surface colour. */
-export function drawLatestDot(
-  u: uPlot,
-  seriesIndex: number,
-  layer: LineLayer,
-  colors: ChartColors,
-): void {
-  const values = u.data[seriesIndex];
-  if (!values) return;
-  let i = values.length - 1;
-  while (i >= 0 && (values[i] === null || values[i] === undefined)) i--;
-  const value = values[i];
-  const t = u.data[0][i];
-  if (i < 0 || value === null || value === undefined || t === undefined) return;
-  const ratio = plotPixelRatio(u);
-  const x = u.valToPos(t, 'x', true);
-  const y = u.valToPos(value, layer.axis, true);
-  // Past a time window's edge (History focused on a roast still cooling): no dot in the gutter.
-  if (x < u.bbox.left || x > u.bbox.left + u.bbox.width) return;
-  const { ctx } = u;
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(x, y, 6 * ratio, 0, Math.PI * 2);
-  ctx.fillStyle = colors.tone[layer.tone];
-  ctx.strokeStyle = colors.surface;
-  ctx.lineWidth = 3 * ratio;
-  ctx.stroke();
-  ctx.fill();
   ctx.restore();
 }

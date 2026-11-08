@@ -536,6 +536,27 @@ describe('RoastChart', () => {
       ]);
     });
 
+    it("moves Drop's label down a row when the current-point dot would sit on it (issue #92)", () => {
+      const drop = { id: 'drop', label: 'Drop', t: 420, tone: 'ink' } as const;
+      draw(<RoastChart title="Roast curve" layers={[roasting]} markers={[drop]} />);
+      const drawAt = (dropC: number) => {
+        const { u, calls } = fakePlot();
+        u.data = [
+          [0, 420],
+          [179, dropC],
+        ];
+        for (const fn of created[0]?.opts.hooks.draw ?? []) fn(u);
+        return {
+          label: calls.find((c) => c.name === 'fillText' && c.args[0] === 'Drop')?.args,
+          dot: calls.find((c) => c.name === 'arc')?.args.slice(0, 2),
+        };
+      };
+      // The dot low on the plot: the label keeps the top row.
+      expect(drawAt(175)).toEqual({ label: ['Drop', 428, 16], dot: [420, 125] });
+      // The dot up in the top row, right on the Drop line: the label moves to the next row.
+      expect(drawAt(290)).toEqual({ label: ['Drop', 428, 34], dot: [420, 10] });
+    });
+
     it('draws no current-point dot past the edge of the window', () => {
       draw(
         <RoastChart

@@ -10,7 +10,8 @@ import {
   drawProjections,
 } from './draw-aids';
 import { attachDrag, drawDragHandles, type ChartDrag, type TimeRange } from './drag-handles';
-import { drawLatestDot, drawMarkers, markerLabelBoxes, markerLineBoxes } from './draw-markers';
+import { drawMarkers, markerLabelBoxes, markerLineBoxes } from './draw-markers';
+import { drawLatestDot, latestDotClearance } from './latest-dot';
 import { hoverCursor } from './hover-cursor';
 import {
   axisFactory,
@@ -131,18 +132,15 @@ export function buildChartOptions({
       ],
       draw: [
         (u) => {
-          // Band names first, clear of the markers' labels and lines.
+          // Marker labels keep off the current-point dot; band names off the labels and lines.
+          const layer = layers[latestDotLayer];
+          const keepClear = layer ? latestDotClearance(u, latestDotLayer + 1, layer) : [];
           const shown = markers();
-          drawBandLabels(
-            u,
-            aids(),
-            { labels: markerLabelBoxes(u, shown, colors), lines: markerLineBoxes(u, shown) },
-            colors,
-          );
-          drawMarkers(u, markers(), colors, { labels: true });
+          const labels = markerLabelBoxes(u, shown, colors, keepClear);
+          drawBandLabels(u, aids(), { labels, lines: markerLineBoxes(u, shown) }, colors);
+          drawMarkers(u, shown, colors, { labels: true, keepClear });
           drawProjections(u, aids(), colors);
           drawNowLines(u, aids(), colors);
-          const layer = layers[latestDotLayer];
           if (layer) drawLatestDot(u, latestDotLayer + 1, layer, colors);
           drawDragHandles(u, dragging?.drag(), colors);
         },
