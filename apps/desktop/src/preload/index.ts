@@ -65,6 +65,7 @@ const api: RoastpilotApi = {
   duplicateProfile: (id) => ipcRenderer.invoke(IPC_CHANNELS.duplicateProfile, id),
   saveProfile: (profile) => ipcRenderer.invoke(IPC_CHANNELS.saveProfile, profile),
   deleteProfile: (id) => ipcRenderer.invoke(IPC_CHANNELS.deleteProfile, id),
+  deleteProfiles: (ids) => ipcRenderer.invoke(IPC_CHANNELS.deleteProfiles, ids),
   copyProfile: (request) => ipcRenderer.invoke(IPC_CHANNELS.copyProfile, request),
   makeProfileFromMilestones: (milestones) =>
     ipcRenderer.invoke(IPC_CHANNELS.makeProfileFromMilestones, milestones),

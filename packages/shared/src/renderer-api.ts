@@ -164,6 +164,8 @@ export interface ProfilesApi {
   saveProfile(profile: AutoProfile): Promise<Result<ProfileEntry, ProfileError>>;
   /** Refuses a built-in. */
   deleteProfile(id: ProfileId): Promise<Result<void, ProfileError>>;
+  /** Several of your own in one write, all or nothing; refuses them all if one is a built-in. */
+  deleteProfiles(ids: readonly ProfileId[]): Promise<Result<void, ProfileError>>;
   /** A copy on another roaster, marked "needs calibration". */
   copyProfile(request: {
     id: ProfileId;

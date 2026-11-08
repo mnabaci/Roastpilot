@@ -16,6 +16,7 @@ import {
   LogDaySchema,
   NewRoasterSchema,
   ProfileIdSchema,
+  DeleteProfilesRequestSchema,
   RoasterIdSchema,
   RoasterSchema,
   RoastActionSchema,
@@ -124,6 +125,9 @@ export function createIpcHandlers({
     ),
     [IPC_CHANNELS.deleteProfile]: handler((payload) =>
       profiles.delete(ProfileIdSchema.parse(payload)),
+    ),
+    [IPC_CHANNELS.deleteProfiles]: handler((payload) =>
+      profiles.deleteMany(DeleteProfilesRequestSchema.parse(payload)),
     ),
     [IPC_CHANNELS.copyProfile]: handler((payload) => {
       const { id, roasterId } = CopyProfileRequestSchema.parse(payload);

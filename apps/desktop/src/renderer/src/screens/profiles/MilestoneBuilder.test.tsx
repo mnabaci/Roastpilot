@@ -110,6 +110,7 @@ describe('MilestoneBuilder', () => {
     expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
       'Export all',
       'Import a Roastpilot file',
+      'Select',
     ]);
   });
 });

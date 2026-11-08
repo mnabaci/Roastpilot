@@ -117,6 +117,7 @@ export {
   ProfileEntrySchema,
   ProfileErrorSchema,
   ProfileIdSchema,
+  DeleteProfilesRequestSchema,
   PROFILE_LIMITS,
   SOAK_LENGTHS_S,
   ProfilePhaseSchema,

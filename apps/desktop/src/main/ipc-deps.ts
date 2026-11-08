@@ -39,7 +39,7 @@ export interface IpcDeps {
   pilot: Pick<AutoPilot, 'chargeSoon' | 'resume'>;
   profiles: Pick<
     ProfileService,
-    'list' | 'duplicate' | 'copyTo' | 'save' | 'delete' | 'fromMilestones'
+    'list' | 'duplicate' | 'copyTo' | 'save' | 'delete' | 'deleteMany' | 'fromMilestones'
   >;
   roasters: Pick<
     RoasterService,

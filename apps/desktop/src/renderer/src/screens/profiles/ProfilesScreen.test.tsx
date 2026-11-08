@@ -488,6 +488,7 @@ describe('ProfilesScreen', () => {
         'New from milestones',
         'Export all',
         'Import a Roastpilot file',
+        'Select',
       ]);
       await userEvent.click(screen.getByRole('menuitem', { name: 'Export all' }));
       expect(api.exportLibrary).toHaveBeenCalledWith({ kind: 'profiles' });
@@ -517,6 +518,138 @@ describe('ProfilesScreen', () => {
       expect(api.importLibrary).toHaveBeenCalledWith('profiles');
       expect(await screen.findByRole('button', { name: 'More for From a friend' })).toBeTruthy();
       expect(stores.toasts.getState().toasts.map((t) => t.text)).toContain('Imported 1 profile');
+    });
+  });
+
+  describe('select', () => {
+    const TWO: AutoProfile = { ...STEPS, id: 'custom-2', name: 'Two' };
+    const THREE: AutoProfile = { ...STEPS, id: 'custom-3', name: 'Three' };
+    const many = [
+      ...withMine,
+      { profile: TWO, builtIn: false },
+      { profile: THREE, builtIn: false },
+    ];
+    const list = () => within(screen.getByRole('list', { name: 'Profiles' }));
+    const box = (name: RegExp | string) => list().getByRole('checkbox', { name });
+    const startSelect = async () => {
+      await userEvent.click(screen.getByRole('button', { name: 'More for Profiles' }));
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Select' }));
+    };
+
+    it("ticks your own; built-ins and Auto's profile can't be ticked and say why", async () => {
+      renderApp(<ProfilesScreen />, { profiles: many, ...settingsOn('custom-1') });
+      await startSelect();
+      expect(box(/Light · Steps/)).toHaveAttribute('aria-disabled', 'true');
+      expect(box(/Light · Steps/)).toHaveTextContent('Built-in');
+      expect(box(/Mine/)).toHaveTextContent('Auto uses this one');
+      await userEvent.click(box(/Mine/));
+      expect(box(/Mine/)).not.toBeChecked();
+      // A click ticks instead of opening; Shift ticks the range.
+      await userEvent.click(box('Two'));
+      const user = userEvent.setup();
+      await user.keyboard('{Shift>}');
+      await user.click(box('Three'));
+      await user.keyboard('{/Shift}');
+      expect(box('Two')).toBeChecked();
+      expect(box('Three')).toBeChecked();
+      expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Mine');
+      expect(screen.getByRole('toolbar', { name: 'Selected profiles' })).toHaveTextContent(
+        '2 selected',
+      );
+    });
+
+    it('says the one Auto is running is running now', async () => {
+      renderApp(<ProfilesScreen />, {
+        profiles: many,
+        ...settingsOn('custom-2'),
+        auto: { ...AUTO_OFF, enabled: true },
+        roast: { ...READY_ROAST, phase: 'roasting' as const },
+      });
+      await startSelect();
+      expect(box(/Two/)).toHaveTextContent('Running now');
+      expect(box(/Two/)).toHaveAttribute('aria-disabled', 'true');
+      expect(box('Mine')).not.toHaveAttribute('aria-disabled');
+    });
+
+    it('exports the ticked ones', async () => {
+      const { api } = renderApp(<ProfilesScreen />, { profiles: many, ...settingsOn('custom-1') });
+      await startSelect();
+      expect(screen.getByRole('button', { name: 'Export' })).toBeDisabled();
+      await userEvent.click(box('Two'));
+      await userEvent.click(box('Three'));
+      await userEvent.click(screen.getByRole('button', { name: 'Export' }));
+      expect(api.exportLibrary).toHaveBeenCalledWith({
+        kind: 'profiles',
+        ids: ['custom-2', 'custom-3'],
+      });
+    });
+
+    it('deletes the ticked ones after asking once, then opens the one Auto uses', async () => {
+      const api = fakeApi({
+        deleteProfiles: vi.fn(() => Promise.resolve(ok(undefined))),
+        listProfiles: vi.fn(() => Promise.resolve(withMine)),
+      });
+      const { stores } = renderApp(
+        <ProfilesScreen />,
+        { profiles: many, ...settingsOn('custom-1') },
+        api,
+      );
+      // An unsaved edit of one that goes, goes with it.
+      await userEvent.click(list().getByRole('button', { name: 'Two' }));
+      await edit('BT cap', '205');
+      await startSelect();
+      await userEvent.click(box(/Two/));
+      await userEvent.click(box('Three'));
+      await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+      const dialog = screen.getByRole('alertdialog', { name: 'Delete 2 profiles?' });
+      expect(dialog).toHaveTextContent('saved roasts keep their copy');
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
+      expect(api.deleteProfiles).toHaveBeenCalledWith(['custom-2', 'custom-3']);
+      await waitFor(() => {
+        expect(screen.queryByRole('toolbar', { name: 'Selected profiles' })).toBeNull();
+      });
+      expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Mine');
+      expect(list().queryByRole('button', { name: /Two/ })).toBeNull();
+      expect(stores.auto.getState().drafts).toEqual({});
+      expect(stores.toasts.getState().toasts.map((t) => t.text)).toContain('Deleted 2 profiles');
+    });
+
+    it('keeps them all and says so when the delete is refused', async () => {
+      const api = fakeApi({
+        deleteProfiles: vi.fn(() =>
+          Promise.resolve(err({ kind: 'storage-failed' as const, message: 'locked' })),
+        ),
+      });
+      const { stores } = renderApp(
+        <ProfilesScreen />,
+        { profiles: many, ...settingsOn('custom-1') },
+        api,
+      );
+      await startSelect();
+      await userEvent.click(box('Two'));
+      await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+      await userEvent.click(
+        within(screen.getByRole('alertdialog', { name: 'Delete 1 profile?' })).getByRole('button', {
+          name: 'Delete',
+        }),
+      );
+      await waitFor(() => {
+        expect(stores.toasts.getState().toasts.map((t) => [t.kind, t.text])).toContainEqual([
+          'error',
+          "Couldn't delete them · see Logs",
+        ]);
+      });
+      expect(box('Two')).toBeChecked();
+    });
+
+    it('Done leaves select mode and a click opens again', async () => {
+      renderApp(<ProfilesScreen />, { profiles: many, ...settingsOn('custom-1') });
+      await startSelect();
+      await userEvent.click(box('Two'));
+      await userEvent.click(screen.getByRole('button', { name: 'Done' }));
+      expect(list().queryByRole('checkbox')).toBeNull();
+      await userEvent.click(list().getByRole('button', { name: 'Two' }));
+      expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Two');
     });
   });
 });

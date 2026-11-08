@@ -62,6 +62,7 @@ export const IPC_CHANNELS = {
   duplicateProfile: 'profiles:duplicate',
   saveProfile: 'profiles:save',
   deleteProfile: 'profiles:delete',
+  deleteProfiles: 'profiles:delete-many',
   copyProfile: 'profiles:copy',
   makeProfileFromMilestones: 'profiles:make-from-milestones',
   listRoasters: 'roasters:list',
