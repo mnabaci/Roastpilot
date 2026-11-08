@@ -145,6 +145,14 @@ export function drawBandLabels(
   ctx.restore();
 }
 
+/** The hottest point an aid draws on the temperature axis (the projection), °C. */
+export function aidsTopC(aids: readonly ChartAid[]): number | undefined {
+  const values = projections(aids)
+    .filter((layer) => layer.axis === 'temperature')
+    .flatMap((layer) => layer.points.flatMap((p) => (p.v === null ? [] : [p.v])));
+  return values.length === 0 ? undefined : Math.max(...values);
+}
+
 /** Projections: a faint dashed straight line in the colour of the line it continues. */
 export function drawProjections(u: uPlot, aids: readonly ChartAid[], colors: ChartColors): void {
   const { ctx } = u;

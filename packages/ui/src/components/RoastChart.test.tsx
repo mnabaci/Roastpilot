@@ -391,6 +391,23 @@ describe('RoastChart', () => {
       ]);
     });
 
+    it('grows the temperature axis for a projection hotter than 250 °C', () => {
+      const hot: ChartAid = {
+        kind: 'projection',
+        id: 'projection',
+        axis: 'temperature',
+        tone: 'heat',
+        points: [
+          { t: 574, v: 224 },
+          { t: 694, v: 252 },
+        ],
+      };
+      draw(<RoastChart title="Roast curve" layers={[roasting, hot]} temperatureFloorC={75} />);
+      expect(created[0]?.opts.scales.temperature?.range({}, 92, 224, 'temperature')).toEqual([
+        75, 300,
+      ]);
+    });
+
     it('fits the data again without a window', () => {
       draw(<RoastChart title="Roast curve" layers={[roasting]} />);
       expect(created[0]?.opts.scales.x.range({}, -900, 420, 'x')).toEqual([-900, 420]);

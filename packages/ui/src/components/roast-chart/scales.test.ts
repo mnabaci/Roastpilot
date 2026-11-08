@@ -43,6 +43,17 @@ describe('temperature axis', () => {
     floorC = 0;
     expect(focused({} as uPlot, 92, 210, 'temperature')).toEqual([0, 250]);
   });
+
+  it('grows for an aid drawn hotter than the data, so the projection is never cut off', () => {
+    const withProjection = (topC: number | undefined) =>
+      temperatureRange(
+        () => 75,
+        () => topC,
+      )({} as uPlot, 92, 224, 'temperature');
+    expect(withProjection(251.6)).toEqual([75, 300]);
+    expect(withProjection(240)).toEqual([75, 250]);
+    expect(withProjection(undefined)).toEqual([75, 250]);
+  });
 });
 
 const ror = (min: number, max: number) => ROR_RANGE({} as uPlot, min, max, 'ror');

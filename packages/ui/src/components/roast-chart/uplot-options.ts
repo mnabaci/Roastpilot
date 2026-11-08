@@ -2,7 +2,13 @@ import type uPlot from 'uplot';
 import { formatClock } from '../../lib/format';
 import type { ChartColors } from './chart-colors';
 import type { ChartAid, ChartMarker, LineLayer } from './chart-layer';
-import { drawBandLabels, drawNowLines, drawPhaseBands, drawProjections } from './draw-aids';
+import {
+  aidsTopC,
+  drawBandLabels,
+  drawNowLines,
+  drawPhaseBands,
+  drawProjections,
+} from './draw-aids';
 import { attachDrag, drawDragHandles, type ChartDrag, type TimeRange } from './drag-handles';
 import { drawLatestDot, drawMarkers, markerLabelBoxes, markerLineBoxes } from './draw-markers';
 import { hoverCursor } from './hover-cursor';
@@ -84,7 +90,7 @@ export function buildChartOptions({
     ...noAxisGutter(rightAxis),
     scales: {
       x: xScale(adjustTimeRange),
-      temperature: { range: temperatureRange(temperatureFloorC) },
+      temperature: { range: temperatureRange(temperatureFloorC, () => aidsTopC(aids())) },
       ror: { range: ROR_RANGE },
     },
     axes: [
