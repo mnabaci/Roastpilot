@@ -51,18 +51,9 @@ const input = (over: Partial<RoastViewInput> = {}): RoastViewInput => ({
 });
 
 /** What a roast's view kept from the reading before. */
-const held = ({
-  toS = 736,
-  floorC = 75,
-  floorAtS = 0,
-}: {
-  toS?: number;
-  floorC?: number;
-  floorAtS?: number;
-}) => ({
+const held = ({ toS = 736, floorC = 75 }: { toS?: number; floorC?: number }) => ({
   window: { fromS: -30, toS },
   floorC,
-  floorAtS,
 });
 
 describe('roastView', () => {
@@ -114,22 +105,26 @@ describe('roastView', () => {
     expect(roastView(input({ expectedTpC: undefined })).temperatureFloorC).toBe(50);
   });
 
-  it('keeps the floor it had, and steps it down once per reading while a line is below it', () => {
-    // A glitch at 40 °C in view: one 25 °C step at this reading, none again until the next.
-    const first = roastView(
-      input({ lines: [live(40)], previous: held({ floorC: 75, floorAtS: 419 }) }),
-    );
-    expect(first.temperatureFloorC).toBe(50);
-    const again = roastView(input({ lines: [live(40)], previous: first.held }));
-    expect(again.temperatureFloorC).toBe(50);
-    const next = roastView(input({ nowS: 421, lines: [live(40)], previous: first.held }));
-    expect(next.temperatureFloorC).toBe(25);
+  it('steps the floor straight down to fit a glitch reading in view, in one reading', () => {
+    // A glitch at 12 °C: down to 0 at once, so the reading is never clipped.
+    const glitch = roastView(input({ lines: [live(12)], previous: held({ floorC: 75 }) }));
+    expect(glitch.temperatureFloorC).toBe(0);
+    // A dip to 62 °C needs only one step.
+    expect(
+      roastView(input({ lines: [live(62)], previous: held({ floorC: 75 }) })).temperatureFloorC,
+    ).toBe(50);
+    // Gone a reading later: the floor stays down.
+    const after = roastView(input({ nowS: 421, previous: glitch.held }));
+    expect(after.temperatureFloorC).toBe(0);
+  });
+
+  it('keeps a ghost or plan line below the floor in view', () => {
+    const ghost: LineLayer = { ...live(70), id: 'ghost-bt', tone: 'ghost' };
+    expect(roastView(input({ lines: [live(), ghost] })).temperatureFloorC).toBe(50);
   });
 
   it('never raises the floor during the roast', () => {
-    const view = roastView(
-      input({ expectedTpC: 120, previous: held({ floorC: 50, floorAtS: 300 }) }),
-    );
+    const view = roastView(input({ expectedTpC: 120, previous: held({ floorC: 50 }) }));
     expect(view.temperatureFloorC).toBe(50);
   });
 

@@ -31,11 +31,11 @@ export function startFloorC(expectedTpC: number | undefined): number {
 }
 
 /**
- * The floor for this moment: one 25 °C step down from the last one when a drawn line in view goes
- * below it, so it settles smoothly over a few redraws; never up, never below 0.
+ * The floor for this moment: when a drawn line in view goes below it, straight down to the
+ * multiple of 25 °C at or below that line in one go, so nothing is clipped even for a reading;
+ * never up, never below 0.
  */
 export function nextFloorC(floorC: number, lowestDrawnC: number | undefined): number {
-  return lowestDrawnC !== undefined && lowestDrawnC < floorC
-    ? Math.max(0, floorC - FLOOR_STEP_C)
-    : floorC;
+  if (lowestDrawnC === undefined || lowestDrawnC >= floorC) return floorC;
+  return Math.max(0, Math.floor(lowestDrawnC / FLOOR_STEP_C) * FLOOR_STEP_C);
 }

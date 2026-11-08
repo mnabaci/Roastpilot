@@ -86,12 +86,7 @@ export function useRoastView({
   // Kept from this render on (React's "state from the previous render"): the window never
   // shrinks and the floor never rises during the roast.
   const next = view.held;
-  if (
-    next &&
-    (next.window.toS !== previous?.window.toS ||
-      next.floorC !== previous.floorC ||
-      next.floorAtS !== previous.floorAtS)
-  ) {
+  if (next && (next.window.toS !== previous?.window.toS || next.floorC !== previous.floorC)) {
     setHeld({ chargedAtMs: roast.chargedAtMs, view: next });
   }
   return view;

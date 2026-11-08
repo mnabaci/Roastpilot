@@ -38,9 +38,8 @@ export interface RoastViewInput {
 /** What a roast's view keeps from one reading to the next. */
 export interface HeldView {
   window: TimeWindow;
-  /** The fitted floor, °C, and the time it last stepped. */
+  /** The fitted floor, °C. */
   floorC: number;
-  floorAtS: number;
 }
 
 export interface RoastView {
@@ -130,19 +129,16 @@ function lowestInView(
 }
 
 /**
- * The fitted floor: set once at Start from the expected turning point, then one step down at most
- * per reading while a drawn line in view goes below it (docs/spec/ui.md, Temperature focus).
+ * The fitted floor: set once at Start from the expected turning point, then straight down to fit
+ * any drawn line in view that goes below it (docs/spec/ui.md, Temperature focus).
  */
-function fittedFloor(
+function fittedFloorC(
   input: RoastViewInput,
   aids: readonly ChartAid[],
   window: TimeWindow,
-  nowS: number,
-): Pick<HeldView, 'floorC' | 'floorAtS'> {
-  const { previous } = input;
-  const floorC = previous?.floorC ?? startFloorC(input.expectedTpC);
-  if (previous && nowS <= previous.floorAtS) return { floorC, floorAtS: previous.floorAtS };
-  return { floorC: nextFloorC(floorC, lowestInView(input.lines, aids, window)), floorAtS: nowS };
+): number {
+  const floorC = input.previous?.floorC ?? startFloorC(input.expectedTpC);
+  return nextFloorC(floorC, lowestInView(input.lines, aids, window));
 }
 
 /**
@@ -157,20 +153,19 @@ export function roastView(input: RoastViewInput): RoastView {
   const timeWindow = focusWindow(previous?.window, { nowS, expectedEndS: input.expectedEndS });
   const roasting = roast.phase === 'roasting' || roast.phase === 'development';
   if (!roasting) {
-    const kept = previous ?? { floorC: 0, floorAtS: nowS };
     return {
       timeWindow,
       temperatureFloorC: 0,
       aids: [],
-      held: { window: timeWindow, floorC: kept.floorC, floorAtS: kept.floorAtS },
+      held: { window: timeWindow, floorC: previous?.floorC ?? 0 },
     };
   }
   const aids = aidsOf(input, timeWindow, nowS);
-  const floor = fittedFloor(input, aids, timeWindow, nowS);
+  const floorC = fittedFloorC(input, aids, timeWindow);
   return {
     timeWindow,
-    temperatureFloorC: input.settings.chartTemperatureFocus ? floor.floorC : 0,
+    temperatureFloorC: input.settings.chartTemperatureFocus ? floorC : 0,
     aids,
-    held: { window: timeWindow, ...floor },
+    held: { window: timeWindow, floorC },
   };
 }

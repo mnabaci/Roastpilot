@@ -48,12 +48,20 @@ describe('nextFloorC', () => {
     expect(roast(75, () => 88, 5)).toEqual([75, 75, 75, 75, 75]);
   });
 
-  it('steps down one 25 °C step per redraw to fit a glitch reading, then never moves back up', () => {
+  it('steps straight down to fit a glitch reading, then never moves back up', () => {
     // A 12 °C glitch reading at 0:02, gone a second later.
-    const floors = roast(75, (s) => (s >= 2 && s < 6 ? 12 : 88), 9);
-    expect(floors).toEqual([75, 75, 50, 25, 0, 0, 0, 0, 0]);
-    // By the last step the glitch is in view: nothing is clipped.
-    expect(floors[4]).toBeLessThanOrEqual(12);
+    const floors = roast(75, (s) => (s === 2 ? 12 : 88), 6);
+    expect(floors).toEqual([75, 75, 0, 0, 0, 0]);
+  });
+
+  it('goes only as far down as the lowest line needs, to a multiple of 25', () => {
+    expect(nextFloorC(75, 62)).toBe(50);
+    expect(nextFloorC(75, 50)).toBe(50);
+    expect(nextFloorC(75, 49.9)).toBe(25);
+  });
+
+  it('stays put for a line exactly at the floor', () => {
+    expect(nextFloorC(75, 75)).toBe(75);
   });
 
   it('never goes below 0', () => {

@@ -65,18 +65,14 @@ describe('useRoastView', () => {
     expect(screen.getByText('edge 720 floor 50')).toBeInTheDocument();
   });
 
-  it('steps the floor down one step per reading for a dip below it, never back up', () => {
+  it('steps the floor straight down for a dip below it, never back up', () => {
     renderApp(<Probe first={start} />, { settings });
     act(() => {
       setMoment((m) => ({ ...m, nowS: 301, lowestC: 20 }));
     });
-    expect(screen.getByText('edge 720 floor 25')).toBeInTheDocument();
-    act(() => {
-      setMoment((m) => ({ ...m, nowS: 302 }));
-    });
     expect(screen.getByText('edge 720 floor 0')).toBeInTheDocument();
     act(() => {
-      setMoment((m) => ({ ...m, nowS: 303, lowestC: 90 }));
+      setMoment((m) => ({ ...m, nowS: 302, lowestC: 90 }));
     });
     expect(screen.getByText('edge 720 floor 0')).toBeInTheDocument();
   });
