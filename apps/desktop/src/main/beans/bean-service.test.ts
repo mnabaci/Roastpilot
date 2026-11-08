@@ -11,6 +11,7 @@ function setup(repository: Partial<BeanRepository> = {}) {
   const fake: BeanRepository = {
     list: () => Promise.resolve(ok([BEAN])),
     add: () => Promise.resolve(ok(1)),
+    addAll: (list) => Promise.resolve(ok(list.map((_, i) => i + 1))),
     update: () => Promise.resolve(ok(undefined)),
     setArchived: () => Promise.resolve(ok(undefined)),
     addStock: () => Promise.resolve(ok(undefined)),
@@ -30,6 +31,12 @@ describe('BeanService', () => {
     await beans.adjustStock({ beanId: 1, greenG: 1, roastedG: 2 });
     expect(onChange).toHaveBeenCalledTimes(5);
     expect(onChange).toHaveBeenLastCalledWith([BEAN]);
+  });
+
+  it('adds imported beans at once, then tells the windows', async () => {
+    const { beans, onChange } = setup();
+    expect(await beans.addAll([{ fields: FIELDS, profileId: null }])).toEqual(ok([1]));
+    expect(onChange).toHaveBeenCalledTimes(1);
   });
 
   it('a failed write says why and tells no one', async () => {

@@ -4,6 +4,7 @@ import {
   type AutoProfile,
   type BeansApi,
   type HistoryApi,
+  type LibraryFilesApi,
   type ProfilesApi,
   type Roaster,
   type RoastersApi,
@@ -58,4 +59,10 @@ export const fakeRoastersApi = (): RoastersApi => ({
   setActiveRoaster: accepted,
   chooseConnection: accepted,
   onRoasters: listening,
+});
+
+/** Beans, profiles and roasters files: both dialogs cancelled. */
+export const fakeLibraryFilesApi = (): LibraryFilesApi => ({
+  exportLibrary: cancelled,
+  importLibrary: cancelled,
 });

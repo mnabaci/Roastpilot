@@ -11,6 +11,7 @@ import {
 import { asc, eq } from 'drizzle-orm';
 import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy';
 import { attempt, parseJson } from './attempt';
+import { transaction } from './transaction';
 import { profiles } from './schema/profiles';
 
 /** Your own profiles in SQLite, one JSON document each (docs/adr/0011-built-in-profile-as-data.md). */
@@ -43,15 +44,28 @@ export class SqliteProfileRepository implements ProfileRepository {
   }
 
   save(profile: AutoProfile, roasterId: RoasterId): Promise<Result<void, StorageError>> {
+    return attempt(() => this.#upsert(this.#db, profile, roasterId));
+  }
+
+  saveAll(list: readonly AutoProfile[], roasterId: RoasterId): Promise<Result<void, StorageError>> {
+    return transaction(this.#db, async (tx) => {
+      for (const profile of list) await this.#upsert(tx, profile, roasterId);
+      return ok(undefined);
+    });
+  }
+
+  async #upsert(
+    db: SqliteRemoteDatabase,
+    profile: AutoProfile,
+    roasterId: RoasterId,
+  ): Promise<void> {
     const updatedAt = new Date(this.#clock.now()).toISOString();
     const doc = JSON.stringify(profile);
-    return attempt(async () => {
-      await this.#db
-        .insert(profiles)
-        .values({ id: profile.id, doc, updatedAt, roasterId })
-        .onConflictDoUpdate({ target: profiles.id, set: { doc, updatedAt, roasterId } })
-        .run();
-    });
+    await db
+      .insert(profiles)
+      .values({ id: profile.id, doc, updatedAt, roasterId })
+      .onConflictDoUpdate({ target: profiles.id, set: { doc, updatedAt, roasterId } })
+      .run();
   }
 
   delete(id: ProfileId): Promise<Result<boolean, StorageError>> {

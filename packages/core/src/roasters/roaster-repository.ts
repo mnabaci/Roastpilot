@@ -4,6 +4,8 @@ import type { Result, Roaster, RoasterId, StorageError } from '@roastpilot/share
 export interface RoasterRepository {
   list(): Promise<Result<Roaster[], StorageError>>;
   add(roaster: Omit<Roaster, 'id'>): Promise<Result<Roaster, StorageError>>;
+  /** Adds them all, all or nothing (an import). In order, with their ids. */
+  addAll(roasters: readonly Omit<Roaster, 'id'>[]): Promise<Result<Roaster[], StorageError>>;
   save(roaster: Roaster): Promise<Result<void, StorageError>>;
   /** Makes this one active, and no other. */
   setActive(id: RoasterId): Promise<Result<void, StorageError>>;

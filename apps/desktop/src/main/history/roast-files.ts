@@ -1,6 +1,4 @@
-import { serializeError, type Logger } from '@roastpilot/core';
 import {
-  err,
   ok,
   type ExportRoastsError,
   type ExportRoastsRequest,
@@ -12,22 +10,22 @@ import {
   type Result,
 } from '@roastpilot/shared';
 import { basename } from 'node:path';
+import type {
+  ChooseExportPath,
+  ChooseImportPath,
+  DialogParent,
+  ImportKind,
+} from '../files/file-dialogs';
+import { readPicked, writePicked, type PickedFileDeps } from '../files/picked-file';
 import type { HistoryService } from './history-service';
-import type { ChooseExportPath, ChooseImportPath, DialogParent } from './roast-file-dialogs';
 import type { RoastFileService } from './roast-file-service';
 
-export type ExportFormat = ExportRoastsRequest['format'];
-export type ImportKind = 'roastpilot' | 'artisan';
-
-export interface RoastFilesDeps {
+export interface RoastFilesDeps extends PickedFileDeps {
   history: Pick<HistoryService, 'exportCsv' | 'importArtisan'>;
   files: Pick<RoastFileService, 'exportFile' | 'importFile'>;
   /** The file you picked, in a dialog on `parent`; undefined if you cancelled. */
   chooseExportPath: ChooseExportPath;
   chooseImportPath: ChooseImportPath;
-  readText: (path: string) => Promise<string>;
-  writeText: (path: string, text: string) => Promise<void>;
-  logger: Logger;
 }
 
 /** Each opens its file dialog on `parent`, the window that asked. */
@@ -42,37 +40,23 @@ export interface RoastFiles {
 
 /** History's file actions: main picks the paths, so the renderer never names a file. */
 export function createRoastFiles(deps: RoastFilesDeps): RoastFiles {
-  const { history, files, chooseExportPath, chooseImportPath, readText, writeText, logger } = deps;
+  const { history, files, chooseExportPath, chooseImportPath } = deps;
   /** The file's text, or why it couldn't be read; undefined when you cancelled. */
-  const read = async (
-    kind: ImportKind,
-    parent: DialogParent,
-  ): Promise<Result<string, { kind: 'read-failed' }> | undefined> => {
+  const read = async (kind: ImportKind, parent: DialogParent) => {
     const path = await chooseImportPath(kind, parent);
-    if (path === undefined) return undefined;
-    try {
-      return ok(await readText(path));
-    } catch (error) {
-      logger.warn('history.import-read-failed', { error: serializeError(error) });
-      return err({ kind: 'read-failed' });
-    }
+    return path === undefined ? undefined : readPicked(path, deps, 'history.import-read-failed');
   };
   return {
     exportRoasts: async ({ format, ids }, parent) => {
-      const path = await chooseExportPath(format, ids ? ids.length : 'all', parent);
+      const path = await chooseExportPath('roasts', format, ids ? ids.length : 'all', parent);
       if (path === undefined) return ok({ status: 'cancelled' });
       const text = format === 'csv' ? await history.exportCsv(ids) : await files.exportFile(ids);
       if (!text.ok) return text;
-      try {
-        await writeText(path, text.value);
-      } catch (error) {
-        logger.warn('history.export-write-failed', { error: serializeError(error) });
-        return err({ kind: 'write-failed' });
-      }
-      return ok({ status: 'saved', fileName: basename(path) });
+      const written = await writePicked(path, text.value, deps, 'history.export-write-failed');
+      return written.ok ? ok({ status: 'saved', fileName: basename(path) }) : written;
     },
     importRoasts: async (parent) => {
-      const text = await read('roastpilot', parent);
+      const text = await read('roasts', parent);
       if (text === undefined) return ok({ status: 'cancelled' });
       if (!text.ok) return text;
       const imported = await files.importFile(text.value);

@@ -262,4 +262,70 @@ describe('BeansScreen', () => {
     expect(screen.getByText('2 × 375 g + 250 g')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Pick' })).toBeNull();
   });
+
+  describe('files', () => {
+    const toasts = (stores: ReturnType<typeof show>['stores']) =>
+      stores.toasts.getState().toasts.map((t) => [t.kind, t.text]);
+
+    it("the bean's ⋯ exports it; Beans ⋯ exports all and imports", async () => {
+      const api = fakeApi({
+        exportLibrary: vi.fn(() =>
+          Promise.resolve(ok({ status: 'saved' as const, fileName: 'beans.rpr' })),
+        ),
+      });
+      const { stores } = show(api);
+      await userEvent.click(screen.getByRole('button', { name: `More for ${BEAN.name}` }));
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Export this bean' }));
+      expect(api.exportLibrary).toHaveBeenCalledWith({ kind: 'beans', ids: [BEAN.id] });
+      await userEvent.click(screen.getByRole('button', { name: 'More for Beans' }));
+      const items = screen.getAllByRole('menuitem').map((item) => item.textContent);
+      expect(items.slice(-2)).toEqual(['Export all', 'Import a Roastpilot file']);
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Export all' }));
+      expect(api.exportLibrary).toHaveBeenLastCalledWith({ kind: 'beans' });
+      expect(toasts(stores)).toContainEqual(['success', 'Saved beans.rpr']);
+    });
+
+    it('Export all waits until there is a bean', async () => {
+      show(fakeApi(), []);
+      await userEvent.click(screen.getByRole('button', { name: 'More for Beans' }));
+      expect(screen.getByRole('menuitem', { name: 'Export all' })).toHaveAttribute(
+        'aria-disabled',
+        'true',
+      );
+    });
+
+    it('an import says what came in and opens the newest bean added', async () => {
+      const second = { ...BEAN, id: 2, name: 'Huila' };
+      const api = fakeApi({
+        importLibrary: vi.fn(() =>
+          Promise.resolve(ok({ status: 'imported' as const, added: 3, skipped: 1, newestId: 2 })),
+        ),
+      });
+      const { stores } = show(api, [BEAN, second]);
+      await userEvent.click(screen.getByRole('button', { name: 'More for Beans' }));
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Import a Roastpilot file' }));
+      expect(api.importLibrary).toHaveBeenCalledWith('beans');
+      expect(await screen.findByRole('heading', { level: 2, name: 'Huila' })).toBeInTheDocument();
+      expect(toasts(stores)).toContainEqual(['success', 'Imported 3 beans · 1 was already here']);
+    });
+
+    it('says why a file was refused', async () => {
+      const api = fakeApi({
+        importLibrary: vi.fn(() =>
+          Promise.resolve(
+            err({ kind: 'bad-item' as const, name: 'Guji', reason: 'Enter an origin (origin)' }),
+          ),
+        ),
+      });
+      const { stores } = show(api);
+      await userEvent.click(screen.getByRole('button', { name: 'More for Beans' }));
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Import a Roastpilot file' }));
+      await waitFor(() => {
+        expect(toasts(stores)).toContainEqual([
+          'error',
+          '"Guji" can\'t come in · Enter an origin (origin)',
+        ]);
+      });
+    });
+  });
 });

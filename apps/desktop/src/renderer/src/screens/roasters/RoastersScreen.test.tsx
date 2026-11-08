@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { CONNECTED, fakeApi, renderApp } from '../../test/render-app';
 import { roastersWith, SIMULATOR, SKYWALKER } from '../../test/roasters';
+import type { Stores } from '../../stores/stores';
 import { RoastersScreen } from './RoastersScreen';
 
 const PORT = { kind: 'serial', path: '/dev/cu.usbserial-0001' } as const;
@@ -11,6 +12,8 @@ const ports = () =>
   Promise.resolve([{ path: '/dev/cu.usbserial-0001', manufacturer: 'Silicon Labs' }]);
 
 const sidebar = () => within(screen.getByRole('list', { name: 'Roasters' }));
+const menuItems = () => screen.getAllByRole('menuitem').map((item) => item.textContent);
+const toasts = (stores: Stores) => stores.toasts.getState().toasts.map((t) => [t.kind, t.text]);
 
 describe('RoastersScreen', () => {
   describe('the list', () => {
@@ -40,8 +43,10 @@ describe('RoastersScreen', () => {
 
     it('Use this roaster makes it active without connecting', async () => {
       const { api } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
-      // The active roaster has nothing to switch to, so no ⋯ at all.
-      expect(screen.queryByRole('button', { name: /^More for / })).toBeNull();
+      // The active roaster has nothing to switch to: its ⋯ only exports it.
+      await userEvent.click(screen.getByRole('button', { name: 'More for Skywalker' }));
+      expect(menuItems()).toEqual(['Export this roaster']);
+      await userEvent.keyboard('{Escape}');
       await userEvent.click(sidebar().getByRole('button', { name: /^Simulator/ }));
       await userEvent.click(screen.getByRole('button', { name: 'More for Simulator' }));
       await userEvent.click(screen.getByRole('menuitem', { name: 'Use this roaster' }));
@@ -65,7 +70,8 @@ describe('RoastersScreen', () => {
     it('offers no switch while a roaster is in use', async () => {
       renderApp(<RoastersScreen />, { connection: CONNECTED, roasters: roastersWith(PORT) });
       await userEvent.click(sidebar().getByRole('button', { name: /^Simulator/ }));
-      expect(screen.queryByRole('button', { name: 'More for Simulator' })).toBeNull();
+      await userEvent.click(screen.getByRole('button', { name: 'More for Simulator' }));
+      expect(menuItems()).toEqual(['Export this roaster']);
     });
 
     it('adds a roaster, then opens it', async () => {
@@ -249,7 +255,65 @@ describe('RoastersScreen', () => {
       expect(screen.getByText('Disconnect Skywalker to switch')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Connect' })).toBeNull();
       expect(screen.getByRole('textbox', { name: 'Max temp' })).toBeDisabled();
-      expect(screen.queryByRole('button', { name: /^More for / })).toBeNull();
+      await userEvent.click(screen.getByRole('button', { name: 'More for Simulator' }));
+      expect(menuItems()).toEqual(['Export this roaster']);
+    });
+  });
+
+  describe('files', () => {
+    it("a roaster's ⋯ exports it; the list's ⋯ exports all", async () => {
+      const api = fakeApi({
+        exportLibrary: vi.fn(() =>
+          Promise.resolve(ok({ status: 'saved' as const, fileName: 'roasters.rpr' })),
+        ),
+      });
+      const { stores } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) }, api);
+      await userEvent.click(sidebar().getByRole('button', { name: /^Simulator/ }));
+      await userEvent.click(screen.getByRole('button', { name: 'More for Simulator' }));
+      expect(menuItems()).toEqual(['Use this roaster', 'Export this roaster', 'Delete']);
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Export this roaster' }));
+      expect(api.exportLibrary).toHaveBeenCalledWith({ kind: 'roasters', ids: [SIMULATOR.id] });
+      await userEvent.click(screen.getByRole('button', { name: 'More for Roasters' }));
+      expect(menuItems()).toEqual(['Export all', 'Import a Roastpilot file']);
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Export all' }));
+      expect(api.exportLibrary).toHaveBeenLastCalledWith({ kind: 'roasters' });
+      expect(toasts(stores)).toContainEqual(['success', 'Saved roasters.rpr']);
+    });
+
+    it('an import says what came in and opens the newest roaster added', async () => {
+      const api = fakeApi({
+        importLibrary: vi.fn(() =>
+          Promise.resolve(
+            ok({ status: 'imported' as const, added: 1, skipped: 1, newestId: SIMULATOR.id }),
+          ),
+        ),
+      });
+      const { stores } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) }, api);
+      await userEvent.click(screen.getByRole('button', { name: 'More for Roasters' }));
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Import a Roastpilot file' }));
+      expect(api.importLibrary).toHaveBeenCalledWith('roasters');
+      expect(
+        await screen.findByRole('heading', { level: 2, name: 'Simulator' }),
+      ).toBeInTheDocument();
+      expect(toasts(stores)).toContainEqual(['success', 'Imported 1 roaster · 1 was already here']);
+    });
+
+    it('refuses a file of another kind by name', async () => {
+      const api = fakeApi({
+        importLibrary: vi.fn(() =>
+          Promise.resolve(err({ kind: 'wrong-kind' as const, fileKind: 'profiles' as const })),
+        ),
+      });
+      const { stores } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) }, api);
+      await userEvent.click(screen.getByRole('button', { name: 'More for Roasters' }));
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Import a Roastpilot file' }));
+      await vi.waitFor(() => {
+        expect(toasts(stores)).toContainEqual([
+          'error',
+          'This is a profiles file · import it on Profiles',
+        ]);
+      });
+      expect(screen.getByRole('heading', { level: 2, name: 'Skywalker' })).toBeInTheDocument();
     });
   });
 

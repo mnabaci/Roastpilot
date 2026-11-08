@@ -19,7 +19,9 @@ import {
   RoasterIdSchema,
   RoasterSchema,
   RoastActionSchema,
+  ExportLibraryRequestSchema,
   ExportRoastsRequestSchema,
+  ImportLibraryRequestSchema,
   ReleasePageSchema,
   RoastIdSchema,
   SetRoastBeanRequestSchema,
@@ -49,6 +51,7 @@ export function createIpcHandlers({
   settings,
   history,
   roastFiles,
+  libraryFiles,
   pilot,
   profiles,
   roasters,
@@ -97,6 +100,12 @@ export function createIpcHandlers({
     }),
     [IPC_CHANNELS.importArtisan]: handler((_payload, { window }) =>
       roastFiles.importArtisan(window),
+    ),
+    [IPC_CHANNELS.exportLibrary]: handler((payload, { window }) =>
+      libraryFiles.exportLibrary(ExportLibraryRequestSchema.parse(payload), window),
+    ),
+    [IPC_CHANNELS.importLibrary]: handler((payload, { window }) =>
+      libraryFiles.importLibrary(ImportLibraryRequestSchema.parse(payload).kind, window),
     ),
     [IPC_CHANNELS.autoChargeSoon]: handler(() => pilot.chargeSoon(nowMs())),
     [IPC_CHANNELS.autoResume]: handler(() => pilot.resume()),

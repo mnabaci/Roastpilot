@@ -73,7 +73,10 @@ describe('Roastpilot roast file', () => {
       ...file,
       roasts: [{ ...first, samples: { tS: [0, 1], values: { bt: [180] } } }],
     };
-    expect(parseRoastFile(JSON.stringify(broken))).toEqual({ ok: false, error: 'not-roastpilot' });
+    expect(parseRoastFile(JSON.stringify(broken))).toEqual({
+      ok: false,
+      error: { kind: 'not-roastpilot' },
+    });
   });
 
   it('reads back what it wrote', () => {
@@ -95,12 +98,25 @@ describe('Roastpilot roast file', () => {
       }),
     ],
   ])('refuses %s', (_, text) => {
-    expect(parseRoastFile(text)).toEqual({ ok: false, error: 'not-roastpilot' });
+    expect(parseRoastFile(text)).toEqual({ ok: false, error: { kind: 'not-roastpilot' } });
   });
 
   it('refuses a file from a newer Roastpilot', () => {
     const text = JSON.stringify({ format: 'roastpilot-roasts', version: 99, roasts: [] });
-    expect(parseRoastFile(text)).toEqual({ ok: false, error: 'newer-version' });
+    expect(parseRoastFile(text)).toEqual({ ok: false, error: { kind: 'newer-version' } });
+  });
+
+  it('refuses another kind by name', () => {
+    const text = JSON.stringify({
+      format: 'roastpilot-beans',
+      version: 1,
+      exportedAt: '',
+      beans: [],
+    });
+    expect(parseRoastFile(text)).toEqual({
+      ok: false,
+      error: { kind: 'wrong-kind', fileKind: 'beans' },
+    });
   });
 
   it('matches names exactly', () => {

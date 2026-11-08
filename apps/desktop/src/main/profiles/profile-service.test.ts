@@ -21,6 +21,12 @@ function setup(start: AutoProfile[] = []) {
       stored = [...stored.filter((p) => p.id !== profile.id), profile];
       return Promise.resolve(ok(undefined));
     },
+    saveAll: (list, owner) => {
+      for (const profile of list) owners.set(profile.id, owner);
+      const ids = new Set(list.map((p) => p.id));
+      stored = [...stored.filter((p) => !ids.has(p.id)), ...list];
+      return Promise.resolve(ok(undefined));
+    },
     delete: (id) => {
       const had = stored.some((p) => p.id === id);
       stored = stored.filter((p) => p.id !== id);
@@ -47,6 +53,42 @@ function setup(start: AutoProfile[] = []) {
 }
 
 describe('ProfileService', () => {
+  it('adds imported profiles to the active roaster at once', async () => {
+    const { service, useRoaster } = setup();
+    useRoaster(2);
+    const other = { ...MINE, id: 'custom-b', name: 'Other' };
+    expect(await service.addAll([MINE, other])).toEqual(ok(undefined));
+    const own = (await service.list()).filter((e) => !e.builtIn);
+    expect(own.map((e) => e.profile.id)).toEqual(['custom-a', 'custom-b']);
+    useRoaster(1);
+    expect((await service.list()).filter((e) => !e.builtIn)).toEqual([]);
+  });
+
+  it('an import that fails to save says why', async () => {
+    const failing: ProfileRepository = {
+      list: () => Promise.resolve(ok([])),
+      save: () => Promise.resolve(ok(undefined)),
+      saveAll: () => Promise.resolve(err({ kind: 'storage-failed', message: 'full' })),
+      delete: () => Promise.resolve(ok(false)),
+    };
+    const service = new ProfileService({
+      store: failing,
+      newId: () => 'x',
+      chosenId: () => 'light-steps',
+      activeRoaster: () => ({ id: 1, model: 'skywalker' }),
+      logger: silentLogger,
+    });
+    expect(await service.addAll([MINE])).toEqual(err({ kind: 'storage-failed', message: 'full' }));
+    expect((await service.list()).filter((e) => !e.builtIn)).toEqual([]);
+  });
+
+  it('names every profile by id: the built-ins of every model, your own on any roaster', async () => {
+    const { service } = setup([MINE]);
+    const names = await service.allNames();
+    expect(names.get('custom-a')).toBe('Mine');
+    expect(names.get('light-steps')).toBe(SKYWALKER_PROFILES['light-steps'].name);
+  });
+
   it('lists the built-ins first, then your own', async () => {
     const { service } = setup([MINE]);
     const list = await service.list();
@@ -61,6 +103,7 @@ describe('ProfileService', () => {
     const failing: ProfileRepository = {
       list: () => Promise.resolve(err({ kind: 'storage-failed', message: 'gone' })),
       save: () => Promise.resolve(err({ kind: 'storage-failed', message: 'gone' })),
+      saveAll: () => Promise.resolve(err({ kind: 'storage-failed', message: 'gone' })),
       delete: () => Promise.resolve(err({ kind: 'storage-failed', message: 'gone' })),
     };
     const service = new ProfileService({
@@ -213,6 +256,7 @@ describe('ProfileService', () => {
       const failing: ProfileRepository = {
         list: () => Promise.resolve(ok([{ profile: MINE, roasterId: 1 }])),
         save: () => Promise.resolve(err({ kind: 'storage-failed', message: 'full' })),
+        saveAll: () => Promise.resolve(err({ kind: 'storage-failed', message: 'full' })),
         delete: () => Promise.resolve(ok(false)),
       };
       const service = new ProfileService({

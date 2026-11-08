@@ -1,7 +1,8 @@
 import type { RoasterId } from '@roastpilot/shared';
-import { Badge, Button, NavList, SidebarLayout } from '@roastpilot/ui';
+import { Badge, Button, Menu, NavList, SidebarLayout } from '@roastpilot/ui';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
+import { useLibraryFiles } from '../../features/use-library-files';
 import { activeRoaster } from '../../stores/roasters-store';
 import { useRoasters } from '../../stores/use-stores';
 import { AddRoaster } from './AddRoaster';
@@ -22,9 +23,26 @@ export function RoastersScreen() {
   const openRoaster = (id: RoasterId | undefined) => {
     setOpen({ kind: 'roaster', id });
   };
+  const files = useLibraryFiles('roasters', (id) => {
+    if (typeof id === 'number') openRoaster(id);
+  });
   return (
     <SidebarLayout
       title="Roasters"
+      titleAction={
+        <Menu
+          label="More for Roasters"
+          items={[
+            {
+              label: 'Export all',
+              onSelect: () => {
+                files.exportFile({ kind: 'roasters' });
+              },
+            },
+            { label: 'Import a Roastpilot file', onSelect: files.importFile },
+          ]}
+        />
+      }
       contentLabel={open.kind === 'add' ? 'Add roaster' : 'Roaster'}
       sidebar={
         <>

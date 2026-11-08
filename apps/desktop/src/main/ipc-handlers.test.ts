@@ -121,6 +121,16 @@ function setup() {
         return Promise.resolve(ok({ status: 'cancelled' }));
       },
     },
+    libraryFiles: {
+      exportLibrary: (request, parent) => {
+        calls.push(['exportLibrary', request, parent]);
+        return Promise.resolve(ok({ status: 'cancelled' }));
+      },
+      importLibrary: (kind, parent) => {
+        calls.push(['importLibrary', kind, parent]);
+        return Promise.resolve(ok({ status: 'cancelled' }));
+      },
+    },
     pilot: {
       chargeSoon: (nowMs) => {
         calls.push(['chargeSoon', nowMs]);
@@ -281,6 +291,8 @@ describe('createIpcHandlers', () => {
         IPC_CHANNELS.importRoasts,
         IPC_CHANNELS.setRoastBean,
         IPC_CHANNELS.importArtisan,
+        IPC_CHANNELS.exportLibrary,
+        IPC_CHANNELS.importLibrary,
         IPC_CHANNELS.autoChargeSoon,
         IPC_CHANNELS.autoResume,
         IPC_CHANNELS.listProfiles,
@@ -599,6 +611,32 @@ describe('log viewer handlers', () => {
     await handle(handlers, IPC_CHANNELS.readLogDay, '2026-11-03');
     await handle(handlers, IPC_CHANNELS.openLogFolder);
     expect(calls).toEqual([['readDay', '2026-11-03'], ['openFolder']]);
+  });
+});
+
+describe('library file handlers', () => {
+  it('exports and imports a kind, on the window that asked', async () => {
+    const { handlers, calls } = setup();
+    await handle(handlers, IPC_CHANNELS.exportLibrary, { kind: 'profiles', ids: ['custom-1'] });
+    await handle(handlers, IPC_CHANNELS.exportLibrary, { kind: 'beans' });
+    await handle(handlers, IPC_CHANNELS.importLibrary, { kind: 'roasters' });
+    expect(calls).toEqual([
+      ['exportLibrary', { kind: 'profiles', ids: ['custom-1'] }, CALLER.window],
+      ['exportLibrary', { kind: 'beans' }, CALLER.window],
+      ['importLibrary', 'roasters', CALLER.window],
+    ]);
+  });
+
+  it.each([
+    [IPC_CHANNELS.exportLibrary, { kind: 'roasts' }],
+    [IPC_CHANNELS.exportLibrary, { kind: 'beans', ids: ['not-a-number'] }],
+    [IPC_CHANNELS.exportLibrary, { kind: 'roasters', ids: [] }],
+    [IPC_CHANNELS.importLibrary, { kind: 'teas' }],
+    [IPC_CHANNELS.importLibrary, undefined],
+  ])('refuses a bad %s payload %j', async (channel, payload) => {
+    const { handlers, calls } = setup();
+    await expect(handle(handlers, channel, payload)).rejects.toThrow();
+    expect(calls).toEqual([]);
   });
 });
 

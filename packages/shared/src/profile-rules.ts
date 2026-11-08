@@ -93,3 +93,27 @@ export function checkProfile(profile: ProfileShape, ctx: z.RefinementCtx): void 
   checkPhaseChain(profile, issue);
   checkCurve(profile, issue);
 }
+
+/** What a roaster allows, from its record (docs/spec/roasters.md, Limits). */
+export interface RoasterLimits {
+  maxTempC: number;
+  maxTimeS: number;
+}
+
+/** What a profile from elsewhere asks of this roaster beyond its limits; undefined when it fits. */
+export function overRoasterLimits(
+  { capC, curve, phases }: Pick<ProfileShape, 'capC' | 'curve' | 'phases'>,
+  { maxTempC, maxTimeS }: RoasterLimits,
+): string | undefined {
+  if (capC > maxTempC) {
+    return `BT cap ${String(capC)} °C is above this roaster's ${String(maxTempC)} °C`;
+  }
+  const lastS = Math.max(
+    ...curve.map((point) => point.tS),
+    ...phases.map(({ next }) => (next.on === 'bt' ? next.backupS : 0)),
+  );
+  if (lastS > maxTimeS) {
+    return `Runs past this roaster's ${String(maxTimeS / 60)} min limit`;
+  }
+  return undefined;
+}

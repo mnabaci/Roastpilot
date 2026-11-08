@@ -104,8 +104,12 @@ describe('MilestoneBuilder', () => {
     expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Light · Curve');
   });
 
-  it('has no menu when the roaster has no curve profile to start from', () => {
+  it('offers no milestone builder when the roaster has no curve profile to start from', async () => {
     renderApp(<ProfilesScreen />, { profiles: [{ profile: STEPS, builtIn: true }] });
-    expect(screen.queryByRole('button', { name: 'More for Profiles' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'More for Profiles' }));
+    expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+      'Export all',
+      'Import a Roastpilot file',
+    ]);
   });
 });

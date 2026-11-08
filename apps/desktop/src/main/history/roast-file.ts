@@ -5,6 +5,7 @@ import {
   ok,
   readEnvelope,
   toEnvelope,
+  type EnvelopeProblem,
   type FileRoast,
   type Result,
   type RoastDetail,
@@ -52,16 +53,15 @@ function roastsOf(version: number, items: unknown[]): FileRoast[] | undefined {
   return roasts;
 }
 
-export type RoastFileProblem = 'not-roastpilot' | 'newer-version';
+/** Why a roast file is refused: its envelope, or a roast in it that isn't one. */
+export type RoastFileProblem = EnvelopeProblem;
 
 /** A Roastpilot file's roasts, or why the whole file is refused. */
 export function parseRoastFile(text: string): Result<FileRoast[], RoastFileProblem> {
   const envelope = readEnvelope(text, 'roasts');
-  if (!envelope.ok) {
-    return err(envelope.error.kind === 'newer-version' ? 'newer-version' : 'not-roastpilot');
-  }
+  if (!envelope.ok) return envelope;
   const roasts = roastsOf(envelope.value.version, envelope.value.items);
-  return roasts ? ok(roasts) : err('not-roastpilot');
+  return roasts ? ok(roasts) : err({ kind: 'not-roastpilot' });
 }
 
 /** The id of the one with exactly this name, if any. */

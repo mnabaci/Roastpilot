@@ -27,6 +27,19 @@ describe('SqliteProfileRepository', () => {
     expect(await repository.list()).toEqual({ ok: true, value: [{ profile: MINE, roasterId: 1 }] });
   });
 
+  it('saves many at once on one roaster', async () => {
+    const { repository } = setup();
+    const other = { ...MINE, id: 'custom-2', name: 'Other' };
+    expect(await repository.saveAll([MINE, other], 2)).toEqual({ ok: true, value: undefined });
+    expect(await repository.list()).toEqual({
+      ok: true,
+      value: [
+        { profile: MINE, roasterId: 2 },
+        { profile: other, roasterId: 2 },
+      ],
+    });
+  });
+
   it('replaces the one with the same id', async () => {
     const { repository } = setup();
     await repository.save(MINE, 1);

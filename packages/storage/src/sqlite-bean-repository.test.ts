@@ -54,6 +54,24 @@ const newRoast = {
 } as const;
 
 describe('SqliteBeanRepository', () => {
+  it('adds many at once, with no stock, not archived, each with its profile', async () => {
+    const { beans } = setup();
+    const ids = await beans.addAll([
+      { fields: FIELDS, profileId: 'light-steps' },
+      { fields: { ...FIELDS, name: 'Guji' }, profileId: null },
+    ]);
+    expect(ids).toEqual({ ok: true, value: [1, 2] });
+    const list = await beans.list();
+    expect(list.ok && list.value.map((b) => [b.name, b.profileId, b.greenG, b.archived])).toEqual([
+      ['Guji', null, 0, false],
+      ['Yirgacheffe', 'light-steps', 0, false],
+    ]);
+  });
+
+  it('adds none from an empty list', async () => {
+    expect(await setup().beans.addAll([])).toEqual({ ok: true, value: [] });
+  });
+
   it('adds a bean with no stock and reads it back', async () => {
     const { beans } = setup();
     const id = await added(beans);

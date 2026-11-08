@@ -49,6 +49,8 @@ export const IPC_CHANNELS = {
   importRoasts: 'history:import',
   setRoastBean: 'history:set-bean',
   importArtisan: 'history:import-artisan',
+  exportLibrary: 'library:export',
+  importLibrary: 'library:import',
   roastsChanged: 'history:changed',
   autoStatus: 'auto:status',
   autoChargeSoon: 'auto:charge-soon',

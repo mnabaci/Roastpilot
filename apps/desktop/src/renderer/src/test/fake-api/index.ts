@@ -1,6 +1,12 @@
 import type { RoastpilotApi } from '@roastpilot/shared';
 import { fakeSettingsApi, fakeUpdatesApi, fakeWindowApi } from './app';
-import { fakeBeansApi, fakeHistoryApi, fakeProfilesApi, fakeRoastersApi } from './library';
+import {
+  fakeBeansApi,
+  fakeHistoryApi,
+  fakeLibraryFilesApi,
+  fakeProfilesApi,
+  fakeRoastersApi,
+} from './library';
 import { fakeRoastApi, fakeRoasterApi } from './session';
 
 // The one fake `window.roastpilot`, for the renderer tests (wrapped in spies by `render-app`) and
@@ -16,6 +22,7 @@ export function fakeAppApi(overrides: Partial<RoastpilotApi> = {}): RoastpilotAp
     ...fakeProfilesApi(),
     ...fakeBeansApi(),
     ...fakeRoastersApi(),
+    ...fakeLibraryFilesApi(),
     ...fakeWindowApi(),
     ...fakeSettingsApi(),
     ...fakeUpdatesApi(),
