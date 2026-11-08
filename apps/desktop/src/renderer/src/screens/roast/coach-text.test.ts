@@ -3,12 +3,14 @@ import { calibrationNote, coachChanges, headsUpLine } from './coach-text';
 
 describe('coach text', () => {
   it('writes each output it changes, heater first', () => {
-    expect(coachChanges({ heater: { from: 65, to: 75 } })).toEqual(['Heater 65% → 75%']);
+    const heater = { name: 'Heater', from: 65, to: 75, tone: 'heat' };
+    const fan = { name: 'Fan', from: 50, to: 40, tone: 'air' };
+    expect(coachChanges({ heater: { from: 65, to: 75 } })).toEqual([heater]);
     expect(coachChanges({ fan: { from: 50, to: 40 }, heater: { from: 65, to: 75 } })).toEqual([
-      'Heater 65% → 75%',
-      'Fan 50% → 40%',
+      heater,
+      fan,
     ]);
-    expect(coachChanges({ fan: { from: 50, to: 40 } })).toEqual(['Fan 50% → 40%']);
+    expect(coachChanges({ fan: { from: 50, to: 40 } })).toEqual([fan]);
   });
 
   it('writes each heads-up in one line', () => {
