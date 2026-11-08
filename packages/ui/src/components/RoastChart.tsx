@@ -1,3 +1,4 @@
+import type { TemperatureUnit } from '@roastpilot/shared';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import 'uplot/dist/uPlot.min.css';
 import { formatClock } from '../lib/format';
@@ -5,6 +6,7 @@ import { cn } from '../lib/utils';
 import { readChartColors } from './roast-chart/chart-colors';
 import type { ChartLayer, ChartMarker, LineLayer } from './roast-chart/chart-layer';
 import { describeLayers, Legend } from './roast-chart/chart-legend';
+import { dragInUnit, floorInUnit, layersInUnit } from './roast-chart/display-units';
 import type { ChartDrag, TimeRange } from './roast-chart/drag-handles';
 import { usePlotEngine } from './roast-chart/plot-engine';
 import { buildChartOptions, buildStripOptions } from './roast-chart/uplot-options';
@@ -26,9 +28,14 @@ export interface RoastChartProps {
   timeWindow?: { fromS: number; toS: number } | undefined;
   /** Where the temperature axis starts, °C (default 0). */
   temperatureFloorC?: number;
+  /**
+   * What the axes, legend and hover say: everything is given in °C and shown in this unit
+   * (default °C; docs/spec/ui.md, Units).
+   */
+  temperatureUnit?: TemperatureUnit;
   height?: number;
   className?: string;
-  /** Points you can move with the pointer. */
+  /** Points you can move with the pointer, in °C; a move comes back in °C too. */
   drag?: ChartDrag | undefined;
 }
 
@@ -54,10 +61,14 @@ export function RoastChart({
   markers = NO_MARKERS,
   timeWindow,
   temperatureFloorC = 0,
+  temperatureUnit = 'c',
   height = DEFAULT_HEIGHT,
   className,
-  drag,
+  drag: dragC,
 }: RoastChartProps) {
+  const unit = temperatureUnit;
+  const drag = useMemo(() => dragInUnit(dragC, unit), [dragC, unit]);
+  const floor = floorInUnit(temperatureFloorC, unit);
   const engine = usePlotEngine();
   const plotRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
@@ -66,7 +77,7 @@ export function RoastChart({
   const [hoverT, setHoverT] = useState<number>();
   const dragRef = useRef(drag);
   const windowRef = useRef(timeWindow);
-  const floorRef = useRef(temperatureFloorC);
+  const floorRef = useRef(floor);
   const heldTimeRange = useRef<TimeRange | undefined>(undefined);
   // Counts finished drags: fresh data lets the time axis fit the moved points again.
   const [dragsEnded, setDragsEnded] = useState(0);
@@ -74,7 +85,7 @@ export function RoastChart({
   useEffect(() => {
     dragRef.current = drag;
     windowRef.current = timeWindow;
-    floorRef.current = temperatureFloorC;
+    floorRef.current = floor;
   });
   // A window is shown as given; otherwise the data's span, with spare time after the last point
   // while dragging: its handle stays clear of the edge, and it can move later.
@@ -88,11 +99,11 @@ export function RoastChart({
   };
 
   const { main, strip, mainData, stripData, mainOverlay, stripOverlay } = useMemo(
-    () => splitLayers(layers, markers),
+    () => splitLayers(layersInUnit(layers, unit), markers),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- dragsEnded only asks for fresh arrays
-    [layers, markers, dragsEnded],
+    [layers, markers, unit, dragsEnded],
   );
-  const scaleKey = `${String(timeWindow?.fromS)}:${String(timeWindow?.toS)}:${String(temperatureFloorC)}`;
+  const scaleKey = `${String(timeWindow?.fromS)}:${String(timeWindow?.toS)}:${String(floor)}`;
   const rightAxis = main.some((l) => l.axis === 'ror');
   // Colours are read when a plot is built: a new theme rebuilds both.
   const theme = useThemeKey();
@@ -112,7 +123,7 @@ export function RoastChart({
   useUplot({
     engine,
     element: plotRef,
-    structure: `${structureOf(main)}#${String(rightAxis)}#${theme}`,
+    structure: `${structureOf(main)}#${String(rightAxis)}#${theme}#${unit}`,
     width,
     height,
     data: mainData,
@@ -124,7 +135,8 @@ export function RoastChart({
         layers: main,
         markers: () => overlay().markers,
         aids: () => overlay().aids,
-        temperatureFloorC: () => floorRef.current,
+        temperatureFloor: () => floorRef.current,
+        unit,
         latestDotLayer: main.findIndex((l) => l.tone === 'heat' && l.axis === 'temperature'),
         // Element is mounted whenever a build runs.
         colors: readChartColors(plotRef.current ?? document.documentElement),
@@ -182,14 +194,25 @@ export function RoastChart({
               {formatClock(hoverT)}
             </span>
           )}
-          <Legend label="Legend" layers={main} at={hoverT} />
+          <Legend label="Legend" layers={main} at={hoverT} unit={unit} />
         </div>
       </div>
-      <div ref={plotRef} role="img" aria-label={describeLayers(main)} className="w-full" />
+      <div ref={plotRef} role="img" aria-label={describeLayers(main, unit)} className="w-full" />
       {strip.length > 0 ? (
         <>
-          <Legend label="Outputs legend" layers={strip} at={hoverT} className="mt-1 self-end" />
-          <div ref={stripRef} role="img" aria-label={describeLayers(strip)} className="w-full" />
+          <Legend
+            label="Outputs legend"
+            layers={strip}
+            at={hoverT}
+            unit={unit}
+            className="mt-1 self-end"
+          />
+          <div
+            ref={stripRef}
+            role="img"
+            aria-label={describeLayers(strip, unit)}
+            className="w-full"
+          />
         </>
       ) : null}
     </section>

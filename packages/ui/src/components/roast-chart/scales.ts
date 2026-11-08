@@ -1,3 +1,4 @@
+import type { TemperatureUnit } from '@roastpilot/shared';
 import type uPlot from 'uplot';
 import type { TimeRange } from './drag-handles';
 
@@ -13,34 +14,40 @@ export const TIME_RANGE: uPlot.Range.Function = (_u, min, max) => {
   return [start, Math.max(end, start + MIN_TIME_SPAN_S)];
 };
 
-/** RoR's right axis shows at least 0–30 °C/min (design system), widened when RoR goes outside. */
-export const ROR_MAX = 30;
-export const ROR_RANGE: uPlot.Range.Function = (_u, min, max) => [
-  // No RoR yet (before charge) leaves the bounds null-ish: keep the default span.
-  Number.isFinite(min) ? Math.min(0, Math.floor(min)) : 0,
-  Number.isFinite(max) ? Math.max(ROR_MAX, Math.ceil(max)) : ROR_MAX,
-];
+/**
+ * RoR's right axis shows at least 0–30 °C/min (design system), the same 0–54 °F/min in °F, widened
+ * when RoR goes outside.
+ */
+export const ROR_MAX: Readonly<Record<TemperatureUnit, number>> = { c: 30, f: 54 };
+export const rorRange =
+  (unit: TemperatureUnit): uPlot.Range.Function =>
+  (_u, min, max) => [
+    // No RoR yet (before charge) leaves the bounds null-ish: keep the default span.
+    Number.isFinite(min) ? Math.min(0, Math.floor(min)) : 0,
+    Number.isFinite(max) ? Math.max(ROR_MAX[unit], Math.ceil(max)) : ROR_MAX[unit],
+  ];
 
 /**
  * The temperature axis is fixed from its floor (0 °C, Artisan's default; fitted with Temperature
  * focus) to 250 °C and grows in 50 °C steps when the data, or an aid such as the projection
- * (`aidsTopC`), goes hotter. Both are read at draw time.
+ * (`aidsTop`), goes hotter. In °F the same 250 °C top is 482 °F and it grows in 100 °F steps
+ * (docs/spec/ui.md, Units). The floor, the data and the aids come in the unit shown, read at draw
+ * time.
  */
-export const TEMPERATURE_MAX_C = 250;
-const TEMPERATURE_STEP_C = 50;
+export const TEMPERATURE_AXIS: Readonly<Record<TemperatureUnit, { max: number; step: number }>> = {
+  c: { max: 250, step: 50 },
+  f: { max: 482, step: 100 },
+};
 export const temperatureRange =
   (
-    floorC: () => number,
-    aidsTopC: () => number | undefined = () => undefined,
+    floor: () => number,
+    aidsTop: () => number | undefined = () => undefined,
+    unit: TemperatureUnit = 'c',
   ): uPlot.Range.Function =>
   (_u, _min, max) => {
-    const top = Math.max(Number.isFinite(max) ? max : -Infinity, aidsTopC() ?? -Infinity);
-    return [
-      floorC(),
-      top > TEMPERATURE_MAX_C
-        ? Math.ceil(top / TEMPERATURE_STEP_C) * TEMPERATURE_STEP_C
-        : TEMPERATURE_MAX_C,
-    ];
+    const { max: fixedTop, step } = TEMPERATURE_AXIS[unit];
+    const top = Math.max(Number.isFinite(max) ? max : -Infinity, aidsTop() ?? -Infinity);
+    return [floor(), top > fixedTop ? Math.ceil(top / step) * step : fixedTop];
   };
 
 /** Outputs run 0–100 %; a little headroom keeps a line at 100 % from being cut in half. */

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CurvePointSchema, PROFILE_LIMITS, type CurvePoint } from './profile';
+import { tempInText } from './units';
 
 /** The BT cap sits this far above the drop (docs/spec/roast-control.md, Milestone builder). */
 export const MILESTONE_CAP_MARGIN_C = 3;
@@ -37,11 +38,11 @@ function forwardInTime(m: Milestones, ctx: Ctx): boolean {
 function limits(m: Milestones, ctx: Ctx) {
   const { min, max } = PROFILE_LIMITS.chargeC;
   if (m.chargeC < min || m.chargeC > max) {
-    issue(ctx, ['chargeC'], `Between ${String(min)} and ${String(max)} °C`);
+    issue(ctx, ['chargeC'], `Between ${tempInText(min)} and ${tempInText(max)}`);
   }
   if (m.turningPoint.tS <= 0) issue(ctx, ['turningPoint', 'tS'], 'After 0:00');
   if (m.turningPoint.c >= m.chargeC) {
-    issue(ctx, ['turningPoint', 'c'], `Below charge, ${String(m.chargeC)} °C`);
+    issue(ctx, ['turningPoint', 'c'], `Below charge, ${tempInText(m.chargeC)}`);
   }
   const devS = m.drop.tS - m.firstCrack.tS;
   const dev = PROFILE_LIMITS.devTimeS;
@@ -50,11 +51,11 @@ function limits(m: Milestones, ctx: Ctx) {
   } else if (m.drop.tS > MAX_DROP_S) {
     issue(ctx, ['drop', 'tS'], `At most ${mmss(MAX_DROP_S)}`);
   }
-  if (m.drop.c > MAX_DROP_C) issue(ctx, ['drop', 'c'], `At most ${String(MAX_DROP_C)} °C`);
+  if (m.drop.c > MAX_DROP_C) issue(ctx, ['drop', 'c'], `At most ${tempInText(MAX_DROP_C)}`);
   // The cap sits just above drop, and a cap under charge would drop the roast as it starts.
   const minDropC = m.chargeC - MILESTONE_CAP_MARGIN_C;
   const chargeOk = m.chargeC >= min && m.chargeC <= max;
-  if (chargeOk && m.drop.c <= minDropC) issue(ctx, ['drop', 'c'], `Above ${String(minDropC)} °C`);
+  if (chargeOk && m.drop.c <= minDropC) issue(ctx, ['drop', 'c'], `Above ${tempInText(minDropC)}`);
 }
 
 /** Your points that sit at their own time between the turning point and drop. */
@@ -87,12 +88,15 @@ function warming(m: Milestones, extras: Named[], ctx: Ctx) {
   named.slice(1).forEach((point, index) => {
     const before = named[index];
     if (before && point.c <= before.c) {
-      issue(ctx, [...point.path, 'c'], `Above ${String(before.c)} °C at ${mmss(before.tS)}`);
+      issue(ctx, [...point.path, 'c'], `Above ${tempInText(before.c)} at ${mmss(before.tS)}`);
     }
   });
 }
 
-/** What the milestone builder makes a curve profile from (docs/spec/roast-control.md). */
+/**
+ * What the milestone builder makes a curve profile from (docs/spec/roast-control.md). Temperatures
+ * in the messages are tokens for `sayInUnit`.
+ */
 export const MilestonesSchema = z
   .object({
     chargeC: z.number(),

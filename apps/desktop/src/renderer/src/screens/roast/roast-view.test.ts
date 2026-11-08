@@ -45,6 +45,7 @@ const input = (over: Partial<RoastViewInput> = {}): RoastViewInput => ({
   // The plan's turning point: the floor starts at 75 °C.
   expectedTpC: 92,
   settings: ALL_ON,
+  unit: 'c',
   profileDryEndC: 150,
   expectedFirstCrackC: 192,
   ...over,
@@ -103,6 +104,15 @@ describe('roastView', () => {
   it('fits the floor from the expected turning point at Start, 50 °C without one', () => {
     expect(roastView(input({ expectedTpC: 88 })).temperatureFloorC).toBe(50);
     expect(roastView(input({ expectedTpC: undefined })).temperatureFloorC).toBe(50);
+  });
+
+  it('in °F, fits the floor to a multiple of 50 °F, and moves a °C floor onto it', () => {
+    const inF = (c: number) => Math.round(c * 1.8 + 32);
+    // TP 92 °C − 15 °C is 170.6 °F: 150 °F.
+    expect(inF(roastView(input({ unit: 'f' })).temperatureFloorC)).toBe(150);
+    // Switched to °F mid-roast: 75 °C (167 °F) goes down to 150 °F, never up.
+    const switched = roastView(input({ unit: 'f', previous: held({ floorC: 75 }) }));
+    expect(inF(switched.temperatureFloorC)).toBe(150);
   });
 
   it('steps the floor straight down to fit a glitch reading in view, in one reading', () => {

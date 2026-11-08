@@ -1,4 +1,11 @@
-import type { CoachAdvice, CoachChange, CoachSetting, CoachStatus } from '@roastpilot/shared';
+import {
+  formatTemp,
+  type CoachAdvice,
+  type CoachChange,
+  type CoachSetting,
+  type CoachStatus,
+  type TemperatureUnit,
+} from '@roastpilot/shared';
 import { formatClock, type CoachCardChange } from '@roastpilot/ui';
 
 /** One row per output it changes, heater first, each in its slider's colour. */
@@ -12,7 +19,10 @@ export function coachChanges({
 }
 
 /** A heads-up's one line (docs/spec/manual-mode.md, Coach). */
-export function headsUpLine(advice: Exclude<CoachAdvice, CoachSetting>): string {
+export function headsUpLine(
+  advice: Exclude<CoachAdvice, CoachSetting>,
+  unit: TemperatureUnit,
+): string {
   const inS = `~${String(advice.inS)} s`;
   switch (advice.kind) {
     case 'first-crack-soon':
@@ -20,7 +30,7 @@ export function headsUpLine(advice: Exclude<CoachAdvice, CoachSetting>): string 
     case 'drop-soon':
       return `Drop in ${inS} · ${formatClock(advice.devTimeS)} development`;
     case 'cap-soon':
-      return `BT cap ${String(Math.round(advice.capC))} °C in ${inS}`;
+      return `BT cap ${formatTemp(advice.capC, unit)} in ${inS}`;
   }
 }
 

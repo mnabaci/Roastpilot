@@ -124,6 +124,17 @@ export const NowLine: Story = {
   args: { ...roasting, layers: [temperature, ror, heater, fan, nowLine] },
 };
 export const NowLineLight: Story = { ...NowLine, globals: { theme: 'Light' } };
+/** The same roast in °F: data still given in °C, axes, legend and hover in °F (100 °F steps). */
+export const Fahrenheit: Story = {
+  args: {
+    ...roasting,
+    // The fitted floor in °F: 150 °F, a multiple of 50 °F.
+    temperatureFloorC: (150 - 32) / 1.8,
+    temperatureUnit: 'f',
+    layers: [phaseBands, temperature, ror, heater, fan, projection, nowLine],
+  },
+};
+export const FahrenheitLight: Story = { ...Fahrenheit, globals: { theme: 'Light' } };
 /** Temperature focus on, the other aids off: the axis fitted to a 92 °C turning point, 75–250 °C. */
 export const TemperatureFocus: Story = { args: { ...roasting, layers: [temperature, ror] } };
 export const TemperatureFocusLight: Story = { ...TemperatureFocus, globals: { theme: 'Light' } };

@@ -1,9 +1,11 @@
-import type {
-  AutoProfile,
-  AutoStatus,
-  AutoStopReason,
-  PreheatStep,
-  RoastState,
+import {
+  formatPlainTemp,
+  type AutoProfile,
+  type AutoStatus,
+  type AutoStopReason,
+  type PreheatStep,
+  type RoastState,
+  type TemperatureUnit,
 } from '@roastpilot/shared';
 import { formatClock } from '@roastpilot/ui';
 import { isAutoDriven } from '../../lib/roast-phases';
@@ -28,6 +30,8 @@ export interface AutoFlowLive {
   /** Seconds since your first-crack tap. */
   developmentS?: number | undefined;
   heaterPct?: number | undefined;
+  /** What the hints say temperatures in; °C unless given. */
+  unit?: TemperatureUnit;
 }
 
 /** Auto stopped: why, and what is yours now. Never Start after a preheat ran out: the drum cools. */
@@ -60,7 +64,7 @@ function switchedOffStep(roast: RoastState, heaterPct: number | undefined): Flow
 }
 
 /** What each preheat step asks of you; Start stays reachable, so you can always go early. */
-function preheatStep(step: PreheatStep, leftS: number | null, chargeC: number): FlowStep {
+function preheatStep(step: PreheatStep, leftS: number | null, charge: string): FlowStep {
   const left = leftS === null ? '' : ` ${formatClock(leftS)}`;
   const stop = { stop: END_ROAST };
   switch (step) {
@@ -68,12 +72,12 @@ function preheatStep(step: PreheatStep, leftS: number | null, chargeC: number): 
       return {
         secondary: START,
         ...stop,
-        hint: `Too hot · cooling before the climb to ${String(chargeC)} °C.`,
+        hint: `Too hot · cooling before the climb to ${charge}.`,
       };
     case 'climb':
-      return { secondary: START, ...stop, hint: `Heating to ${String(chargeC)} °C.` };
+      return { secondary: START, ...stop, hint: `Heating to ${charge}.` };
     case 'hold':
-      return { secondary: START, ...stop, hint: `Holding ${String(chargeC)} °C ·${left} left.` };
+      return { secondary: START, ...stop, hint: `Holding ${charge} ·${left} left.` };
     case 'add-beans':
       return {
         chargeSoon: true,
@@ -89,16 +93,21 @@ function preheatStep(step: PreheatStep, leftS: number | null, chargeC: number): 
 }
 
 /** One line on what the running step does, in the flow's hint place. */
-function roastHint(status: AutoStatus, profile: AutoProfile, developmentS?: number): string {
+function roastHint(
+  status: AutoStatus,
+  profile: AutoProfile,
+  unit: TemperatureUnit,
+  developmentS?: number,
+): string {
   const name = status.phaseName ?? 'Auto';
   if (status.stallTripped) return `${name} · RoR low · more heat`;
   if (developmentS !== undefined) {
     const leftS = Math.max(0, profile.devTimeS - developmentS);
-    return `${name} · drops in ${formatClock(leftS)} or at ${String(profile.capC)} °C`;
+    return `${name} · drops in ${formatClock(leftS)} or at ${formatPlainTemp(profile.capC, unit)}`;
   }
   return status.nextPhaseAtC === null
     ? name
-    : `${name} · next at ${String(status.nextPhaseAtC)} °C`;
+    : `${name} · next at ${formatPlainTemp(status.nextPhaseAtC, unit)}`;
 }
 
 /**
@@ -117,30 +126,35 @@ export function autoFlowStep(
     return stoppedStep(roast, status.stopReason);
   }
   if (!profile) return undefined;
+  const unit = live.unit ?? 'c';
   if (roast.phase === 'ready' || roast.phase === 'done') {
     return {
       primary: { action: 'preheat', label: 'Preheat' },
-      hint: `Auto heats to ${String(profile.chargeC)} °C and holds · then add beans.`,
+      hint: `Auto heats to ${formatPlainTemp(profile.chargeC, unit)} and holds · then add beans.`,
     };
   }
   if (roast.phase === 'preheat') {
     return status.preheatStep === null
       ? { secondary: START, stop: END_ROAST, hint: 'Starting the preheat…' }
-      : preheatStep(status.preheatStep, status.preheatLeftS, profile.chargeC);
+      : preheatStep(
+          status.preheatStep,
+          status.preheatLeftS,
+          formatPlainTemp(profile.chargeC, unit),
+        );
   }
   if (roast.phase === 'roasting') {
     return {
       primary: FIRST_CRACK,
       secondary: DROP,
       stop: END_ROAST,
-      hint: roastHint(status, profile),
+      hint: roastHint(status, profile, unit),
     };
   }
   if (roast.phase === 'development') {
     return {
       primary: DROP,
       stop: END_ROAST,
-      hint: roastHint(status, profile, live.developmentS ?? 0),
+      hint: roastHint(status, profile, unit, live.developmentS ?? 0),
     };
   }
   return undefined;

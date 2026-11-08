@@ -1,13 +1,15 @@
+import { tempSymbol } from '@roastpilot/shared';
 import { NumberField } from '@roastpilot/ui';
 import type { DraftErrors, ProfileDraft } from './profile-draft';
 
 type TopKey = 'chargeC' | 'dryEndC' | 'devTime' | 'capC' | 'batchG';
 
+/** `temp`: the draft's temperature unit. */
 const TOP_VALUES: readonly { key: TopKey; label: string; unit?: string }[] = [
-  { key: 'chargeC', label: 'Charge temp', unit: '°C' },
-  { key: 'dryEndC', label: 'Dry end', unit: '°C' },
+  { key: 'chargeC', label: 'Charge temp', unit: 'temp' },
+  { key: 'dryEndC', label: 'Dry end', unit: 'temp' },
   { key: 'devTime', label: 'Development' },
-  { key: 'capC', label: 'BT cap', unit: '°C' },
+  { key: 'capC', label: 'BT cap', unit: 'temp' },
   { key: 'batchG', label: 'Batch', unit: 'g' },
 ];
 
@@ -33,7 +35,7 @@ export function TopValues({
           disabled={readOnly}
           invalid={Boolean(errors[key])}
           hint={errors[key]}
-          {...(unit ? { unit } : {})}
+          {...(unit ? { unit: unit === 'temp' ? tempSymbol(draft.unit) : unit } : {})}
           onChange={(value) => {
             onChange({ [key]: value });
           }}

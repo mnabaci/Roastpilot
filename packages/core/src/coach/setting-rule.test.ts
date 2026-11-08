@@ -1,3 +1,4 @@
+import { rateInText, sayInUnit } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { COACH_PROFILE, coachInputOf } from './coach.harness';
 import { autoSettingRule, PHASE_NEWS_S, settingReason } from './setting-rule';
@@ -19,7 +20,7 @@ describe('autoSettingRule', () => {
     expect(autoSettingRule.advise(coachInputOf({ wants: { heater: 90, fan: 30 } }))).toEqual({
       kind: 'setting',
       heater: { from: 80, to: 90 },
-      reason: 'RoR 10.0 · step wants 8–12',
+      reason: `RoR ${rateInText('10.0')} · step wants ${rateInText('8')}–${rateInText('12')}`,
     });
     expect(autoSettingRule.advise(coachInputOf({ wants: { heater: 80, fan: 15 } }))).toMatchObject({
       fan: { from: 30, to: 15 },
@@ -53,7 +54,9 @@ describe('autoSettingRule', () => {
 
 describe('settingReason', () => {
   it('on a step, puts RoR against the step range', () => {
-    expect(settingReason(coachInputOf({ ror: 6.54 }))).toBe('RoR 6.5 · step wants 8–12');
+    expect(sayInUnit(settingReason(coachInputOf({ ror: 6.54 })), 'c')).toBe(
+      'RoR 6.5 · step wants 8–12',
+    );
   });
 
   it('on a curve, says how far BT is from the curve and where RoR is heading', () => {
@@ -64,19 +67,22 @@ describe('settingReason', () => {
       trend: 'falling',
       step: step({ index: 2, phase: maillard, newForS: PHASE_NEWS_S }),
     });
-    expect(settingReason(input)).toBe('4 °C below target, RoR falling');
+    expect(sayInUnit(settingReason(input), 'c')).toBe('4 °C below target, RoR falling');
   });
 
   it('names a phase that has just begun, and where it began', () => {
     const input = coachInputOf({
       step: step({ index: 2, phase: maillard, startC: 150.2, newForS: PHASE_NEWS_S - 1 }),
     });
-    expect(settingReason(input)).toBe('Maillard from 150 °C');
+    expect(sayInUnit(settingReason(input), 'c')).toBe('Maillard from 150 °C');
   });
 
   it('names a fixed phase, with or without where it began', () => {
     expect(
-      settingReason(coachInputOf({ step: step({ index: 0, phase: soak, startC: 180 }) })),
+      sayInUnit(
+        settingReason(coachInputOf({ step: step({ index: 0, phase: soak, startC: 180 }) })),
+        'c',
+      ),
     ).toBe('Soak from 180 °C');
     expect(
       settingReason(coachInputOf({ step: step({ index: 0, phase: soak, startC: undefined }) })),
@@ -94,6 +100,6 @@ describe('settingReason', () => {
       btC: undefined,
       step: step({ index: 2, phase: maillard, startC: undefined, newForS: undefined }),
     });
-    expect(settingReason(input)).toBe('Maillard');
+    expect(sayInUnit(settingReason(input), 'c')).toBe('Maillard');
   });
 });

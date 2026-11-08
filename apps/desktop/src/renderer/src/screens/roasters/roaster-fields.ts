@@ -1,3 +1,4 @@
+import { tempSymbol, type TemperatureUnit } from '@roastpilot/shared';
 import type { TextCell } from './roaster-draft';
 
 export interface FieldGroup {
@@ -7,8 +8,8 @@ export interface FieldGroup {
   cells: readonly { key: TextCell; label: string; unit?: string }[];
 }
 
-/** What most people set (docs/spec/ui.md, Roasters screen). */
-export const EVERYDAY_FIELDS: readonly FieldGroup[] = [
+/** What most people set (docs/spec/ui.md, Roasters screen), temperatures in `unit`. */
+export const everydayFields = (unit: TemperatureUnit): readonly FieldGroup[] => [
   {
     title: 'Batch size',
     cells: [
@@ -20,9 +21,9 @@ export const EVERYDAY_FIELDS: readonly FieldGroup[] = [
   {
     title: 'Limits and calibration',
     cells: [
-      { key: 'maxTempC', label: 'Max temp', unit: '°C' },
+      { key: 'maxTempC', label: 'Max temp', unit: tempSymbol(unit) },
       { key: 'maxTimeMin', label: 'Max time', unit: 'min' },
-      { key: 'tempOffsetC', label: 'Temp offset', unit: '°C' },
+      { key: 'tempOffsetC', label: 'Temp offset', unit: tempSymbol(unit) },
     ],
   },
   { title: 'Preheat', cells: [{ key: 'hold', label: 'Hold' }] },
@@ -67,3 +68,7 @@ export const TUNING_FIELDS: readonly FieldGroup[] = [
 
 export const TUNING_HINT =
   'Push (Kp): how hard the heater reacts to being off target · Catch-up (Ki): closes a gap that stays';
+
+/** The gains tune the controller, not a reading: they stay per °C in °F (docs/spec/ui.md, Units). */
+export const tuningHint = (unit: TemperatureUnit): string =>
+  unit === 'f' ? `${TUNING_HINT} · gains stay per °C` : TUNING_HINT;

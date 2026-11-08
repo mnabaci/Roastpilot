@@ -15,6 +15,7 @@ import { OutputsPanel } from './OutputsPanel';
 import { CoachPanel } from './CoachPanel';
 import { RoastNumbersRow } from './RoastNumbersRow';
 import { useSensorNames } from '../../features/use-sensor-names';
+import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { useConnection, useRoast, useSettings } from '../../stores/use-stores';
 import { isConnected } from './flow-step';
 import { ClearRoast } from './ClearRoast';
@@ -41,6 +42,7 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
   // With no roaster, the last temperature would look live: show dashes instead.
   const shown = connected ? numbers : { ...numbers, bt: undefined, ror: undefined };
   const smoothingS = useSettings((s) => s.settings.chartSmoothingS);
+  const unit = useTemperatureUnit();
   const temp = useSensorNames();
   const plan = useRunningPlan();
   const chart = useMemo(
@@ -103,6 +105,7 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
           markers={markers}
           timeWindow={view.timeWindow}
           temperatureFloorC={view.temperatureFloorC}
+          temperatureUnit={unit}
         />
       </div>
       {/* The panel shows what the moment needs (docs/spec/ui.md, Side panel follows the roast). */}

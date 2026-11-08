@@ -156,6 +156,32 @@ describe('SettingsScreen', () => {
     );
   });
 
+  it('picks the temperature unit above Theme: °C until you choose, °F at once', async () => {
+    const { api, stores } = renderApp(<Settings first="appearance" />);
+    const groups = screen.getAllByRole('radiogroup').map((g) => g.getAttribute('aria-label'));
+    expect(groups).toEqual(['Temperature', 'Theme']);
+    expect(radio('°C', 'Temperature')).toBeChecked();
+    await userEvent.click(radio('°F', 'Temperature'));
+    expect(stores.settings.getState().settings.temperatureUnit).toBe('f');
+    expect(api.setSettings).toHaveBeenCalledWith(expect.objectContaining({ temperatureUnit: 'f' }));
+  });
+
+  it('names Cool the drum to and the listen sound in °F, saving the same °C step', async () => {
+    const { api } = renderApp(<Settings first="roast" />, {
+      settings: { ...ACCEPTED_SETTINGS, temperatureUnit: 'f' },
+    });
+    expect(radio('122 °F', 'Cool the drum to')).toBeChecked();
+    await userEvent.click(radio('140 °F', 'Cool the drum to'));
+    expect(api.setSettings).toHaveBeenLastCalledWith(
+      expect.objectContaining({ roasterCoolToC: 60 }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Sounds' }));
+    // A difference: 3 °C is 5.4 °F, never 37 °F.
+    expect(
+      screen.getByText('5.4 °F before your usual first-crack temperature'),
+    ).toBeInTheDocument();
+  });
+
   it('picks the theme: Dark until you choose', async () => {
     const { api, stores } = renderApp(<Settings first="appearance" />);
     expect(radio('Dark', 'Theme')).toBeChecked();

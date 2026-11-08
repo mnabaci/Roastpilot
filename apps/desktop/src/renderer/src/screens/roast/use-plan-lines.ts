@@ -1,3 +1,4 @@
+import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { activeRoaster } from '../../stores/roasters-store';
 import { useAuto, useRoast, useRoasters } from '../../stores/use-stores';
 import { planLine, rorAimLine } from './plan-lines';
@@ -12,6 +13,7 @@ export function usePlanLines(
   elapsedS: number | undefined,
 ): { temp?: string; ror?: string } {
   const auto = useAuto((s) => s.status);
+  const unit = useTemperatureUnit();
   const roast = useRoast((s) => s.roast);
   const plan = useRunningPlan();
   const profile = useActiveProfile()?.profile;
@@ -19,7 +21,9 @@ export function usePlanLines(
   const roasting = roast.phase === 'roasting' || roast.phase === 'development';
   if (!auto.enabled || !roasting) return {};
   const temp =
-    plan && bt !== undefined && elapsedS !== undefined ? planLine(plan, elapsedS, bt) : undefined;
+    plan && bt !== undefined && elapsedS !== undefined
+      ? planLine(plan, elapsedS, bt, unit)
+      : undefined;
   // A stopped Auto aims for nothing.
   const ror =
     profile && auto.stopReason === null
@@ -29,6 +33,7 @@ export function usePlanLines(
           elapsedS,
           btC: bt,
           curveFollow,
+          unit,
         })
       : undefined;
   return { ...(temp ? { temp } : {}), ...(ror ? { ror } : {}) };

@@ -1,3 +1,4 @@
+import { tempInText } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { importedText, importProblemText } from './file-messages';
 
@@ -10,18 +11,25 @@ describe('file messages', () => {
   });
 
   it('refuses another kind by name, saying where it goes', () => {
-    expect(importProblemText({ kind: 'wrong-kind', fileKind: 'beans' })).toBe(
+    expect(importProblemText({ kind: 'wrong-kind', fileKind: 'beans' }, 'c')).toBe(
       'This is a beans file · import it on Beans',
     );
-    expect(importProblemText({ kind: 'wrong-kind', fileKind: 'roasts' })).toBe(
+    expect(importProblemText({ kind: 'wrong-kind', fileKind: 'roasts' }, 'c')).toBe(
       'This is a roasts file · import it on History',
     );
   });
 
   it('says which item failed its checks and why', () => {
     expect(
-      importProblemText({ kind: 'bad-item', name: 'Light', reason: 'BT cap: At most 235 °C' }),
+      importProblemText({ kind: 'bad-item', name: 'Light', reason: 'BT cap: At most 235 °C' }, 'c'),
     ).toBe('"Light" can\'t come in · BT cap: At most 235 °C');
+  });
+
+  it('says a refused temperature in °F when the screen shows °F', () => {
+    const reason = `BT cap: At most ${tempInText(235)}`;
+    expect(importProblemText({ kind: 'bad-item', name: 'Light', reason }, 'f')).toBe(
+      '"Light" can\'t come in · BT cap: At most 455 °F',
+    );
   });
 
   it.each([
@@ -31,6 +39,6 @@ describe('file messages', () => {
     ['not-artisan', "That file isn't an Artisan roast"],
     ['storage-failed', "Couldn't import · see Logs"],
   ])('%s: one line', (kind, text) => {
-    expect(importProblemText({ kind })).toBe(text);
+    expect(importProblemText({ kind }, 'c')).toBe(text);
   });
 });

@@ -34,8 +34,14 @@ describe('valueAt', () => {
 
 describe('formatLayerValue', () => {
   it('puts the unit after the value', () => {
-    expect(formatLayerValue('temperature', 198.44)).toBe('198.4 °C');
-    expect(formatLayerValue('ror', 9.06)).toBe('9.1 °C/min');
-    expect(formatLayerValue('output', 64.6)).toBe('65%');
+    expect(formatLayerValue('temperature', 198.44, 'c')).toBe('198.4 °C');
+    expect(formatLayerValue('ror', 9.06, 'c')).toBe('9.1 °C/min');
+    expect(formatLayerValue('output', 64.6, 'c')).toBe('65%');
+  });
+
+  it('says a value already in °F with °F, the temperature whole', () => {
+    expect(formatLayerValue('temperature', 389.12, 'f')).toBe('389 °F');
+    expect(formatLayerValue('ror', 16.38, 'f')).toBe('16.4 °F/min');
+    expect(formatLayerValue('output', 64.6, 'f')).toBe('65%');
   });
 });

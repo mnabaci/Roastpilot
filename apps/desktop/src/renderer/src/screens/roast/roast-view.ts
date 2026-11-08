@@ -6,7 +6,7 @@ import {
   startFloorC,
   type TimeWindow,
 } from '@roastpilot/core';
-import type { RoastState, Settings } from '@roastpilot/shared';
+import type { RoastState, Settings, TemperatureUnit } from '@roastpilot/shared';
 import type { ChartAid, ChartPoint, LineLayer, PhaseBand } from '@roastpilot/ui';
 import type { HeldView } from '../../stores/roast-view-store';
 
@@ -32,6 +32,8 @@ export interface RoastViewInput {
   /** The turning point to expect (`expectedTurningPointC`), which sets the floor at Start. */
   expectedTpC: number | undefined;
   settings: ChartAidSettings;
+  /** The unit shown: the fitted floor steps by 25 °C, or by 50 °F. */
+  unit: TemperatureUnit;
   profileDryEndC: number | undefined;
   expectedFirstCrackC: number | undefined;
 }
@@ -141,8 +143,8 @@ function fittedFloorC(
   aids: readonly ChartAid[],
   window: TimeWindow,
 ): number {
-  const floorC = input.previous?.floorC ?? startFloorC(input.expectedTpC);
-  return nextFloorC(floorC, lowestInView(input.lines, aids, window));
+  const floorC = input.previous?.floorC ?? startFloorC(input.expectedTpC, input.unit);
+  return nextFloorC(floorC, lowestInView(input.lines, aids, window), input.unit);
 }
 
 /**

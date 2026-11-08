@@ -79,9 +79,28 @@ describe('roastStripData', () => {
     const data = roastStripData(
       roast({ phase: 'roasting', chargedAtMs: 0 }),
       [reading(60_000, { bt: 150 })],
-      'BT',
+      { tempShort: 'BT' },
     );
     expect(data?.numbers[0]).toEqual({ label: 'BT', value: '150.0 °C' });
+  });
+
+  it('says it in °F: the temperature whole, the RoR × 1.8 with no + 32', () => {
+    const readings = Array.from({ length: 31 }, (_, i) =>
+      reading(432_000 + i * 1000, { bt: 180 + i * 0.1, heater: 60, fan: 40 }),
+    );
+    const data = roastStripData(roast({ phase: 'roasting', chargedAtMs: 0 }), readings, {
+      unit: 'f',
+    });
+    expect(data?.numbers.slice(0, 2)).toEqual([
+      { label: 'Temp', value: '361 °F' },
+      { label: 'RoR', value: '10.8' },
+    ]);
+    const cooling = roastStripData(
+      roast({ phase: 'done', roasterCoolingSinceMs: 0, roasterCoolToC: 50 }),
+      [reading(1000, { bt: 92.4, fan: 100 })],
+      { unit: 'f' },
+    );
+    expect(cooling?.lead).toBe('Cooling the drum · 198 °F → 122 °F');
   });
 
   describe('Auto', () => {
@@ -96,21 +115,21 @@ describe('roastStripData', () => {
       'leads with the %s prompt, which waits for you',
       (preheatStep, preheatLeftS, prompt) => {
         const auto = { ...on, preheatStep, preheatLeftS };
-        expect(roastStripData(preheat, [], undefined, auto)?.prompt).toBe(prompt);
+        expect(roastStripData(preheat, [], { auto })?.prompt).toBe(prompt);
       },
     );
 
     it('stays quiet while Auto climbs or holds, and with Auto off', () => {
       expect(
-        roastStripData(preheat, [], undefined, { ...on, preheatStep: 'hold' })?.prompt,
+        roastStripData(preheat, [], { auto: { ...on, preheatStep: 'hold' } })?.prompt,
       ).toBeUndefined();
-      expect(roastStripData(preheat, [], undefined, AUTO_OFF)?.prompt).toBeUndefined();
+      expect(roastStripData(preheat, [], { auto: AUTO_OFF })?.prompt).toBeUndefined();
     });
 
     it('says why Auto stopped while a roast runs', () => {
       const roasting = roast({ phase: 'roasting', chargedAtMs: 0 });
       const stopped = { ...on, stopReason: 'safety-stop' } as const;
-      expect(roastStripData(roasting, [], undefined, stopped)?.prompt).toBe(
+      expect(roastStripData(roasting, [], { auto: stopped })?.prompt).toBe(
         'Safety stop · Auto stopped',
       );
     });

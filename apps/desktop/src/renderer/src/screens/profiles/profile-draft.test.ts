@@ -3,7 +3,7 @@ import { CURVE, STEPS } from '../../test/profiles';
 import { addPoint, addStep, removePoint, removeStep } from './draft-edits';
 import { fromDraft, toDraft, type ProfileDraft } from './profile-draft';
 
-const steps = () => toDraft(STEPS);
+const steps = () => toDraft(STEPS, 'c');
 const withStep = (draft: ProfileDraft, index: number, change: object): ProfileDraft => ({
   ...draft,
   steps: draft.steps.map((step, i) => (i === index ? { ...step, ...change } : step)),
@@ -19,7 +19,7 @@ describe('toDraft and fromDraft', () => {
   });
 
   it('gives a curve profile back unchanged', () => {
-    expect(fromDraft(toDraft(CURVE), CURVE)).toEqual({ ok: true, value: CURVE });
+    expect(fromDraft(toDraft(CURVE, 'c'), CURVE)).toEqual({ ok: true, value: CURVE });
   });
 
   it('shows times as m:ss', () => {
@@ -42,13 +42,57 @@ describe('toDraft and fromDraft', () => {
   });
 });
 
+describe('in °F', () => {
+  const inF = () => toDraft(STEPS, 'f');
+
+  it('shows temperatures whole and RoR × 1.8, never + 32', () => {
+    // Charge 180 °C is 356 °F; the first step’s RoR 14 °C/min is 25.2 °F/min.
+    expect(inF()).toMatchObject({
+      unit: 'f',
+      chargeC: String(Math.round(STEPS.chargeC * 1.8 + 32)),
+    });
+    const step = inF().steps.find((s) => s.rorMin !== '');
+    const phase = STEPS.phases.find((p) => p.heat.mode === 'target');
+    if (phase?.heat.mode !== 'target') throw new Error('expected a target step');
+    expect(step?.rorMin).toBe(String(Math.round(phase.heat.rorMin * 18) / 10));
+  });
+
+  it('gives the profile back unchanged when nothing was typed', () => {
+    expect(fromDraft(inF(), STEPS)).toEqual({ ok: true, value: STEPS });
+  });
+
+  it('reads a typed °F back to °C, and shows it as typed again', () => {
+    const typed = { ...inF(), capC: '428', chargeC: '400' };
+    const result = fromDraft(typed, STEPS);
+    if (!result.ok) throw new Error('expected a profile');
+    expect(result.value).toMatchObject({ capC: 220, chargeC: 204.4 });
+    expect(toDraft(result.value, 'f')).toMatchObject({ capC: '428', chargeC: '400' });
+  });
+
+  it('keeps every untouched value exact when one cell changes', () => {
+    const result = fromDraft({ ...inF(), name: 'Renamed' }, STEPS);
+    expect(result).toEqual({ ok: true, value: { ...STEPS, name: 'Renamed' } });
+  });
+
+  it('reads a typed RoR as a rate, without − 32', () => {
+    const typed = withStep(inF(), 0, { rorMin: '18', rorMax: '21.6' });
+    const result = fromDraft(typed, STEPS);
+    if (!result.ok) throw new Error('expected a profile');
+    expect(result.value.phases[1]?.heat).toMatchObject({ rorMin: 10, rorMax: 12 });
+  });
+
+  it('says its limits in °F', () => {
+    expect(errorsOf({ ...inF(), capC: '460' })).toMatchObject({ capC: 'At most 455 °F' });
+  });
+});
+
 describe('the soak', () => {
   const NO_SOAK = { ...STEPS, phases: STEPS.phases.slice(1) };
 
   it('holds its length, or null for none', () => {
     expect(steps().soakS).toBe(60);
-    expect(toDraft(NO_SOAK)).toMatchObject({ soakS: null, soakFan: '30' });
-    expect(toDraft(NO_SOAK).steps.map((s) => s.name)).toEqual(['Heat on', 'Development']);
+    expect(toDraft(NO_SOAK, 'c')).toMatchObject({ soakS: null, soakFan: '30' });
+    expect(toDraft(NO_SOAK, 'c').steps.map((s) => s.name)).toEqual(['Heat on', 'Development']);
   });
 
   it('sets the soak to the length chosen', () => {
@@ -63,11 +107,11 @@ describe('the soak', () => {
   });
 
   it('gives a profile without a soak back unchanged', () => {
-    expect(fromDraft(toDraft(NO_SOAK), NO_SOAK)).toEqual({ ok: true, value: NO_SOAK });
+    expect(fromDraft(toDraft(NO_SOAK, 'c'), NO_SOAK)).toEqual({ ok: true, value: NO_SOAK });
   });
 
   it('comes back as a fixed 0 % soak with the fan you had', () => {
-    const result = fromDraft({ ...toDraft(NO_SOAK), soakS: 45, soakFan: '35' }, NO_SOAK);
+    const result = fromDraft({ ...toDraft(NO_SOAK, 'c'), soakS: 45, soakFan: '35' }, NO_SOAK);
     if (!result.ok) throw new Error('expected a profile');
     expect(result.value.phases[0]).toEqual({
       name: 'Soak',
@@ -85,7 +129,7 @@ describe('the soak', () => {
   });
 
   it('points a step problem at its cell without a soak', () => {
-    const draft = withStep(toDraft(NO_SOAK), 0, { heat: '120' });
+    const draft = withStep(toDraft(NO_SOAK, 'c'), 0, { heat: '120' });
     expect(errorsOf(draft, NO_SOAK)).toHaveProperty('steps.0.heat');
   });
 });
@@ -123,7 +167,7 @@ describe('what the draft refuses', () => {
   });
 
   it('refuses a curve that goes back in time, at that point', () => {
-    const base = toDraft(CURVE);
+    const base = toDraft(CURVE, 'c');
     const points = base.points.map((p, i) => (i === 1 ? { ...p, time: '0:01' } : p));
     expect(errorsOf({ ...base, points }, CURVE)).not.toEqual({});
   });
@@ -142,7 +186,7 @@ describe('adding and removing', () => {
   });
 
   it('adds and removes curve points', () => {
-    const base = toDraft(CURVE);
+    const base = toDraft(CURVE, 'c');
     expect(addPoint(base).points).toHaveLength(base.points.length + 1);
     expect(removePoint(base, 0).points).toHaveLength(base.points.length - 1);
   });

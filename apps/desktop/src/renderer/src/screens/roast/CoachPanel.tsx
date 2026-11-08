@@ -1,8 +1,10 @@
+import { sayInUnit } from '@roastpilot/shared';
 import { CoachCard } from '@roastpilot/ui';
 import { useRef, useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
 import { useToast } from '../../features/use-toast';
+import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { useCoach } from '../../stores/use-stores';
 import { coachApplyFailed } from './coach-apply-failed';
 import { calibrationNote, coachChanges, headsUpLine } from './coach-text';
@@ -13,6 +15,7 @@ import { calibrationNote, coachChanges, headsUpLine } from './coach-text';
  */
 export function CoachPanel() {
   const status = useCoach((s) => s.status);
+  const unit = useTemperatureUnit();
   const { api, logger } = useDeps();
   const run = useRun();
   const toast = useToast();
@@ -32,7 +35,7 @@ export function CoachPanel() {
     return (
       <CoachCard
         variant="heads-up"
-        line={headsUpLine(advice)}
+        line={headsUpLine(advice, unit)}
         {...(note ? { note } : {})}
         onDismiss={dismiss}
       />
@@ -63,7 +66,7 @@ export function CoachPanel() {
     <CoachCard
       changes={coachChanges(advice)}
       applying={applyingId === advice.id}
-      reason={advice.reason}
+      reason={sayInUnit(advice.reason, unit)}
       {...(note ? { note } : {})}
       onApply={apply}
       onDismiss={dismiss}

@@ -1,5 +1,6 @@
 import type { z } from 'zod';
 import type { CurvePoint, ProfilePhase } from './profile';
+import { tempInText } from './units';
 
 /** Sane limits for a profile, below the roaster's safety limits (docs/spec/safety.md). */
 export const PROFILE_LIMITS = {
@@ -25,12 +26,12 @@ type Issue = (path: (string | number)[], message: string) => void;
 function checkLimits({ chargeC, capC, devTimeS, dryEndC }: ProfileShape, issue: Issue): void {
   const { chargeC: charge, capC: cap, devTimeS: dev } = PROFILE_LIMITS;
   if (chargeC < charge.min || chargeC > charge.max) {
-    issue(['chargeC'], `Between ${String(charge.min)} and ${String(charge.max)} °C`);
+    issue(['chargeC'], `Between ${tempInText(charge.min)} and ${tempInText(charge.max)}`);
   }
-  if (capC > cap.max) issue(['capC'], `At most ${String(cap.max)} °C`);
+  if (capC > cap.max) issue(['capC'], `At most ${tempInText(cap.max)}`);
   if (devTimeS < dev.min || devTimeS > dev.max) issue(['devTimeS'], 'Between 0:30 and 10:00');
   if (dryEndC >= capC) issue(['dryEndC'], 'Must be below the BT cap');
-  if (capC <= chargeC) issue(['capC'], `Above charge, ${String(chargeC)} °C`);
+  if (capC <= chargeC) issue(['capC'], `Above charge, ${tempInText(chargeC)}`);
 }
 
 /** Each step within its limits; temperature triggers below the cap and each above the one before. */
@@ -83,7 +84,10 @@ function checkCurve({ capC, curve }: ProfileShape, issue: Issue): void {
   });
 }
 
-/** The profile rules zod can't say field by field (docs/spec/roast-control.md, Profile format). */
+/**
+ * The profile rules zod can't say field by field (docs/spec/roast-control.md, Profile format).
+ * Temperatures in the messages are tokens: the screen says them in its unit (`sayInUnit`).
+ */
 export function checkProfile(profile: ProfileShape, ctx: z.RefinementCtx): void {
   const issue: Issue = (path, message) => {
     ctx.addIssue({ code: 'custom', path, message });
@@ -100,13 +104,16 @@ export interface RoasterLimits {
   maxTimeS: number;
 }
 
-/** What a profile from elsewhere asks of this roaster beyond its limits; undefined when it fits. */
+/**
+ * What a profile from elsewhere asks of this roaster beyond its limits, its temperatures as tokens
+ * for `sayInUnit`; undefined when it fits.
+ */
 export function overRoasterLimits(
   { capC, curve, phases }: Pick<ProfileShape, 'capC' | 'curve' | 'phases'>,
   { maxTempC, maxTimeS }: RoasterLimits,
 ): string | undefined {
   if (capC > maxTempC) {
-    return `BT cap ${String(capC)} °C is above this roaster's ${String(maxTempC)} °C`;
+    return `BT cap ${tempInText(capC)} is above this roaster's ${tempInText(maxTempC)}`;
   }
   const lastS = Math.max(
     ...curve.map((point) => point.tS),

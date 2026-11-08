@@ -1,12 +1,16 @@
 import {
   DEFAULT_TEMP_NAMES,
+  diffNumber,
+  formatPlainTemp,
+  formatTemp,
   isRoastRunning,
   type AutoStatus,
   type Reading,
   type RoastPhase,
   type RoastState,
+  type TemperatureUnit,
 } from '@roastpilot/shared';
-import { formatClock, formatNumber, type RoastStripProps } from '@roastpilot/ui';
+import { formatClock, type RoastStripProps } from '@roastpilot/ui';
 import { STOP_REASON } from '../screens/roast/auto-flow';
 import { roastNumbers } from '../screens/roast/roast-numbers';
 import { isAutoDriven } from '../lib/roast-phases';
@@ -42,19 +46,23 @@ function autoPrompt(phase: RoastPhase, auto: AutoStatus | undefined): string | u
 export function roastStripData(
   roast: RoastState,
   readings: readonly Reading[],
-  tempShort: string = DEFAULT_TEMP_NAMES.short,
-  auto?: AutoStatus,
+  {
+    tempShort = DEFAULT_TEMP_NAMES.short,
+    auto,
+    unit = 'c',
+  }: { tempShort?: string; auto?: AutoStatus | undefined; unit?: TemperatureUnit } = {},
 ): Omit<RoastStripProps, 'onOpen' | 'className'> | undefined {
-  const coolingRoaster = roast.roasterCoolToC !== null;
   if (!isRoastRunning(roast)) return undefined;
   const n = roastNumbers(roast, readings);
   const latest = readings.at(-1)?.values;
-  const bt = formatNumber(n.bt, 1);
-  const temp = { label: tempShort, value: bt === undefined ? undefined : `${bt} °C` };
+  const temp = {
+    label: tempShort,
+    value: n.bt === undefined ? undefined : formatTemp(n.bt, unit, 1),
+  };
   const fan = { label: 'Fan', value: percent(latest?.fan) };
   const numbers = [
     temp,
-    { label: 'RoR', value: formatNumber(n.ror, 1) },
+    { label: 'RoR', value: n.ror === undefined ? undefined : diffNumber(n.ror, unit, 1) },
     { label: 'Heater', value: percent(latest?.heater) },
     fan,
   ];
@@ -72,9 +80,9 @@ export function roastStripData(
       numbers: [temp],
     };
   }
-  if (coolingRoaster)
+  if (roast.roasterCoolToC !== null)
     return {
-      lead: `Cooling the drum · ${formatNumber(n.bt, 0) ?? '–'} °C → ${String(roast.roasterCoolToC)} °C`,
+      lead: `Cooling the drum · ${n.bt === undefined ? '–' : formatTemp(n.bt, unit)} → ${formatPlainTemp(roast.roasterCoolToC, unit)}`,
       numbers: [temp, fan],
     };
   const time = roast.phase === 'preheat' ? n.preheatS : n.elapsedS;

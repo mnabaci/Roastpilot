@@ -8,4 +8,5 @@ May import: nothing internal.
 
 - No runtime dependencies on other packages. Only types, schemas, constants and pure helpers.
 - The IPC contract lives here: one channel list, one zod schema per payload. Main and renderer both import it.
-- Units are stored in °C, grams and seconds. Display conversion belongs in `ui`.
+- Units are stored in °C, grams and seconds. `units.ts` holds the pure °C ↔ °F conversions and
+  formats; which unit to show is a setting the screens read (`docs/spec/ui.md`, Units).

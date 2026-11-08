@@ -1,5 +1,11 @@
-import type { Bean, RoastPhase, RoastSummary } from '@roastpilot/shared';
-import { formatClock, formatNumber, type RoastListItem } from '@roastpilot/ui';
+import {
+  formatTemp,
+  type Bean,
+  type RoastPhase,
+  type RoastSummary,
+  type TemperatureUnit,
+} from '@roastpilot/shared';
+import { formatClock, type RoastListItem } from '@roastpilot/ui';
 
 /** Locale and time zone for dates; the system's when left out (tests pin them). */
 export interface DateOptions {
@@ -27,12 +33,12 @@ export function roastTitle(startedAt: string, { locale, timeZone }: DateOptions 
 }
 
 /** `9:40 · FC 8:00 · 205.5 °C`: total time, first crack, drop temp; missing ones left out. */
-export function roastNumbers(roast: RoastSummary): string {
-  const temp = formatNumber(roast.dropTemp, 1);
+export function roastNumbers(roast: RoastSummary, unit: TemperatureUnit): string {
+  const temp = roast.dropTemp === null ? undefined : formatTemp(roast.dropTemp, unit, 1);
   return [
     roast.dropTimeS === null ? undefined : formatClock(roast.dropTimeS),
     roast.fcTimeS === null ? undefined : `FC ${formatClock(roast.fcTimeS)}`,
-    temp === undefined ? undefined : `${temp} °C`,
+    temp,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -67,6 +73,7 @@ export function roastDetailLine(
 export function roastRows(
   roasts: readonly RoastSummary[],
   livePhase: RoastPhase,
+  unit: TemperatureUnit,
   options: DateOptions = {},
   beans: readonly Pick<Bean, 'id' | 'name'>[] = [],
 ): RoastListItem[] {
@@ -74,7 +81,7 @@ export function roastRows(
   return roasts.map((roast) => ({
     id: roast.id,
     title: roastTitle(roast.startedAt, options),
-    numbers: roastNumbers(roast),
+    numbers: roastNumbers(roast, unit),
     detail: roastDetailLine(roast, beans),
     favourite: roast.isFavourite,
     badge: roast.endedAt !== null ? undefined : roast.id === live ? 'In progress' : 'Unfinished',

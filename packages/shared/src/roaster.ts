@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ConnectTargetSchema } from './connection';
 import { AutoTuningSchema, ProfileIdSchema } from './profile';
+import { diffInText, tempInText } from './units';
 
 /** Which driver and built-in profiles a roaster uses (docs/spec/roasters.md). */
 export const RoasterModelSchema = z.enum(['skywalker', 'simulator']);
@@ -42,8 +43,8 @@ export const RoasterObjectSchema = z.object({
   maxTimeS: z.number().positive('Must be above 0'),
   tempOffsetC: z
     .number()
-    .min(-MAX_OFFSET_C, `At least -${String(MAX_OFFSET_C)} °C`)
-    .max(MAX_OFFSET_C, `At most ${String(MAX_OFFSET_C)} °C`),
+    .min(-MAX_OFFSET_C, `At least ${diffInText(-MAX_OFFSET_C)}`)
+    .max(MAX_OFFSET_C, `At most ${diffInText(MAX_OFFSET_C)}`),
   tuning: AutoTuningSchema,
   /** The tray fan sits under the drum, so it stays on while the drum cools (roasters.md). */
   coolerHelpsDrum: z.boolean(),
@@ -68,7 +69,7 @@ export function checkRoaster(roaster: RoasterRuleShape, ctx: z.RefinementCtx): v
   };
   const limits = MODEL_LIMITS[roaster.model];
   if (roaster.maxTempC > limits.maxTempC) {
-    issue('maxTempC', `At most ${String(limits.maxTempC)} °C on this model`);
+    issue('maxTempC', `At most ${tempInText(limits.maxTempC)} on this model`);
   }
   if (roaster.maxTimeS > limits.maxTimeS) {
     issue('maxTimeS', `At most ${String(limits.maxTimeS / 60)} min on this model`);

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { ConnectTargetSchema } from './connection';
 import { DEFAULT_PROFILE_ID, ProfileIdSchema } from './profile';
 import { DEFAULT_SOUNDS, SoundsSchema } from './sounds';
+import { TemperatureUnitSchema } from './units';
 
 /** How much of the Roast screen is live (docs/spec/manual-mode.md, Guided and Full control). */
 export const ControlsLevelSchema = z.enum(['guided', 'full']);
@@ -64,6 +65,8 @@ export const SettingsSchema = z.object({
   autoProfile: ProfileIdSchema.catch(DEFAULT_PROFILE_ID).default(DEFAULT_PROFILE_ID),
   /** Sounds when something needs you, and before first crack (docs/spec/ui.md, Sounds). */
   sounds: SoundsSchema.catch(DEFAULT_SOUNDS).default(DEFAULT_SOUNDS),
+  /** What temperatures are shown and typed in; stored in °C whatever it is (ui.md, Units). */
+  temperatureUnit: TemperatureUnitSchema.catch('c').default('c'),
   /** Dark unless you choose otherwise, so an update never changes how the app looks. */
   theme: ThemeSchema.catch('dark').default('dark'),
   /** The safety notice version you accepted; 0 until you do (docs/spec/safety.md, Safety notice). */

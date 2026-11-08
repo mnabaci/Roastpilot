@@ -1,6 +1,7 @@
 import type { ExportLibraryRequest, LibraryItemId, LibraryKind } from '@roastpilot/shared';
 import { useDeps } from '../app/app-context';
 import { importedText, importProblemText } from './file-messages';
+import { useTemperatureUnit } from './use-temperature-unit';
 import { useRun } from './use-run';
 import { useToast } from './use-toast';
 
@@ -18,6 +19,7 @@ export function useLibraryFiles(
   const { api } = useDeps();
   const run = useRun();
   const toast = useToast();
+  const unit = useTemperatureUnit();
   const exportFile = (request: ExportLibraryRequest) => {
     run(
       'files.export-failed',
@@ -34,7 +36,7 @@ export function useLibraryFiles(
       'files.import-failed',
       async () => {
         const imported = await api.importLibrary(kind);
-        if (!imported.ok) toast('error', importProblemText(imported.error));
+        if (!imported.ok) toast('error', importProblemText(imported.error, unit));
         else if (imported.value.status === 'imported') {
           const { added, skipped, newestId } = imported.value;
           toast('success', importedText(kind, added, skipped));

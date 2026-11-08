@@ -16,7 +16,10 @@ export interface LineLayer {
   kind?: 'line';
   id: string;
   label: string;
-  /** Left axis in °C, the right axis in °C/min, or `output` (0–100 %) in the strip under the chart. */
+  /**
+   * Left axis (°C), the right axis (RoR, °C/min), or `output` (0–100 %) in the strip under the
+   * chart. Values come in °C; the chart shows them in its `temperatureUnit`.
+   */
   axis: 'temperature' | 'ror' | 'output';
   /** `neutral`: the drum, neither heat nor air (docs/spec/ui.md, Outputs). */
   tone: 'heat' | 'air' | 'neutral' | 'target' | 'ghost';

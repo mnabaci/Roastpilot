@@ -6,6 +6,7 @@ import {
   FileRoasterSchema,
 } from './library-file';
 import { overRoasterLimits } from './profile-rules';
+import { sayInUnit } from './units';
 
 const PROFILE = {
   schemaVersion: 1,
@@ -106,9 +107,9 @@ describe("a profile on this roaster's limits", () => {
   });
 
   it('refuses a cap above the max temperature', () => {
-    expect(overRoasterLimits(PROFILE, { ...limits, maxTempC: 200 })).toBe(
-      "BT cap 210 °C is above this roaster's 200 °C",
-    );
+    const over = overRoasterLimits(PROFILE, { ...limits, maxTempC: 200 }) ?? '';
+    expect(sayInUnit(over, 'c')).toBe("BT cap 210 °C is above this roaster's 200 °C");
+    expect(sayInUnit(over, 'f')).toBe("BT cap 410 °F is above this roaster's 392 °F");
   });
 
   it('refuses a curve, or a backup, past the max time', () => {

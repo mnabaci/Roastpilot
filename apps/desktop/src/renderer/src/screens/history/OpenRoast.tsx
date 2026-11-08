@@ -1,6 +1,7 @@
 import type { Bean } from '@roastpilot/shared';
 import { EventTable } from '@roastpilot/ui';
 import { RoastResultForm } from '../../features/RoastResultForm';
+import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { BeanLink } from './BeanLink';
 import { eventRows } from './event-rows';
 import { SavedRoastChart } from './SavedRoastChart';
@@ -29,6 +30,7 @@ export function OpenRoast({
   showPreheat: boolean;
   onShowPreheat: (show: boolean) => void;
 }) {
+  const unit = useTemperatureUnit();
   switch (selected.status) {
     case 'none':
       return <p className="text-body text-ink-muted">No roasts match these filters</p>;
@@ -56,7 +58,7 @@ export function OpenRoast({
             showPreheat={showPreheat}
             onShowPreheat={onShowPreheat}
           />
-          <EventTable rows={eventRows(detail)} />
+          <EventTable rows={eventRows(detail, unit)} />
         </>
       );
     }
