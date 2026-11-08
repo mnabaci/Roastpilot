@@ -2,6 +2,7 @@ import type uPlot from 'uplot';
 import type { ChartColors } from './chart-colors';
 import type { Box } from './band-labels';
 import type { LineLayer, ChartMarker } from './chart-layer';
+import { plotPixelRatio } from './pixel-ratio';
 
 const LABEL_GAP = 8;
 const LINE_HEIGHT = 18;
@@ -47,7 +48,7 @@ const labelBaseline = (u: uPlot, row: number, ratio: number) =>
  */
 function placeMarkers(u: uPlot, markers: readonly ChartMarker[]): PlacedMarker[] {
   const { ctx, bbox } = u;
-  const ratio = devicePixelRatio;
+  const ratio = plotPixelRatio(u);
   const right = bbox.left + bbox.width;
   const shown = markers
     .map((marker) => ({ marker, x: u.valToPos(marker.t, 'x', true) }))
@@ -70,7 +71,7 @@ export function markerLabelBoxes(
   markers: readonly ChartMarker[],
   colors: ChartColors,
 ): Box[] {
-  const ratio = devicePixelRatio;
+  const ratio = plotPixelRatio(u);
   u.ctx.save();
   u.ctx.font = markerFont(colors, ratio);
   const boxes = placeMarkers(u, markers).map(({ textX, width, row }) => {
@@ -94,7 +95,7 @@ export function drawMarkers(
   { labels }: { labels: boolean },
 ): void {
   const { ctx, bbox } = u;
-  const ratio = devicePixelRatio;
+  const ratio = plotPixelRatio(u);
   ctx.save();
   ctx.font = markerFont(colors, ratio);
   for (const { marker, x, textX, row } of placeMarkers(u, markers)) {
@@ -125,7 +126,7 @@ export function drawLatestDot(
   const value = values[i];
   const t = u.data[0][i];
   if (i < 0 || value === null || value === undefined || t === undefined) return;
-  const ratio = devicePixelRatio;
+  const ratio = plotPixelRatio(u);
   const x = u.valToPos(t, 'x', true);
   const y = u.valToPos(value, layer.axis, true);
   // Past a time window's edge (History focused on a roast still cooling): no dot in the gutter.

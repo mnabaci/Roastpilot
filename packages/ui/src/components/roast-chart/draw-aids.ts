@@ -8,6 +8,7 @@ import type {
   PhaseBandsLayer,
   ProjectionLayer,
 } from './chart-layer';
+import { plotPixelRatio } from './pixel-ratio';
 
 /**
  * Each band one shade darker than the one below, from the `ink` token (design system: RoastChart,
@@ -99,7 +100,7 @@ export function drawBandLabels(
   const boxes = bandBoxes(u, aids);
   if (boxes.length === 0) return;
   const { ctx, bbox } = u;
-  const ratio = devicePixelRatio;
+  const ratio = plotPixelRatio(u);
   const inset = BAND_LABEL_INSET_PX * ratio;
   const height = BAND_LABEL_HEIGHT_PX * ratio;
   const charge = u.valToPos(0, 'x', true);
@@ -148,7 +149,7 @@ export function drawBandLabels(
 /** Projections: a faint dashed straight line in the colour of the line it continues. */
 export function drawProjections(u: uPlot, aids: readonly ChartAid[], colors: ChartColors): void {
   const { ctx } = u;
-  const ratio = devicePixelRatio;
+  const ratio = plotPixelRatio(u);
   ctx.save();
   ctx.globalAlpha = FAINT_ALPHA;
   ctx.lineWidth = PROJECTION_WIDTH_PX * ratio;
@@ -173,7 +174,7 @@ export function drawProjections(u: uPlot, aids: readonly ChartAid[], colors: Cha
 /** The now line: 1px solid `ink-muted`, faint, from the plot's top to its bottom. */
 export function drawNowLines(u: uPlot, aids: readonly ChartAid[], colors: ChartColors): void {
   const { ctx, bbox } = u;
-  const ratio = devicePixelRatio;
+  const ratio = plotPixelRatio(u);
   ctx.save();
   ctx.globalAlpha = FAINT_ALPHA;
   ctx.strokeStyle = colors.axis;

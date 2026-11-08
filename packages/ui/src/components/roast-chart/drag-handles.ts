@@ -1,5 +1,6 @@
 import type uPlot from 'uplot';
 import type { ChartColors } from './chart-colors';
+import { plotPixelRatio } from './pixel-ratio';
 
 /** Points on the temperature axis you can move with the pointer. */
 export interface ChartDrag {
@@ -15,7 +16,7 @@ const HIT_RADIUS_PX = 14;
 
 export function drawDragHandles(u: uPlot, drag: ChartDrag | undefined, colors: ChartColors): void {
   if (!drag) return;
-  const ratio = devicePixelRatio;
+  const ratio = plotPixelRatio(u);
   const { ctx } = u;
   ctx.save();
   for (const point of drag.points) {

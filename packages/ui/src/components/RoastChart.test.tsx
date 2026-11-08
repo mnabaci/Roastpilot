@@ -299,9 +299,13 @@ describe('RoastChart', () => {
     };
 
     /** A plot that records what is drawn on it: x in seconds, y as 300 − °C. */
-    const fakePlot = () => {
+    const fakePlot = (pixelRatio = 1) => {
       const calls: { name: string; args: unknown[]; alpha: number }[] = [];
-      const state: Record<string, unknown> = { globalAlpha: 1 };
+      // The canvas as uPlot sized it: 1000 CSS px wide at `pixelRatio`.
+      const state: Record<string, unknown> = {
+        globalAlpha: 1,
+        canvas: { width: 1000 * pixelRatio },
+      };
       const ctx = new Proxy(state, {
         get: (target, name: string) =>
           name in target
@@ -318,6 +322,7 @@ describe('RoastChart', () => {
       });
       const u = {
         ctx,
+        width: 1000,
         bbox: { left: 0, top: 0, width: 1000, height: 300 },
         scales: { temperature: { min: 50, max: 250 } },
         // The temperature line as drawn: -0:30, charge, 7:00.
@@ -516,6 +521,29 @@ describe('RoastChart', () => {
           .filter((c) => c.name === 'lineTo')
           .map((c) => c.args),
       ).not.toContainEqual([540, 107]);
+    });
+
+    it("sizes labels and lines by the canvas's pixel ratio, not the window's", () => {
+      // The window already says 1 (moved to a normal display) while the canvas is still 2×, and
+      // the other way round: what is drawn on top always matches the canvas under it.
+      draw(
+        <RoastChart
+          title="Roast curve"
+          layers={[roasting, ...aids]}
+          markers={[{ id: 'charge', label: 'Charge', t: 0, tone: 'ink' }]}
+        />,
+      );
+      const drawnAt = (pixelRatio: number) => {
+        const { u, calls } = fakePlot(pixelRatio);
+        for (const fn of created[0]?.opts.hooks.draw ?? []) fn(u);
+        return {
+          dash: calls.find((c) => c.name === 'setLineDash')?.args,
+          dot: calls.find((c) => c.name === 'arc')?.args[2],
+        };
+      };
+      expect(window.devicePixelRatio).toBe(1);
+      expect(drawnAt(2)).toMatchObject({ dash: [[8, 8]], dot: 12 });
+      expect(drawnAt(1)).toMatchObject({ dash: [[4, 4]], dot: 6 });
     });
   });
 });
