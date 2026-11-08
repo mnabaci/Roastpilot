@@ -1,9 +1,12 @@
 name: CodeQL
 
-# Our own CodeQL setup instead of GitHub's default setup: it uses the CodeQL already installed on
-# GitHub's runners (`tools: toolcache`), so it never downloads the bundle from GitHub's release
-# servers, which time out on bad days and fail the run before it analyses anything. Failed jobs can
-# be re-run, unlike default setup's. Same languages as before; the firmware's C++ isn't analysed.
+# Our own CodeQL setup instead of GitHub's default setup, whose runs downloaded the CodeQL bundle
+# from GitHub's release servers every time, failed whenever they timed out, and couldn't be re-run.
+# - The action is pinned to the release whose CodeQL CLI the runners already have installed
+#   (v4.39.1 → CLI 2.27.3), so it downloads nothing. Bump it once the runner image has the newer CLI
+#   ("Did not find CodeQL tools version … in the toolcache" in the init log means it hasn't yet).
+# - If setup still fails (a download that times out), it tries once more after a minute.
+# Same languages as before; the firmware's C++ isn't analysed.
 
 on:
   pull_request:
@@ -35,11 +38,20 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+      - id: init
+        continue-on-error: true
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           languages: ${{ matrix.language }}
           build-mode: none
-          tools: toolcache
-      - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+      - name: Wait before trying setup again
+        if: steps.init.outcome == 'failure'
+        run: sleep 60
+      - if: steps.init.outcome == 'failure'
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+      - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           category: /language:${{ matrix.language }}
