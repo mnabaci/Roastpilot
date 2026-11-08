@@ -19,6 +19,9 @@ export interface StatCardProps
   context?: string;
 }
 
+/** A readout's minus is the typographic one: a hyphen sits low and narrow, apart from the digits. */
+const withMinus = (value: string | number) => String(value).replace(/^-/, '\u2212');
+
 /** A big live number with a label above and one line of context below. */
 export function StatCard({
   label,
@@ -41,7 +44,7 @@ export function StatCard({
     >
       <p className="text-label text-ink-muted">{label}</p>
       <p className="flex flex-wrap items-baseline gap-x-1.5">
-        <span className={valueVariants({ tone })}>{hasValue ? value : '—'}</span>
+        <span className={valueVariants({ tone })}>{hasValue ? withMinus(value ?? '') : '—'}</span>
         {unit && hasValue ? <span className="text-heading text-ink-muted">{unit}</span> : null}
       </p>
       {context ? <p className="text-label text-ink-muted">{context}</p> : null}

@@ -1,13 +1,8 @@
+import { expectedFirstCrackC } from '@roastpilot/core';
 import { sameStepSound, SoundStepSchema, type Sounds, type SoundStep } from '@roastpilot/shared';
 import { useEffect, useMemo, useRef, type RefObject } from 'react';
 import type { ChimePlayer } from '../features/chime';
-import {
-  expectedFirstCrackC,
-  listenDue,
-  stepsReached,
-  stillWaiting,
-  type WaitState,
-} from '../features/sound-cues';
+import { listenDue, stepsReached, stillWaiting, type WaitState } from '../features/sound-cues';
 import { createSoundRepeats, type SoundRepeats } from '../features/sound-repeats';
 import { playStepSound } from '../features/step-sound';
 import { useRoastList } from '../screens/history/use-roast-list';

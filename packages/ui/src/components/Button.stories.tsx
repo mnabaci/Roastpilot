@@ -31,6 +31,9 @@ export const Secondary: Story = {
   args: { variant: 'secondary', icon: <ArrowDownToLine />, children: 'Drop now' },
 };
 
+/** Closes a card: the coach's Dismiss, the finished roast's Done. */
+export const Outline: Story = { args: { variant: 'outline', size: 'sm', children: 'Dismiss' } };
+
 export const Ghost: Story = { args: { variant: 'ghost', children: 'Dismiss' } };
 
 export const Danger: Story = {

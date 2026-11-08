@@ -70,7 +70,10 @@ export function RoasterPage({ roaster, onDeleted }: { roaster: Roaster; onDelete
     <div className={cn('flex flex-col gap-6', PAGE_WIDTH)}>
       <header className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 flex-col gap-1">
-          <h2 className="truncate text-title">{roaster.name}</h2>
+          {/* As tall as the sidebar's title row, so both titles share a line. */}
+          <div className="flex min-h-control-sm min-w-0 items-center">
+            <h2 className="truncate text-title">{roaster.name}</h2>
+          </div>
           {note ? <p className="text-label text-ink-muted">{note}</p> : null}
         </div>
         {more.length > 0 ? <Menu label={`More for ${roaster.name}`} items={more} /> : null}

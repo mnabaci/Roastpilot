@@ -1,34 +1,91 @@
 import { cn } from '../lib/utils';
 import { Button } from './Button';
 
-export interface CoachCardProps {
-  /** The suggested change, e.g. "Heater 65% → 75%". */
-  change: string;
-  /** Why, in one line, e.g. "4 °C below target, RoR falling". */
-  reason: string;
-  onApply: () => void;
+interface CoachCardBase {
+  /** Said after the label, e.g. "needs calibration". */
+  note?: string;
   onDismiss: () => void;
   className?: string;
 }
 
-/** Manual-mode suggestion: the next setting, why, and a one-tap Apply. */
-export function CoachCard({ change, reason, onApply, onDismiss, className }: CoachCardProps) {
+interface CoachSuggestionProps extends CoachCardBase {
+  variant?: 'suggestion';
+  /** The suggested change, one line per output: ["Heater 65% → 75%", "Fan 50% → 40%"]. */
+  changes: readonly string[];
+  /** Why, in one line, e.g. "4 °C below target, RoR falling". */
+  reason: string;
+  onApply: () => void;
+  /** Apply's call is on its way: Apply says "Applying…" and can't be pressed again. */
+  applying?: boolean;
+}
+
+interface CoachHeadsUpProps extends CoachCardBase {
+  /** Nothing to change: a line and Dismiss, in the neutral tint. */
+  variant: 'heads-up';
+  /** e.g. "First crack in ~45 s · listen". */
+  line: string;
+}
+
+export type CoachCardProps = CoachSuggestionProps | CoachHeadsUpProps;
+
+/** "Coach suggests", then the note when there is one. */
+function Label({ text, note }: { text: string; note: string | undefined }) {
+  return <p className="text-label text-ink-muted">{note ? `${text} · ${note}` : text}</p>;
+}
+
+/**
+ * Manual-mode coach: what Auto would set now, why, and a one-tap Apply; or a heads-up before first
+ * crack or drop, with Dismiss only. Compact, so the sliders under it stay in view.
+ */
+export function CoachCard(props: CoachCardProps) {
+  const { note, onDismiss, className } = props;
+  if (props.variant === 'heads-up') {
+    return (
+      <section
+        aria-label="Coach heads-up"
+        className={cn(
+          'flex flex-col items-start gap-2 rounded-xl border border-border bg-surface-raised px-4 py-3',
+          className,
+        )}
+      >
+        <Label text="Heads-up" note={note} />
+        <p className="text-body text-ink">{props.line}</p>
+        <Button variant="outline" size="sm" onClick={onDismiss}>
+          Dismiss
+        </Button>
+      </section>
+    );
+  }
   return (
     <section
       aria-label="Coach suggestion"
       className={cn(
-        'flex flex-col gap-3 rounded-xl border border-heat bg-heat-tint px-5 py-4.5',
+        'flex flex-col gap-2 rounded-xl border border-heat bg-heat-tint px-4 py-3',
         className,
       )}
     >
-      <p className="text-label text-ink-muted">Coach suggests</p>
-      <p className="text-readout-lg text-ink">{change}</p>
-      <p className="text-body text-ink-muted">{reason}</p>
+      <Label text="Coach suggests" note={note} />
+      {/* The change and its reason read as one block; one line per output, so it never wraps mid-way. */}
+      <div className="flex flex-col gap-0.5">
+        {props.changes.map((change) => (
+          <p key={change} className="text-readout-lg text-ink">
+            {change}
+          </p>
+        ))}
+        <p className="text-body text-ink-muted">{props.reason}</p>
+      </div>
       <div className="flex gap-2.5">
-        <Button variant="primary" className="flex-1" onClick={onApply}>
-          Apply
+        <Button
+          variant="primary"
+          size="sm"
+          className="flex-1"
+          disabled={props.applying}
+          aria-busy={props.applying}
+          onClick={props.onApply}
+        >
+          {props.applying ? 'Applying…' : 'Apply'}
         </Button>
-        <Button variant="ghost" onClick={onDismiss}>
+        <Button variant="outline" size="sm" onClick={onDismiss}>
           Dismiss
         </Button>
       </div>

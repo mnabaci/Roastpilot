@@ -1,9 +1,8 @@
 import type { Bean, BeanId, BeanProcess } from '@roastpilot/shared';
-import { Button, cn, NumberField, SelectField, TextField } from '@roastpilot/ui';
+import { Button, cn, NumberField, SegmentedControl, SelectField, TextField } from '@roastpilot/ui';
 import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
-import { Choice } from '../../features/Choice';
 import { fromBeanDraft, toBeanDraft, type BeanDraft } from './bean-draft';
 import { PAGE_WIDTH } from '../../lib/page-width';
 
@@ -81,7 +80,9 @@ export function BeanEditor({
       aria-label={bean ? 'Edit bean' : 'Add bean'}
       className={cn('flex flex-col gap-4', PAGE_WIDTH)}
     >
-      <h2 className="text-heading">{bean ? `Edit ${bean.name}` : 'Add a bean'}</h2>
+      <div className="flex min-h-control-sm min-w-0 items-center">
+        <h2 className="truncate text-title">{bean ? `Edit ${bean.name}` : 'Add a bean'}</h2>
+      </div>
       <div className="grid grid-cols-2 gap-3">
         {textCell('name', 'Name')}
         {textCell('origin', 'Origin')}
@@ -97,11 +98,12 @@ export function BeanEditor({
       </div>
       <div className="flex flex-col gap-1.5">
         <p className="text-label text-ink-muted">Decaf</p>
-        <Choice
+        <SegmentedControl
           label="Decaf"
+          className="self-start"
           options={[
-            { id: false, label: 'No' },
-            { id: true, label: 'Yes' },
+            { value: false, label: 'No' },
+            { value: true, label: 'Yes' },
           ]}
           value={draft.decaf}
           onChange={(decaf) => {

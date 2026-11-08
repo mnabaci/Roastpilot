@@ -11,7 +11,7 @@ extension point is a small interface plus a registry the app fills at startup.
 | End of roast       | `EndRule`              | Development time after FC, BT cap                        | Colour sensor, weight loss                                   |
 | Phase markers      | `PhaseMarker`          | Dry end by temperature                                   | Other automatic markers                                      |
 | Profile suggestion | `SuggestionStrategy`   | Same bean, then similar beans                            | Smarter matching                                             |
-| Manual coach       | `CoachRule`            | Target gap, RoR trend, milestones                        | New tips                                                     |
+| Manual coach       | `CoachRule`            | Auto's setting, first crack soon, drop soon              | New tips                                                     |
 | Chart layers       | `ChartLayer`           | Temp, Target, RoR, Ghost, Events, Heater, Fan            | Extra probes, annotations                                    |
 | Import / export    | `Exporter`, `Importer` | CSV export, Artisan `.alog` import                       | Artisan export, JSON                                         |
 | Sync               | `SyncTarget`           | None (local only)                                        | Cloud Postgres for the phone                                 |

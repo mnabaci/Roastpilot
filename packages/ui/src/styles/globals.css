@@ -80,3 +80,29 @@
 .u-cursor-x {
   border-right: 1px dashed var(--ink-muted) !important;
 }
+
+/* Output sliders (OutputControl): a border-strong track filled in the output's colour up to the
+   value, and a thumb in that colour. Chromium would pick its own track colour from the accent's
+   lightness (a black track for the heater in Light), so we draw them. */
+.rp-range {
+  appearance: none;
+  background: transparent;
+}
+.rp-range::-webkit-slider-runnable-track {
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    to right,
+    var(--range-fill) var(--range-at),
+    var(--border-strong) var(--range-at)
+  );
+}
+.rp-range::-webkit-slider-thumb {
+  appearance: none;
+  width: var(--space-5);
+  height: var(--space-5);
+  margin-top: calc((var(--space-2) - var(--space-5)) / 2);
+  border: 2px solid var(--surface);
+  border-radius: var(--radius-full);
+  background: var(--range-fill);
+}

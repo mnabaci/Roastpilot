@@ -73,7 +73,9 @@ export function SegmentedControl<T extends string | number | boolean>({
               onChange(option.value);
             }}
             className={cn(
-              'h-9 rounded-sm px-3 text-body font-semibold whitespace-nowrap tabular-nums focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed',
+              // The pill is 36 px inside the group's 4 px padding; the hit area reaches into that
+              // padding, so each option is a full 44 px (control-sm) target.
+              'relative h-9 rounded-sm px-3 text-body font-semibold whitespace-nowrap tabular-nums before:absolute before:inset-x-0 before:-inset-y-1 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed',
               chosen
                 ? 'bg-heat-tint text-heat'
                 : 'text-ink-muted hover:bg-surface-hover hover:text-ink',

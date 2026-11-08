@@ -9,6 +9,7 @@ import type {
   UpdateBean,
 } from './bean';
 import type { Reading } from './channels';
+import type { CoachApplyError, CoachRequest, CoachStatus } from './coach';
 import type { ConnectionState, ConnectTarget, SerialPortInfo } from './connection';
 import type { DriverError } from './driver-error';
 import type { RoastsChange, SetOutputRequest, Snapshot } from './ipc';
@@ -134,6 +135,15 @@ export interface AutoApi {
   onAutoStatus(listener: (status: AutoStatus) => void): Unsubscribe;
 }
 
+/** The coach card in a manual roast (docs/spec/manual-mode.md, Coach). */
+export interface CoachApi {
+  /** Sets the card's outputs as the sliders do and records it; refused once the card has changed. */
+  coachApply(request: CoachRequest): Promise<Result<void, CoachApplyError>>;
+  /** Hides the card; a card that has already changed is left alone. */
+  coachDismiss(request: CoachRequest): Promise<void>;
+  onCoachStatus(listener: (status: CoachStatus) => void): Unsubscribe;
+}
+
 /** The Profiles screen (docs/spec/ui.md). */
 export interface ProfilesApi {
   /** Built-ins first; only the built-ins when storage can't be read (logged in main). */
@@ -223,6 +233,7 @@ export interface RoastpilotApi
     LogsApi,
     HistoryApi,
     AutoApi,
+    CoachApi,
     ProfilesApi,
     RoastersApi,
     BeansApi,

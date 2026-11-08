@@ -25,4 +25,9 @@ describe('StatCard', () => {
     expect(card).not.toHaveTextContent('NaN');
     expect(card).not.toHaveTextContent('°C/min');
   });
+
+  it('writes a negative value with a real minus sign', () => {
+    render(<StatCard label="Rate of rise" value="-7.7" unit="°C/min" />);
+    expect(screen.getByRole('region', { name: 'Rate of rise' })).toHaveTextContent('\u22127.7');
+  });
 });

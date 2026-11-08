@@ -58,6 +58,8 @@ export const SettingsSchema = z.object({
   chartSmoothingS: ChartSmoothingSchema.catch(3).default(3),
   /** Move charge back to the charge drop found before Start was pressed. */
   findChargePoint: z.boolean().catch(true).default(true),
+  /** The coach card in a manual roast (docs/spec/manual-mode.md, Coach). */
+  coachInManual: z.boolean().catch(true).default(true),
   coolingTimeMin: CoolingTimeSchema.catch(4).default(4),
   /** Drum cooling from Drop, down to `roasterCoolToC`. An older `coolingEnd` is dropped. */
   coolRoasterAfter: z.boolean().catch(true).default(true),

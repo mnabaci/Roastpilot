@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { AutoStatusSchema, type AutoStatus } from './auto-status';
+import { CoachStatusSchema, type CoachStatus } from './coach';
 import { RoastSetupSchema, type Bean } from './bean';
 import { ReadingSchema, type Reading } from './channels';
 import { ConnectionStateSchema, type ConnectionState } from './connection';
@@ -52,6 +53,9 @@ export const IPC_CHANNELS = {
   autoStatus: 'auto:status',
   autoChargeSoon: 'auto:charge-soon',
   autoResume: 'auto:resume',
+  coachStatus: 'coach:status',
+  coachApply: 'coach:apply',
+  coachDismiss: 'coach:dismiss',
   listProfiles: 'profiles:list',
   duplicateProfile: 'profiles:duplicate',
   saveProfile: 'profiles:save',
@@ -91,6 +95,7 @@ export const SnapshotSchema = z.object({
   readings: z.array(ReadingSchema),
   safety: z.object({ locked: z.boolean(), tripped: z.array(z.string()) }),
   auto: AutoStatusSchema,
+  coach: CoachStatusSchema,
   setup: RoastSetupSchema,
   /** The roast on screen, once its row exists; null with none. */
   currentRoastId: RoastIdSchema.nullable(),
@@ -108,6 +113,7 @@ export interface IpcEventPayloads {
   [IPC_CHANNELS.showSafetyNotice]: null;
   [IPC_CHANNELS.roastsChanged]: RoastsChange;
   [IPC_CHANNELS.autoStatus]: AutoStatus;
+  [IPC_CHANNELS.coachStatus]: CoachStatus;
   [IPC_CHANNELS.roastersChanged]: Roaster[];
   [IPC_CHANNELS.beansChanged]: Bean[];
   [IPC_CHANNELS.updateStatus]: UpdateStatus;

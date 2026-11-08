@@ -1,5 +1,5 @@
 import { useStore } from 'zustand';
-import type { ConnectionState, Roaster, Settings } from '@roastpilot/shared';
+import type { CoachStatus, ConnectionState, Roaster, Settings } from '@roastpilot/shared';
 import { useDeps } from '../app/app-context';
 import type { AutoData } from './auto-store';
 import type { BeansData } from './beans-store';
@@ -29,6 +29,9 @@ export const useBeans = <T>(select: (state: BeansData) => T): T =>
 
 export const useAuto = <T>(select: (state: AutoData) => T): T =>
   useStore(useDeps().stores.auto, select);
+
+export const useCoach = <T>(select: (state: { status: CoachStatus }) => T): T =>
+  useStore(useDeps().stores.coach, select);
 
 export const useSettings = <T>(select: (state: { settings: Settings }) => T): T =>
   useStore(useDeps().stores.settings, select);

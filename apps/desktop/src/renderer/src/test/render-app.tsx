@@ -1,6 +1,7 @@
 import { silentLogger } from '@roastpilot/core';
 import {
   AUTO_OFF,
+  COACH_QUIET,
   DEFAULT_SETTINGS,
   NO_ROAST_SETUP,
   SAFETY_NOTICE_VERSION,
@@ -41,6 +42,7 @@ export function fakeApi(overrides: Partial<RoastpilotApi> = {}): Mocked<Roastpil
         readings: [],
         safety: { locked: false, tripped: [] },
         auto: AUTO_OFF,
+        coach: COACH_QUIET,
         setup: NO_ROAST_SETUP,
         currentRoastId: null,
       }),
@@ -66,6 +68,9 @@ export function fakeApi(overrides: Partial<RoastpilotApi> = {}): Mocked<Roastpil
     autoChargeSoon: vi.fn(() => Promise.resolve(ok(undefined))),
     autoResume: vi.fn(() => Promise.resolve(ok(undefined))),
     onAutoStatus: vi.fn(() => unsubscribe),
+    coachApply: vi.fn(() => Promise.resolve(ok(undefined))),
+    coachDismiss: vi.fn(() => Promise.resolve()),
+    onCoachStatus: vi.fn(() => unsubscribe),
     listProfiles: vi.fn(() => Promise.resolve([])),
     duplicateProfile: vi.fn((id: string) =>
       Promise.resolve(err({ kind: 'not-found' as const, id })),

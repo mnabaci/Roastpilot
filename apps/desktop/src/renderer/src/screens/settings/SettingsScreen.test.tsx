@@ -57,6 +57,16 @@ describe('SettingsScreen', () => {
     );
   });
 
+  it('coaches manual roasts until you turn it off', async () => {
+    const { api } = renderApp(<Settings first="roast" />);
+    const coach = screen.getByRole('switch', { name: 'Coach in manual roasts' });
+    expect(coach).toBeChecked();
+    await userEvent.click(coach);
+    expect(api.setSettings).toHaveBeenLastCalledWith(
+      expect.objectContaining({ coachInManual: false }),
+    );
+  });
+
   it('hides Cool the drum to while drum cooling is off', async () => {
     renderApp(<Settings first="roast" />);
     expect(screen.getByRole('radiogroup', { name: 'Cool the drum to' })).toBeInTheDocument();

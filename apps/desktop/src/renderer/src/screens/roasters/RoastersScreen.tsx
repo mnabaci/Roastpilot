@@ -41,7 +41,8 @@ export function RoastersScreen() {
           />
           <Button
             variant="ghost"
-            className="justify-start"
+            // px-3 like the list rows above, so the icon lines up with their names.
+            className="justify-start px-3"
             icon={<Plus aria-hidden="true" />}
             aria-current={open.kind === 'add' ? 'true' : undefined}
             onClick={() => {

@@ -1,6 +1,7 @@
 import type {
   AutoStatus,
   Bean,
+  CoachStatus,
   ConnectionState,
   ProfileEntry,
   Reading,
@@ -12,6 +13,7 @@ import type {
 } from '@roastpilot/shared';
 import { createAutoStore, type AutoStore } from './auto-store';
 import { createBeansStore, type BeansStore } from './beans-store';
+import { createCoachStore, type CoachStore } from './coach-store';
 import { createConnectionStore, type ConnectionStore } from './connection-store';
 import { createRoastersStore, type RoastersStore } from './roasters-store';
 import { createRoastStore, type RoastStore } from './roast-store';
@@ -29,6 +31,7 @@ export interface Stores {
   safety: SafetyStore;
   settings: SettingsStore;
   auto: AutoStore;
+  coach: CoachStore;
   roasters: RoastersStore;
   beans: BeansStore;
   /** The installed version and updates (Settings › About, the Settings tab's dot). */
@@ -46,6 +49,7 @@ export interface StoresSeed {
   safety?: SafetyState;
   settings?: Settings;
   auto?: AutoStatus;
+  coach?: CoachStatus;
   profiles?: ProfileEntry[];
   roasters?: Roaster[];
   beans?: Bean[];
@@ -66,6 +70,7 @@ export function createStores(seed: StoresSeed = {}): Stores {
     safety: createSafetyStore(seed.safety),
     settings: createSettingsStore(seed.settings),
     auto: createAutoStore(seed.auto, seed.profiles),
+    coach: createCoachStore(seed.coach),
     roasters: createRoastersStore(seed.roasters),
     beans: createBeansStore(seed.beans, seed.setup, seed.currentRoastId),
     updates: createUpdatesStore(seed.version, seed.update),

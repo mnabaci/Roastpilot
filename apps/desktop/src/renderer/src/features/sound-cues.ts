@@ -1,10 +1,4 @@
-import type {
-  AutoStatus,
-  AutoStopReason,
-  RoastState,
-  RoastSummary,
-  SoundStep,
-} from '@roastpilot/shared';
+import type { AutoStatus, AutoStopReason, RoastState, SoundStep } from '@roastpilot/shared';
 import { isAutoDriven } from '../lib/roast-phases';
 
 /** What the step sounds compare, before and after a change. */
@@ -58,36 +52,8 @@ export function stillWaiting(step: SoundStep, { roast, auto }: WaitState): boole
   }
 }
 
-/** How many recent roasts with a first crack set the expected temperature. */
-const RECENT = 5;
 /** The listen cue sounds this far under the expected first-crack temperature, in °C. */
 export const LISTEN_BEFORE_C = 3;
-
-/** The middle value, or the mean of the two middle ones; undefined for none. */
-function median(values: readonly number[]): number | undefined {
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  const upper = sorted[mid];
-  const lower = sorted[mid - 1];
-  if (upper === undefined) return undefined;
-  return sorted.length % 2 === 1 || lower === undefined ? upper : (lower + upper) / 2;
-}
-
-/**
- * BT at first crack to expect: the median of the last 5 saved roasts that had one, from this
- * roaster when it has any, otherwise from all. Undefined without any.
- */
-export function expectedFirstCrackC(
-  roasts: readonly RoastSummary[],
-  roasterId: number | undefined,
-): number | undefined {
-  const cracked = roasts.filter((r) => r.fcTemp !== null);
-  const own = cracked.filter((r) => r.roasterId === roasterId);
-  const newestFirst = [...(own.length > 0 ? own : cracked)].sort((a, b) =>
-    b.startedAt.localeCompare(a.startedAt),
-  );
-  return median(newestFirst.slice(0, RECENT).flatMap((r) => (r.fcTemp === null ? [] : [r.fcTemp])));
-}
 
 /** Time to listen for first crack: charged, no crack yet, and BT within 3 °C of the expected. */
 export function listenDue(

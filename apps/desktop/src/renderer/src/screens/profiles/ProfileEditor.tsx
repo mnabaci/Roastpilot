@@ -67,7 +67,7 @@ export function ProfileEditor({
             onChange={(event) => {
               set({ name: event.target.value });
             }}
-            className="-mx-2 w-full truncate rounded-md bg-transparent px-2 text-title text-ink hover:bg-surface-hover focus-visible:bg-surface focus-visible:outline-2 focus-visible:outline-focus disabled:hover:bg-transparent"
+            className="-mx-2 h-control-sm w-full truncate rounded-md bg-transparent px-2 text-title text-ink hover:bg-surface-hover focus-visible:bg-surface focus-visible:outline-2 focus-visible:outline-focus disabled:hover:bg-transparent"
           />
           <div className="flex flex-wrap items-center gap-2">
             {entry.builtIn ? <Badge tone="neutral">Built-in</Badge> : null}

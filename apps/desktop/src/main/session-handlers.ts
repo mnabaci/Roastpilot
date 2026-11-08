@@ -1,6 +1,7 @@
 import {
   serializeError,
   type AutoPilot,
+  type Coach,
   type Logger,
   type ManualRoast,
   type ReadingHistory,
@@ -15,10 +16,23 @@ import {
   type SafetyEvent,
 } from '@roastpilot/shared';
 
+export interface SessionHandlerDeps {
+  history: ReadingHistory;
+  recorder: Pick<RoastRecorder, 'onReading'>;
+  parts: () => {
+    roast: Pick<ManualRoast, 'onReading' | 'restoreOutputs' | 'stopRoasterCooling'>;
+    pilot: Pick<AutoPilot, 'onReading' | 'stop'>;
+    coach: Pick<Coach, 'onReading' | 'sync' | 'stop'>;
+  };
+  publish: <C extends IpcEventChannel>(channel: C, payload: IpcEventPayloads[C]) => void;
+  onConnectionChange: (state: ConnectionState) => void;
+  logger: Logger;
+}
+
 /**
  * What the roaster session tells the rest of main: each reading, connection change and safety
- * event, passed to the windows, the roast flow, Auto and the recorder. `parts` is read late: the
- * roast and Auto are made after the session.
+ * event, passed to the windows, the roast flow, Auto, the coach and the recorder. `parts` is read
+ * late: the roast, Auto and the coach are made after the session.
  */
 export function sessionHandlers({
   history,
@@ -27,17 +41,10 @@ export function sessionHandlers({
   publish,
   onConnectionChange,
   logger,
-}: {
-  history: ReadingHistory;
-  recorder: Pick<RoastRecorder, 'onReading'>;
-  parts: () => { roast: ManualRoast; pilot: AutoPilot };
-  publish: <C extends IpcEventChannel>(channel: C, payload: IpcEventPayloads[C]) => void;
-  onConnectionChange: (state: ConnectionState) => void;
-  logger: Logger;
-}) {
+}: SessionHandlerDeps) {
   return {
     onReading: (reading: Reading) => {
-      const { roast, pilot } = parts();
+      const { roast, pilot, coach } = parts();
       history.add(reading);
       recorder.onReading(reading);
       publish(IPC_CHANNELS.reading, reading);
@@ -48,9 +55,11 @@ export function sessionHandlers({
       pilot.onReading(reading).catch((error: unknown) => {
         logger.error('auto.reading-failed', { error: serializeError(error) });
       });
+      // It never sends anything, and logs its own failures.
+      coach.onReading(reading);
     },
     onConnection: (state: ConnectionState) => {
-      const { roast, pilot } = parts();
+      const { roast, pilot, coach } = parts();
       onConnectionChange(state);
       publish(IPC_CHANNELS.connection, state);
       // A fresh connection starts with the outputs off: a running roast puts its own back.
@@ -60,13 +69,15 @@ export function sessionHandlers({
         });
       } else if (state.status === 'disconnected') roast.stopRoasterCooling('disconnected');
       if (state.status === 'disconnected' || state.status === 'lost') pilot.stop(state.status);
+      coach.sync();
     },
     onSafetyEvent: (event: SafetyEvent) => {
-      const { roast, pilot } = parts();
+      const { roast, pilot, coach } = parts();
       publish(IPC_CHANNELS.safetyEvent, event);
       if (event.kind === 'tripped' && event.action === 'safe-stop') {
         roast.stopRoasterCooling('safety-stop');
         pilot.stop('safety-stop');
+        coach.stop();
       }
     },
   };

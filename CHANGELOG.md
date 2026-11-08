@@ -8,6 +8,8 @@ All notable changes to Roastpilot are listed here. The format follows
 
 ### Added
 
+- **Coach in manual roasts:** a card above the sliders suggests what Auto would set now, and why,
+  with Apply; and a heads-up before first crack and before drop.
 - **macOS updates install by themselves**, as on Windows: downloaded in the background, checked,
   and installed when you quit or press Restart to update, once Roastpilot is in Applications.
 

@@ -37,7 +37,7 @@ export function BeanDetail({
   return (
     <section aria-label={bean.name} className="flex flex-col gap-5">
       {/* Everything for this bean in one row: the two you use most, the rest behind ⋯. */}
-      <header className="flex flex-wrap items-center gap-3">
+      <header className="flex min-h-control-sm flex-wrap items-center gap-3">
         <h2 className="min-w-0 truncate text-title">{bean.name}</h2>
         {low ? <Badge tone="heat">Low stock</Badge> : null}
         {bean.archived ? <Badge>Archived</Badge> : null}
@@ -45,12 +45,14 @@ export function BeanDetail({
           <Button
             // One primary at a time: an open form has its own.
             variant={panel === 'none' ? 'primary' : 'secondary'}
+            size="sm"
             disabled={actions.roastBlocked}
             onClick={actions.roastThis}
           >
             Roast this bean
           </Button>
           <Button
+            size="sm"
             onClick={() => {
               setPanel('add-stock');
             }}

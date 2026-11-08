@@ -34,7 +34,8 @@ export function Menu({ label, text, items, className }: MenuProps) {
         {text ? (
           <Button
             size="sm"
-            className={cn('flex-row-reverse', className)}
+            // Same chip as FilterSelect ("Compare ▾" beside "Make profile ▾"): 16 px chevron, tight gap.
+            className={cn('flex-row-reverse gap-1 px-2.5 [&_svg]:size-4', className)}
             icon={<ChevronDown aria-hidden="true" />}
           >
             {text}

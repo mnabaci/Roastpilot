@@ -36,7 +36,7 @@ export function FilterSelect<V extends string>({
       options={options}
       onChange={onChange}
       className={cn(
-        'group flex h-control-sm min-w-0 items-center justify-center gap-0.5 rounded-md px-2.5 text-label focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
+        'group flex h-control-sm min-w-0 items-center justify-center gap-1 rounded-md px-2.5 text-label font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
         filtering ? 'bg-heat-tint text-heat' : 'bg-surface-raised text-ink hover:bg-surface-hover',
         className,
       )}

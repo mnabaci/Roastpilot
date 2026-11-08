@@ -49,8 +49,14 @@ export type {
   RoastPlan,
 } from './history/roast-repository';
 export { RoastRecorder, type RoastRecorderDeps } from './history/roast-recorder';
+export { expectedFirstCrackC, type FirstCrackRoast } from './history/expected-first-crack';
 export { AutoPilot, type AutoPilotDeps } from './auto/auto-pilot';
 export type { AutoEvent } from './auto/roast-run';
+export { Coach, type CoachClaimError, type CoachDeps } from './coach/coach';
+export type { CoachInput, CoachRule, CoachTip } from './coach/coach-rule';
+export { autoSettingRule } from './coach/setting-rule';
+export { firstCrackSoonRule } from './coach/first-crack-soon-rule';
+export { dropSoonRule } from './coach/drop-soon-rule';
 export { curveTargetC, smoothCurve } from './auto/curve';
 export { followAimRor } from './auto/follow-control';
 export { STALL } from './auto/stall-guard';

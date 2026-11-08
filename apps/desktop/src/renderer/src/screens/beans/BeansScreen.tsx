@@ -78,7 +78,8 @@ export function BeansScreen({
           />
           <Button
             variant="ghost"
-            className="justify-start"
+            // px-3 like the list rows above, so the icon lines up with their names.
+            className="justify-start px-3"
             icon={<Plus aria-hidden="true" />}
             aria-current={right.kind === 'add' ? 'true' : undefined}
             onClick={() => {
@@ -100,7 +101,9 @@ export function BeansScreen({
         />
       ) : right.kind === 'calculator' ? (
         <section aria-label="Batch calculator" className={cn('flex flex-col gap-4', PAGE_WIDTH)}>
-          <h2 className="text-heading">Batch calculator</h2>
+          <div className="flex min-h-control-sm min-w-0 items-center">
+            <h2 className="truncate text-title">Batch calculator</h2>
+          </div>
           <BatchCalculator orderG={orderG} onOrderG={setOrderG} />
         </section>
       ) : open ? (
@@ -113,7 +116,7 @@ export function BeansScreen({
           onOpenProfile={onOpenProfile}
         />
       ) : (
-        <p className="text-body text-ink-muted">
+        <p className="flex min-h-control-sm items-center text-body text-ink-muted">
           No beans yet · add one to track its stock and find its best roast
         </p>
       )}

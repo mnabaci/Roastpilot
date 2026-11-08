@@ -21,7 +21,7 @@ export function RoastNumbersRow({
   rorLine?: string | undefined;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
       <StatCard
         label={tempName}
         value={numbers.bt === undefined ? undefined : formatNumber(numbers.bt, 1)}

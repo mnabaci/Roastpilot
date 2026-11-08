@@ -37,6 +37,8 @@ export function StepRow({
     <NumberField
       label={`${name} ${label}`}
       hideLabel
+      // Times ("11:00") need more room than a two-digit percentage, even in a narrow window.
+      {...(cell === 'time' || cell === 'backup' ? { className: 'min-w-18' } : {})}
       value={step[cell]}
       disabled={readOnly}
       invalid={Boolean(error(cell))}
@@ -65,10 +67,19 @@ export function StepRow({
             onChange={(event) => {
               onChange({ name: event.target.value });
             }}
-            className="h-control-sm w-full min-w-24 rounded-md border border-border bg-surface px-2.5 text-body text-ink hover:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-control-sm w-full min-w-30 rounded-md border border-border bg-surface px-2.5 text-body text-ink hover:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50"
           />
         </td>
-        <td className={CELL}>{steps || !last ? field('endC', 'end temperature') : '–'}</td>
+        <td className={CELL}>
+          {steps || !last ? (
+            field('endC', 'end temperature')
+          ) : (
+            // In line with the text of the fields above it.
+            <span className="block border border-transparent px-2.5 text-body text-ink-muted">
+              –
+            </span>
+          )}
+        </td>
         {steps ? <td className={CELL}>{field('time', 'time')}</td> : null}
         {steps
           ? ROR_CELLS.map(({ key, label }) => (

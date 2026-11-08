@@ -41,7 +41,7 @@ export function Toaster({ toasts, onDismiss, className }: ToasterProps) {
   return (
     <div
       className={cn(
-        'pointer-events-none fixed right-6 bottom-6 z-40 flex w-full max-w-90 flex-col items-end gap-2',
+        'pointer-events-none fixed right-6 bottom-6 z-40 flex w-full max-w-112 flex-col items-end gap-2',
         className,
       )}
     >

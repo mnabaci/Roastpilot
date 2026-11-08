@@ -34,12 +34,17 @@ export function withCapUnder(profile: AutoProfile, maxTempC: number): AutoProfil
   return capC === profile.capC ? profile : { ...profile, capC };
 }
 
+/** The opening soak: a profile's first phase, when it holds the heater fixed after charge. */
+export function isSoak(profile: AutoProfile, phaseIndex: number): boolean {
+  return phaseIndex === 0 && profile.phases[0]?.heat.mode === 'fixed';
+}
+
 /** The profile with its opening soak set to `soakS`: a fixed phase that ends on time. */
 export function withSoakTime(profile: AutoProfile, soakS: number): AutoProfile {
   return {
     ...profile,
     phases: profile.phases.map((phase, index) =>
-      index === 0 && phase.heat.mode === 'fixed' && phase.next.on === 'time'
+      isSoak(profile, index) && phase.next.on === 'time'
         ? { ...phase, next: { on: 'time', afterS: soakS } }
         : phase,
     ),

@@ -78,17 +78,17 @@ export function LogsScreen() {
           ]}
         />
       </div>
-      <FilterSelect
-        label="Day"
-        className="self-start"
-        value={day}
-        options={days.map((d) => ({ value: d, label: dayLabel(d, today) }))}
-        onChange={(d) => {
-          setDay(d);
-          setScopes(new Set());
-        }}
-      />
+      {/* Every filter in one row (it wraps when narrow), so the list keeps the room. */}
       <div className="flex flex-wrap items-end gap-6">
+        <FilterSelect
+          label="Day"
+          value={day}
+          options={days.map((d) => ({ value: d, label: dayLabel(d, today) }))}
+          onChange={(d) => {
+            setDay(d);
+            setScopes(new Set());
+          }}
+        />
         <TextField
           label="Search"
           type="search"

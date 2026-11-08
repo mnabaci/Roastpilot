@@ -1,5 +1,6 @@
 import { milestonesFrom, profileFromMilestones } from '@roastpilot/core';
 import type { AutoProfile } from '@roastpilot/shared';
+import { Plus } from 'lucide-react';
 import { Button, formatClock, NumberField, RoastChart } from '@roastpilot/ui';
 import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
@@ -82,15 +83,17 @@ export function MilestoneBuilder({
     <div className="flex min-w-0 flex-1 flex-col gap-5">
       <header className="flex flex-wrap items-start gap-3">
         <div className="flex min-w-60 flex-1 flex-col gap-1">
-          <h2 className="text-title text-ink">New from milestones</h2>
+          <h2 className="flex min-h-control-sm items-center text-title text-ink">
+            New from milestones
+          </h2>
           <p className="text-label text-ink-muted">Soak and fan steps from {base.name}</p>
         </div>
         <div className="flex flex-col items-end gap-1">
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={onCancel}>
+            <Button variant="ghost" size="sm" onClick={onCancel}>
               Cancel
             </Button>
-            <Button variant="primary" disabled={!valid || busy} onClick={create}>
+            <Button variant="primary" size="sm" disabled={!valid || busy} onClick={create}>
               Create
             </Button>
           </div>
@@ -105,9 +108,12 @@ export function MilestoneBuilder({
       <div className="flex flex-wrap items-start gap-5">
         <section aria-label="Milestones" className="flex min-w-96 max-w-lg flex-1 flex-col gap-2">
           <div className="flex items-start gap-2">
-            <span className="w-32 shrink-0 pt-2 text-body text-ink">Charge</span>
-            <span className="flex-1 pt-2 text-body text-ink-muted tabular-nums">
-              {formatClock(0)}
+            <span className="flex min-h-control-sm w-32 shrink-0 items-center text-body text-ink">
+              Charge
+            </span>
+            {/* Fixed: its text in line with the time fields under it. */}
+            <span className="flex min-h-control-sm flex-1 items-center text-body text-ink-muted tabular-nums">
+              <span className="border border-transparent px-2.5">{formatClock(0)}</span>
             </span>
             <NumberField
               label="Charge temperature"
@@ -157,6 +163,7 @@ export function MilestoneBuilder({
             variant="ghost"
             size="sm"
             className="self-start"
+            icon={<Plus aria-hidden="true" />}
             onClick={() => {
               setDraft(addMilestonePoint(draft));
             }}

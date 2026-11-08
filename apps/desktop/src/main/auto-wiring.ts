@@ -43,7 +43,24 @@ export function roastPlan(
     : { mode: 'manual', profile: null, roasterId, ...setup };
 }
 
-function noteAutoEvent(roast: ManualRoast, event: AutoEvent): void {
+/** Clamps and rounds an output to what the connected roaster takes; as it is with none connected. */
+export function roundOutput(session: Pick<RoasterSession, 'connection'>) {
+  return (channel: string, value: number): number => {
+    const { connection } = session;
+    const output =
+      connection.status === 'connected'
+        ? connection.channels.find((c) => c.id === channel)
+        : undefined;
+    return output?.kind === 'output' ? quantize(output, value) : value;
+  };
+}
+
+/** Disconnected, or locked by a safety stop: neither Auto nor the coach may ask for heat. */
+export const heaterLocked = (session: Pick<RoasterSession, 'connection' | 'safetyStatus'>) => () =>
+  session.connection.status !== 'connected' || session.safetyStatus.locked;
+
+/** What Auto did, as an event on the roast (docs/spec/data-model.md, Auto mode). */
+export function noteAutoEvent(roast: Pick<ManualRoast, 'note'>, event: AutoEvent): void {
   switch (event.kind) {
     case 'phase':
       roast.note('phase', event.name);
@@ -86,15 +103,8 @@ export function createAutoPilot({
     roast: () => roast.state,
     readings,
     setOutput: (channel, value) => session.setOutput(channel, value),
-    round: (channel, value) => {
-      const { connection } = session;
-      const output =
-        connection.status === 'connected'
-          ? connection.channels.find((c) => c.id === channel)
-          : undefined;
-      return output?.kind === 'output' ? quantize(output, value) : value;
-    },
-    heaterLocked: () => session.connection.status !== 'connected' || session.safetyStatus.locked,
+    round: roundOutput(session),
+    heaterLocked: heaterLocked(session),
     drop: async () => {
       const dropped = await roast.act('drop');
       // AutoPilot cuts the heater and stops: it never drives past the end of a roast.

@@ -64,6 +64,16 @@ export class RoastRun {
     return this.#chargedAtMs;
   }
 
+  /** The phase running, by its place in the profile: a new phase is a new number. */
+  get phaseIndex(): number {
+    return this.#index;
+  }
+
+  /** Seconds after charge the running phase began. */
+  get phaseStartedS(): number {
+    return this.#phaseStartedS;
+  }
+
   get phaseName(): string | null {
     return this.#profile.phases[this.#index]?.name ?? null;
   }
