@@ -12,7 +12,14 @@ const ports = () =>
   Promise.resolve([{ path: '/dev/cu.usbserial-0001', manufacturer: 'Silicon Labs' }]);
 
 const sidebar = () => within(screen.getByRole('list', { name: 'Roasters' }));
-const menuItems = () => screen.getAllByRole('menuitem').map((item) => item.textContent);
+/** Each item's name, marked when it is disabled. */
+const menuItems = () =>
+  screen.getAllByRole('menuitem').map((item) => {
+    const name = item.getAttribute('aria-label') ?? item.textContent;
+    const why = item.getAttribute('aria-disabled') === 'true' ? ' (disabled)' : '';
+    return `${name}${why}`;
+  });
+const ALL_WAIT = ['Use this roaster (disabled)', 'Export this roaster', 'Delete (disabled)'];
 const toasts = (stores: Stores) => stores.toasts.getState().toasts.map((t) => [t.kind, t.text]);
 
 describe('RoastersScreen', () => {
@@ -43,9 +50,15 @@ describe('RoastersScreen', () => {
 
     it('Use this roaster makes it active without connecting', async () => {
       const { api } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
-      // The active roaster has nothing to switch to: its ⋯ only exports it.
+      // The active roaster has nothing to switch to: Use and Delete stay, disabled, with why.
       await userEvent.click(screen.getByRole('button', { name: 'More for Skywalker' }));
-      expect(menuItems()).toEqual(['Export this roaster']);
+      expect(menuItems()).toEqual(ALL_WAIT);
+      expect(
+        screen.getByRole('menuitem', { name: 'Use this roaster' }),
+      ).toHaveAccessibleDescription('Already the active one');
+      expect(screen.getByRole('menuitem', { name: 'Delete' })).toHaveAccessibleDescription(
+        'Use another roaster first',
+      );
       await userEvent.keyboard('{Escape}');
       await userEvent.click(sidebar().getByRole('button', { name: /^Simulator/ }));
       await userEvent.click(screen.getByRole('button', { name: 'More for Simulator' }));
@@ -71,7 +84,12 @@ describe('RoastersScreen', () => {
       renderApp(<RoastersScreen />, { connection: CONNECTED, roasters: roastersWith(PORT) });
       await userEvent.click(sidebar().getByRole('button', { name: /^Simulator/ }));
       await userEvent.click(screen.getByRole('button', { name: 'More for Simulator' }));
-      expect(menuItems()).toEqual(['Export this roaster']);
+      expect(menuItems()).toEqual(ALL_WAIT);
+      expect(
+        screen.getByRole('menuitem', { name: 'Use this roaster' }),
+      ).toHaveAccessibleDescription('Disconnect first');
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+      expect(screen.queryByRole('alertdialog')).toBeNull();
     });
 
     it('adds a roaster, then opens it', async () => {
@@ -256,7 +274,7 @@ describe('RoastersScreen', () => {
       expect(screen.queryByRole('button', { name: 'Connect' })).toBeNull();
       expect(screen.getByRole('textbox', { name: 'Max temp' })).toBeDisabled();
       await userEvent.click(screen.getByRole('button', { name: 'More for Simulator' }));
-      expect(menuItems()).toEqual(['Export this roaster']);
+      expect(menuItems()).toEqual(ALL_WAIT);
     });
   });
 

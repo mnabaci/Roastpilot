@@ -26,3 +26,24 @@ export const WithDisabled: Story = {
     ],
   },
 };
+export const DisabledWithReason: Story = {
+  args: {
+    label: 'More for Skywalker',
+    items: [
+      {
+        label: 'Use this roaster',
+        onSelect: () => undefined,
+        disabled: true,
+        hint: 'Already the active one',
+      },
+      { label: 'Export this roaster', onSelect: () => undefined },
+      {
+        label: 'Delete',
+        onSelect: () => undefined,
+        destructive: true,
+        disabled: true,
+        hint: 'Use another roaster first',
+      },
+    ],
+  },
+};

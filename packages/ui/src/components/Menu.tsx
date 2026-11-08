@@ -1,6 +1,6 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { ChevronDown, Ellipsis } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { cn } from '../lib/utils';
 import { Button } from './Button';
 import { DROPDOWN_PANEL, DROPDOWN_ROW } from './dropdown-panel';
@@ -12,6 +12,8 @@ export interface MenuItem {
   /** Deletes something: red text (`critical-text`), never a red fill. */
   destructive?: boolean;
   disabled?: boolean;
+  /** One line under the label: why a disabled item can't be picked now ("Disconnect first"). */
+  hint?: string;
 }
 
 export interface MenuProps {
@@ -28,6 +30,7 @@ export interface MenuProps {
  * Escape closes and focus goes back to the button.
  */
 export function Menu({ label, text, items, className }: MenuProps) {
+  const hintId = useId();
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -52,21 +55,36 @@ export function Menu({ label, text, items, className }: MenuProps) {
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content align="end" sideOffset={4} className={cn(DROPDOWN_PANEL, 'min-w-48')}>
-          {items.map((item) => (
-            <DropdownMenu.Item
-              key={item.label}
-              disabled={item.disabled}
-              onSelect={item.onSelect}
-              className={cn(
-                DROPDOWN_ROW,
-                'data-disabled:cursor-not-allowed data-disabled:opacity-50 [&_svg]:size-5',
-                item.destructive ? 'text-critical-text' : 'text-ink',
-              )}
-            >
-              {item.icon}
-              {item.label}
-            </DropdownMenu.Item>
-          ))}
+          {items.map((item, index) => {
+            // The hint describes the item; its name stays the label.
+            const hint = item.hint ? `${hintId}-${String(index)}` : undefined;
+            return (
+              <DropdownMenu.Item
+                key={item.label}
+                disabled={item.disabled}
+                onSelect={item.onSelect}
+                aria-label={hint ? item.label : undefined}
+                aria-describedby={hint}
+                className={cn(
+                  DROPDOWN_ROW,
+                  'data-disabled:cursor-not-allowed data-disabled:opacity-50 [&_svg]:size-5',
+                  item.destructive ? 'text-critical-text' : 'text-ink',
+                )}
+              >
+                {item.icon}
+                {hint ? (
+                  <span className="flex flex-col">
+                    <span>{item.label}</span>
+                    <span id={hint} className="text-label text-ink-muted">
+                      {item.hint}
+                    </span>
+                  </span>
+                ) : (
+                  item.label
+                )}
+              </DropdownMenu.Item>
+            );
+          })}
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>

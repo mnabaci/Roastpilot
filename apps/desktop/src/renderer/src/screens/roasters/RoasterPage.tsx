@@ -55,27 +55,36 @@ export function RoasterPage({ roaster, onDeleted }: { roaster: Roaster; onDelete
     );
   };
   // Nothing changes while a roaster is in use (docs/spec/roasters.md); the active one can't go.
-  // Export only reads the record, so it is always there.
-  const changeable = !roaster.active && !locked;
-  const exportThis: MenuItem = {
-    label: 'Export this roaster',
-    onSelect: () => {
-      files.exportFile({ kind: 'roasters', ids: [roaster.id] });
+  // The menu keeps its items either way, the ones that wait disabled with why.
+  const waits = roaster.active ? 'active' : locked ? 'locked' : undefined;
+  const more: MenuItem[] = [
+    {
+      label: 'Use this roaster',
+      onSelect: use,
+      ...(waits && {
+        disabled: true,
+        hint: waits === 'active' ? 'Already the active one' : 'Disconnect first',
+      }),
     },
-  };
-  const more: MenuItem[] = changeable
-    ? [
-        { label: 'Use this roaster', onSelect: use },
-        exportThis,
-        {
-          label: 'Delete',
-          destructive: true,
-          onSelect: () => {
-            setDeleting(true);
-          },
-        },
-      ]
-    : [exportThis];
+    // Export only reads the record, so it is always there.
+    {
+      label: 'Export this roaster',
+      onSelect: () => {
+        files.exportFile({ kind: 'roasters', ids: [roaster.id] });
+      },
+    },
+    {
+      label: 'Delete',
+      destructive: true,
+      onSelect: () => {
+        setDeleting(true);
+      },
+      ...(waits && {
+        disabled: true,
+        hint: waits === 'active' ? 'Use another roaster first' : 'Disconnect first',
+      }),
+    },
+  ];
   return (
     <div className={cn('flex flex-col gap-6', PAGE_WIDTH)}>
       <header className="flex items-start justify-between gap-4">
