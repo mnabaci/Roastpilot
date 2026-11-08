@@ -129,14 +129,6 @@ export function ProfileActions({
         {state.edited ? (
           <>
             <Button
-              variant="primary"
-              size="sm"
-              disabled={!state.valid || (active && locked)}
-              onClick={save}
-            >
-              Save
-            </Button>
-            <Button
               variant="ghost"
               size="sm"
               onClick={() => {
@@ -146,6 +138,14 @@ export function ProfileActions({
               }}
             >
               Discard
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={!state.valid || (active && locked)}
+              onClick={save}
+            >
+              Save
             </Button>
           </>
         ) : active ? (

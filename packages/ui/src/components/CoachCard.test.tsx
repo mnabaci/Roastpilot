@@ -2,6 +2,10 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { CoachCard } from './CoachCard';
+import type { CoachChange } from './CoachChanges';
+
+const HEATER: CoachChange = { name: 'Heater', from: 65, to: 75, tone: 'heat' };
+const FAN: CoachChange = { name: 'Fan', from: 50, to: 40, tone: 'air' };
 
 describe('CoachCard', () => {
   it('shows the change and reason, and fires Apply and Dismiss', async () => {
@@ -9,7 +13,7 @@ describe('CoachCard', () => {
     const onDismiss = vi.fn();
     render(
       <CoachCard
-        changes={['Heater 65% → 75%']}
+        changes={[HEATER]}
         reason="4 °C below target, RoR falling"
         onApply={onApply}
         onDismiss={onDismiss}
@@ -17,7 +21,7 @@ describe('CoachCard', () => {
     );
     const card = screen.getByRole('region', { name: 'Coach suggestion' });
     expect(card).toHaveTextContent('Coach suggests');
-    expect(card).toHaveTextContent('Heater 65% → 75%');
+    expect(card).toHaveTextContent(/Heater\s*from 65%\s*to 75%/);
     expect(card).toHaveTextContent('4 °C below target, RoR falling');
 
     await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
@@ -29,7 +33,7 @@ describe('CoachCard', () => {
   it('says when the profile needs calibration', () => {
     render(
       <CoachCard
-        changes={['Heater 65% → 75%']}
+        changes={[HEATER]}
         reason="Maillard from 150 °C"
         note="needs calibration"
         onApply={vi.fn()}
@@ -52,24 +56,29 @@ describe('CoachCard', () => {
     expect(onDismiss).toHaveBeenCalledOnce();
   });
 
-  it('writes each output on its own line', () => {
+  it('shows each output as a row: name, now, then the target in its colour', () => {
     render(
       <CoachCard
-        changes={['Heater 65% → 75%', 'Fan 50% → 40%']}
+        changes={[HEATER, FAN]}
         reason="Maillard from 150 °C"
         onApply={vi.fn()}
         onDismiss={vi.fn()}
       />,
     );
-    expect(screen.getByText('Heater 65% → 75%')).toBeInTheDocument();
-    expect(screen.getByText('Fan 50% → 40%')).toBeInTheDocument();
+    const rows = screen.getAllByRole('row');
+    expect(rows.map((row) => row.textContent)).toEqual([
+      'Heaterfrom 65%to 75%',
+      'Fanfrom 50%to 40%',
+    ]);
+    expect(screen.getByText('75%')).toHaveClass('text-heat');
+    expect(screen.getByText('40%')).toHaveClass('text-air');
   });
 
   it('while applying, Apply says so and cannot be pressed again', async () => {
     const onApply = vi.fn();
     render(
       <CoachCard
-        changes={['Heater 65% → 75%']}
+        changes={[HEATER]}
         reason="4 °C below target"
         applying
         onApply={onApply}
