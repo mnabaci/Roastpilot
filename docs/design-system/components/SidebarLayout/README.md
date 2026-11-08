@@ -4,7 +4,7 @@ The frame of every list-and-detail screen (History, Beans, Profiles, Roasters, S
 
 ## Anatomy
 
-- **Sidebar**: `sidebar` (256px) wide, fixed; `space-6` padding on the top, left and bottom, none on the right. The screen title (`title`) on top, with the list's own actions beside it as a "⋯" Menu (History: Export CSV, Import from Artisan), then filters if any, `space-3` above the list (a NavList, or RoastList on History). The list scrolls inside the sidebar; the title stays.
+- **Sidebar**: `sidebar` (256px) wide, fixed; `space-6` padding on the top, left and bottom, none on the right. The screen title (`title`) on top, with the list's own actions beside it as a "⋯" Menu (History: Export CSV, Import), then filters if any, `space-3` above the list (a NavList, or RoastList on History). The list scrolls inside the sidebar; the title stays.
 - **Content**: fills the rest, `space-6` padding, scrolls on its own. A screen with nothing open shows a one-line hint here.
 - No divider: the content's own cards separate the two.
 
