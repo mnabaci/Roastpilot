@@ -60,6 +60,12 @@ export { dropSoonRule } from './coach/drop-soon-rule';
 export { curveTargetC, smoothCurve } from './auto/curve';
 export { followAimRor } from './auto/follow-control';
 export { PREHEAT } from './auto/preheat-protocol';
+export {
+  BACK_TO_BACK_MS,
+  lastRoastEndMs,
+  pickPreheatHold,
+  type PreheatHold,
+} from './auto/preheat-hold';
 export { STALL } from './auto/stall-guard';
 export { plannedCurve } from './auto/steps-curve';
 export { timeAtC } from './profiles/curve-time';

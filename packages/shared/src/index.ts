@@ -60,6 +60,8 @@ export {
   type IpcEventPayloads,
   SetOutputRequestSchema,
   type SetOutputRequest,
+  PreheatHoldRequestSchema,
+  type PreheatHoldRequest,
 } from './ipc';
 export type {
   AppApi,
@@ -107,6 +109,9 @@ export {
   AutoProfileObjectSchema,
   AutoProfileSchema,
   AutoTuningSchema,
+  HoldBatchSchema,
+  PREHEAT_HOLD,
+  type HoldBatch,
   CURVE_FOLLOW_DEFAULTS,
   CurveFollowSchema,
   CurvePointSchema,

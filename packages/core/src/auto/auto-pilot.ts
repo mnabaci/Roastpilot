@@ -36,6 +36,8 @@ export class AutoPilot {
   readonly #drive: AutoDrive;
   readonly #gate: TickGate;
   #lastStatus = '';
+  /** Your preheat hold for this roast; never saved, gone with the preheat. */
+  #chosenHoldS: number | null = null;
 
   constructor(deps: AutoPilotDeps) {
     this.#deps = deps;
@@ -59,6 +61,10 @@ export class AutoPilot {
         this.#stopReason = null;
         this.#outputs.handBack();
       },
+      chosenHoldS: () => this.#chosenHoldS,
+      preheatOver: () => {
+        this.#chosenHoldS = null;
+      },
     });
   }
 
@@ -74,6 +80,7 @@ export class AutoPilot {
       phaseName: this.#drive.run?.phaseName ?? null,
       nextPhaseAtC: this.#drive.run?.nextPhaseAtC ?? null,
       stallTripped: this.#drive.run?.stallTripped ?? false,
+      preheatHold: this.#drive.preheat?.hold ?? null,
     };
   }
 
@@ -147,6 +154,18 @@ export class AutoPilot {
     }
     this.#publish();
     return ok(undefined);
+  }
+
+  /**
+   * Your preheat hold for this roast, or null for the batch's: before a preheat it waits for it,
+   * and a running hold follows at once, never ending before what it has held. It is never saved
+   * and goes with the preheat (docs/spec/roast-control.md, Roast phases 1.3).
+   */
+  choosePreheatHold(holdS: number | null): void {
+    this.#chosenHoldS = holdS;
+    this.#drive.preheat?.choose(holdS);
+    this.#logger.info('auto.preheat-hold-chosen', { holdS });
+    this.#publish();
   }
 
   /** Every reading, one at a time (TickGate). */

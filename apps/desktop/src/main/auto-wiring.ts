@@ -5,6 +5,7 @@ import {
   type AutoEvent,
   type Logger,
   type ManualRoast,
+  type PreheatHold,
   type RoasterSession,
   type RoastPlan,
 } from '@roastpilot/core';
@@ -84,6 +85,7 @@ export function createAutoPilot({
   profiles,
   roasters,
   readings,
+  preheatHold,
   publish,
   logger,
 }: {
@@ -92,6 +94,8 @@ export function createAutoPilot({
   profiles: Pick<ProfileService, 'active'>;
   roasters: Pick<RoasterService, 'active'>;
   readings: () => readonly Reading[];
+  /** The hold a preheat starting now runs (PreheatHoldPicker). */
+  preheatHold: () => PreheatHold;
   publish: <C extends IpcEventChannel>(channel: C, payload: IpcEventPayloads[C]) => void;
   logger: Logger;
 }): AutoPilot {
@@ -108,6 +112,7 @@ export function createAutoPilot({
     },
     profile: () => autoProfile(profiles, roasters),
     tuning: () => roasters.active().tuning,
+    preheatHold,
     onEvent: (event) => {
       // Only a roast has a timeline to put it on: preheat overrides stay in the log.
       if (roast.state.chargedAtMs !== null) noteAutoEvent(roast, event);

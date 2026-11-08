@@ -88,7 +88,7 @@ function preheatStep(
     case 'climb':
       return { ...stop, hint: `Heating to ${charge}.` };
     case 'hold':
-      return { secondary: START, ...stop, hint: `Holding ${charge} ·${left} left.` };
+      return { secondary: START, ...stop, hint: `Holding ·${left} left` };
     case 'add-beans':
       return {
         chargeSoon: true,

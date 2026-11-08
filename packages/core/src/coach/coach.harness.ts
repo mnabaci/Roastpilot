@@ -43,6 +43,7 @@ export const COACH_TUNING: AutoTuning = {
   preheat: { kp: 1, ki: 0, kd: 0 },
   preheatFanPct: 30,
   holdS: 150,
+  nextHoldS: 120,
   chargeCutS: 5,
 };
 

@@ -64,6 +64,18 @@ describe('roaster draft', () => {
   it('names a cell with a half-typed value', () => {
     expect(errorsOf({ batchMinG: '2x' })).toEqual({ batchMinG: 'Enter a number' });
     expect(errorsOf({ hold: '90' })).toEqual({ hold: 'Enter a time like 2:30' });
+    expect(errorsOf({ nextHold: '2' })).toEqual({ nextHold: 'Enter a time like 2:30' });
+  });
+
+  it('keeps both preheat holds within 1:30–3:00, the edges included', () => {
+    expect(errorsOf({ hold: '1:29' })).toEqual({ hold: 'Between 1:30 and 3:00' });
+    expect(errorsOf({ nextHold: '3:01' })).toEqual({ nextHold: 'Between 1:30 and 3:00' });
+    expect(errorsOf({ hold: '1:30', nextHold: '3:00' })).toEqual({});
+  });
+
+  it("reads the next batch's hold into the record", () => {
+    const made = fromRoasterDraft(draft({ nextHold: '1:45' }), SKYWALKER, 'c');
+    expect(made).toMatchObject({ ok: true, value: { tuning: { nextHoldS: 105 } } });
   });
 
   it('holds the limits to what the model allows', () => {

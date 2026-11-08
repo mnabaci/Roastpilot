@@ -57,6 +57,7 @@ const api: RoastpilotApi = {
   openLogFolder: () => ipcRenderer.invoke(IPC_CHANNELS.openLogFolder),
   autoChargeSoon: () => ipcRenderer.invoke(IPC_CHANNELS.autoChargeSoon),
   autoResume: () => ipcRenderer.invoke(IPC_CHANNELS.autoResume),
+  autoSetPreheatHold: (request) => ipcRenderer.invoke(IPC_CHANNELS.autoSetPreheatHold, request),
   onAutoStatus: (listener) => subscribe(IPC_CHANNELS.autoStatus, listener),
   coachApply: (request) => ipcRenderer.invoke(IPC_CHANNELS.coachApply, request),
   coachDismiss: (request) => ipcRenderer.invoke(IPC_CHANNELS.coachDismiss, request),

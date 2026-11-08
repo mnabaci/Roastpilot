@@ -5,6 +5,7 @@ import {
   type AutoTuning,
 } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
+import type { PreheatHold } from './preheat-hold';
 import { PREHEAT, PreheatProtocol } from './preheat-protocol';
 
 const PROFILE = {
@@ -31,12 +32,27 @@ const TUNING: AutoTuning = {
   preheat: { kp: 2, ki: 0, kd: 0 },
   preheatFanPct: 30,
   holdS: 150,
+  nextHoldS: 120,
   chargeCutS: 5,
 };
 
+const FIRST = { s: 150, batch: 'first' } as const;
+const newProtocol = (
+  hold: { s: number; batch: 'first' | 'next' } = FIRST,
+  chosenS: number | null = null,
+) => new PreheatProtocol(PROFILE, TUNING, hold, chosenS);
+
+/** A protocol holding since 1 s in. */
+function holding(hold: PreheatHold = FIRST, chosenS: number | null = null): PreheatProtocol {
+  const protocol = newProtocol(hold, chosenS);
+  protocol.next(0, 150);
+  protocol.next(1_000, 179);
+  return protocol;
+}
+
 /** A protocol already at "Add beans", and the time it got there. */
 function atAddBeans(): { protocol: PreheatProtocol; nowMs: number } {
-  const protocol = new PreheatProtocol(PROFILE, TUNING);
+  const protocol = newProtocol();
   protocol.next(0, 150);
   protocol.next(1_000, 179);
   const nowMs = 1_000 + 150_000;
@@ -46,14 +62,14 @@ function atAddBeans(): { protocol: PreheatProtocol; nowMs: number } {
 
 describe('PreheatProtocol', () => {
   it('climbs from a cold roaster with the PID and the preheat fan', () => {
-    const protocol = new PreheatProtocol(PROFILE, TUNING);
+    const protocol = newProtocol();
     const outputs = protocol.next(0, 150);
     expect(protocol.step).toBe('climb');
     expect(outputs).toMatchObject({ fanPct: 30, gaveUp: false });
   });
 
   it('heats at most 100% and at least 0%', () => {
-    const protocol = new PreheatProtocol(PROFILE, TUNING);
+    const protocol = newProtocol();
     protocol.next(0, 20);
     expect(protocol.next(1_000, 20).heaterPct).toBe(100);
     expect(protocol.next(2_000, 179.5).heaterPct).toBe(1);
@@ -61,7 +77,7 @@ describe('PreheatProtocol', () => {
   });
 
   it('cools a hot roaster first: heat 0, fan 100, down to 20 °C below charge', () => {
-    const protocol = new PreheatProtocol(PROFILE, TUNING);
+    const protocol = newProtocol();
     expect(protocol.next(0, 171)).toEqual({ heaterPct: 0, fanPct: 100, gaveUp: false });
     expect(protocol.step).toBe('cool');
     expect(protocol.next(1_000, 161).heaterPct).toBe(0);
@@ -71,13 +87,13 @@ describe('PreheatProtocol', () => {
   });
 
   it('does not cool at exactly 10 °C below charge', () => {
-    const protocol = new PreheatProtocol(PROFILE, TUNING);
+    const protocol = newProtocol();
     protocol.next(0, 170);
     expect(protocol.step).toBe('climb');
   });
 
   it('holds once within 1 °C of charge, counting down', () => {
-    const protocol = new PreheatProtocol(PROFILE, TUNING);
+    const protocol = newProtocol();
     protocol.next(0, 170);
     protocol.next(1_000, 179);
     expect(protocol.step).toBe('hold');
@@ -93,7 +109,7 @@ describe('PreheatProtocol', () => {
   });
 
   it('refuses Charge soon before "Add beans"', () => {
-    const protocol = new PreheatProtocol(PROFILE, TUNING);
+    const protocol = newProtocol();
     protocol.next(0, 150);
     expect(protocol.chargeSoon(1_000)).toBe(false);
     expect(protocol.step).toBe('climb');
@@ -122,7 +138,7 @@ describe('PreheatProtocol', () => {
   });
 
   it('turns the heater off with no reading', () => {
-    const protocol = new PreheatProtocol(PROFILE, TUNING);
+    const protocol = newProtocol();
     protocol.next(0, 150);
     expect(protocol.next(1_000, undefined).heaterPct).toBe(0);
   });
@@ -131,7 +147,7 @@ describe('PreheatProtocol', () => {
     ['cool', 175],
     ['climb', 100],
   ])('gives up after 15 min stuck in %s', (step, btC) => {
-    const protocol = new PreheatProtocol(PROFILE, TUNING);
+    const protocol = newProtocol();
     protocol.next(0, btC);
     expect(protocol.step).toBe(step);
     expect(protocol.next(PREHEAT.stepLimitMs - 1, btC).gaveUp).toBe(false);
@@ -145,6 +161,43 @@ describe('PreheatProtocol', () => {
     expect(protocol.next(nowMs + PREHEAT.waitingLimitMs, 180)).toMatchObject({
       heaterPct: 0,
       gaveUp: true,
+    });
+  });
+
+  describe('the hold', () => {
+    it("runs the length picked for the batch: the next batch's shorter one", () => {
+      const protocol = holding({ s: 120, batch: 'next' } as const);
+      expect(protocol.hold).toEqual({ s: 120, batch: 'next', chosen: false });
+      protocol.next(1_000 + 119_000, 180);
+      expect(protocol.step).toBe('hold');
+      protocol.next(1_000 + 120_000, 180);
+      expect(protocol.step).toBe('add-beans');
+    });
+
+    it('runs your choice for this roast instead, and says it is yours', () => {
+      const protocol = holding(FIRST, 180);
+      expect(protocol.hold).toEqual({ s: 180, batch: 'first', chosen: true });
+      protocol.next(1_000 + 150_000, 180);
+      expect(protocol.step).toBe('hold');
+      expect(protocol.leftS).toBe(30);
+    });
+
+    it('a choice mid-hold applies to what is left', () => {
+      const protocol = holding();
+      protocol.next(61_000, 180);
+      protocol.choose(165);
+      expect(protocol.leftS).toBe(105);
+      protocol.choose(null);
+      expect(protocol.leftS).toBe(90);
+    });
+
+    it('a choice shorter than what it has held already ends the hold now, never before it began', () => {
+      const protocol = holding();
+      protocol.next(121_000, 180);
+      protocol.choose(90);
+      expect(protocol.leftS).toBe(0);
+      protocol.next(122_000, 180);
+      expect(protocol.step).toBe('add-beans');
     });
   });
 });

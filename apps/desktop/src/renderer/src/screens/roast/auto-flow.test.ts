@@ -45,7 +45,7 @@ describe('autoFlowStep', () => {
 
   it('from the hold keeps Start as the second button, so you can still go early', () => {
     const step = autoFlowStep(PREHEAT, { ...ON, preheatStep: 'hold', preheatLeftS: 90 }, PROFILE);
-    expect(step?.hint).toBe('Holding 180 °C · 1:30 left.');
+    expect(step?.hint).toBe('Holding · 1:30 left');
     expect(step?.primary).toBeUndefined();
     expect(step?.secondary?.action).toBe('start');
   });

@@ -1,4 +1,9 @@
-import { ReadingHistory, RoastRecorder, type RoasterSession } from '@roastpilot/core';
+import {
+  ReadingHistory,
+  RoastRecorder,
+  serializeError,
+  type RoasterSession,
+} from '@roastpilot/core';
 import { IPC_CHANNELS, type Snapshot } from '@roastpilot/shared';
 import type { AppServices, AppServicesDeps } from './app-services-types';
 import { autoProfile, roastPlan } from './auto-wiring';
@@ -7,6 +12,7 @@ import { createRoastControl } from './control-wiring';
 import { createHistory } from './history-wiring';
 import { ProfileService } from './profiles/profile-service';
 import { RoasterService } from './roasters/roaster-service';
+import { PreheatHoldPicker } from './preheat-hold-picker';
 import { createManualRoast } from './roast-wiring';
 import { createSession } from './session-wiring';
 import { startLoading } from './start-loading';
@@ -92,6 +98,19 @@ export function createAppServices({
     temperatureUnit: () => settings.latest.temperatureUnit,
     logger: historyLogger,
   });
+  // Wall-clock, as the saved roasts keep their times: 20 min since the last one, after a restart too.
+  const holdPicker = new PreheatHoldPicker({
+    activeRoaster: () => roasters.active(),
+    nowMs: () => Date.parse(nowIso()),
+  });
+  saved.history
+    .list()
+    .then((list) => {
+      holdPicker.load(list);
+    })
+    .catch((error: unknown) => {
+      historyLogger.error('history.hold-load-failed', { error: serializeError(error) });
+    });
   const roast = createManualRoast({
     clock,
     logger: roastLogger,
@@ -101,6 +120,7 @@ export function createAppServices({
     roasters,
     onChange: (state) => {
       recorder.onRoastChange(state);
+      holdPicker.onRoastChange(state);
       coaching.onRoastChange(state);
       onRoastChange(state);
       publish(IPC_CHANNELS.roast, state);
@@ -115,6 +135,7 @@ export function createAppServices({
     roasters,
     readings: () => history.all(),
     savedRoasts: saved.history,
+    preheatHold: () => holdPicker.current(),
     publish,
     logger,
   });

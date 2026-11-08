@@ -9,6 +9,7 @@ import { useBeans, useRoast, useRoasters, useSettings } from '../../stores/use-s
 import { useRoastList } from '../history/use-roast-list';
 import { ghostLabel } from './ghost';
 import { GhostField } from './GhostField';
+import { PreheatHoldField } from './PreheatHoldField';
 import { ProfilePicker } from './ProfilePicker';
 import { useSaveSettings } from '../settings/use-save-settings';
 import { SetupForm } from './SetupForm';
@@ -98,6 +99,9 @@ export function RoastSetupPanel() {
               roasts={roasts}
               onChange={update}
             />
+          ) : null}
+          {mode === 'auto' && roaster && (idle || phase === 'preheat') ? (
+            <PreheatHoldField roaster={roaster} roasts={roasts} />
           ) : null}
           <GhostField setup={setup} roasts={roasts} beans={beans} onChange={update} />
         </div>

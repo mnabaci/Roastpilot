@@ -136,6 +136,9 @@ function setup() {
         calls.push(['chargeSoon', nowMs]);
         return ok(undefined);
       },
+      choosePreheatHold: (holdS) => {
+        calls.push(['choosePreheatHold', holdS]);
+      },
       resume: () => {
         calls.push(['resume']);
         return err({ kind: 'safety-locked' });
@@ -295,6 +298,7 @@ describe('createIpcHandlers', () => {
         IPC_CHANNELS.importLibrary,
         IPC_CHANNELS.autoChargeSoon,
         IPC_CHANNELS.autoResume,
+        IPC_CHANNELS.autoSetPreheatHold,
         IPC_CHANNELS.listProfiles,
         IPC_CHANNELS.duplicateProfile,
         IPC_CHANNELS.saveProfile,
@@ -482,6 +486,19 @@ describe('roast, snapshot and settings handlers', () => {
       err({ kind: 'safety-locked' }),
     );
     expect(calls).toEqual([['chargeSoon', 42], ['resume']]);
+  });
+
+  it('passes a preheat hold for this roast on, checked: 1:30–3:00 in 0:15 steps, or null', async () => {
+    const { handlers, calls } = setup();
+    await handlers[IPC_CHANNELS.autoSetPreheatHold]?.({ holdS: 165 });
+    await handlers[IPC_CHANNELS.autoSetPreheatHold]?.({ holdS: null });
+    for (const holdS of [75, 195, 100]) {
+      await expect(handlers[IPC_CHANNELS.autoSetPreheatHold]?.({ holdS })).rejects.toThrow();
+    }
+    expect(calls).toEqual([
+      ['choosePreheatHold', 165],
+      ['choosePreheatHold', null],
+    ]);
   });
 
   it('checks a profile at the boundary before saving it', async () => {

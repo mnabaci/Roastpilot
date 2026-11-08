@@ -92,6 +92,8 @@ function buildRig({ profile, tuning, ambientC }: SimulationOptions) {
     },
     profile: () => profile,
     tuning: () => tuning,
+    // A first batch: the simulations start from a cold roaster.
+    preheatHold: () => ({ s: tuning.holdS, batch: 'first' }),
     onEvent: (event) => events.push(event),
     onChange: () => undefined,
   });

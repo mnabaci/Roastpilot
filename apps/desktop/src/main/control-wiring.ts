@@ -1,4 +1,11 @@
-import type { AutoPilot, Clock, Logger, ManualRoast, RoasterSession } from '@roastpilot/core';
+import type {
+  AutoPilot,
+  Clock,
+  Logger,
+  ManualRoast,
+  PreheatHold,
+  RoasterSession,
+} from '@roastpilot/core';
 import type { IpcEventChannel, IpcEventPayloads, Reading } from '@roastpilot/shared';
 import { createAutoPilot } from './auto-wiring';
 import { coachActions, type CoachActions } from './coach-apply';
@@ -28,6 +35,7 @@ export function createRoastControl({
   roasters,
   readings,
   savedRoasts,
+  preheatHold,
   publish,
   logger,
 }: {
@@ -40,11 +48,13 @@ export function createRoastControl({
   readings: () => readonly Reading[];
   /** The saved roasts, for the coach's expected first crack. */
   savedRoasts: Pick<HistoryService, 'list'>;
+  /** The hold a preheat starting now runs (PreheatHoldPicker). */
+  preheatHold: () => PreheatHold;
   publish: <C extends IpcEventChannel>(channel: C, payload: IpcEventPayloads[C]) => void;
   logger: Logger;
 }): RoastControl {
   const shared = { session, roast, settings, profiles, roasters, readings, publish, logger };
-  const pilot = createAutoPilot(shared);
+  const pilot = createAutoPilot({ ...shared, preheatHold });
   const coaching = createCoach({ ...shared, clock, history: savedRoasts });
   const { coach } = coaching;
   const setOutputByHand = handOutput({ session, roast, pilot, coach });

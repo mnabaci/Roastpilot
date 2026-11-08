@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DEFAULT_PROFILE_ID, ProfileIdSchema } from './profile';
+import { DEFAULT_PROFILE_ID, HoldBatchSchema, ProfileIdSchema } from './profile';
 
 /** Who sets one output: Auto, or you until Resume auto. */
 export const OutputOwnerSchema = z.enum(['auto', 'manual']);
@@ -42,6 +42,14 @@ export const AutoStatusSchema = z.object({
   /** The temperature that starts the next phase; null when it isn't a temperature. */
   nextPhaseAtC: z.number().nullable(),
   stallTripped: z.boolean(),
+  /**
+   * The hold this preheat runs, from Preheat until the beans go in: its length (your choice for
+   * this roast, when you made one) and which batch it was picked for; null outside a preheat.
+   */
+  preheatHold: z
+    .object({ s: z.number().positive(), batch: HoldBatchSchema, chosen: z.boolean() })
+    .nullable()
+    .default(null),
 });
 
 /** Auto is off: what a window shows before main has said anything. */
@@ -56,6 +64,7 @@ export const AUTO_OFF: z.infer<typeof AutoStatusSchema> = {
   phaseName: null,
   nextPhaseAtC: null,
   stallTripped: false,
+  preheatHold: null,
 };
 
 export const AutoResumeErrorSchema = z.object({ kind: z.literal('safety-locked') });
