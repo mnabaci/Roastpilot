@@ -1,5 +1,5 @@
 import type { RoastSetup } from '@roastpilot/shared';
-import { cn, Switch } from '@roastpilot/ui';
+import { Badge, cn, Switch } from '@roastpilot/ui';
 import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
@@ -42,10 +42,10 @@ export function RoastSetupPanel() {
   const idle = phase === 'ready' || phase === 'done';
   const bean = beans.find((b) => b.id === setup.beanId);
   const ghost = roasts.find((r) => r.id === setup.ghostRoastId);
+  // A badge, not a word in the line, so it never truncates away: a first Auto roast needs you close.
+  const needsCalibration = mode === 'auto' && profile?.profile.needsCalibration === true;
   const line = [
     mode === 'auto' ? profile?.profile.name : 'Manual',
-    // Second, so it shows before the line truncates: a first Auto roast needs you close by.
-    mode === 'auto' && profile?.profile.needsCalibration ? 'needs calibration' : undefined,
     bean?.name ?? 'No bean',
     setup.batchG === null ? undefined : `${String(setup.batchG)} g`,
     ghost ? `ghost ${ghostLabel(ghost)}` : undefined,
@@ -60,13 +60,14 @@ export function RoastSetupPanel() {
           type="button"
           aria-expanded={open}
           aria-label="Change setup"
-          title={line}
+          title={needsCalibration ? `${line} · needs calibration` : line}
           onClick={() => {
             setOpen(!open);
           }}
           className="flex min-h-control-sm min-w-0 flex-1 items-center gap-2 rounded-md px-3 text-left hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-focus"
         >
           <span className="min-w-0 truncate text-body">{line}</span>
+          {needsCalibration ? <Badge className="shrink-0">Needs calibration</Badge> : null}
           <ChevronDown
             aria-hidden="true"
             className={cn(

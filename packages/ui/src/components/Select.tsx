@@ -3,6 +3,7 @@ import { Command } from 'cmdk';
 import { Check, Search } from 'lucide-react';
 import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { cn } from '../lib/utils';
+import { Badge } from './Badge';
 import { DROPDOWN_PANEL, DROPDOWN_ROW } from './dropdown-panel';
 
 export interface SelectOption<V extends string> {
@@ -10,6 +11,8 @@ export interface SelectOption<V extends string> {
   label: string;
   /** One quieter line under the name that helps you choose: "300 g · Ethiopia · washed". */
   detail?: string;
+  /** A short state at the row's end, as a neutral Badge: "Needs calibration". Never truncated. */
+  badge?: string;
   disabled?: boolean;
 }
 
@@ -35,7 +38,7 @@ export interface SelectProps<V extends string> {
 export const SEARCH_FROM = 9;
 
 const words = (option: SelectOption<string>) =>
-  [option.label, option.detail ?? ''].join(' ').toLowerCase();
+  [option.label, option.detail ?? '', option.badge ?? ''].join(' ').toLowerCase();
 
 /**
  * Pick one of a list in the app's own panel, never the system popup (design system: Select). Arrows
@@ -143,12 +146,13 @@ export function Select<V extends string>({
                     aria-hidden="true"
                     className={cn('size-4 shrink-0', option.value === value ? '' : 'invisible')}
                   />
-                  <span className="flex min-w-0 flex-col">
+                  <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate text-ink">{option.label}</span>
                     {option.detail ? (
                       <span className="truncate text-label text-ink-muted">{option.detail}</span>
                     ) : null}
                   </span>
+                  {option.badge ? <Badge className="shrink-0">{option.badge}</Badge> : null}
                 </Command.Item>
               ))}
             </Command.List>

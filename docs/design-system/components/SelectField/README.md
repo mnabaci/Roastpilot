@@ -6,6 +6,7 @@ A labelled drop-down for picking one of a list: Bean, Profile, Ghost, Process, M
 
 - **Label** above, `label` style in `ink-muted`; always visible.
 - **Field**: a button opening the Select panel, `control-sm` (44px) tall, `surface` fill, 1px `border`, `radius-md`, `body` text in `ink`, truncated to one line, 14px left and 12px right padding; a Lucide ChevronDown (20px, `ink-muted`) at the right, turned up while the panel is open.
+- **Badge**: the chosen option's badge, if it has one, sits between the value and the chevron, 8px apart; it keeps its size and the value truncates first (Profile "My light NEEDS CALIBRATION").
 
 ## States
 

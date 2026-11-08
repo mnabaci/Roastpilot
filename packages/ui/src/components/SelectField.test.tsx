@@ -16,6 +16,29 @@ describe('SelectField', () => {
     );
   });
 
+  it("shows the chosen option's badge beside its name, and each option's in the list", async () => {
+    render(
+      <SelectField
+        label="Profile"
+        value="mine"
+        options={[
+          { value: 'light', label: 'Light · Steps', detail: 'Built-in' },
+          { value: 'mine', label: 'My light', badge: 'Needs calibration' },
+        ]}
+        onChange={vi.fn()}
+      />,
+    );
+    const field = screen.getByRole('button', { name: 'Profile' });
+    expect(field).toHaveTextContent('My lightNeeds calibration');
+    await userEvent.click(field);
+    expect(screen.getByRole('option', { name: /My light/ })).toHaveTextContent(
+      'My lightNeeds calibration',
+    );
+    expect(screen.getByRole('option', { name: /Light · Steps/ })).not.toHaveTextContent(
+      'Needs calibration',
+    );
+  });
+
   it('opens its list and reports the picked value', async () => {
     const onChange = vi.fn();
     render(<SelectField label="Compare with" value="none" options={OPTIONS} onChange={onChange} />);

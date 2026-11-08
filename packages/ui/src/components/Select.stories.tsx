@@ -37,6 +37,19 @@ export const WithDetails: Story = {};
 export const LongListWithSearch: Story = {
   args: { label: 'Ghost', value: 'none', options: GHOSTS },
 };
+/** A state at the row's end, as the Profile picker's Needs calibration: the name truncates first. */
+export const WithBadges: Story = {
+  args: {
+    label: 'Profile',
+    value: 'mine',
+    options: [
+      { value: 'light', label: 'Light · Steps', detail: 'Built-in' },
+      { value: 'medium', label: 'Medium · Curve', detail: 'Built-in' },
+      { value: 'mine', label: 'Ethiopia Guji · light steps', badge: 'Needs calibration' },
+    ],
+  },
+};
+export const WithBadgesLight: Story = { ...WithBadges, globals: { theme: 'Light' } };
 export const Short: Story = {
   args: {
     label: 'Process',

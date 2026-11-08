@@ -744,11 +744,32 @@ describe('RoastScreen', () => {
       expect(screen.queryByText(/^Aim /)).toBeNull();
     });
 
-    it('says a profile needs calibration in the folded setup line', () => {
+    it('says a profile needs calibration as a badge beside the folded setup line', () => {
       renderApp(<RoastScreen onConnect={onConnect} />, auto('ready'));
-      expect(screen.getByRole('button', { name: 'Change setup' })).toHaveTextContent(
-        /^Light · Steps · needs calibration · /,
+      const row = screen.getByRole('button', { name: 'Change setup' });
+      expect(row).toHaveTextContent(/^Light · Steps · No bean/);
+      expect(within(row).getByText('Needs calibration')).not.toHaveClass('truncate');
+    });
+
+    it('shows Needs calibration as a badge in the profile picker, the name alone', async () => {
+      renderApp(<RoastScreen onConnect={onConnect} />, auto('ready'));
+      await openSetup();
+      expect(screen.getByLabelText('Profile')).toHaveTextContent(
+        /^Light · StepsNeeds calibration$/,
       );
+    });
+
+    it('shows no badge for a calibrated profile', async () => {
+      renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...auto('ready'),
+        profiles: profiles.map((e) => ({
+          ...e,
+          profile: { ...e.profile, needsCalibration: false },
+        })),
+      });
+      expect(screen.queryByText('Needs calibration')).toBeNull();
+      await openSetup();
+      expect(screen.getByLabelText('Profile')).toHaveTextContent(/^Light · Steps$/);
     });
 
     it('picks a profile', async () => {
