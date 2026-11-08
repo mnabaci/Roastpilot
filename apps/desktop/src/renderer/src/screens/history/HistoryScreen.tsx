@@ -2,7 +2,9 @@ import type { RoastId } from '@roastpilot/shared';
 import { Button, Menu, RoastList, SidebarLayout } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
+import { SelectionBar } from '../../features/SelectionBar';
 import { useRun } from '../../features/use-run';
+import { useSelection } from '../../features/use-selection';
 import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { useBeans, useRoast, useSettings } from '../../stores/use-stores';
 import { inProgressId, roastRows, roastTitle, selectionAfterDelete } from './history-format';
@@ -10,12 +12,10 @@ import { OpenRoast } from './OpenRoast';
 import { filterRoasts, NO_FILTER } from './roast-filter';
 import { RoastFilters } from './RoastFilters';
 import { RoastHeader } from './RoastHeader';
-import { SelectionBar } from './SelectionBar';
 import { useMakeProfile } from './use-make-profile';
 import { useRoastFiles } from './use-roast-files';
 import { useRoastList } from './use-roast-list';
 import { useSavedRoast } from './use-saved-roast';
-import { useSelection } from './use-selection';
 
 /** Saved roasts: pick one, see its numbers and chart, compare with another, delete (docs/spec/ui.md). */
 export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) => void }) {
@@ -127,10 +127,22 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
           <RoastFilters filter={filter} onChange={setFilter} beans={beans} roasts={list} />
           {selection.selecting ? (
             <SelectionBar
-              checked={selection.checked}
-              onExport={files.exportRoasts}
+              label="Selected roasts"
+              count={selection.checked.size}
               onDone={selection.done}
-            />
+            >
+              <Menu
+                label="Export selected"
+                text="Export"
+                items={(['roastpilot', 'csv'] as const).map((format) => ({
+                  label: format === 'csv' ? 'CSV' : 'Roastpilot file',
+                  disabled: selection.checked.size === 0,
+                  onSelect: () => {
+                    files.exportRoasts({ format, ids: [...selection.checked] });
+                  },
+                }))}
+              />
+            </SelectionBar>
           ) : null}
           <RoastList
             label="Saved roasts"

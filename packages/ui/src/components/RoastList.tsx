@@ -1,7 +1,8 @@
-import { Check, Star } from 'lucide-react';
+import { Star } from 'lucide-react';
 import { moveFocusInList } from '../lib/list-focus';
 import { cn } from '../lib/utils';
 import { Badge } from './Badge';
+import { TickBox } from './tick-box';
 
 export interface RoastListItem {
   id: number;
@@ -70,17 +71,7 @@ export function RoastList({
             >
               <span className="flex items-center justify-between gap-3">
                 <span className="flex min-w-0 items-center gap-1.5">
-                  {selecting ? (
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        'grid size-5 shrink-0 place-items-center rounded-sm border',
-                        ticked ? 'border-heat bg-heat-tint text-heat' : 'border-border-strong',
-                      )}
-                    >
-                      {ticked ? <Check className="size-4" /> : null}
-                    </span>
-                  ) : null}
+                  {selecting ? <TickBox ticked={ticked} /> : null}
                   <span className="truncate text-body font-semibold text-ink">{item.title}</span>
                   {item.favourite ? (
                     <Star
