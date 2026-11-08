@@ -1,4 +1,6 @@
 <!-- @dsCard group="Actions" height=250 subtitle="Primary, tonal, ghost, danger, disabled" -->
+<!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
+<link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
 <link
   rel="stylesheet"
   href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
@@ -55,7 +57,7 @@
     height: 56px;
     background: var(--heat-fill);
     color: var(--on-heat);
-    font-size: 16px;
+    font-size: 17px;
   }
   .primary:hover {
     background: var(--heat-fill-hover);
@@ -74,22 +76,21 @@
     height: 48px;
     padding: 0 14px;
     background: transparent;
-    color: var(--ink-muted);
+    color: var(--ink);
     font-size: 15px;
   }
   .ghost:hover {
     background: var(--surface-hover);
-    color: var(--ink);
   }
   .danger {
-    height: 52px;
+    height: 48px;
     background: var(--critical);
-    color: #ffffff;
+    color: var(--on-critical);
     font-size: 15px;
   }
   .btn:disabled {
     opacity: 0.5;
-    cursor: not-allowed;
+    pointer-events: none;
     transform: none;
   }
 </style>
@@ -109,7 +110,7 @@
         <path d="M19 21H5"></path></svg
       >Drop now
     </button>
-    <button class="btn ghost">Dismiss</button>
+    <button class="btn ghost">Cancel</button>
     <button class="btn tonal" disabled>Heating…</button>
   </div>
   <button class="btn danger">

@@ -6,11 +6,11 @@ The actions you rarely need, behind a "⋯" button, so the one main action stand
 
 - **Trigger**: a ghost icon button (Lucide Ellipsis), `control-sm`, named for screen readers ("More for Light · Steps"). Or, when the menu is one action with a choice, a worded chip with a ChevronDown after the word ("Make profile ▾" → Step profile, Curve profile), drawn exactly like FilterSelect's chip.
 - **List**: the Select panel (`surface-raised`, 1px `border-strong`, `radius-lg`, 4px padding), at least 192px wide, aligned to the trigger's end, 4px below it.
-- **Item**: `control-sm` tall, 12px side padding, `body` in `ink`; an optional 20px icon first. Delete is `critical-text`, never a red fill.
+- **Item**: at least `control-sm` tall, 12px side padding, `radius-md`, `body` in `ink`; an optional 20px icon first, 8px before the label; items 2px apart. Delete is `critical-text`, never a red fill.
 
 ## States
 
-- **Highlighted** (hover or arrow keys): `surface-hover`. **Disabled**: 50%.
+- **Highlighted** (hover or arrow keys): `surface-hover`. **Disabled**: 50%, `not-allowed` cursor.
 
 ## Rules
 

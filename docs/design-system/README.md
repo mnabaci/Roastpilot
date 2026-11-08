@@ -1,5 +1,9 @@
 # Roastpilot
 
+This folder is the source of truth ([ADR 0020](../adr/0020-design-system-in-the-repo.md)).
+Change it in the same PR as the component.
+The claude.ai page is generated from it with `/design-sync`.
+
 Roastpilot is a desktop app that roasts coffee on autopilot and coaches you when you take the controls. This design system keeps every screen dark, precise and readable from a step back from the roaster: graphite surfaces, an ember accent for heat and cyan for air.
 
 ## Principles
@@ -89,23 +93,14 @@ Lucide icons (shadcn/ui's default set), 20px, 2px stroke, `currentColor`. No emo
 
 ## Components
 
-Mark, Button, StatCard, OutputControl, CoachCard, PhaseStepper, AlertBanner, RoastChart, RoastStrip, TextField, Select, SelectField, FilterSelect, Switch, SegmentedControl, RoastList, EventTable, NavList, SidebarLayout, ErrorState, Menu and ConfirmDialog. Each has guidelines and a live preview in Components.
+Mark, Button, Badge, StatCard, OutputControl, CoachCard, PhaseStepper, AlertBanner, Toast, RoastChart, RoastStrip, TextField, NumberField, Select, SelectField, FilterSelect, Switch, SegmentedControl, RoastList, EventTable, NavList, SidebarLayout, ErrorState, Menu and ConfirmDialog. Each has its guidelines in `components/<Name>/README.md` and, where one is drawn, a static preview beside it (`preview.html`); the live components are in Storybook (`pnpm storybook`).
 
-## Using it with shadcn/ui and Tailwind
+## Files
 
-Map the tokens to shadcn's CSS variables once, in `globals.css`:
+- `README.md` (this brand book) and `components/<Name>/README.md`: the guidelines.
+- `components/<Name>/preview.html`: a static drawing of the component in plain HTML and CSS, using the token variables. The claude.ai page shows them with its tokens; opened as a file, they take the colours and spacing from `packages/ui/src/styles/tokens.css` (corners and the font fall back to the browser's). No build step.
+- Tokens: `packages/ui/tokens.json`, the only copy. `pnpm --filter @roastpilot/ui tokens` regenerates the CSS from it.
 
-| shadcn variable                      | Roastpilot token        |
-| ------------------------------------ | ----------------------- |
-| `--background`                       | `bg`                    |
-| `--card`, `--popover`                | `surface`               |
-| `--muted`, `--accent`, `--secondary` | `surface-raised`        |
-| `--foreground`, `--card-foreground`  | `ink`                   |
-| `--muted-foreground`                 | `ink-muted`             |
-| `--primary` / `--primary-foreground` | `heat-fill` / `on-heat` |
-| `--destructive`                      | `critical`              |
-| `--border`, `--input`                | `border`                |
-| `--ring`                             | `focus`                 |
-| `--radius`                           | `radius-md`             |
+## Using it in code
 
-Extra roles (`heat`, `air`, `target`, `ghost`, `good`, `warning`) become Tailwind colours in `tailwind.config` so components can use `text-heat` or `stroke-air`.
+The components are in `packages/ui` (shadcn/ui-style source, Radix primitives, Lucide icons, Tailwind v4). `tokens.json` generates `src/styles/tokens.css` (a CSS variable per token, per theme, under `[data-theme]`) and `src/styles/theme.css` (the Tailwind theme), so every token is a utility: `bg-surface-raised`, `text-heat`, `text-readout-xl`, `h-control-sm`, `rounded-xl`, `w-sidebar`. Components use these only: no hex colours, no magic sizes.

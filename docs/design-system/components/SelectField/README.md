@@ -5,11 +5,11 @@ A labelled drop-down for picking one of a list: Bean, Profile, Ghost, Process, M
 ## Anatomy
 
 - **Label** above, `label` style in `ink-muted`; always visible.
-- **Field**: a button opening the Select panel, `control-sm` (44px) tall, `surface` fill, 1px `border`, `radius-md`, `body` text in `ink`, 14px left padding; a Lucide ChevronDown (20px, `ink-muted`) at the right.
+- **Field**: a button opening the Select panel, `control-sm` (44px) tall, `surface` fill, 1px `border`, `radius-md`, `body` text in `ink`, truncated to one line, 14px left and 12px right padding; a Lucide ChevronDown (20px, `ink-muted`) at the right, turned up while the panel is open.
 
 ## States
 
-- **Hover**: `border-strong`.
+- **Hover** and **open**: `border-strong`.
 - **Focus**: 2px `focus` ring, 2px offset.
 - **Disabled**: 50% opacity, `not-allowed` cursor.
 
@@ -17,3 +17,5 @@ A labelled drop-down for picking one of a list: Bean, Profile, Ghost, Process, M
 
 - A `button` named by its `<label>`, announcing its value; the panel's keyboard rules are Select's.
 - The first option says what "nothing picked" means (`None`), never a blank row.
+- **Numeric** (`numeric`): for numbers (times, temperatures) in a row of NumberFields. Tabular numerals and NumberField's 10px left padding (8px right, 4px before the chevron), so its value lines up with theirs.
+- **Hidden label** (`hideLabel`): in a table whose column header already names it, the label is read by screen readers only.

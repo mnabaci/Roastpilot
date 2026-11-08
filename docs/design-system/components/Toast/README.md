@@ -1,18 +1,18 @@
 # Toast
 
-A one-line note, bottom-right of the window, for an action that failed (or finished) where the screen itself shows nothing.
+A one-line note (the `Toaster` component), bottom-right of the window, for an action that failed (or finished) where the screen itself shows nothing.
 
 ## Anatomy
 
-- **Card**: `surface-raised`, 1px border, `radius-lg`, `space-4` padding on the left, the × close button flush right.
-- **Icon** (20px): `warning` for error, `good` for success, `ink-muted` for info.
+- **Card**: `surface-raised`, 1px border, `radius-lg`, `space-4` padding on the left and 4px elsewhere, so the × close button sits flush right; `space-2` between icon, text and ×.
+- **Icon** (20px, Lucide): CircleAlert in `warning` for error, CircleCheck in `good` for success, Info in `ink-muted` for info.
 - **Text**: one line of `body` in `ink`: verb + what + next step.
-- **Dismiss**: icon-only ghost button, 44px target, `aria-label="Dismiss"`.
+- **Dismiss**: icon-only ghost button (X in `ink-muted`, `ink` on hover), 44px target, `aria-label="Dismiss"`.
 
 ## Kinds
 
 - **Error**: `warning` border and icon. Stays until dismissed with ×. `role="alert"`.
-- **Info / success**: `border-strong` border. Fades after 4 s; hover or keyboard focus pauses it. `role="status"`.
+- **Info / success**: `border-strong` border. Shows for 4 s, then fades out in 200 ms (no fade with reduced motion); hover or keyboard focus pauses it. `role="status"`.
 
 ## Copy
 
@@ -21,7 +21,7 @@ A one-line note, bottom-right of the window, for an action that failed (or finis
 
 ## Placement
 
-- Bottom-right, `space-6` from the edges, at most 360px wide. Stacked with `space-2` between, newest at the bottom, at most 3 visible (older ones drop off).
+- Bottom-right, `space-6` from the edges, at most 448px wide, so a one-line toast stays on one line. Stacked with `space-2` between, newest at the bottom, at most 3 visible (older ones drop off).
 - On the Roast screen it sits over the chart, left of the side panel: it never covers the roast numbers, the flow buttons or the output sliders.
 
 ## Do

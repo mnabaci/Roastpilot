@@ -4,10 +4,11 @@ A slider for one roaster output (heater, fan, or a drum with a speed) with its v
 
 ## Behaviour
 
-- While Auto drives the roast (Preheat until Drop): moving the slider switches that output to Manual and a "Resume auto" secondary button appears.
+- While Auto drives the roast (Preheat until Drop): moving the slider switches that output to Manual and a "Resume auto" button appears under it (Button ghost, `sm`, at the start).
 - In a manual roast there is nothing to tell apart: no badge, no Resume auto.
 - Steps follow the roaster's channel definition (Skywalker: 5%).
-- Disabled outside the roast; the value still shows.
+- Disabled outside the roast; the value still shows. With no reading (no roaster, or not a number) the value is a dash and the slider is disabled.
+- The value moves as you drag; it is sent once, when you let go, 300 ms after the last arrow key, or when focus leaves.
 - A drum with a speed is never driven by Auto, so it has no badge. An on/off drum stays a Switch.
 
 ## Sizes
@@ -17,7 +18,7 @@ A slider for one roaster output (heater, fan, or a drum with a speed) with its v
 
 ## Visuals
 
-- **md:** label `heading` weight 600 at 14px; value `readout-lg`-weight 22px, right-aligned, tabular.
-- **sm:** label `label` in `ink-muted`; value `body` weight 600, right-aligned, tabular; no badge or Resume auto (never an Auto output).
-- Badge: `badge` style. AUTO = `air` text on air at 16% opacity; MANUAL = `heat` text on heat-fill at 20% opacity.
+- **md:** label `body` at 600 in `ink`; value `readout-lg`, right-aligned, tabular; 10px between the label row and the slider.
+- **sm:** label `label` in `ink-muted`; 6px to the slider; value `body` weight 600, right-aligned, tabular; no badge or Resume auto (never an Auto output).
+- Badge (the Badge component), 10px before the value: AUTO in the `air` tone (`air` text on `air-tint`); MANUAL in the `heat` tone (`heat` text on `heat-tint`).
 - Track drawn by the app, never the browser's: 8px (`space-2`) `radius-full` track in `border-strong`, filled up to the value in the output's colour (`heat-fill` heater, `air` fan, `ink-muted` drum speed and volume: neutral, neither heat nor air), and a 20px (`space-5`) thumb in that colour with a 2px `surface` ring. The same in both themes. Disabled: 50% opacity. Track hit area 28px in md; in sm 44px (`control-sm`), as tall as the fields beside it so their labels and controls line up.

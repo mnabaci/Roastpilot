@@ -1,4 +1,6 @@
 <!-- @dsCard group="Controls" height=320 subtitle="Heater in manual, fan in auto, drum speed neutral" -->
+<!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
+<link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
 <link
   rel="stylesheet"
   href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
@@ -40,7 +42,7 @@
   >
     <div style="display: flex; flex-direction: column; gap: 10px">
       <div style="display: flex; align-items: center; justify-content: space-between">
-        <label for="h" style="font-size: 14px; font-weight: 600">Heater</label>
+        <label for="h" style="font-size: 15px; font-weight: 600">Heater</label>
         <div style="display: flex; align-items: center; gap: 10px">
           <span
             class="badge"
@@ -51,7 +53,14 @@
               color: var(--heat);
             "
             >MANUAL</span
-          ><span style="font-size: 22px; font-weight: 700; min-width: 56px; text-align: right"
+          ><span
+            style="
+              font-size: 26px;
+              line-height: 32px;
+              font-weight: 700;
+              min-width: 56px;
+              text-align: right;
+            "
             >75%</span
           >
         </div>
@@ -71,9 +80,9 @@
           padding: 0 14px;
           border-radius: var(--radius-md);
           border: 0;
-          background: var(--surface-raised);
-          color: var(--heat);
-          font-size: 14px;
+          background: transparent;
+          color: var(--ink);
+          font-size: 13px;
           font-weight: 600;
         "
       >
@@ -82,7 +91,7 @@
     </div>
     <div style="display: flex; flex-direction: column; gap: 10px">
       <div style="display: flex; align-items: center; justify-content: space-between">
-        <label for="f" style="font-size: 14px; font-weight: 600">Fan</label>
+        <label for="f" style="font-size: 15px; font-weight: 600">Fan</label>
         <div style="display: flex; align-items: center; gap: 10px">
           <span
             class="badge"
@@ -93,7 +102,14 @@
               color: var(--air);
             "
             >AUTO</span
-          ><span style="font-size: 22px; font-weight: 700; min-width: 56px; text-align: right"
+          ><span
+            style="
+              font-size: 26px;
+              line-height: 32px;
+              font-weight: 700;
+              min-width: 56px;
+              text-align: right;
+            "
             >35%</span
           >
         </div>
@@ -110,8 +126,15 @@
     </div>
     <div style="display: flex; flex-direction: column; gap: 10px">
       <div style="display: flex; align-items: center; justify-content: space-between">
-        <label for="d" style="font-size: 14px; font-weight: 600">Drum</label
-        ><span style="font-size: 22px; font-weight: 700; min-width: 56px; text-align: right"
+        <label for="d" style="font-size: 15px; font-weight: 600">Drum</label
+        ><span
+          style="
+            font-size: 26px;
+            line-height: 32px;
+            font-weight: 700;
+            min-width: 56px;
+            text-align: right;
+          "
           >60%</span
         >
       </div>
