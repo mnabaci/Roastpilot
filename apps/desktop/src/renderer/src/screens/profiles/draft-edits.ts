@@ -25,6 +25,21 @@ export function removeStep(draft: ProfileDraft, index: number): ProfileDraft {
   return { ...draft, steps: draft.steps.filter((_, i) => i !== index) };
 }
 
+/** Whether step `index` sits between the Soak and the last step, so it can move. */
+export const movable = (draft: ProfileDraft, index: number): boolean =>
+  index >= 0 && index < draft.steps.length - 1;
+
+/**
+ * Moves step `from` to `to`, values and all. The Soak (kept apart) stays first and the last step
+ * stays last; an order that makes no sense is left for the draft's checks to flag.
+ */
+export function moveStep(draft: ProfileDraft, from: number, to: number): ProfileDraft {
+  const step = draft.steps[from];
+  if (!step || from === to || !movable(draft, from) || !movable(draft, to)) return draft;
+  const rest = draft.steps.filter((_, i) => i !== from);
+  return { ...draft, steps: [...rest.slice(0, to), step, ...rest.slice(to)] };
+}
+
 export function addPoint(draft: ProfileDraft): ProfileDraft {
   const last = draft.points.at(-1);
   return { ...draft, points: [...draft.points, { time: last?.time ?? '', c: last?.c ?? '' }] };

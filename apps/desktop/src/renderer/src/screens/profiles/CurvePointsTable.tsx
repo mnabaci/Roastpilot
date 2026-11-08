@@ -22,7 +22,10 @@ export function CurvePointsTable({
     });
   };
   return (
-    <section aria-labelledby="curve-heading" className="flex max-w-sm flex-col gap-2">
+    <section
+      aria-labelledby="curve-heading"
+      className="flex max-w-sm min-w-0 flex-col gap-2 xl:max-w-none"
+    >
       <h2 id="curve-heading" className="text-heading">
         Curve points
       </h2>

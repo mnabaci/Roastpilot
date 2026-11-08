@@ -1,6 +1,6 @@
 import { cn, formatClock, NumberField, SelectField } from '@roastpilot/ui';
 import type { DraftErrors, ProfileDraft } from './profile-draft';
-import { CELL, FIXED } from './step-cells';
+import { BUTTON_CELL, CELL, FIXED } from './step-cells';
 import { soakFromValue, soakOptions, soakValue } from './soak-lengths';
 
 /**
@@ -45,6 +45,8 @@ export function SoakRow({
   return (
     <>
       <tr>
+        {/* The Soak stays first: no handle, only the column's room. */}
+        {readOnly ? null : <td className={BUTTON_CELL} />}
         <td className={cn(FIXED, 'text-ink')}>
           <span>Soak</span>
         </td>
@@ -70,7 +72,7 @@ export function SoakRow({
           />
         </td>
         {steps ? <td className={CELL} /> : length}
-        <td className={CELL} />
+        <td className={BUTTON_CELL} />
       </tr>
       {errors.soakFan ? (
         <tr>
