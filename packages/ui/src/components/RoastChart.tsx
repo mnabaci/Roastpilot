@@ -1,22 +1,15 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type uPlot from 'uplot';
 import 'uplot/dist/uPlot.min.css';
 import { formatClock } from '../lib/format';
 import { cn } from '../lib/utils';
-import { alignLayers } from './roast-chart/align-layers';
 import { readChartColors } from './roast-chart/chart-colors';
-import {
-  isLineLayer,
-  type ChartAid,
-  type ChartLayer,
-  type ChartMarker,
-  type LineLayer,
-} from './roast-chart/chart-layer';
+import type { ChartLayer, ChartMarker, LineLayer } from './roast-chart/chart-layer';
 import { describeLayers, Legend } from './roast-chart/chart-legend';
 import type { ChartDrag, TimeRange } from './roast-chart/drag-handles';
 import { usePlotEngine } from './roast-chart/plot-engine';
 import { buildChartOptions, buildStripOptions } from './roast-chart/uplot-options';
-import { useUplot, type Overlay } from './roast-chart/use-uplot';
+import { splitLayers } from './roast-chart/split-layers';
+import { useUplot } from './roast-chart/use-uplot';
 
 export interface RoastChartProps {
   title: string;
@@ -93,27 +86,11 @@ export function RoastChart({
       : [from, to];
   };
 
-  const { main, strip, mainData, stripData, mainOverlay, stripOverlay } = useMemo(() => {
-    const lines = layers.filter(isLineLayer);
-    const aids = layers.filter((l): l is ChartAid => !isLineLayer(l));
-    const main = lines.filter((l) => l.axis !== 'output');
-    const strip = lines.filter((l) => l.axis === 'output');
-    // One set of times for both plots, so they share a time range and line up.
-    const { xs, series } = alignLayers([...main, ...strip]);
-    return {
-      main,
-      strip,
-      mainData: [xs, ...series.slice(0, main.length)] as uPlot.AlignedData,
-      stripData: [xs, ...series.slice(main.length)] as uPlot.AlignedData,
-      mainOverlay: { markers, aids } satisfies Overlay,
-      // The strip shares the now line, nothing else.
-      stripOverlay: {
-        markers,
-        aids: aids.filter((aid) => aid.kind === 'now-line'),
-      } satisfies Overlay,
-    };
+  const { main, strip, mainData, stripData, mainOverlay, stripOverlay } = useMemo(
+    () => splitLayers(layers, markers),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- dragsEnded only asks for fresh arrays
-  }, [layers, markers, dragsEnded]);
+    [layers, markers, dragsEnded],
+  );
   const scaleKey = `${String(timeWindow?.fromS)}:${String(timeWindow?.toS)}:${String(temperatureFloorC)}`;
   const rightAxis = main.some((l) => l.axis === 'ror');
 
