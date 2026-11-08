@@ -107,6 +107,25 @@ describe('SettingsScreen', () => {
     expect(api.setSettings).toHaveBeenCalledWith(expect.objectContaining({ chartSmoothingS: 0 }));
   });
 
+  it('switches each chart aid during a roast, all on until you choose, each with its hint', async () => {
+    const { api, stores } = renderApp(<Settings first="chart" />);
+    const card = screen.getByRole('region', { name: 'During a roast' });
+    for (const [name, hint] of [
+      ['Projection', 'Where the temperature is heading at this RoR'],
+      ['Now line', 'A line at the current time'],
+      ['Temperature focus', 'Temperature axis from 50 °C'],
+      ['Phase bands', 'Drying, Maillard and development behind the curve'],
+    ] as const) {
+      expect(within(card).getByRole('switch', { name })).toHaveAttribute('aria-checked', 'true');
+      expect(within(card).getByText(hint)).toBeInTheDocument();
+    }
+    await userEvent.click(within(card).getByRole('switch', { name: 'Phase bands' }));
+    expect(stores.settings.getState().settings.chartPhaseBands).toBe(false);
+    expect(api.setSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ chartPhaseBands: false, chartProjection: true }),
+    );
+  });
+
   it('picks the theme: Dark until you choose', async () => {
     const { api, stores } = renderApp(<Settings first="appearance" />);
     expect(radio('Dark', 'Theme')).toBeChecked();

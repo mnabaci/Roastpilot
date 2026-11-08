@@ -32,13 +32,34 @@ export function SettingRow({
   );
 }
 
-/** A section's rows in one card. */
-export function SettingCard({ title, children }: { title: string; children: ReactNode }) {
+/** A section: its title on the sidebar title's line, then its cards, `space-4` apart. */
+export function SettingSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section aria-label={title} className={cn('flex flex-col gap-3', PAGE_WIDTH)}>
       {/* The open section's name is its title, on the sidebar title's line, as on every screen. */}
       <h2 className="flex min-h-control-sm items-center text-title">{title}</h2>
-      <div className="flex flex-col rounded-xl bg-surface px-5">{children}</div>
+      <div className="flex flex-col gap-4">{children}</div>
     </section>
+  );
+}
+
+/** Rows in one card; a second card in a section names itself with a card title. */
+export function SettingRows({ title, children }: { title?: string; children: ReactNode }) {
+  if (title === undefined)
+    return <div className="flex flex-col rounded-xl bg-surface px-5">{children}</div>;
+  return (
+    <section aria-label={title} className="flex flex-col rounded-xl bg-surface px-5 pt-4">
+      <h3 className="text-heading">{title}</h3>
+      <div className="flex flex-col">{children}</div>
+    </section>
+  );
+}
+
+/** A section's rows in one card. */
+export function SettingCard({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <SettingSection title={title}>
+      <SettingRows>{children}</SettingRows>
+    </SettingSection>
   );
 }
