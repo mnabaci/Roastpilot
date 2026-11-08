@@ -46,8 +46,8 @@ describe('RoastScreen coach card', () => {
       .map((r) => r.getAttribute('aria-label'));
     expect(regions.indexOf('Coach suggestion')).toBeLessThan(regions.indexOf('Outputs'));
     const card = screen.getByRole('region', { name: 'Coach suggestion' });
-    expect(within(card).getByText('Heater 65% → 75%')).toBeInTheDocument();
-    expect(within(card).getByText('Fan 50% → 40%')).toBeInTheDocument();
+    expect(card).toHaveTextContent(/Heater\s*from 65%\s*to 75%/);
+    expect(card).toHaveTextContent(/Fan\s*from 50%\s*to 40%/);
     expect(card).toHaveTextContent('4 °C below target, RoR falling');
   });
 

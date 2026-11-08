@@ -1,15 +1,14 @@
 import type { CoachAdvice, CoachChange, CoachSetting, CoachStatus } from '@roastpilot/shared';
-import { formatClock } from '@roastpilot/ui';
+import { formatClock, type CoachCardChange } from '@roastpilot/ui';
 
-const pct = (value: number) => `${String(Math.round(value))}%`;
-const step = (name: string, change: CoachChange) =>
-  `${name} ${pct(change.from)} → ${pct(change.to)}`;
-
-/** One line per output it changes, heater first: ["Heater 65% → 75%", "Fan 50% → 40%"]. */
-export function coachChanges({ heater, fan }: Pick<CoachSetting, 'heater' | 'fan'>): string[] {
-  return [heater && step('Heater', heater), fan && step('Fan', fan)].filter(
-    (line): line is string => Boolean(line),
-  );
+/** One row per output it changes, heater first, each in its slider's colour. */
+export function coachChanges({
+  heater,
+  fan,
+}: Pick<CoachSetting, 'heater' | 'fan'>): CoachCardChange[] {
+  const row = (name: string, tone: CoachCardChange['tone'], change: CoachChange | undefined) =>
+    change ? [{ name, from: change.from, to: change.to, tone }] : [];
+  return [...row('Heater', 'heat', heater), ...row('Fan', 'air', fan)];
 }
 
 /** A heads-up's one line (docs/spec/manual-mode.md, Coach). */
