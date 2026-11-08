@@ -1,5 +1,6 @@
 import {
   err,
+  MILESTONE_MAX_DROP_C,
   MilestonesSchema,
   ok,
   sayInUnit,
@@ -37,7 +38,8 @@ export function toMilestoneDraft(m: Milestones, unit: TemperatureUnit): Mileston
   const points = [m.turningPoint, m.dryEnd, m.firstCrack, m.drop, ...m.extras];
   return {
     unit,
-    exact: { temps: [m.chargeC, ...points.map((p) => p.c)], rates: [] },
+    // The drop limit last: typed as shown (450 °F), it reads as the limit itself, not 232.2 °C.
+    exact: { temps: [m.chargeC, ...points.map((p) => p.c), MILESTONE_MAX_DROP_C], rates: [] },
     chargeC: tempPlain(m.chargeC, unit),
     rows: {
       turningPoint: asDraft(m.turningPoint),

@@ -1,21 +1,20 @@
-import {
-  diffFromUnit,
-  diffPlain,
-  fromUnit,
-  tempPlain,
-  type TemperatureUnit,
-} from '@roastpilot/shared';
+import { diffPlain, tempPlain, type TemperatureUnit } from '@roastpilot/shared';
+import { unitReader } from '../../lib/unit-reader';
 import type { ProfileDraft } from './profile-draft';
 
-/** A typed cell in another unit; text that isn't a number yet is left as typed. */
+/**
+ * A typed cell in another unit; text that isn't a number yet is left as typed. A cell still
+ * showing one of the profile's own values converts from that exact °C value, so switching back
+ * and forth never drifts it (92 °C → 198 °F → 92, not 92.2).
+ */
 const convertCell =
-  (from: TemperatureUnit, to: TemperatureUnit, kind: 'temp' | 'rate') =>
+  (draft: ProfileDraft, to: TemperatureUnit, kind: 'temp' | 'rate') =>
   (text: string): string => {
-    const value = Number(text.trim());
-    if (text.trim() === '' || !Number.isFinite(value)) return text;
+    if (text.trim() === '' || !Number.isFinite(Number(text.trim()))) return text;
+    const read = unitReader(draft.unit, draft.exact);
     return kind === 'temp'
-      ? tempPlain(fromUnit(value, from), to)
-      : diffPlain(diffFromUnit(value, from), to);
+      ? tempPlain(read.temp('cell', text), to)
+      : diffPlain(read.rate('cell', text), to);
   };
 
 /**
@@ -24,8 +23,8 @@ const convertCell =
  */
 export function draftInUnit(draft: ProfileDraft, unit: TemperatureUnit): ProfileDraft {
   if (draft.unit === unit) return draft;
-  const temp = convertCell(draft.unit, unit, 'temp');
-  const rate = convertCell(draft.unit, unit, 'rate');
+  const temp = convertCell(draft, unit, 'temp');
+  const rate = convertCell(draft, unit, 'rate');
   return {
     ...draft,
     unit,

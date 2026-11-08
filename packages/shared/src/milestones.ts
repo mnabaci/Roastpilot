@@ -7,7 +7,8 @@ export const MILESTONE_CAP_MARGIN_C = 3;
 /** A phase's backup comes this long after the curve reaches its trigger. */
 export const MILESTONE_BACKUP_MARGIN_S = 60;
 
-const MAX_DROP_C = PROFILE_LIMITS.capC.max - MILESTONE_CAP_MARGIN_C;
+/** The hottest drop: the cap's limit less its margin (232 °C, shown as 450 °F). */
+export const MILESTONE_MAX_DROP_C = PROFILE_LIMITS.capC.max - MILESTONE_CAP_MARGIN_C;
 const MAX_DROP_S = PROFILE_LIMITS.backupS.max - MILESTONE_BACKUP_MARGIN_S;
 
 const mmss = (s: number) => `${String(Math.floor(s / 60))}:${String(s % 60).padStart(2, '0')}`;
@@ -51,7 +52,9 @@ function limits(m: Milestones, ctx: Ctx) {
   } else if (m.drop.tS > MAX_DROP_S) {
     issue(ctx, ['drop', 'tS'], `At most ${mmss(MAX_DROP_S)}`);
   }
-  if (m.drop.c > MAX_DROP_C) issue(ctx, ['drop', 'c'], `At most ${tempInText(MAX_DROP_C)}`);
+  if (m.drop.c > MILESTONE_MAX_DROP_C) {
+    issue(ctx, ['drop', 'c'], `At most ${tempInText(MILESTONE_MAX_DROP_C)}`);
+  }
   // The cap sits just above drop, and a cap under charge would drop the roast as it starts.
   const minDropC = m.chargeC - MILESTONE_CAP_MARGIN_C;
   const chargeOk = m.chargeC >= min && m.chargeC <= max;

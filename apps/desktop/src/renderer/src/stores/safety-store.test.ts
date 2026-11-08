@@ -56,4 +56,16 @@ describe('safety store', () => {
     expect(state).toEqual({ locked: true, tripped: ['computer-sleep'] });
     expect(applySafetyEvent(state, { kind: 'unlocked', atMs: 2 })).toEqual(none);
   });
+
+  it('remembers readings came back after a lost connection, until the lock lifts', () => {
+    let state = applySafetyEvent(none, {
+      kind: 'tripped',
+      rule: 'lost-connection',
+      action: 'safe-stop',
+      atMs: 1,
+    });
+    state = applySafetyEvent(state, { kind: 'cleared', rule: 'lost-connection', atMs: 2 });
+    expect(state).toEqual({ locked: true, tripped: [], reconnected: true });
+    expect(applySafetyEvent(state, { kind: 'unlocked', atMs: 3 })).toEqual(none);
+  });
 });

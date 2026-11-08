@@ -112,7 +112,11 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
         />
       </div>
       {/* The panel shows what the moment needs (docs/spec/ui.md, Side panel follows the roast). */}
-      <aside aria-label="Controls" className="flex min-h-0 w-80 flex-col gap-4 overflow-y-auto">
+      {/* Relative, so a screen-reader-only label low in the panel never stretches the page. */}
+      <aside
+        aria-label="Controls"
+        className="relative flex min-h-0 w-80 flex-col gap-4 overflow-y-auto"
+      >
         {!hasRoaster ? (
           <>
             {flow}
