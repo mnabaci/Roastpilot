@@ -32,6 +32,7 @@ function setup(repository = unavailableRepository('disk gone')) {
   const service = new HistoryService({
     repository,
     beanNames: () => Promise.resolve(new Map([[4, 'Yirgacheffe']])),
+    temperatureUnit: () => 'f',
     isRecording: (id) => id === 9,
     onDeleted,
     onResultSaved,
@@ -87,6 +88,8 @@ describe('HistoryService', () => {
     const csv = await service.exportCsv([2]);
     const lines = csv.ok ? csv.value.trim().split('\n') : [];
     expect(lines).toHaveLength(2);
+    // In the unit shown.
+    expect(lines[0]).toContain('drop_f');
   });
 
   it('lists roasts', async () => {

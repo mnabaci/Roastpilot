@@ -87,7 +87,8 @@ Visual language: the [Roastpilot design system](../design-system/README.md) (ADR
 
 ## Profiles screen
 
-- **Header:** the profile's name as the title (click to rename; built-ins are read-only), with Built-in, Needs calibration and Not saved as badges; on the right one action for the state: Save and Discard while edited, else Use for Auto, or an AUTO badge if Auto already uses it; then "⋯" with Duplicate, Copy to <roaster>, Export this profile and Delete (red).
+- **Header:** the profile's name as the title (click to rename; built-ins are read-only), with Built-in, Needs calibration and Not saved as badges; on the right one action for the state: Save and Discard while edited, else Use for Auto, or an AUTO badge if Auto already uses it; then "⋯" with Duplicate, Copy to <roaster>, Mark as calibrated (Mark as needs calibration once it is), Export this profile and Delete (red).
+- **Calibration:** once Auto roasts on your own profile go as planned, Mark as calibrated takes away its Needs calibration, and with it the note on the setup card, the profile picker and the coach card. It saves only that, so an unsaved edit stays one. Built-ins stay as they ship (duplicate one to calibrate it), and the profile Auto is running waits until Drop, as Delete does.
 - **List "⋯":** New from milestones, Export all, Import a Roastpilot file ([data-model.md](data-model.md#beans-profiles-and-roasters-files)).
 - **List:** the profile Auto uses carries an AUTO badge (`air`), unsaved ones Edited (an edit undone by hand, like adding a step and removing it, is no edit: no badge, no Save).
 - **Milestone 4:** list on the left (the shared sidebar), editor on the right. Built-ins are read-only with Duplicate; a copy can be renamed, edited, saved, discarded or deleted (asked once inline). "Use for Auto" picks the one Auto runs.
@@ -188,3 +189,11 @@ Temperatures are stored in °C ([extensibility.md](extensibility.md)); Settings 
 | Roastpilot files                                                    | Always °C ([data-model.md](data-model.md#beans-profiles-and-roasters-files))                       |
 | PID gains (Advanced tuning)                                         | Stay per °C, and say so: they tune the controller, not a reading                                   |
 | Weights and times                                                   | Unchanged: grams, m:ss                                                                             |
+
+- **What shows whole:** in °F a temperature is whole everywhere (the big number, the roast strip, hover, events, History's drop: 183.0 °C is 361 °F); a RoR keeps its decimal (6.0 °C/min is 10.8 °F/min). Differences in a line are whole too ("−7 °F vs plan", "+6 °F vs ghost"); a step's RoR aim keeps 0.1 ("Aim 14.4–18"), a curve's aim is whole ("Aim 17").
+- **Typed differences** (RoR range, temp offset) are kept in °C to 0.01, so one typed to 0.1 °F (3.5 °F) shows as typed again; a cell you didn't touch keeps its exact °C value, so an edit elsewhere never nudges the rest by the rounding.
+- **Unsaved profile edits** kept while you look elsewhere follow a unit change: their typed numbers are converted, half-typed text is left as it is.
+- **Chart in °F:** the fixed 0–250 °C span is 32–482 °F and grows in 100 °F steps; with Temperature focus the floor is expected TP − 15 °C rounded down to a multiple of 50 °F (100 °F with no TP); switching unit mid-roast moves it down onto the new steps, never up. RoR shows at least 0–54 °F/min.
+- **Cool the drum to** keeps its four °C steps, named in °F: 104, 122, 140 or 158 °F.
+- **Messages** from the rules (profile, milestone and roaster limits, a refused import, the coach's reason) carry their temperatures as values the screen says in its unit; the logs say them in °C.
+- **Advanced tuning** adds "· gains stay per °C" to its line in °F.

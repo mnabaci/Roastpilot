@@ -42,22 +42,26 @@ describe('history formatting', () => {
   });
 
   it('numbers: total, first crack, drop temp, leaving out what is missing', () => {
-    expect(roastNumbers(summary(1))).toBe('9:40 · FC 8:00 · 205.5 °C');
-    expect(roastNumbers(summary(1, { fcTimeS: null }))).toBe('9:40 · 205.5 °C');
-    expect(roastNumbers(summary(1, { fcTimeS: null, dropTimeS: null, dropTemp: null }))).toBe('');
+    expect(roastNumbers(summary(1), 'c')).toBe('9:40 · FC 8:00 · 205.5 °C');
+    expect(roastNumbers(summary(1, { fcTimeS: null }), 'c')).toBe('9:40 · 205.5 °C');
+    // The drop temperature in °F is whole: 205.5 °C is 402 °F.
+    expect(roastNumbers(summary(1), 'f')).toBe('9:40 · FC 8:00 · 402 °F');
+    expect(roastNumbers(summary(1, { fcTimeS: null, dropTimeS: null, dropTemp: null }), 'c')).toBe(
+      '',
+    );
   });
 
   it('marks unfinished roasts, and the newest as In progress while roasting', () => {
     const roasts = [summary(2, { endedAt: null }), summary(1, { endedAt: null })];
-    expect(roastRows(roasts, 'done', UTC_GB).map((r) => r.badge)).toEqual([
+    expect(roastRows(roasts, 'done', 'c', UTC_GB).map((r) => r.badge)).toEqual([
       'Unfinished',
       'Unfinished',
     ]);
-    expect(roastRows(roasts, 'cooling', UTC_GB).map((r) => r.badge)).toEqual([
+    expect(roastRows(roasts, 'cooling', 'c', UTC_GB).map((r) => r.badge)).toEqual([
       'In progress',
       'Unfinished',
     ]);
-    expect(roastRows([summary(3)], 'roasting', UTC_GB)[0]?.badge).toBeUndefined();
+    expect(roastRows([summary(3)], 'roasting', 'c', UTC_GB)[0]?.badge).toBeUndefined();
   });
 
   it('after a delete, selects the next roast down, else the one above', () => {

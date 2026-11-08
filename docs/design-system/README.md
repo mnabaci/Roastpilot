@@ -17,7 +17,7 @@ Roastpilot is a desktop app that roasts coffee on autopilot and coaches you when
 ## Voice and copy
 
 - Sentence case everywhere except badges (`AUTO`, `MANUAL`, `BUILT-IN`).
-- Lead with the value, then the unit with a space: `212 °C`, `9.4 °C/min`, `375 g`, `1:58`.
+- Lead with the value, then the unit with a space: `212 °C`, `9.4 °C/min`, `375 g`, `1:58`. Temperatures follow Settings › Appearance › Temperature: in °F the same rule reads `414 °F`, `16.9 °F/min`, a temperature whole ([ui.md](../spec/ui.md#units)).
 - Times are `m:ss` (`10:18`), never `10m 18s`.
 - Verbs on buttons: Preheat, Beans in · Start, First crack, Drop now, Resume auto, Apply.
 - Hints say what to do next, in one line: "Press First crack when you hear it."

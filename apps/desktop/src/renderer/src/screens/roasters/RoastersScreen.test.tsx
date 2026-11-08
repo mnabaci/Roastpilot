@@ -2,7 +2,7 @@ import { err, ok, type RoastpilotApi } from '@roastpilot/shared';
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { CONNECTED, fakeApi, renderApp } from '../../test/render-app';
+import { ACCEPTED_SETTINGS, CONNECTED, fakeApi, renderApp } from '../../test/render-app';
 import { roastersWith, SIMULATOR, SKYWALKER } from '../../test/roasters';
 import type { Stores } from '../../stores/stores';
 import { RoastersScreen } from './RoastersScreen';
@@ -329,6 +329,26 @@ describe('RoastersScreen', () => {
       await userEvent.type(maxTemp, '230');
       await userEvent.click(screen.getByRole('button', { name: 'Save' }));
       expect(api.saveRoaster).toHaveBeenCalledWith(expect.objectContaining({ maxTempC: 230 }));
+    });
+
+    it('in °F, shows and checks the limits in °F and saves °C', async () => {
+      const { api } = renderApp(<RoastersScreen />, {
+        roasters: roastersWith(null),
+        settings: { ...ACCEPTED_SETTINGS, temperatureUnit: 'f' },
+      });
+      const maxTemp = screen.getByRole('textbox', { name: 'Max temp' });
+      expect(maxTemp).toHaveValue('464');
+      await userEvent.clear(maxTemp);
+      await userEvent.type(maxTemp, '500');
+      expect(screen.getByText('At most 464 °F on this model')).toBeInTheDocument();
+      await userEvent.clear(maxTemp);
+      await userEvent.type(maxTemp, '446');
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      expect(api.saveRoaster).toHaveBeenCalledWith(
+        expect.objectContaining({ maxTempC: 230, tempOffsetC: SKYWALKER.tempOffsetC }),
+      );
+      await userEvent.click(screen.getByRole('button', { name: /Advanced tuning/ }));
+      expect(screen.getByText(/gains stay per °C$/)).toBeInTheDocument();
     });
 
     it('turns the bean cooler helping the drum off, and saves it', async () => {

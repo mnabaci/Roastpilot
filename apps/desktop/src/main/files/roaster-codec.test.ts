@@ -1,6 +1,6 @@
 import { silentLogger, type RoasterRepository } from '@roastpilot/core';
 import { BUILT_IN_ROASTERS } from '@roastpilot/drivers';
-import { err, ok, type Roaster } from '@roastpilot/shared';
+import { err, ok, tempInText, type Roaster } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { RoasterService } from '../roasters/roaster-service';
 import { exported, filesOf, without } from './codec-test-kit';
@@ -84,7 +84,7 @@ describe('roaster files', () => {
       err({
         kind: 'bad-item',
         name: 'Skywalker',
-        reason: 'Max temp: At most 240 °C on this model',
+        reason: `Max temp: At most ${tempInText(240)} on this model`,
       }),
     );
     const unknown = await filesOf('roasters', codec).importFile(

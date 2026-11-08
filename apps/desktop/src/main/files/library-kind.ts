@@ -3,6 +3,7 @@ import {
   err,
   ok,
   readEnvelope,
+  sayInUnit,
   toEnvelope,
   type ImportLibraryError,
   type LibraryItemId,
@@ -96,7 +97,12 @@ export function libraryFiles<Item>(
       const envelope = readEnvelope(text, kind);
       const items = envelope.ok ? readItems(codec, envelope.value.items) : envelope;
       if (!items.ok) {
-        logger.warn('files.import-refused', { kind, reason: items.error });
+        // A refused item's reason carries temperature tokens: the log says them in °C.
+        const reason =
+          'reason' in items.error
+            ? { ...items.error, reason: sayInUnit(items.error.reason, 'c') }
+            : items.error;
+        logger.warn('files.import-refused', { kind, reason });
         return items;
       }
       const here = await codec.here();

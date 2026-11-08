@@ -1,4 +1,4 @@
-import type { AutoProfile } from '@roastpilot/shared';
+import { toUnit, type AutoProfile } from '@roastpilot/shared';
 import { formatClock } from '@roastpilot/ui';
 import type { ProfileDraft, StepDraft } from './profile-draft';
 
@@ -46,8 +46,9 @@ export function addPoint(draft: ProfileDraft): ProfileDraft {
 }
 
 /**
- * Moves point `index` (counted after charge) to whole seconds and degrees, staying between its
- * neighbours and under the BT cap, so a drag can't make the profile invalid.
+ * Moves point `index` (counted after charge) to whole seconds and whole degrees in the draft's
+ * unit (`to` is in °C), staying between its neighbours and under the BT cap, so a drag can't make
+ * the profile invalid.
  */
 export function movePoint(
   draft: ProfileDraft,
@@ -58,11 +59,15 @@ export function movePoint(
   const minS = (profile.curve[index]?.tS ?? -1) + 1;
   const maxS = (profile.curve[index + 2]?.tS ?? Infinity) - 1;
   const tS = Math.min(Math.max(Math.round(to.t), minS), maxS);
-  const c = Math.min(Math.max(Math.round(to.v), 0), profile.capC);
+  const { unit } = draft;
+  // Float dust: 220 °C is 428 °F, which must stay under a 220 °C cap.
+  const highest = Math.floor(toUnit(profile.capC, unit) + 1e-9);
+  const lowest = Math.ceil(toUnit(0, unit));
+  const degrees = Math.min(Math.max(Math.round(toUnit(to.v, unit)), lowest), highest);
   return {
     ...draft,
     points: draft.points.map((point, i) =>
-      i === index ? { time: formatClock(tS), c: String(c) } : point,
+      i === index ? { time: formatClock(tS), c: String(degrees) } : point,
     ),
   };
 }

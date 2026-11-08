@@ -1,3 +1,4 @@
+import { tempSymbol } from '@roastpilot/shared';
 import { Button, formatClock, NumberField } from '@roastpilot/ui';
 import { Plus, X } from 'lucide-react';
 import { addPoint, removePoint } from './draft-edits';
@@ -30,7 +31,7 @@ export function CurvePointsTable({
         Curve points
       </h2>
       <p className="text-body text-ink-muted">
-        {formatClock(0)} · {draft.chargeC} °C (charge temp)
+        {formatClock(0)} · {draft.chargeC} {tempSymbol(draft.unit)} (charge temp)
       </p>
       {draft.points.map((point, index) => {
         const timeError = errors[`points.${String(index)}.time`];
@@ -53,7 +54,7 @@ export function CurvePointsTable({
               label={`Point ${String(index + 1)} temperature`}
               hideLabel
               className="flex-1"
-              unit="°C"
+              unit={tempSymbol(draft.unit)}
               value={point.c}
               disabled={readOnly}
               invalid={Boolean(tempError)}

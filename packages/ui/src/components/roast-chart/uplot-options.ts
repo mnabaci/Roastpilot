@@ -1,9 +1,10 @@
+import type { TemperatureUnit } from '@roastpilot/shared';
 import type uPlot from 'uplot';
 import { formatClock } from '../../lib/format';
 import type { ChartColors } from './chart-colors';
 import type { ChartAid, ChartMarker, LineLayer } from './chart-layer';
 import {
-  aidsTopC,
+  aidsTop,
   drawBandLabels,
   drawNowLines,
   drawPhaseBands,
@@ -24,7 +25,7 @@ import {
 import {
   OUTPUT_RANGE,
   OUTPUT_TICKS,
-  ROR_RANGE,
+  rorRange,
   temperatureRange,
   TIME_STEPS_S,
   xScale,
@@ -51,8 +52,10 @@ interface CommonInput {
 export interface ChartOptionsInput extends CommonInput {
   /** Index of the layer that gets the current-point dot, if any. */
   latestDotLayer: number;
-  /** Where the temperature axis starts, °C, read at draw time. */
-  temperatureFloorC: () => number;
+  /** Where the temperature axis starts, in `unit`, read at draw time. */
+  temperatureFloor: () => number;
+  /** The unit the layers, aids and floor are already in: it sets the axes' steps. */
+  unit: TemperatureUnit;
   /** Moves the chart's draggable points. */
   dragging?: {
     drag: () => ChartDrag | undefined;
@@ -66,7 +69,7 @@ export interface StripOptionsInput extends CommonInput {
   stepped: uPlot.Series.PathBuilder | undefined;
 }
 
-/** The temperature chart: °C on the left, RoR on the right, markers with labels. */
+/** The temperature chart: temperature on the left, RoR on the right, markers with labels. */
 export function buildChartOptions({
   width,
   height,
@@ -74,7 +77,8 @@ export function buildChartOptions({
   markers,
   aids,
   latestDotLayer,
-  temperatureFloorC,
+  temperatureFloor,
+  unit,
   colors,
   rightAxis,
   onHover,
@@ -91,8 +95,8 @@ export function buildChartOptions({
     ...noAxisGutter(rightAxis),
     scales: {
       x: xScale(adjustTimeRange),
-      temperature: { range: temperatureRange(temperatureFloorC, () => aidsTopC(aids())) },
-      ror: { range: ROR_RANGE },
+      temperature: { range: temperatureRange(temperatureFloor, () => aidsTop(aids()), unit) },
+      ror: { range: rorRange(unit) },
     },
     axes: [
       {

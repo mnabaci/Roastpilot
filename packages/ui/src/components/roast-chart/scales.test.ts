@@ -1,6 +1,6 @@
 import type uPlot from 'uplot';
 import { describe, expect, it } from 'vitest';
-import { MIN_TIME_SPAN_S, ROR_RANGE, temperatureRange, TIME_RANGE } from './scales';
+import { MIN_TIME_SPAN_S, rorRange, temperatureRange, TIME_RANGE } from './scales';
 
 const range = (min: number, max: number) => TIME_RANGE({} as uPlot, min, max, 'x');
 
@@ -44,6 +44,17 @@ describe('temperature axis', () => {
     expect(focused({} as uPlot, 92, 210, 'temperature')).toEqual([0, 250]);
   });
 
+  it('in °F, stays at the same 32–482 °F and grows in 100 °F steps', () => {
+    const fahrenheit = temperatureRange(
+      () => 32,
+      () => undefined,
+      'f',
+    );
+    expect(fahrenheit({} as uPlot, 100, 470, 'temperature')).toEqual([32, 482]);
+    expect(fahrenheit({} as uPlot, 100, 483, 'temperature')).toEqual([32, 500]);
+    expect(fahrenheit({} as uPlot, 100, 512, 'temperature')).toEqual([32, 600]);
+  });
+
   it('grows for an aid drawn hotter than the data, so the projection is never cut off', () => {
     const withProjection = (topC: number | undefined) =>
       temperatureRange(
@@ -56,7 +67,7 @@ describe('temperature axis', () => {
   });
 });
 
-const ror = (min: number, max: number) => ROR_RANGE({} as uPlot, min, max, 'ror');
+const ror = (min: number, max: number) => rorRange('c')({} as uPlot, min, max, 'ror');
 
 describe('RoR axis', () => {
   it('shows at least 0–30 °C/min', () => {
@@ -69,5 +80,10 @@ describe('RoR axis', () => {
 
   it('copes with no RoR yet', () => {
     expect(ror(Number.NaN, Number.NaN)).toEqual([0, 30]);
+  });
+
+  it('shows at least the same 0–54 °F/min in °F', () => {
+    expect(rorRange('f')({} as uPlot, 7.6, 23, 'ror')).toEqual([0, 54]);
+    expect(rorRange('f')({} as uPlot, -12.2, 74.1, 'ror')).toEqual([-13, 75]);
   });
 });

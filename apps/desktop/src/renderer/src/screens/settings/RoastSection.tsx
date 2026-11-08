@@ -1,5 +1,6 @@
-import type { CoolingTime, RoasterCoolTo } from '@roastpilot/shared';
+import { formatPlainTemp, type CoolingTime, type RoasterCoolTo } from '@roastpilot/shared';
 import { SegmentedControl, Switch, type SegmentedOption } from '@roastpilot/ui';
+import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { useSettings } from '../../stores/use-stores';
 import { useSaveSettings } from './use-save-settings';
 import { SettingCard, SettingRow } from './SettingRow';
@@ -8,14 +9,18 @@ const COOLING_TIMES: readonly SegmentedOption<CoolingTime>[] = ([2, 3, 4, 5, 6] 
   (min) => ({ value: min, label: `${String(min)} min` }),
 );
 
-const ROASTER_COOL_TO: readonly SegmentedOption<RoasterCoolTo>[] = ([40, 50, 60, 70] as const).map(
-  (c) => ({ value: c, label: `${String(c)} °C` }),
-);
+const ROASTER_COOL_TO = [40, 50, 60, 70] as const;
 
 /** Charge point, the coach, bean cooling and drum cooling (docs/spec/manual-mode.md). */
 export function RoastSection() {
   const settings = useSettings((s) => s.settings);
   const save = useSaveSettings();
+  const unit = useTemperatureUnit();
+  // The choices stay the °C steps; °F names them as they are (50 °C is 122 °F).
+  const coolTo: readonly SegmentedOption<RoasterCoolTo>[] = ROASTER_COOL_TO.map((c) => ({
+    value: c,
+    label: formatPlainTemp(c, unit),
+  }));
   return (
     <SettingCard title="Roast">
       <SettingRow
@@ -68,7 +73,7 @@ export function RoastSection() {
         <SettingRow name="Cool the drum to" hint="Drum cooling stops below this · at most 20 min">
           <SegmentedControl
             label="Cool the drum to"
-            options={ROASTER_COOL_TO}
+            options={coolTo}
             value={settings.roasterCoolToC}
             onChange={(c) => {
               save({ roasterCoolToC: c });

@@ -65,6 +65,7 @@ export function ProfileEditor({
         layers={preview.layers}
         markers={preview.markers}
         drag={curveDrag}
+        temperatureUnit={draft.unit}
       />
       {steps ? (
         <StepsTable draft={draft} errors={errors} steps readOnly={readOnly} onChange={change} />

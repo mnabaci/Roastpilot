@@ -21,7 +21,12 @@ Drawn faint, so they never compete with the curves; none has a legend entry or a
 - **Phase bands:** full-width fills in `band-low`, `band-mid` and `band-high` for drying, Maillard and development, stronger as the beans darken; a faint step apart in both themes, under the grid. Each band's name sits inside its own band, `label` style in `ink-muted` on a `surface` chip (so it keeps 4.5:1 and the grid never cuts it): vertically centred in the band's visible part, else at its top, else its bottom; just right of the Charge line (8px in) when it is in view, else at the plot's right edge, else just right of another marker's line. It never covers a curve, the projection, the now line, a marker's line or label, or another band's name: a band with no free spot, or too thin, has none.
 - **Projection:** a straight 2px line in the colour of the line it continues (`heat` for temperature), dashed 4 4 with round caps, at 55 % opacity: dotted-looking, so it never reads as the target's 6 6 dashes.
 - **Now line:** 1px solid `ink-muted` at 55 % opacity through the chart and the outputs strip; the hover line is the dashed one.
-- **Time window and temperature floor:** the chart can be given a time span and a lowest temperature (with Temperature focus, fitted below the expected turning point in 25 °C steps); the axes don't move while you hover.
+- **Time window and temperature floor:** the chart can be given a time span and a lowest temperature (with Temperature focus, fitted below the expected turning point in 25 °C steps, 50 °F in °F); the axes don't move while you hover.
+
+## Units
+
+- Layers, aids, the floor and draggable points are always given in °C; `temperatureUnit` (`c`, default, or `f`) says what the axes, legend, hover and text alternative show. The chart converts at its door: a temperature × 1.8 + 32, a RoR (a difference) × 1.8 only, outputs untouched; a dragged point comes back in °C.
+- In °F the temperature axis keeps the same span (32–482 °F, the 0–250 °C default) and grows in 100 °F steps; RoR shows at least 0–54 °F/min; hover shows a temperature whole (`Temperature 389 °F`) and RoR to 0.1 (`RoR 16.4 °F/min`).
 
 ## Header
 

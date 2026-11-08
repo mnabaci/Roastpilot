@@ -1,7 +1,19 @@
-import { RoasterSchema, type Result, type Roaster } from '@roastpilot/shared';
+import {
+  diffPlain,
+  RoasterSchema,
+  sayInUnit,
+  tempPlain,
+  type Result,
+  type Roaster,
+  type TemperatureUnit,
+} from '@roastpilot/shared';
 import { formatClock } from '@roastpilot/ui';
+import { unitReader } from '../../lib/unit-reader';
 
-/** The roaster editor's cells, as typed. */
+/**
+ * The roaster editor's cells, as typed: `maxTempC` a temperature and `tempOffsetC` a difference
+ * in the unit shown; the PID gains stay per °C (docs/spec/ui.md, Units).
+ */
 export interface RoasterDraft {
   name: string;
   batchMinG: string;
@@ -35,16 +47,17 @@ export type TextCell = {
 
 export type RoasterDraftErrors = Readonly<Partial<Record<keyof RoasterDraft, string>>>;
 
-export function toRoasterDraft(roaster: Roaster): RoasterDraft {
+export function toRoasterDraft(roaster: Roaster, unit: TemperatureUnit): RoasterDraft {
   const { tuning } = roaster;
   return {
     name: roaster.name,
     batchMinG: String(roaster.batchMinG),
     batchIdealG: String(roaster.batchIdealG),
     batchMaxG: String(roaster.batchMaxG),
-    maxTempC: String(roaster.maxTempC),
+    maxTempC: tempPlain(roaster.maxTempC, unit),
     maxTimeMin: String(roaster.maxTimeS / 60),
-    tempOffsetC: String(roaster.tempOffsetC),
+    // A difference: +2 °C is +3.6 °F, never +35.6.
+    tempOffsetC: diffPlain(roaster.tempOffsetC, unit),
     hold: formatClock(tuning.holdS),
     targetKp: String(tuning.target.kp),
     targetKi: String(tuning.target.ki),
@@ -86,10 +99,14 @@ const CELL_OF: Readonly<Record<string, keyof RoasterDraft>> = {
   drumSpeedPct: 'drumSpeedPct',
 };
 
-/** The record a draft makes, or a message per cell. `base` keeps what the draft doesn't hold. */
+/**
+ * The record a draft typed in `unit` makes, or a message per cell in that unit. `base` keeps what
+ * the draft doesn't hold, and its own values when their cells are untouched.
+ */
 export function fromRoasterDraft(
   draft: RoasterDraft,
   base: Roaster,
+  unit: TemperatureUnit,
 ): Result<Roaster, RoasterDraftErrors> {
   const errors: Partial<Record<keyof RoasterDraft, string>> = {};
   const number = (cell: TextCell): number => {
@@ -98,6 +115,7 @@ export function fromRoasterDraft(
     if (text === '' || !Number.isFinite(value)) errors[cell] = 'Enter a number';
     return value;
   };
+  const read = unitReader(unit, { temps: [base.maxTempC], rates: [base.tempOffsetC] });
   const clock = /^(\d+):([0-5]\d)$/.exec(draft.hold.trim());
   if (!clock) errors.hold = 'Enter a time like 2:30';
   const { tuning } = base;
@@ -107,9 +125,9 @@ export function fromRoasterDraft(
     batchMinG: number('batchMinG'),
     batchIdealG: number('batchIdealG'),
     batchMaxG: number('batchMaxG'),
-    maxTempC: number('maxTempC'),
+    maxTempC: read.temp('maxTempC', draft.maxTempC),
     maxTimeS: number('maxTimeMin') * 60,
-    tempOffsetC: number('tempOffsetC'),
+    tempOffsetC: read.rate('tempOffsetC', draft.tempOffsetC),
     coolerHelpsDrum: draft.coolerHelpsDrum,
     drumSpeedPct: number('drumSpeedPct'),
     tuning: {
@@ -127,12 +145,13 @@ export function fromRoasterDraft(
       preheat: { ...tuning.preheat, kp: number('preheatKp'), ki: number('preheatKi') },
     },
   };
+  Object.assign(errors, read.errors);
   if (Object.keys(errors).length > 0) return { ok: false, error: errors };
   const parsed = RoasterSchema.safeParse(candidate);
   if (parsed.success) return { ok: true, value: parsed.data };
   for (const issue of parsed.error.issues) {
     const cell = CELL_OF[issue.path.join('.')];
-    if (cell) errors[cell] ??= issue.message;
+    if (cell) errors[cell] ??= sayInUnit(issue.message, unit);
   }
   return { ok: false, error: errors };
 }

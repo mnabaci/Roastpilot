@@ -1,5 +1,10 @@
 import type { Logger, RoastRecorder, RoastRepository } from '@roastpilot/core';
-import { IPC_CHANNELS, type IpcEventChannel, type IpcEventPayloads } from '@roastpilot/shared';
+import {
+  IPC_CHANNELS,
+  type IpcEventChannel,
+  type IpcEventPayloads,
+  type TemperatureUnit,
+} from '@roastpilot/shared';
 import type { BeanService } from './beans/bean-service';
 import { HistoryService } from './history/history-service';
 import { RoastFileService } from './history/roast-file-service';
@@ -14,6 +19,7 @@ export function createHistory({
   nowIso,
   refreshBeans,
   publish,
+  temperatureUnit,
   logger,
 }: {
   roasts: RoastRepository;
@@ -23,6 +29,8 @@ export function createHistory({
   nowIso: () => string;
   refreshBeans: () => void;
   publish: <C extends IpcEventChannel>(channel: C, payload: IpcEventPayloads[C]) => void;
+  /** The unit shown, for the CSV. */
+  temperatureUnit: () => TemperatureUnit;
   logger: Logger;
 }): { history: HistoryService; roastFiles: RoastFileService } {
   const beanNames = async () => new Map((await beans.list()).map((bean) => [bean.id, bean.name]));
@@ -42,6 +50,7 @@ export function createHistory({
     history: new HistoryService({
       repository: roasts,
       beanNames,
+      temperatureUnit,
       isRecording: (id) => recorder.isRecording(id),
       onDeleted: (id) => {
         recorder.forget(id);

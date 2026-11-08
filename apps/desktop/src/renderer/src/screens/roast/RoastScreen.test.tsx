@@ -808,6 +808,69 @@ describe('RoastScreen', () => {
     expect(screen.getByRole('switch', { name: 'Drum' })).toBeInTheDocument();
   });
 
+  describe('in °F', () => {
+    // 31 s climbing 0.1 °C a second: RoR 6 °C/min.
+    const climbing = Array.from({ length: 31 }, (_, i) =>
+      reading({ bt: 180 + i * 0.1, heater: 60, fan: 40 }, 400_000 + i * 1000),
+    );
+    const created: Parameters<PlotEngine['create']>[0][] = [];
+    const capturing: PlotEngine = {
+      create: (options) => {
+        created.push(options);
+        return { setData: vi.fn(), redraw: vi.fn(), setSize: vi.fn(), destroy: vi.fn() };
+      },
+      stepped: () => undefined,
+    };
+    const inF = () => {
+      created.length = 0;
+      return renderApp(
+        <PlotEngineProvider value={capturing}>
+          <RoastScreen onConnect={onConnect} />
+        </PlotEngineProvider>,
+        {
+          ...connected,
+          roast: { ...roast('roasting'), chargedAtMs: 0 },
+          readings: climbing,
+          settings: { ...DEFAULT_SETTINGS, temperatureUnit: 'f' },
+        },
+      );
+    };
+
+    it('shows the temperature whole in °F and RoR × 1.8, never + 32', () => {
+      inF();
+      // 183.0 °C is 361.4 °F; 6 °C/min is 10.8 °F/min.
+      expect(screen.getByRole('region', { name: 'Temperature' })).toHaveTextContent('361°F');
+      expect(screen.getByRole('region', { name: 'RoR' })).toHaveTextContent('10.8°F/min');
+    });
+
+    it('draws the chart in °F: the axis grows in 100 °F steps', () => {
+      inF();
+      expect(
+        screen.getByRole('img', { name: /^Temperature 361 °F, RoR 10\.8 °F\/min/ }),
+      ).toBeInTheDocument();
+      const range = created[0]?.scales?.temperature?.range;
+      if (typeof range !== 'function') throw new Error('expected a temperature range');
+      const top = (max: number) => range({} as never, 150, max, 'temperature')[1];
+      expect(top(470)).toBe(482);
+      expect(top(483)).toBe(500);
+    });
+
+    it('changes at once, mid-roast', () => {
+      const { stores } = renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...connected,
+        roast: { ...roast('roasting'), chargedAtMs: 0 },
+        readings: climbing,
+      });
+      expect(screen.getByRole('region', { name: 'Temperature' })).toHaveTextContent('183.0°C');
+      act(() => {
+        stores.settings.setState((st) => ({
+          settings: { ...st.settings, temperatureUnit: 'f' },
+        }));
+      });
+      expect(screen.getByRole('region', { name: 'Temperature' })).toHaveTextContent('361°F');
+    });
+  });
+
   it('redraws the chart for a new reading, not for a render without one', async () => {
     const drawn = { setData: vi.fn(), redraw: vi.fn() };
     const counting: PlotEngine = {

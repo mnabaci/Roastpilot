@@ -1,16 +1,24 @@
 import { soakLengthS } from '@roastpilot/core';
 import {
   AutoProfileSchema,
+  diffPlain,
   err,
   ok,
+  sayInUnit,
+  tempPlain,
   type AutoProfile,
   type ProfilePhase,
   type Result,
+  type TemperatureUnit,
 } from '@roastpilot/shared';
 import { formatClock } from '@roastpilot/ui';
-import { reader, type Reader } from './draft-reader';
+import type { Reader } from '../../lib/draft-reader';
+import { unitReader, type ExactValues, type UnitReader } from '../../lib/unit-reader';
 
-/** One editable step, as typed. The soak is kept apart: its length and fan are yours to change. */
+/**
+ * One editable step, as typed. The soak is kept apart: its length and fan are yours to change.
+ * `endC` is in the draft's unit; `rorMin` and `rorMax` are rates in it (°F/min in °F).
+ */
 export interface StepDraft {
   name: string;
   endC: string;
@@ -27,8 +35,15 @@ export interface PointDraft {
   c: string;
 }
 
-/** A profile as the editor holds it: text as typed, checked on the way out. */
+/**
+ * A profile as the editor holds it: text as typed, checked on the way out. Temperatures are
+ * typed in `unit` and kept in °C (docs/spec/ui.md, Units).
+ */
 export interface ProfileDraft {
+  /** What the temperature cells are typed in. */
+  unit: TemperatureUnit;
+  /** The profile's own °C values, so an untouched cell reads back exactly. */
+  exact: ExactValues;
   name: string;
   batchG: string;
   chargeC: string;
@@ -54,16 +69,18 @@ export type DraftErrors = Readonly<Record<string, string>>;
 export const isStepProfile = (profile: AutoProfile): boolean =>
   profile.phases.some((phase) => phase.heat.mode === 'target');
 
-function toStep(phase: ProfilePhase): StepDraft {
+function toStep(phase: ProfilePhase, unit: TemperatureUnit): StepDraft {
   const { heat, next } = phase;
   const target = heat.mode === 'target' ? heat : undefined;
   const bt = next.on === 'bt' ? next : undefined;
+  const endC = target?.endC ?? bt?.c;
   return {
     name: phase.name,
-    endC: String(target?.endC ?? bt?.c ?? ''),
+    endC: endC === undefined ? '' : tempPlain(endC, unit),
     time: target ? formatClock(target.durationS) : '',
-    rorMin: target ? String(target.rorMin) : '',
-    rorMax: target ? String(target.rorMax) : '',
+    // Rates: × 1.8 in °F, never + 32.
+    rorMin: target ? diffPlain(target.rorMin, unit) : '',
+    rorMax: target ? diffPlain(target.rorMax, unit) : '',
     heat: 'pct' in heat ? String(heat.pct) : '',
     fan: String(phase.fanPct),
     backup: bt ? formatClock(bt.backupS) : '',
@@ -77,36 +94,54 @@ const DEFAULT_SOAK_FAN = '30';
 const soakOf = (profile: AutoProfile): ProfilePhase | undefined =>
   soakLengthS(profile) > 0 ? profile.phases[0] : undefined;
 
-export function toDraft(profile: AutoProfile): ProfileDraft {
+/** Every °C value a profile holds: its temperatures, and its RoR ranges (rates). */
+function exactValues({ chargeC, dryEndC, capC, curve, phases }: AutoProfile): ExactValues {
+  const temps = [chargeC, dryEndC, capC, ...curve.map((p) => p.c)];
+  const rates: number[] = [];
+  for (const { heat, next } of phases) {
+    if (heat.mode === 'target') {
+      temps.push(heat.endC);
+      rates.push(heat.rorMin, heat.rorMax);
+    }
+    if (next.on === 'bt') temps.push(next.c);
+  }
+  return { temps, rates };
+}
+
+export function toDraft(profile: AutoProfile, unit: TemperatureUnit): ProfileDraft {
   const soak = soakOf(profile);
   const steps = soak ? profile.phases.slice(1) : profile.phases;
   return {
+    unit,
+    exact: exactValues(profile),
     name: profile.name,
     batchG: String(profile.batchG),
-    chargeC: String(profile.chargeC),
-    dryEndC: String(profile.dryEndC),
+    chargeC: tempPlain(profile.chargeC, unit),
+    dryEndC: tempPlain(profile.dryEndC, unit),
     devTime: formatClock(profile.devTimeS),
-    capC: String(profile.capC),
+    capC: tempPlain(profile.capC, unit),
     soakS: soak ? soakLengthS(profile) : null,
     soakFan: soak ? String(soak.fanPct) : DEFAULT_SOAK_FAN,
-    steps: steps.map(toStep),
-    points: profile.curve.slice(1).map((p) => ({ time: formatClock(p.tS), c: String(p.c) })),
+    steps: steps.map((phase) => toStep(phase, unit)),
+    points: profile.curve
+      .slice(1)
+      .map((p) => ({ time: formatClock(p.tS), c: tempPlain(p.c, unit) })),
   };
 }
 
-function toPhase(step: StepDraft, i: number, last: boolean, steps: boolean, read: Reader) {
+function toPhase(step: StepDraft, i: number, last: boolean, steps: boolean, read: UnitReader) {
   const key = (cell: string) => `steps.${String(i)}.${cell}`;
   const pct = read.number(key('heat'), step.heat);
   const needsEnd = steps || !last;
-  const endC = needsEnd ? read.number(key('endC'), step.endC) : 0;
+  const endC = needsEnd ? read.temp(key('endC'), step.endC) : 0;
   const heat = steps
     ? {
         mode: 'target' as const,
         pct,
         endC,
         durationS: read.clock(key('time'), step.time),
-        rorMin: read.number(key('rorMin'), step.rorMin),
-        rorMax: read.number(key('rorMax'), step.rorMax),
+        rorMin: read.rate(key('rorMin'), step.rorMin),
+        rorMax: read.rate(key('rorMax'), step.rorMax),
       }
     : { mode: 'follow' as const, pct };
   const next = last
@@ -153,14 +188,17 @@ function soakPhase(draft: ProfileDraft, base: AutoProfile, read: Reader): Profil
   };
 }
 
-/** The profile a draft makes, or a message per cell. `base` keeps what the draft doesn't hold. */
+/**
+ * The profile a draft makes, or a message per cell in the draft's unit. `base` keeps what the
+ * draft doesn't hold.
+ */
 export function fromDraft(
   draft: ProfileDraft,
   base: AutoProfile,
 ): Result<AutoProfile, DraftErrors> {
-  const read = reader();
+  const read = unitReader(draft.unit, draft.exact);
   const steps = isStepProfile(base);
-  const chargeC = read.number('chargeC', draft.chargeC);
+  const chargeC = read.temp('chargeC', draft.chargeC);
   const soak = soakPhase(draft, base, read);
   const phases = draft.steps.map((step, i) =>
     toPhase(step, i, i === draft.steps.length - 1, steps, read),
@@ -171,16 +209,16 @@ export function fromDraft(
   }
   const points = draft.points.map((point, i) => ({
     tS: read.clock(`points.${String(i)}.time`, point.time),
-    c: read.number(`points.${String(i)}.c`, point.c),
+    c: read.temp(`points.${String(i)}.c`, point.c),
   }));
   const candidate = {
     ...base,
     name: read.text('name', draft.name),
     batchG: read.number('batchG', draft.batchG),
     chargeC,
-    dryEndC: read.number('dryEndC', draft.dryEndC),
+    dryEndC: read.temp('dryEndC', draft.dryEndC),
     devTimeS: read.clock('devTime', draft.devTime),
-    capC: read.number('capC', draft.capC),
+    capC: read.temp('capC', draft.capC),
     curve: [{ tS: 0, c: chargeC }, ...points],
     phases: soak ? [soak, ...phases] : phases,
   };
@@ -189,7 +227,7 @@ export function fromDraft(
   if (parsed.success) return ok(parsed.data);
   const errors: Record<string, string> = {};
   for (const issue of parsed.error.issues) {
-    errors[cellOf(issue.path, soak !== undefined)] ??= issue.message;
+    errors[cellOf(issue.path, soak !== undefined)] ??= sayInUnit(issue.message, draft.unit);
   }
   return err(errors);
 }

@@ -1,7 +1,9 @@
 import type { AutoProfile, ProfileEntry } from '@roastpilot/shared';
 import { useMemo } from 'react';
 import { useDeps } from '../../app/app-context';
+import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { useAuto } from '../../stores/use-stores';
+import { draftInUnit } from './draft-units';
 import { fromDraft, toDraft, type DraftErrors, type ProfileDraft } from './profile-draft';
 
 export interface ProfileDraftState {
@@ -20,8 +22,14 @@ const sameDraft = (a: ProfileDraft, b: ProfileDraft) => JSON.stringify(a) === JS
 /** A profile's draft, kept in the store so it survives moving between screens and profiles. */
 export function useProfileDraft({ profile }: ProfileEntry): ProfileDraftState {
   const { stores } = useDeps();
-  const kept = useAuto((s) => s.drafts[profile.id]);
-  const saved = useMemo(() => toDraft(profile), [profile]);
+  const unit = useTemperatureUnit();
+  const keptAsTyped = useAuto((s) => s.drafts[profile.id]);
+  // A draft kept from before the unit changed reads in the unit now shown.
+  const kept = useMemo(
+    () => (keptAsTyped ? draftInUnit(keptAsTyped, unit) : undefined),
+    [keptAsTyped, unit],
+  );
+  const saved = useMemo(() => toDraft(profile, unit), [profile, unit]);
   const draft = kept ?? saved;
   const checked = useMemo(() => fromDraft(draft, profile), [draft, profile]);
   const forget = () => {

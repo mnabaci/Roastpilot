@@ -1,5 +1,6 @@
 import {
   READY_ROAST,
+  tempInText,
   type AutoProfile,
   type CoachAdvice,
   type CoachStatus,
@@ -106,7 +107,7 @@ describe('Coach', () => {
         kind: 'setting',
         id: 1,
         heater: { from: 0, to: 80 },
-        reason: 'Drying from 95 °C',
+        reason: `Drying from ${tempInText(95)}`,
       });
     });
 
@@ -146,7 +147,10 @@ describe('Coach', () => {
       expect(advice()).toBeNull();
       // BT settles over three readings, so the phase begins a reading after BT reaches 150 °C.
       feed(301);
-      expect(advice()).toMatchObject({ fan: { from: 30, to: 50 }, reason: 'Maillard from 150 °C' });
+      expect(advice()).toMatchObject({
+        fan: { from: 30, to: 50 },
+        reason: `Maillard from ${tempInText(150)}`,
+      });
     });
 
     it('catches up mid-roast into the phase the roast has reached, from your heater', () => {
@@ -371,7 +375,12 @@ describe('Coach', () => {
       const id = advice()?.id ?? 0;
       expect(coach.claim(id)).toEqual({
         ok: true,
-        value: { kind: 'setting', id, heater: { from: 0, to: 80 }, reason: 'Drying from 95 °C' },
+        value: {
+          kind: 'setting',
+          id,
+          heater: { from: 0, to: 80 },
+          reason: `Drying from ${tempInText(95)}`,
+        },
       });
       expect(advice()).toBeNull();
       expect(statuses.at(-1)?.advice).toBeNull();
@@ -433,7 +442,13 @@ describe('Coach', () => {
     expect(logged('coach.suggested')).toEqual([
       [
         'coach.suggested',
-        { kind: 'setting', id: 1, heater: { from: 0, to: 80 }, reason: 'Drying from 95 °C' },
+        {
+          kind: 'setting',
+          id: 1,
+          heater: { from: 0, to: 80 },
+          // The log says it in °C; the card in your unit.
+          reason: 'Drying from 95 °C',
+        },
       ],
     ]);
   });

@@ -1,6 +1,7 @@
 import type { ExportRoastsRequest, RoastId } from '@roastpilot/shared';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
+import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { useToast } from '../../features/use-toast';
 import { importedText, importProblemText, type ImportProblem } from '../../features/file-messages';
 
@@ -16,8 +17,9 @@ export function useRoastFiles(onImported: (id: RoastId) => void): {
   const { api } = useDeps();
   const run = useRun();
   const toast = useToast();
+  const unit = useTemperatureUnit();
   const problem = (error: ImportProblem) => {
-    toast('error', importProblemText(error));
+    toast('error', importProblemText(error, unit));
   };
   const exportRoasts = (request: ExportRoastsRequest) => {
     run(

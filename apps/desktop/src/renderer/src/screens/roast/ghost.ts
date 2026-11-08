@@ -1,4 +1,11 @@
-import type { RoastDetail, RoastSummary, SavedSample } from '@roastpilot/shared';
+import {
+  diffToUnit,
+  tempSymbol,
+  type RoastDetail,
+  type RoastSummary,
+  type SavedSample,
+  type TemperatureUnit,
+} from '@roastpilot/shared';
 import { formatClock, type LineLayer, type ChartMarker } from '@roastpilot/ui';
 import { roastTitle } from '../history/history-format';
 import { savedAsLive } from '../history/saved-roast-chart';
@@ -84,10 +91,10 @@ export function ghostDelta(
   };
 }
 
-/** `+3 °C vs ghost · 0:12 ahead`. */
-export function formatGhostDelta({ deltaC, aheadS }: GhostDelta): string {
-  const rounded = Math.round(deltaC);
-  const temp = `${rounded > 0 ? '+' : ''}${String(rounded)} °C vs ghost`;
+/** `+3 °C vs ghost · 0:12 ahead`; in °F a difference, so +3 °C is +5 °F, never +37. */
+export function formatGhostDelta({ deltaC, aheadS }: GhostDelta, unit: TemperatureUnit): string {
+  const rounded = Math.round(diffToUnit(deltaC, unit)) || 0;
+  const temp = `${rounded > 0 ? '+' : ''}${String(rounded)} ${tempSymbol(unit)} vs ghost`;
   if (aheadS === undefined) return temp;
   const seconds = Math.round(aheadS);
   if (seconds === 0) return `${temp} · level`;

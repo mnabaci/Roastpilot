@@ -68,10 +68,17 @@ describe('ghostDelta', () => {
 
 describe('formatGhostDelta', () => {
   it('signs and words it', () => {
-    expect(formatGhostDelta({ deltaC: 3.2, aheadS: 12 })).toBe('+3 °C vs ghost · 0:12 ahead');
-    expect(formatGhostDelta({ deltaC: -1.6, aheadS: -75 })).toBe('-2 °C vs ghost · 1:15 behind');
-    expect(formatGhostDelta({ deltaC: 0, aheadS: 0.2 })).toBe('0 °C vs ghost · level');
-    expect(formatGhostDelta({ deltaC: 5, aheadS: undefined })).toBe('+5 °C vs ghost');
+    expect(formatGhostDelta({ deltaC: 3.2, aheadS: 12 }, 'c')).toBe('+3 °C vs ghost · 0:12 ahead');
+    expect(formatGhostDelta({ deltaC: -1.6, aheadS: -75 }, 'c')).toBe(
+      '-2 °C vs ghost · 1:15 behind',
+    );
+    expect(formatGhostDelta({ deltaC: 0, aheadS: 0.2 }, 'c')).toBe('0 °C vs ghost · level');
+    expect(formatGhostDelta({ deltaC: 5, aheadS: undefined }, 'c')).toBe('+5 °C vs ghost');
+  });
+
+  it('says it in °F as a difference, never + 32', () => {
+    expect(formatGhostDelta({ deltaC: 3.2, aheadS: 12 }, 'f')).toBe('+6 °F vs ghost · 0:12 ahead');
+    expect(formatGhostDelta({ deltaC: -0.2, aheadS: undefined }, 'f')).toBe('0 °F vs ghost');
   });
 });
 

@@ -25,7 +25,7 @@ const ROAST: RoastSummary = {
 
 describe('roastsToCsv', () => {
   it('writes a header and quotes what needs it', () => {
-    const [header, ...rest] = roastsToCsv([ROAST], new Map([[4, 'Çay, Yirga']]))
+    const [header, ...rest] = roastsToCsv([ROAST], new Map([[4, 'Çay, Yirga']]), 'c')
       .replace('\uFEFF', '')
       .split('\r\n');
     expect(header?.startsWith('id,started_at,ended_at,bean,profile')).toBe(true);
@@ -34,14 +34,24 @@ describe('roastsToCsv', () => {
     );
   });
 
+  it('names the drop temperature column by its unit: drop_c, or drop_f in °F', () => {
+    const header = (csv: string) => csv.replace('\uFEFF', '').split('\r\n')[0]?.split(',');
+    expect(header(roastsToCsv([ROAST], new Map(), 'c'))).toContain('drop_c');
+    const inF = roastsToCsv([{ ...ROAST, dropTemp: 205.5 }], new Map(), 'f');
+    expect(header(inF)).toContain('drop_f');
+    expect(header(inF)).not.toContain('drop_c');
+    // 205.5 °C is 401.9 °F; times and weights stay as they are.
+    expect(inF).toContain(',400,,480,570.5,401.9,5,');
+  });
+
   it('starts with a byte order mark and leaves unknown beans empty', () => {
-    const csv = roastsToCsv([{ ...ROAST, beanId: 99, notes: null }], new Map());
+    const csv = roastsToCsv([{ ...ROAST, beanId: 99, notes: null }], new Map(), 'c');
     expect(csv.startsWith('\uFEFFid,')).toBe(true);
     expect(csv).toContain('.000Z,,,Light');
   });
 
   it.each(['=HYPERLINK("x")', '+1', '-1', '@cmd'])('stops %s running as a formula', (notes) => {
-    const csv = roastsToCsv([{ ...ROAST, notes }], new Map());
+    const csv = roastsToCsv([{ ...ROAST, notes }], new Map(), 'c');
     expect(csv).toMatch(/,yes,"?'/);
   });
 });

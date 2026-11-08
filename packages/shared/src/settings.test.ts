@@ -20,6 +20,7 @@ const ROAST_DEFAULTS = {
   roastMode: 'manual',
   autoProfile: 'light-steps',
   sounds: DEFAULT_SOUNDS,
+  temperatureUnit: 'c',
   theme: 'dark',
   safetyNoticeAccepted: 0,
 };
@@ -64,6 +65,13 @@ describe('SettingsSchema', () => {
     expect(SettingsSchema.parse({ theme: 'sepia' }).theme).toBe('dark');
   });
 
+  it('shows °C unless you choose °F, and reads an older file or an unknown unit as °C', () => {
+    expect(DEFAULT_SETTINGS.temperatureUnit).toBe('c');
+    expect(SettingsSchema.parse({ theme: 'light' }).temperatureUnit).toBe('c');
+    expect(SettingsSchema.parse({ temperatureUnit: 'f' }).temperatureUnit).toBe('f');
+    expect(SettingsSchema.parse({ temperatureUnit: 'kelvin' }).temperatureUnit).toBe('c');
+  });
+
   it('defaults to Guided and no roaster', () => {
     expect(DEFAULT_SETTINGS).toEqual({
       connection: null,
@@ -96,6 +104,7 @@ describe('SettingsSchema', () => {
           'beans-in': { voice: 'bell', volumePct: 55, repeat: 'twice' },
         },
       },
+      temperatureUnit: 'f',
       theme: 'system',
       safetyNoticeAccepted: 1,
     };

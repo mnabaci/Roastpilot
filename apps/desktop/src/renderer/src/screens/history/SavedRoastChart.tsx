@@ -1,6 +1,7 @@
 import type { RoastDetail } from '@roastpilot/shared';
 import { Button, cn, RoastChart } from '@roastpilot/ui';
 import { useMemo } from 'react';
+import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { savedRoastChart, savedRoastFocus } from './saved-roast-chart';
 
 /**
@@ -32,6 +33,7 @@ export function SavedRoastChart({
     [detail, compare, compareLabel, smoothingS],
   );
   const focus = useMemo(() => savedRoastFocus(detail, compare), [detail, compare]);
+  const unit = useTemperatureUnit();
   return (
     <RoastChart
       title="Roast curve"
@@ -53,6 +55,7 @@ export function SavedRoastChart({
       layers={chart.layers}
       markers={chart.markers}
       timeWindow={showPreheat ? undefined : focus}
+      temperatureUnit={unit}
     />
   );
 }
