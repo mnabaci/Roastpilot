@@ -24,4 +24,4 @@ In a manual roast, shows what Auto would set now and why, with a one-tap Apply; 
 - One card at a time: a new suggestion replaces the last, never stacks; at most one new suggestion every 15 s.
 - Sits above OutputControl on the Roast screen, only in a manual roast from Start to Drop; never in Auto.
 - Compact: padding 16 × 12px, 8px between blocks, so the heater slider stays in view at 960 × 640.
-- No icons needed. Buttons keep 44 px targets.
+- No icons but the change rows' ArrowRight. Buttons keep 44 px targets.

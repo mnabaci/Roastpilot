@@ -24,10 +24,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: var(--space-1);
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 0 10px;
     border-radius: var(--radius-md);
     font-size: 13px;
-    font-weight: 500;
+    line-height: 18px;
+    font-weight: 600;
     background: var(--surface-raised);
     color: var(--ink);
     white-space: nowrap;
@@ -37,11 +41,18 @@
     background: var(--heat-tint);
     color: var(--heat);
   }
+  .c span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .s {
     width: 44px;
     flex: none;
+    padding: 0;
   }
   svg {
+    flex: none;
     width: 16px;
     height: 16px;
     fill: none;
@@ -56,10 +67,10 @@
     </svg>
   </div>
   <div class="c f" title="Bean: Ethiopia Guji">
-    Ethiopia…<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg>
+    <span>Ethiopia Guji</span><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg>
   </div>
   <div class="c" title="Profile: All">
-    Profile<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg>
+    <span>Profile</span><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg>
   </div>
 </div>
 <script></script>
