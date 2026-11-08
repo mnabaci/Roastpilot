@@ -1,6 +1,8 @@
 import { AUTO_OFF, DEFAULT_SETTINGS, err, READY_ROAST, type Reading } from '@roastpilot/shared';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { PlotEngineProvider, type PlotEngine } from '@roastpilot/ui';
+import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { pick } from '../../test/pick';
 import { addReading } from '../../stores/roast-store';
@@ -804,5 +806,44 @@ describe('RoastScreen', () => {
     expect(screen.queryByRole('slider', { name: 'Fan' })).toBeNull();
     expect(screen.queryByRole('switch', { name: 'Filter' })).toBeNull();
     expect(screen.getByRole('switch', { name: 'Drum' })).toBeInTheDocument();
+  });
+
+  it('redraws the chart for a new reading, not for a render without one', async () => {
+    const drawn = { setData: vi.fn(), redraw: vi.fn() };
+    const counting: PlotEngine = {
+      create: () => ({ ...drawn, setSize: vi.fn(), destroy: vi.fn() }),
+      stepped: () => undefined,
+    };
+    /** Renders the Roast screen again on Again, with nothing in the stores changed. */
+    function Host() {
+      const [renders, setRenders] = useState(0);
+      return (
+        <PlotEngineProvider value={counting}>
+          <button
+            type="button"
+            onClick={() => {
+              setRenders(renders + 1);
+            }}
+          >
+            Again
+          </button>
+          <RoastScreen onConnect={onConnect} />
+        </PlotEngineProvider>
+      );
+    }
+    const { stores } = renderApp(<Host />, {
+      ...connected,
+      roast: { ...roast('roasting'), chargedAtMs: 0 },
+      readings: [reading({ bt: 180 }, 0), reading({ bt: 175 }, 1000)],
+    });
+    drawn.setData.mockClear();
+    drawn.redraw.mockClear();
+    await userEvent.click(screen.getByRole('button', { name: 'Again' }));
+    expect(drawn.setData).not.toHaveBeenCalled();
+    expect(drawn.redraw).not.toHaveBeenCalled();
+    act(() => {
+      stores.roast.setState((s) => addReading(s, reading({ bt: 172 }, 2000)));
+    });
+    expect(drawn.setData).toHaveBeenCalled();
   });
 });

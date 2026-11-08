@@ -57,6 +57,12 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
     rorCPerMin: shown.ror,
     ghost,
   });
+  // Kept between renders, so a render with no new reading doesn't redraw the chart.
+  const layers = useMemo(() => [...lines, ...view.aids], [lines, view.aids]);
+  const markers = useMemo(
+    () => [...ghost.markers, ...chart.markers],
+    [ghost.markers, chart.markers],
+  );
   // Connected, or lost and reconnecting: either way the outputs stay, with dashes while lost.
   const hasRoaster = connected || lost;
   const idle = roast.phase === 'ready' || roast.phase === 'done';
@@ -93,8 +99,8 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
         <FinishedRoastCard />
         <RoastChart
           title="Roast curve"
-          layers={[...lines, ...view.aids]}
-          markers={[...ghost.markers, ...chart.markers]}
+          layers={layers}
+          markers={markers}
           timeWindow={view.timeWindow}
           temperatureFloorC={view.temperatureFloorC}
         />
