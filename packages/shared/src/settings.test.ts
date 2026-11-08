@@ -8,6 +8,10 @@ import {
 import { DEFAULT_SOUNDS } from './sounds';
 
 const ROAST_DEFAULTS = {
+  chartProjection: true,
+  chartNowLine: true,
+  chartTemperatureFocus: true,
+  chartPhaseBands: true,
   findChargePoint: true,
   coachInManual: true,
   coolingTimeMin: 4,
@@ -74,6 +78,10 @@ describe('SettingsSchema', () => {
       connection: { kind: 'serial', path: 'COM3' },
       controls: 'full',
       chartSmoothingS: 10,
+      chartProjection: false,
+      chartNowLine: false,
+      chartTemperatureFocus: false,
+      chartPhaseBands: false,
       findChargePoint: false,
       coachInManual: false,
       coolingTimeMin: 6,
@@ -117,6 +125,17 @@ describe('SettingsSchema', () => {
       controls: 'full',
       chartSmoothingS: 3,
       ...ROAST_DEFAULTS,
+    });
+  });
+
+  it('turns the chart aids on for a file from before they existed, and on for a bad value', () => {
+    const parsed = SettingsSchema.parse({ chartSmoothingS: 5, chartNowLine: 'no' });
+    expect(parsed).toMatchObject({
+      chartSmoothingS: 5,
+      chartProjection: true,
+      chartNowLine: true,
+      chartTemperatureFocus: true,
+      chartPhaseBands: true,
     });
   });
 

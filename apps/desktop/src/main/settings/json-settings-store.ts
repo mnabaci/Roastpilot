@@ -23,7 +23,8 @@ const isMissing = (error: unknown) =>
 
 /**
  * Settings in one JSON file (docs/spec/ui.md, Settings). Writes go to a temp file first and are
- * renamed into place, so a crash mid-save never leaves a half-written file. A file that can't be
+ * renamed into place, so a crash mid-save never leaves a half-written file; saves run one at a
+ * time, so quick changes never race over the temp file. A file that can't be
  * read is moved aside (never overwritten) and the defaults are used. The old Soak time setting is
  * kept in the file until it has moved into the profiles.
  */
@@ -32,6 +33,8 @@ export class JsonSettingsStore implements SettingsStore, RetiredSoakSetting {
   readonly #logger: Logger;
   readonly #now: () => Date;
   #retiredSoakS: number | undefined;
+  /** The save in progress: the next one waits for it. */
+  #saving: Promise<unknown> = Promise.resolve();
 
   constructor(path: string, options: { logger?: Logger; now?: () => Date } = {}) {
     this.#path = path;
@@ -57,7 +60,14 @@ export class JsonSettingsStore implements SettingsStore, RetiredSoakSetting {
     return DEFAULT_SETTINGS;
   }
 
-  async save(settings: Settings): Promise<Result<void, SettingsWriteError>> {
+  save(settings: Settings): Promise<Result<void, SettingsWriteError>> {
+    // #write never rejects (it returns a typed error), so the chain never breaks.
+    const saved = this.#saving.then(() => this.#write(settings));
+    this.#saving = saved;
+    return saved;
+  }
+
+  async #write(settings: Settings): Promise<Result<void, SettingsWriteError>> {
     const temp = `${this.#path}.tmp`;
     const kept = this.#retiredSoakS === undefined ? {} : { soakTimeS: this.#retiredSoakS };
     try {

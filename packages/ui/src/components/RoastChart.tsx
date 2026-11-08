@@ -1,22 +1,31 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import type uPlot from 'uplot';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import 'uplot/dist/uPlot.min.css';
 import { formatClock } from '../lib/format';
 import { cn } from '../lib/utils';
-import { alignLayers } from './roast-chart/align-layers';
 import { readChartColors } from './roast-chart/chart-colors';
-import type { ChartLayer, ChartMarker } from './roast-chart/chart-layer';
+import type { ChartLayer, ChartMarker, LineLayer } from './roast-chart/chart-layer';
 import { describeLayers, Legend } from './roast-chart/chart-legend';
 import type { ChartDrag, TimeRange } from './roast-chart/drag-handles';
 import { usePlotEngine } from './roast-chart/plot-engine';
 import { buildChartOptions, buildStripOptions } from './roast-chart/uplot-options';
+import { splitLayers } from './roast-chart/split-layers';
+import { useThemeKey } from './roast-chart/use-theme-key';
 import { useUplot } from './roast-chart/use-uplot';
 
 export interface RoastChartProps {
   title: string;
-  /** Back to front. The first `heat` temperature layer gets the current-point dot; `output` layers go to the strip. */
+  /** A quiet control beside the title, such as History's Show preheat. */
+  titleAction?: ReactNode;
+  /**
+   * Back to front. The first `heat` temperature line gets the current-point dot; `output` lines go
+   * to the strip. Aids (now line, projection, phase bands) have no legend entry.
+   */
   layers: readonly ChartLayer[];
   markers?: readonly ChartMarker[];
+  /** The time axis's span in seconds since charge; without it, the axis fits the data. */
+  timeWindow?: { fromS: number; toS: number } | undefined;
+  /** Where the temperature axis starts, °C (default 0). */
+  temperatureFloorC?: number;
   height?: number;
   className?: string;
   /** Points you can move with the pointer. */
@@ -29,7 +38,9 @@ const STRIP_HEIGHT = 96;
 const DRAG_ROOM = 0.15;
 const MIN_DRAG_ROOM_S = 30;
 
-const structureOf = (layers: readonly ChartLayer[]) =>
+const NO_MARKERS: readonly ChartMarker[] = [];
+
+const structureOf = (layers: readonly LineLayer[]) =>
   layers.map((l) => `${l.id}:${l.axis}:${l.tone}:${String(l.step ?? false)}`).join('|');
 
 /**
@@ -38,8 +49,11 @@ const structureOf = (layers: readonly ChartLayer[]) =>
  */
 export function RoastChart({
   title,
+  titleAction,
   layers,
-  markers = [],
+  markers = NO_MARKERS,
+  timeWindow,
+  temperatureFloorC = 0,
   height = DEFAULT_HEIGHT,
   className,
   drag,
@@ -51,33 +65,37 @@ export function RoastChart({
   // The time under the pointer: the legends show the values there (docs/spec/ui.md, Hover).
   const [hoverT, setHoverT] = useState<number>();
   const dragRef = useRef(drag);
+  const windowRef = useRef(timeWindow);
+  const floorRef = useRef(temperatureFloorC);
   const heldTimeRange = useRef<TimeRange | undefined>(undefined);
   // Counts finished drags: fresh data lets the time axis fit the moved points again.
   const [dragsEnded, setDragsEnded] = useState(0);
+  // Before the plots' own effects, so a setData after a new window or floor reads them.
   useEffect(() => {
     dragRef.current = drag;
+    windowRef.current = timeWindow;
+    floorRef.current = temperatureFloorC;
   });
-  // Spare time after the last point: its handle stays clear of the edge, and it can move later.
-  const adjustTimeRange = ([from, to]: TimeRange): TimeRange =>
-    heldTimeRange.current ??
-    (dragRef.current
+  // A window is shown as given; otherwise the data's span, with spare time after the last point
+  // while dragging: its handle stays clear of the edge, and it can move later.
+  const adjustTimeRange = ([from, to]: TimeRange): TimeRange => {
+    const shown = windowRef.current;
+    if (heldTimeRange.current) return heldTimeRange.current;
+    if (shown) return [shown.fromS, shown.toS];
+    return dragRef.current
       ? [from, to + Math.max(MIN_DRAG_ROOM_S, (to - from) * DRAG_ROOM)]
-      : [from, to]);
+      : [from, to];
+  };
 
-  const { main, strip, mainData, stripData } = useMemo(() => {
-    const main = layers.filter((l) => l.axis !== 'output');
-    const strip = layers.filter((l) => l.axis === 'output');
-    // One set of times for both plots, so they share a time range and line up.
-    const { xs, series } = alignLayers([...main, ...strip]);
-    return {
-      main,
-      strip,
-      mainData: [xs, ...series.slice(0, main.length)] as uPlot.AlignedData,
-      stripData: [xs, ...series.slice(main.length)] as uPlot.AlignedData,
-    };
+  const { main, strip, mainData, stripData, mainOverlay, stripOverlay } = useMemo(
+    () => splitLayers(layers, markers),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- dragsEnded only asks for fresh arrays
-  }, [layers, dragsEnded]);
+    [layers, markers, dragsEnded],
+  );
+  const scaleKey = `${String(timeWindow?.fromS)}:${String(timeWindow?.toS)}:${String(temperatureFloorC)}`;
   const rightAxis = main.some((l) => l.axis === 'ror');
+  // Colours are read when a plot is built: a new theme rebuilds both.
+  const theme = useThemeKey();
 
   useEffect(() => {
     const element = plotRef.current;
@@ -94,16 +112,19 @@ export function RoastChart({
   useUplot({
     engine,
     element: plotRef,
-    structure: `${structureOf(main)}#${String(rightAxis)}`,
+    structure: `${structureOf(main)}#${String(rightAxis)}#${theme}`,
     width,
     height,
     data: mainData,
-    markers,
-    build: (size, readMarkers) =>
+    scaleKey,
+    overlay: mainOverlay,
+    build: (size, overlay) =>
       buildChartOptions({
         ...size,
         layers: main,
-        markers: readMarkers,
+        markers: () => overlay().markers,
+        aids: () => overlay().aids,
+        temperatureFloorC: () => floorRef.current,
         latestDotLayer: main.findIndex((l) => l.tone === 'heat' && l.axis === 'temperature'),
         // Element is mounted whenever a build runs.
         colors: readChartColors(plotRef.current ?? document.documentElement),
@@ -125,16 +146,18 @@ export function RoastChart({
   useUplot({
     engine,
     element: stripRef,
-    structure: `${structureOf(strip)}#${String(rightAxis)}`,
+    structure: `${structureOf(strip)}#${String(rightAxis)}#${theme}`,
     width,
     height: STRIP_HEIGHT,
     data: stripData,
-    markers,
-    build: (size, readMarkers) =>
+    scaleKey,
+    overlay: stripOverlay,
+    build: (size, overlay) =>
       buildStripOptions({
         ...size,
         layers: strip,
-        markers: readMarkers,
+        markers: () => overlay().markers,
+        aids: () => overlay().aids,
         colors: readChartColors(stripRef.current ?? document.documentElement),
         rightAxis,
         stepped: engine.stepped(),
@@ -149,7 +172,10 @@ export function RoastChart({
       className={cn('flex flex-col gap-2.5 rounded-xl bg-surface px-5 py-4.5', className)}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-heading text-ink">{title}</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-heading text-ink">{title}</h2>
+          {titleAction}
+        </div>
         <div className="flex items-center gap-4">
           {hoverT === undefined ? null : (
             <span className="text-label font-semibold text-ink tabular-nums">

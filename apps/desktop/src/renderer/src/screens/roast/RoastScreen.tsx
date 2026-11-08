@@ -10,6 +10,7 @@ import { FlowPanel } from './FlowPanel';
 import { FinishedRoastCard } from './FinishedRoastCard';
 import { useRunningPlan } from './use-active-profile';
 import { usePlanLines } from './use-plan-lines';
+import { useRoastView } from './use-roast-view';
 import { OutputsPanel } from './OutputsPanel';
 import { CoachPanel } from './CoachPanel';
 import { RoastNumbersRow } from './RoastNumbersRow';
@@ -48,6 +49,20 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
   );
   const ghost = useGhost(roast, { elapsedS: numbers.elapsedS, bt: shown.bt, smoothingS });
   const planLines = usePlanLines(shown.bt, numbers.elapsedS);
+  // Ghost behind today's lines; one array, so the view only works itself out again on new lines.
+  const lines = useMemo(() => [...ghost.layers, ...chart.layers], [ghost.layers, chart.layers]);
+  const view = useRoastView({
+    roast,
+    lines,
+    rorCPerMin: shown.ror,
+    ghost,
+  });
+  // Kept between renders, so a render with no new reading doesn't redraw the chart.
+  const layers = useMemo(() => [...lines, ...view.aids], [lines, view.aids]);
+  const markers = useMemo(
+    () => [...ghost.markers, ...chart.markers],
+    [ghost.markers, chart.markers],
+  );
   // Connected, or lost and reconnecting: either way the outputs stay, with dashes while lost.
   const hasRoaster = connected || lost;
   const idle = roast.phase === 'ready' || roast.phase === 'done';
@@ -84,8 +99,10 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
         <FinishedRoastCard />
         <RoastChart
           title="Roast curve"
-          layers={[...ghost.layers, ...chart.layers]}
-          markers={[...ghost.markers, ...chart.markers]}
+          layers={layers}
+          markers={markers}
+          timeWindow={view.timeWindow}
+          temperatureFloorC={view.temperatureFloorC}
         />
       </div>
       {/* The panel shows what the moment needs (docs/spec/ui.md, Side panel follows the roast). */}

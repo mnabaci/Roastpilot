@@ -1,12 +1,14 @@
-import { TONE_TOKEN, type ChartLayer, type ChartMarker } from './chart-layer';
+import { TONE_TOKEN, type LineLayer, type ChartMarker } from './chart-layer';
 
-export type ChartTone = ChartLayer['tone'] | ChartMarker['tone'];
+export type ChartTone = LineLayer['tone'] | ChartMarker['tone'];
 
 export interface ChartColors {
   tone: Readonly<Record<ChartTone, string>>;
   axis: string;
   grid: string;
   surface: string;
+  /** The phase bands' fills, coolest first (`band-low`, `band-mid`, `band-high`). */
+  bands: readonly string[];
   font: string;
 }
 
@@ -20,8 +22,9 @@ export function readChartColors(element: Element): ChartColors {
   return {
     tone,
     axis: read('--ink-muted'),
-    grid: read('--border'),
+    grid: read('--chart-grid'),
     surface: read('--surface'),
+    bands: [read('--band-low'), read('--band-mid'), read('--band-high')],
     font: read('--font-sans') || 'sans-serif',
   };
 }

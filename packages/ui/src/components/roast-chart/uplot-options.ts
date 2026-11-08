@@ -1,39 +1,43 @@
 import type uPlot from 'uplot';
 import { formatClock } from '../../lib/format';
 import type { ChartColors } from './chart-colors';
-import type { ChartLayer, ChartMarker } from './chart-layer';
+import type { ChartAid, ChartMarker, LineLayer } from './chart-layer';
+import {
+  aidsTopC,
+  drawBandLabels,
+  drawNowLines,
+  drawPhaseBands,
+  drawProjections,
+} from './draw-aids';
 import { attachDrag, drawDragHandles, type ChartDrag, type TimeRange } from './drag-handles';
-import { drawLatestDot, drawMarkers } from './draw-markers';
+import { drawLatestDot, drawMarkers, markerLabelBoxes, markerLineBoxes } from './draw-markers';
 import { hoverCursor } from './hover-cursor';
+import {
+  axisFactory,
+  LEFT_AXIS_PX,
+  noAxisGutter,
+  RIGHT_AXIS_PX,
+  series,
+  SIDE,
+} from './uplot-parts';
 import {
   OUTPUT_RANGE,
   OUTPUT_TICKS,
   ROR_RANGE,
-  TEMPERATURE_RANGE,
+  temperatureRange,
   TIME_STEPS_S,
   xScale,
 } from './scales';
-
-/** uPlot's `Axis.Side` is an ambient const enum, which isolated modules can't read at runtime. */
-/* eslint-disable @typescript-eslint/no-unsafe-enum-assignment -- these are the enum's own values */
-const SIDE = {
-  right: 1 as uPlot.Axis.Side,
-  bottom: 2 as uPlot.Axis.Side,
-  left: 3 as uPlot.Axis.Side,
-};
-/* eslint-enable @typescript-eslint/no-unsafe-enum-assignment */
-
-/** Fixed axis gutters, so the chart and the outputs strip line up to the pixel. */
-const LEFT_AXIS_PX = 56;
-const RIGHT_AXIS_PX = 48;
 
 interface CommonInput {
   width: number;
   height: number;
   /** This plot's layers only. */
-  layers: readonly ChartLayer[];
+  layers: readonly LineLayer[];
   /** Read at draw time, so new markers need a redraw, not a rebuild. */
   markers: () => readonly ChartMarker[];
+  /** Read at draw time too: the now line, projection and phase bands. */
+  aids: () => readonly ChartAid[];
   colors: ChartColors;
   /** Whether the chart has a RoR axis on the right; the strip keeps the same gutter. */
   rightAxis: boolean;
@@ -46,6 +50,8 @@ interface CommonInput {
 export interface ChartOptionsInput extends CommonInput {
   /** Index of the layer that gets the current-point dot, if any. */
   latestDotLayer: number;
+  /** Where the temperature axis starts, °C, read at draw time. */
+  temperatureFloorC: () => number;
   /** Moves the chart's draggable points. */
   dragging?: {
     drag: () => ChartDrag | undefined;
@@ -59,56 +65,15 @@ export interface StripOptionsInput extends CommonInput {
   stepped: uPlot.Series.PathBuilder | undefined;
 }
 
-function axisFactory(colors: ChartColors) {
-  return (
-    scale: string,
-    side: uPlot.Axis.Side,
-    values: uPlot.Axis['values'],
-    showGrid: boolean,
-  ): uPlot.Axis => ({
-    scale,
-    side,
-    stroke: colors.axis,
-    font: `13px ${colors.font}`,
-    values,
-    grid: { show: showGrid, stroke: colors.grid, width: 1 },
-    ticks: { show: false },
-  });
-}
-
-function series(
-  layers: readonly ChartLayer[],
-  colors: ChartColors,
-  stepped?: uPlot.Series.PathBuilder,
-): uPlot.Series[] {
-  return [
-    {},
-    ...layers.map((layer) => ({
-      label: layer.label,
-      scale: layer.axis,
-      stroke: colors.tone[layer.tone],
-      width: layer.width,
-      dash: layer.dash ? [...layer.dash] : undefined,
-      points: { show: false },
-      // Joins across undefined (another layer's time), breaks at null (missing readings).
-      spanGaps: false,
-      ...(layer.step && stepped ? { paths: stepped } : {}),
-    })),
-  ];
-}
-
-/** With no RoR axis, both plots keep the same room for the last time label, so they still line up. */
-const NO_AXIS_RIGHT_PX = 24;
-const noAxisGutter = (rightAxis: boolean): Pick<uPlot.Options, 'padding'> =>
-  rightAxis ? {} : { padding: [null, NO_AXIS_RIGHT_PX, null, null] };
-
 /** The temperature chart: °C on the left, RoR on the right, markers with labels. */
 export function buildChartOptions({
   width,
   height,
   layers,
   markers,
+  aids,
   latestDotLayer,
+  temperatureFloorC,
   colors,
   rightAxis,
   onHover,
@@ -125,7 +90,7 @@ export function buildChartOptions({
     ...noAxisGutter(rightAxis),
     scales: {
       x: xScale(adjustTimeRange),
-      temperature: { range: TEMPERATURE_RANGE },
+      temperature: { range: temperatureRange(temperatureFloorC, () => aidsTopC(aids())) },
       ror: { range: ROR_RANGE },
     },
     axes: [
@@ -158,9 +123,25 @@ export function buildChartOptions({
             ],
           }
         : {}),
+      // Behind the grid and every line.
+      drawClear: [
+        (u) => {
+          drawPhaseBands(u, aids(), colors);
+        },
+      ],
       draw: [
         (u) => {
+          // Band names first, clear of the markers' labels and lines.
+          const shown = markers();
+          drawBandLabels(
+            u,
+            aids(),
+            { labels: markerLabelBoxes(u, shown, colors), lines: markerLineBoxes(u, shown) },
+            colors,
+          );
           drawMarkers(u, markers(), colors, { labels: true });
+          drawProjections(u, aids(), colors);
+          drawNowLines(u, aids(), colors);
           const layer = layers[latestDotLayer];
           if (layer) drawLatestDot(u, latestDotLayer + 1, layer, colors);
           drawDragHandles(u, dragging?.drag(), colors);
@@ -176,6 +157,7 @@ export function buildStripOptions({
   height,
   layers,
   markers,
+  aids,
   colors,
   rightAxis,
   stepped,
@@ -209,6 +191,7 @@ export function buildStripOptions({
       draw: [
         (u) => {
           drawMarkers(u, markers(), colors, { labels: false });
+          drawNowLines(u, aids(), colors);
         },
       ],
     },

@@ -15,6 +15,8 @@ export function OpenRoast({
   live,
   beans,
   smoothingS,
+  showPreheat,
+  onShowPreheat,
 }: {
   selected: SavedRoastState;
   compared: SavedRoastState;
@@ -23,6 +25,9 @@ export function OpenRoast({
   live: boolean;
   beans: readonly Bean[];
   smoothingS: number;
+  /** Kept by History while you browse it, so each roast opens the same way. */
+  showPreheat: boolean;
+  onShowPreheat: (show: boolean) => void;
 }) {
   switch (selected.status) {
     case 'none':
@@ -48,6 +53,8 @@ export function OpenRoast({
             compare={compared.status === 'loaded' ? compared.detail : undefined}
             compareLabel={compareLabel}
             smoothingS={smoothingS}
+            showPreheat={showPreheat}
+            onShowPreheat={onShowPreheat}
           />
           <EventTable rows={eventRows(detail)} />
         </>

@@ -1,5 +1,5 @@
 import type { RoastDetail, RoastSummary, SavedSample } from '@roastpilot/shared';
-import { formatClock, type ChartLayer, type ChartMarker } from '@roastpilot/ui';
+import { formatClock, type LineLayer, type ChartMarker } from '@roastpilot/ui';
 import { roastTitle } from '../history/history-format';
 import { savedAsLive } from '../history/saved-roast-chart';
 import { roastChartData } from './roast-chart-data';
@@ -14,13 +14,15 @@ const GHOST_MARKERS: Partial<Record<RoastDetail['events'][number]['kind'], strin
 export function ghostChart(
   detail: RoastDetail,
   smoothingS: number,
-): { layers: ChartLayer[]; markers: ChartMarker[] } {
+): { layers: LineLayer[]; markers: ChartMarker[] } {
   const { roast, readings } = savedAsLive(detail);
   const { layers } = roastChartData(roast, readings, { smoothingS });
-  const fade = (id: string, label: string, width: number): ChartLayer[] => {
+  const fade = (id: string, label: string, width: number): LineLayer[] => {
     const layer = layers.find((l) => l.id === id);
     if (!layer) return [];
-    const points = layer.points.filter((p) => p.t >= 0);
+    // Charge to drop: its cooling is no comparison, and would pull the fitted floor down.
+    const dropS = detail.dropTimeS ?? Infinity;
+    const points = layer.points.filter((p) => p.t >= 0 && p.t <= dropS);
     return [{ ...layer, id: `ghost-${id}`, label, tone: 'ghost', width, points }];
   };
   return {

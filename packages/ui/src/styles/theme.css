@@ -55,6 +55,10 @@
   --color-air-tint: var(--air-tint);
   --color-target: var(--target);
   --color-ghost: var(--ghost);
+  --color-band-low: var(--band-low);
+  --color-band-mid: var(--band-mid);
+  --color-band-high: var(--band-high);
+  --color-chart-grid: var(--chart-grid);
   --color-good: var(--good);
   --color-warning: var(--warning);
   --color-critical: var(--critical);

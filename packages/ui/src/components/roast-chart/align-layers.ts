@@ -1,4 +1,4 @@
-import type { ChartLayer } from './chart-layer';
+import type { LineLayer } from './chart-layer';
 
 export interface AlignedData {
   /** Every distinct time, ascending, in seconds. */
@@ -11,7 +11,7 @@ export interface AlignedData {
 }
 
 /** uPlot needs one shared x axis: merges the layers' times and lines each layer up against it. */
-export function alignLayers(layers: readonly ChartLayer[]): AlignedData {
+export function alignLayers(layers: readonly LineLayer[]): AlignedData {
   const xs = [...new Set(layers.flatMap((layer) => layer.points.map((p) => p.t)))].sort(
     (a, b) => a - b,
   );

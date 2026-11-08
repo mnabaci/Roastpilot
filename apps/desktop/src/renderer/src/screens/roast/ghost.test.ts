@@ -28,6 +28,12 @@ describe('ghostChart', () => {
     expect(layers.every((l) => l.points.every((p) => p.t >= 0))).toBe(true);
   });
 
+  it("ends at the ghost's drop: its cooling is no comparison", () => {
+    const { layers } = ghostChart({ ...DETAIL, dropTimeS: 500 }, 0);
+    expect(layers.every((l) => l.points.every((p) => p.t <= 500))).toBe(true);
+    expect(layers[0]?.points.at(-1)?.t).toBe(500);
+  });
+
   it('adds faded markers for the ghost first crack and drop only', () => {
     expect(ghostChart(DETAIL, 0).markers).toEqual([
       { id: 'ghost-first-crack', label: 'Ghost FC', t: 400, tone: 'ghost' },

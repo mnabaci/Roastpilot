@@ -25,6 +25,16 @@ afterEach(async () => {
 });
 
 describe('JsonSettingsStore', () => {
+  it('saves quick changes one after another, the last one winning, without a failed write', async () => {
+    const settings = store();
+    const changes = [true, false, true, false].map((chartNowLine) =>
+      settings.save({ ...DEFAULT_SETTINGS, chartNowLine }),
+    );
+    expect(await Promise.all(changes)).toEqual(changes.map(() => ({ ok: true, value: undefined })));
+    expect(JSON.parse(await readFile(path, 'utf8'))).toMatchObject({ chartNowLine: false });
+    expect(entries).toEqual([]);
+  });
+
   it('gives the defaults when there is no file yet, without logging', async () => {
     expect(await store().load()).toEqual(DEFAULT_SETTINGS);
     expect(entries).toEqual([]);

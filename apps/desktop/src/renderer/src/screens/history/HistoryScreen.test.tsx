@@ -43,7 +43,11 @@ const detail = (s: RoastSummary): RoastDetail => ({
   ...s,
   mode: 'manual',
   profile: null,
-  samples: [{ tS: 0, values: { bt: 180 } }],
+  // Five minutes of preheat before charge, as most roasts have.
+  samples: [
+    { tS: -300, values: { bt: 150 } },
+    { tS: 0, values: { bt: 180 } },
+  ],
   events: [{ kind: 'charge', tS: 0, bt: 180 }],
 });
 
@@ -138,6 +142,21 @@ describe('HistoryScreen', () => {
     const { api } = setup();
     await userEvent.click(nth(await screen.findAllByRole('button', { name: /Nov/ }), 1));
     expect(api.getRoast).toHaveBeenLastCalledWith(1);
+  });
+
+  it('opens on the roast, and Show preheat stays on as you browse to another roast', async () => {
+    setup();
+    await screen.findByRole('region', { name: 'Roast curve' });
+    const toggle = screen.getByRole('button', { name: 'Show preheat' });
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(nth(await screen.findAllByRole('button', { name: /Nov/ }), 1));
+    await screen.findByRole('region', { name: 'Roast curve' });
+    expect(screen.getByRole('button', { name: 'Show preheat' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 
   it('Compare with draws the other roast as a ghost line', async () => {

@@ -46,6 +46,11 @@ export const SettingsSchema = z.object({
   connection: ConnectTargetSchema.nullable().catch(null).default(null),
   controls: ControlsLevelSchema.catch('guided').default('guided'),
   chartSmoothingS: ChartSmoothingSchema.catch(3).default(3),
+  /** During a roast, the chart's four aids (docs/spec/ui.md, Chart › During a roast). */
+  chartProjection: z.boolean().catch(true).default(true),
+  chartNowLine: z.boolean().catch(true).default(true),
+  chartTemperatureFocus: z.boolean().catch(true).default(true),
+  chartPhaseBands: z.boolean().catch(true).default(true),
   /** Move charge back to the charge drop found before Start was pressed. */
   findChargePoint: z.boolean().catch(true).default(true),
   /** The coach card in a manual roast (docs/spec/manual-mode.md, Coach). */

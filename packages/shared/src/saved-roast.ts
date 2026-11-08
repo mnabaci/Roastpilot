@@ -14,6 +14,11 @@ export const RoastSummarySchema = z.object({
   fcTimeS: z.number().nullable(),
   /** BT at first crack, from its event; null when there was none or it had no reading. */
   fcTemp: z.number().nullable(),
+  /**
+   * BT at the turning point, from its event; null when there was none. Optional: a summary from
+   * before it was read has none.
+   */
+  tpTemp: z.number().nullable().optional(),
   dropTimeS: z.number().nullable(),
   dropTemp: z.number().nullable(),
   roasterId: z.number().int().positive().nullable(),

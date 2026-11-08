@@ -1,5 +1,5 @@
 import { err } from '@roastpilot/shared';
-import { screen, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
@@ -105,6 +105,55 @@ describe('SettingsScreen', () => {
     await userEvent.click(radio('Off', 'Temperature smoothing'));
     expect(stores.settings.getState().settings.chartSmoothingS).toBe(0);
     expect(api.setSettings).toHaveBeenCalledWith(expect.objectContaining({ chartSmoothingS: 0 }));
+  });
+
+  it('switches each chart aid during a roast, all on until you choose, each with its hint', async () => {
+    const { api, stores } = renderApp(<Settings first="chart" />);
+    const card = screen.getByRole('region', { name: 'During a roast' });
+    for (const [name, hint] of [
+      ['Projection', 'Where the temperature is heading at this RoR'],
+      ['Now line', 'A line at the current time'],
+      ['Temperature focus', 'Temperature axis fitted to the roast'],
+      ['Phase bands', 'Drying, Maillard and development behind the curve'],
+    ] as const) {
+      expect(within(card).getByRole('switch', { name })).toHaveAttribute('aria-checked', 'true');
+      expect(within(card).getByText(hint)).toBeInTheDocument();
+    }
+    await userEvent.click(within(card).getByRole('switch', { name: 'Phase bands' }));
+    expect(stores.settings.getState().settings.chartPhaseBands).toBe(false);
+    expect(api.setSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ chartPhaseBands: false, chartProjection: true }),
+    );
+  });
+
+  it('keeps every chart aid flipped in quick succession, whatever order the saves answer in', async () => {
+    // Each save answers only when the test says, the first one last.
+    const answers: (() => void)[] = [];
+    const api = fakeApi({
+      setSettings: (settings) =>
+        new Promise((resolve) => {
+          answers.push(() => {
+            resolve({ ok: true, value: settings });
+          });
+        }),
+    });
+    const { stores } = renderApp(<Settings first="chart" />, {}, api);
+    for (const name of ['Projection', 'Now line', 'Temperature focus', 'Phase bands'])
+      await userEvent.click(screen.getByRole('switch', { name }));
+    await act(async () => {
+      for (const answer of answers.reverse()) answer();
+      await Promise.resolve();
+    });
+    expect(stores.settings.getState().settings).toMatchObject({
+      chartProjection: false,
+      chartNowLine: false,
+      chartTemperatureFocus: false,
+      chartPhaseBands: false,
+    });
+    expect(screen.getByRole('switch', { name: 'Phase bands' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
   });
 
   it('picks the theme: Dark until you choose', async () => {

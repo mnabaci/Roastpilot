@@ -1,14 +1,11 @@
-import { expectedFirstCrackC } from '@roastpilot/core';
 import { sameStepSound, SoundStepSchema, type Sounds, type SoundStep } from '@roastpilot/shared';
-import { useEffect, useMemo, useRef, type RefObject } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 import type { ChimePlayer } from '../features/chime';
 import { listenDue, stepsReached, stillWaiting, type WaitState } from '../features/sound-cues';
 import { createSoundRepeats, type SoundRepeats } from '../features/sound-repeats';
 import { playStepSound } from '../features/step-sound';
-import { useRoastList } from '../screens/history/use-roast-list';
-import { activeRoaster } from '../stores/roasters-store';
+import { useRoastExpectations } from '../features/use-roast-expectations';
 import type { Stores } from '../stores/stores';
-import { useRoasters } from '../stores/use-stores';
 import { useDeps } from './app-context';
 
 const cueState = (stores: Stores): WaitState => ({
@@ -93,12 +90,7 @@ function playSounds(
  */
 export function useSounds(): void {
   const { stores, chime } = useDeps();
-  const roasts = useRoastList();
-  const roasterId = useRoasters((s) => activeRoaster(s.roasters)?.id);
-  const expectedC = useMemo(
-    () => (roasts ? expectedFirstCrackC(roasts, roasterId) : undefined),
-    [roasts, roasterId],
-  );
+  const expectedC = useRoastExpectations().firstCrackC;
   // Read by the store listener below, so a reloaded roast list doesn't restart it.
   const expected = useRef(expectedC);
   useEffect(() => {

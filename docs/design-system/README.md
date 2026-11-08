@@ -34,6 +34,7 @@ Dark is the primary theme; light mirrors it for bright rooms and outdoor roastin
 | Heat (ember) | `heat`, `heat-fill`, `heat-fill-hover`, `heat-tint`, `on-heat`     | Temperature curve and readouts; the primary button |
 | Air (cyan)   | `air`, `air-tint`                                                  | Fan, rate of rise, Auto badge, focus ring          |
 | Reference    | `target`, `ghost`                                                  | Target curve (dashed), ghost roast (faded)         |
+| Chart ground | `band-low`, `band-mid`, `band-high`, `chart-grid`                  | Phase bands behind the curves; the chart grid      |
 | State        | `good`, `warning`, `critical`, `critical-text`, `critical-surface` | Connected, low stock, safety                       |
 | Focus        | `focus`                                                            | 2px ring, 2px offset, on every control             |
 
@@ -75,15 +76,16 @@ Inter, one family, with tabular numerals (`font-variant-numeric: tabular-nums`) 
 
 ## Charts
 
-| Series                    | Token           | Style                           |
-| ------------------------- | --------------- | ------------------------------- |
-| Live temperature          | `heat`          | 3.5px solid                     |
-| Target curve              | `target`        | 2px dashed 6 6                  |
-| Rate of rise (right axis) | `air`           | 2px solid                       |
-| Ghost temperature and RoR | `ghost`         | 2px solid, behind live          |
-| First crack, drop markers | `ink` / `ghost` | 1.5px dashed vertical, labelled |
-| Drop temperature line     | `critical-text` | 1px dotted                      |
-| Grid                      | `border`        | 1px                             |
+| Series                    | Token                               | Style                            |
+| ------------------------- | ----------------------------------- | -------------------------------- |
+| Live temperature          | `heat`                              | 3.5px solid                      |
+| Target curve              | `target`                            | 2px dashed 6 6                   |
+| Rate of rise (right axis) | `air`                               | 2px solid                        |
+| Ghost temperature and RoR | `ghost`                             | 2px solid, behind live           |
+| First crack, drop markers | `ink` / `ghost`                     | 1.5px dashed vertical, labelled  |
+| Drop temperature line     | `critical-text`                     | 1px dotted                       |
+| Phase bands               | `band-low`, `band-mid`, `band-high` | Full-width fills behind the grid |
+| Grid                      | `chart-grid`                        | 1px, translucent                 |
 
 Always show a legend above the chart. Axis labels use `label` in `ink-muted`.
 

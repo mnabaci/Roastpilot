@@ -8,6 +8,9 @@ All notable changes to Roastpilot are listed here. The format follows
 
 ### Added
 
+- **Roast chart aids:** while roasting, a faint projection of where the temperature is heading at
+  this RoR, a now line, a temperature axis fitted to the roast, and drying, Maillard and
+  development bands behind the curve; each is a switch in Settings › Chart.
 - **Coach in manual roasts:** a card above the sliders suggests what Auto would set now, and why,
   with Apply; and a heads-up before first crack and before drop.
 - **macOS updates install by themselves**, as on Windows: downloaded in the background, checked,
@@ -15,6 +18,9 @@ All notable changes to Roastpilot are listed here. The format follows
 
 ### Changed
 
+- **The roast chart focuses on the roast:** from Start it shows 0:30 before charge to a minute past
+  the expected drop, growing smoothly if the roast runs long; the preheat is still saved.
+- **History opens each roast's chart on the roast**, with Show preheat to see everything recorded.
 - **Each profile sets its own soak**, or none; the Soak time setting moved into profiles.
 
 ## [0.1.1] - 2026-11-07

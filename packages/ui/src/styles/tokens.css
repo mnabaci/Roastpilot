@@ -19,6 +19,10 @@
   --air-tint: rgba(76, 211, 240, 0.14);
   --target: #5f6670;
   --ghost: #474d57;
+  --band-low: #1d1e21;
+  --band-mid: #252629;
+  --band-high: #2d2e31;
+  --chart-grid: rgba(237, 238, 240, 0.09);
   --good: #3ddc97;
   --warning: #ffc23d;
   --critical: #d93036;
@@ -46,6 +50,10 @@
   --air-tint: rgba(7, 111, 145, 0.1);
   --target: #9aa0a8;
   --ghost: #c9cdd3;
+  --band-low: #f8f8f8;
+  --band-mid: #f1f1f1;
+  --band-high: #e9eaea;
+  --chart-grid: rgba(15, 17, 20, 0.12);
   --good: #0f7a4d;
   --warning: #8a5a00;
   --critical: #d93036;

@@ -21,15 +21,27 @@ export const ROR_RANGE: uPlot.Range.Function = (_u, min, max) => [
   Number.isFinite(max) ? Math.max(ROR_MAX, Math.ceil(max)) : ROR_MAX,
 ];
 
-/** The temperature axis is fixed at 0–250 °C (Artisan's default) and grows in 50 °C steps. */
+/**
+ * The temperature axis is fixed from its floor (0 °C, Artisan's default; fitted with Temperature
+ * focus) to 250 °C and grows in 50 °C steps when the data, or an aid such as the projection
+ * (`aidsTopC`), goes hotter. Both are read at draw time.
+ */
 export const TEMPERATURE_MAX_C = 250;
 const TEMPERATURE_STEP_C = 50;
-export const TEMPERATURE_RANGE: uPlot.Range.Function = (_u, _min, max) => [
-  0,
-  Number.isFinite(max) && max > TEMPERATURE_MAX_C
-    ? Math.ceil(max / TEMPERATURE_STEP_C) * TEMPERATURE_STEP_C
-    : TEMPERATURE_MAX_C,
-];
+export const temperatureRange =
+  (
+    floorC: () => number,
+    aidsTopC: () => number | undefined = () => undefined,
+  ): uPlot.Range.Function =>
+  (_u, _min, max) => {
+    const top = Math.max(Number.isFinite(max) ? max : -Infinity, aidsTopC() ?? -Infinity);
+    return [
+      floorC(),
+      top > TEMPERATURE_MAX_C
+        ? Math.ceil(top / TEMPERATURE_STEP_C) * TEMPERATURE_STEP_C
+        : TEMPERATURE_MAX_C,
+    ];
+  };
 
 /** Outputs run 0–100 %; a little headroom keeps a line at 100 % from being cut in half. */
 export const OUTPUT_RANGE: uPlot.Range.MinMax = [-4, 104];

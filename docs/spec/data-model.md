@@ -37,8 +37,9 @@ before charge (preheat) have negative times.
 - A failed write is logged once per streak and never stops the roast; the roast screen keeps
   working from memory.
 - Deleting a roast removes its samples and events (`ON DELETE CASCADE`).
-- A roast's summary also carries `fcTemp`, BT at first crack, read from its `first-crack` event
-  (no column, no migration); null without one. Roast files leave it out, as it comes from the events.
+- A roast's summary also carries `fcTemp`, BT at first crack, read from its `first-crack` event,
+  and `tpTemp`, BT at its turning point, read from its `turning-point` event (no columns, no
+  migration); null without one. Roast files leave them out, as they come from the events.
 
 ## Auto mode (milestone 4)
 

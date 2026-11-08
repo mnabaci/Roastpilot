@@ -1,7 +1,13 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import type uPlot from 'uplot';
-import type { ChartMarker } from './chart-layer';
+import type { ChartAid, ChartMarker } from './chart-layer';
 import type { Plot, PlotEngine } from './plot-engine';
+
+/** What is drawn over the lines, read at draw time: a change is a redraw, not a rebuild. */
+export interface Overlay {
+  markers: readonly ChartMarker[];
+  aids: readonly ChartAid[];
+}
 
 export interface UplotInput {
   /** What draws the plot (`usePlotEngine()`). */
@@ -12,15 +18,14 @@ export interface UplotInput {
   width: number;
   height: number;
   data: uPlot.AlignedData;
-  markers: readonly ChartMarker[];
-  /** Builds the options; `markers()` is read at draw time. */
-  build: (
-    size: { width: number; height: number },
-    markers: () => readonly ChartMarker[],
-  ) => uPlot.Options;
+  /** Changes when the scales must be worked out again with the same data (a new time window). */
+  scaleKey: string;
+  overlay: Overlay;
+  /** Builds the options; `overlay()` is read at draw time. */
+  build: (size: { width: number; height: number }, overlay: () => Overlay) => uPlot.Options;
 }
 
-/** Runs one plot in `element`: built on a structure change, fed by setData, redrawn for markers, resized with width. */
+/** Runs one plot in `element`: built on a structure change, fed by setData, redrawn for its overlay, resized with width. */
 export function useUplot({
   engine,
   element,
@@ -28,11 +33,12 @@ export function useUplot({
   width,
   height,
   data,
-  markers,
+  scaleKey,
+  overlay,
   build,
 }: UplotInput): void {
   const chartRef = useRef<Plot | null>(null);
-  const markersRef = useRef(markers);
+  const overlayRef = useRef(overlay);
   const dataRef = useRef(data);
   const buildRef = useRef(build);
 
@@ -45,7 +51,7 @@ export function useUplot({
     const el = element.current;
     if (!el) return;
     const chart = engine.create(
-      buildRef.current({ width: width || el.clientWidth || 600, height }, () => markersRef.current),
+      buildRef.current({ width: width || el.clientWidth || 600, height }, () => overlayRef.current),
       dataRef.current,
       el,
     );
@@ -58,14 +64,15 @@ export function useUplot({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [structure, height, element, engine]);
 
+  // setData works the scales out again, so a new window or floor takes effect with no new points.
   useEffect(() => {
     chartRef.current?.setData(data);
-  }, [data]);
+  }, [data, scaleKey]);
 
   useEffect(() => {
-    markersRef.current = markers;
+    overlayRef.current = overlay;
     chartRef.current?.redraw(false);
-  }, [markers]);
+  }, [overlay]);
 
   useEffect(() => {
     if (width > 0) chartRef.current?.setSize({ width, height });

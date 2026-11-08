@@ -17,6 +17,7 @@ import { createCoachStore, type CoachStore } from './coach-store';
 import { createConnectionStore, type ConnectionStore } from './connection-store';
 import { createRoastersStore, type RoastersStore } from './roasters-store';
 import { createRoastStore, type RoastStore } from './roast-store';
+import { createRoastViewStore, type RoastViewStore } from './roast-view-store';
 import { createSafetyStore, type SafetyState, type SafetyStore } from './safety-store';
 import { createSettingsStore, type SettingsStore } from './settings-store';
 import { createSyncStore, type SyncStore } from './sync-store';
@@ -38,6 +39,8 @@ export interface Stores {
   updates: UpdatesStore;
   /** One-line notes for actions that failed where the screen shows nothing. */
   toasts: ToastsStore;
+  /** The Roast chart's window and floor, kept while you visit other screens mid-roast. */
+  roastView: RoastViewStore;
 }
 
 /** Starting values, mostly for tests. */
@@ -75,5 +78,6 @@ export function createStores(seed: StoresSeed = {}): Stores {
     beans: createBeansStore(seed.beans, seed.setup, seed.currentRoastId),
     updates: createUpdatesStore(seed.version, seed.update),
     toasts: createToastsStore(),
+    roastView: createRoastViewStore(),
   };
 }
