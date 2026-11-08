@@ -51,7 +51,7 @@ export function CoachCard(props: CoachCardProps) {
       >
         <Label text="Heads-up" note={note} />
         <p className="text-body text-ink">{props.line}</p>
-        <Button variant="outline" size="sm" onClick={onDismiss}>
+        <Button variant="outline" size="sm" className="self-end" onClick={onDismiss}>
           Dismiss
         </Button>
       </section>
@@ -71,19 +71,20 @@ export function CoachCard(props: CoachCardProps) {
         <CoachChanges changes={props.changes} />
         <p className="text-body text-ink-muted">{props.reason}</p>
       </div>
-      <div className="flex gap-2.5">
+      {/* As in every confirmation: right-aligned, the quiet choice first, the action last. */}
+      <div className="flex justify-end gap-2.5">
+        <Button variant="outline" size="sm" onClick={onDismiss}>
+          Dismiss
+        </Button>
         <Button
           variant="primary"
           size="sm"
-          className="flex-1"
+          className="px-5"
           disabled={props.applying}
           aria-busy={props.applying}
           onClick={props.onApply}
         >
           {props.applying ? 'Applying…' : 'Apply'}
-        </Button>
-        <Button variant="outline" size="sm" onClick={onDismiss}>
-          Dismiss
         </Button>
       </div>
     </section>
