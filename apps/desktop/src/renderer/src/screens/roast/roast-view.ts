@@ -80,6 +80,14 @@ function phaseBands(input: RoastViewInput): PhaseBand[] {
   ];
 }
 
+/**
+ * The RoR the chart draws now, °C/min: the RoR line's latest point. None in a gap, where the RoR
+ * is outside Artisan's limits, so the projection follows the line you see.
+ */
+export function drawnRorCPerMin(lines: readonly LineLayer[]): number | undefined {
+  return lines.find((l) => l.id === 'ror')?.points.at(-1)?.v ?? undefined;
+}
+
 /** Each aid that is switched on, back to front. */
 function aidsOf(input: RoastViewInput, window: TimeWindow, nowS: number): ChartAid[] {
   const { settings } = input;

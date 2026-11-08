@@ -10,7 +10,7 @@ import { useMemo, useState } from 'react';
 import { useRoastExpectations } from '../../features/use-roast-expectations';
 import { useSettings } from '../../stores/use-stores';
 import { useProfileInUse } from './use-active-profile';
-import { roastView, type HeldView, type RoastView } from './roast-view';
+import { drawnRorCPerMin, roastView, type HeldView, type RoastView } from './roast-view';
 
 /** What one roast's view keeps between readings. */
 interface Held {
@@ -42,6 +42,8 @@ export function useRoastView({
   const [held, setHeld] = useState<Held>();
   const previous = held?.chargedAtMs === roast.chargedAtMs ? held.view : undefined;
   const latest = lines.find((l) => l.id === 'bt')?.points.findLast((p) => p.v !== null);
+  // The projection follows the RoR line as drawn, and none while the RoR number is unknown.
+  const drawnRor = rorCPerMin === undefined ? undefined : drawnRorCPerMin(lines);
   const expectedEndS = expectedRoastEndS({
     plannedDropS: profile ? plannedDropS(profile) : undefined,
     ghostDropS: ghost.dropS,
@@ -57,7 +59,7 @@ export function useRoastView({
         roast,
         nowS: latest?.t,
         btC: latest?.v ?? undefined,
-        rorCPerMin,
+        rorCPerMin: drawnRor,
         expectedEndS,
         previous,
         lines,
@@ -70,7 +72,7 @@ export function useRoastView({
       roast,
       latest?.t,
       latest?.v,
-      rorCPerMin,
+      drawnRor,
       expectedEndS,
       previous,
       lines,

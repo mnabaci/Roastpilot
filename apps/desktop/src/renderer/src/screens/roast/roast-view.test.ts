@@ -1,7 +1,7 @@
 import { READY_ROAST, type RoastState } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import type { LineLayer } from '@roastpilot/ui';
-import { roastView, type RoastViewInput } from './roast-view';
+import { drawnRorCPerMin, roastView, type RoastViewInput } from './roast-view';
 
 const ALL_ON = {
   chartProjection: true,
@@ -191,5 +191,40 @@ describe('roastView', () => {
     expect(
       roastView(input({ roast: cooling, nowS: 760, previous: held({ toS: 800 }) })),
     ).toMatchObject({ timeWindow: { fromS: -30, toS: 820 }, temperatureFloorC: 0, aids: [] });
+  });
+});
+
+describe('drawnRorCPerMin', () => {
+  const ror = (points: { t: number; v: number | null }[]): LineLayer => ({
+    id: 'ror',
+    label: 'RoR',
+    axis: 'ror',
+    tone: 'air',
+    width: 2,
+    points,
+  });
+
+  it("is the RoR line's latest point", () => {
+    expect(
+      drawnRorCPerMin([
+        live(),
+        ror([
+          { t: 419, v: 8 },
+          { t: 420, v: 9 },
+        ]),
+      ]),
+    ).toBe(9);
+  });
+
+  it('is none in a gap (a RoR outside the drawn limits), or without a RoR line', () => {
+    expect(
+      drawnRorCPerMin([
+        ror([
+          { t: 419, v: 8 },
+          { t: 420, v: null },
+        ]),
+      ]),
+    ).toBeUndefined();
+    expect(drawnRorCPerMin([live()])).toBeUndefined();
   });
 });
