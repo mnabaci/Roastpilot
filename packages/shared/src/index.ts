@@ -116,6 +116,7 @@ export {
   ProfileErrorSchema,
   ProfileIdSchema,
   PROFILE_LIMITS,
+  SOAK_LENGTHS_S,
   ProfilePhaseSchema,
   PROFILE_SCHEMA_VERSION,
   type AutoProfile,

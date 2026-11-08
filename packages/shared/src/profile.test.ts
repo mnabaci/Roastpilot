@@ -38,6 +38,11 @@ describe('AutoProfileSchema', () => {
     expect(AutoProfileSchema.parse(profile)).toEqual(profile);
   });
 
+  it('accepts a profile without a soak: the first step starts at charge', () => {
+    const phases = profile.phases.slice(1);
+    expect(AutoProfileSchema.parse({ ...profile, phases }).phases).toEqual(phases);
+  });
+
   it('refuses a last phase that waits for another phase', () => {
     const phases = profile.phases.slice(0, 2);
     expect(AutoProfileSchema.safeParse({ ...profile, phases }).success).toBe(false);
