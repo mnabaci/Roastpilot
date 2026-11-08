@@ -20,7 +20,7 @@ const elements = [
   { type: 'desktop', pattern: 'apps/desktop/**' },
 ];
 
-/** Who may import whom. Keep in sync with CLAUDE.md and docs/spec/repository.md. */
+/** Who may import whom. Keep in sync with AGENTS.md and docs/spec/repository.md. */
 const allowedImports: Record<string, string[]> = {
   shared: [],
   core: ['shared'],
