@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ErrorBoundary } from './ErrorBoundary';
 
 function Boom({ fail }: { fail: boolean }) {
@@ -18,8 +18,10 @@ const renderBoundary = (fail: boolean, resetKey: string, onError = vi.fn()) => (
 );
 
 describe('ErrorBoundary', () => {
-  // React reports caught render errors on console.error; keep the test output quiet.
-  vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  beforeEach(() => {
+    // React reports caught render errors on console.error; keep the test output quiet.
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  });
 
   it('draws the children when nothing fails', () => {
     render(renderBoundary(false, 'a'));

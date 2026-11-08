@@ -1,15 +1,9 @@
 import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DEFAULT_SETTINGS, err, SAFETY_NOTICE_VERSION, type Screen } from '@roastpilot/shared';
-import type * as Ui from '@roastpilot/ui';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { CONNECTED, fakeApi, renderApp } from '../test/render-app';
 import { App } from './App';
-
-vi.mock('@roastpilot/ui', async (importOriginal) => ({
-  ...(await importOriginal<typeof Ui>()),
-  RoastChart: (await import('../test/fake-ui')).FakeRoastChart,
-}));
 
 const FIRST_LAUNCH = { settings: DEFAULT_SETTINGS };
 const accept = () =>

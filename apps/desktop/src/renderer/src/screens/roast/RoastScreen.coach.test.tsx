@@ -1,15 +1,9 @@
 import { err, READY_ROAST, type CoachStatus } from '@roastpilot/shared';
-import type * as Ui from '@roastpilot/ui';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { CONNECTED, fakeApi, renderApp } from '../../test/render-app';
 import { RoastScreen } from './RoastScreen';
-
-vi.mock('@roastpilot/ui', async (importOriginal) => ({
-  ...(await importOriginal<typeof Ui>()),
-  RoastChart: (await import('../../test/fake-ui')).FakeRoastChart,
-}));
 
 const roasting = { ...READY_ROAST, phase: 'roasting' as const, chargedAtMs: 0 };
 const SUGGESTION: CoachStatus = {

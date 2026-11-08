@@ -21,6 +21,10 @@ export default defineConfig({
         test: {
           name: 'dom',
           environment: 'jsdom',
+          // One jsdom per worker, shared by its test files: about 3x faster. Safe because UI tests
+          // never vi.mock a module (they inject, e.g. PlotEngineProvider) and the setup file puts
+          // back what a test changed.
+          isolate: false,
           setupFiles: ['./vitest.setup.dom.ts'],
           include: [
             'packages/ui/src/**/*.test.{ts,tsx}',

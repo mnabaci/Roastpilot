@@ -1,16 +1,10 @@
 import { DEFAULT_SETTINGS, err, ok, type AutoProfile } from '@roastpilot/shared';
-import type * as Ui from '@roastpilot/ui';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { BUILT_INS, CURVE, STEPS } from '../../test/profiles';
 import { fakeApi, renderApp } from '../../test/render-app';
 import { ProfilesScreen } from './ProfilesScreen';
-
-vi.mock('@roastpilot/ui', async (importOriginal) => ({
-  ...(await importOriginal<typeof Ui>()),
-  RoastChart: (await import('../../test/fake-ui')).FakeRoastChart,
-}));
 
 const MADE: AutoProfile = { ...CURVE, id: 'custom-9', name: 'Milestones' };
 

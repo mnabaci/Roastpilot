@@ -1,19 +1,14 @@
 import { createLogger } from '@roastpilot/core';
 import type { LogEntry } from '@roastpilot/shared';
-import type * as Ui from '@roastpilot/ui';
+import { PlotEngineProvider } from '@roastpilot/ui';
 import { render, screen } from '@testing-library/react';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { fakePlotEngine } from '../renderer/src/test/fake-plot-engine';
 import type { SampleWorld } from './app-state';
 import { buildSampleWorld } from './sample-world';
 import { sceneDeps } from './scene-deps';
 import { SceneApp } from './SceneApp';
 import { SCENES } from './scenes';
-
-// jsdom has no canvas; the chart's own tests live in packages/ui.
-vi.mock('@roastpilot/ui', async (importOriginal) => ({
-  ...(await importOriginal<typeof Ui>()),
-  RoastChart: (await import('../renderer/src/test/fake-ui')).FakeRoastChart,
-}));
 
 // Guards `pnpm screenshots`: a screen change that breaks a README scene fails here, not later.
 describe('README scenes', () => {
@@ -48,7 +43,12 @@ describe('README scenes', () => {
       },
       'scene',
     );
-    render(<SceneApp deps={await sceneDeps(world[scene.moment], scene.screen, logger)} />);
+    // jsdom has no canvas: the chart draws through a fake engine (its own tests live in packages/ui).
+    render(
+      <PlotEngineProvider value={fakePlotEngine}>
+        <SceneApp deps={await sceneDeps(world[scene.moment], scene.screen, logger)} />
+      </PlotEngineProvider>,
+    );
     await scene.prepare();
     expect(screen.queryByText(/hit a problem/)).not.toBeInTheDocument();
     expect(problems).toEqual([]);

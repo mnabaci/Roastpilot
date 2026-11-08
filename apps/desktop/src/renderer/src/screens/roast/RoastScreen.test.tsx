@@ -1,6 +1,5 @@
 import { AUTO_OFF, DEFAULT_SETTINGS, err, READY_ROAST, type Reading } from '@roastpilot/shared';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
-import type * as Ui from '@roastpilot/ui';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { pick } from '../../test/pick';
@@ -20,11 +19,6 @@ const openSetup = () =>
     }),
   );
 const onConnect = () => undefined;
-
-vi.mock('@roastpilot/ui', async (importOriginal) => ({
-  ...(await importOriginal<typeof Ui>()),
-  RoastChart: (await import('../../test/fake-ui')).FakeRoastChart,
-}));
 
 describe('RoastScreen', () => {
   it('when not connected, the one action is Connect a roaster', async () => {
