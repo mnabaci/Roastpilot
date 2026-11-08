@@ -24,6 +24,11 @@ describe('SelectField', () => {
     expect(onChange).toHaveBeenCalledExactlyOnceWith('2');
   });
 
+  it('keeps its name with the label hidden, as in a table', () => {
+    render(<SelectField label="Soak" value="2" options={OPTIONS} onChange={vi.fn()} hideLabel />);
+    expect(screen.getByRole('button', { name: 'Soak' })).toHaveTextContent('Mon 2 Nov · 18:20');
+  });
+
   it('stays shut while disabled', () => {
     render(
       <SelectField

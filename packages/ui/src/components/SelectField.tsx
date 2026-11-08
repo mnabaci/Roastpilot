@@ -4,12 +4,13 @@ import { cn } from '../lib/utils';
 import { Select, type SelectOption } from './Select';
 
 export interface SelectFieldProps<V extends string> {
-  /** Always shown above the field. */
+  /** Always read by screen readers; shown above the field unless `hideLabel` (in a table). */
   label: string;
   value: V;
   options: readonly SelectOption<V>[];
   onChange: (value: V) => void;
   disabled?: boolean;
+  hideLabel?: boolean;
   className?: string;
 }
 
@@ -20,13 +21,14 @@ export function SelectField<V extends string>({
   options,
   onChange,
   disabled,
+  hideLabel = false,
   className,
 }: SelectFieldProps<V>) {
   const id = useId();
   const current = options.find((o) => o.value === value)?.label ?? '';
   return (
     <div className={cn('flex min-w-0 flex-col gap-1.5', className)}>
-      <label htmlFor={id} className="text-label text-ink-muted">
+      <label htmlFor={id} className={hideLabel ? 'sr-only' : 'text-label text-ink-muted'}>
         {label}
       </label>
       <Select

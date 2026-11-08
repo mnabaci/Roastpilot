@@ -24,3 +24,5 @@ type Story = StoryObj<typeof meta>;
 export const NonePicked: Story = {};
 export const Picked: Story = { args: { value: '2' } };
 export const Disabled: Story = { args: { disabled: true } };
+/** In a table row, where the column heading names it. */
+export const HiddenLabel: Story = { args: { hideLabel: true, value: '2' } };
