@@ -1,6 +1,6 @@
 import type uPlot from 'uplot';
 import type { ChartColors } from './chart-colors';
-import { labelSpot, type Box, type CanvasLine } from './band-labels';
+import { placeBandNames, type Box, type CanvasLine } from './band-labels';
 import type {
   ChartAid,
   NowLineLayer,
@@ -10,18 +10,15 @@ import type {
 } from './chart-layer';
 import { plotPixelRatio } from './pixel-ratio';
 
-/**
- * Each band one shade darker than the one below, from the `ink` token (design system: RoastChart,
- * Aids): the beans darken as they climb through drying, Maillard and development.
- */
-export const BAND_ALPHAS = [0.03, 0.06, 0.09] as const;
 /** The projection and the now line are drawn faint, under the lines they belong to. */
 const FAINT_ALPHA = 0.55;
 const PROJECTION_DASH_PX = [4, 4];
 const PROJECTION_WIDTH_PX = 2;
-const BAND_LABEL_INSET_PX = 8;
-/** The `label` type style's line height: the room a band's name takes. */
+/** A band name's chip: the `label` line height, with this much room around the text. */
 const BAND_LABEL_HEIGHT_PX = 18;
+const BAND_LABEL_PAD_PX = 4;
+/** How far a band's name keeps from the Charge line and the plot's right edge. */
+const BAND_LABEL_INSET_PX = 8;
 
 export const nowLines = (aids: readonly ChartAid[]): NowLineLayer[] =>
   aids.filter((aid): aid is NowLineLayer => aid.kind === 'now-line');
@@ -32,14 +29,15 @@ const bandLayers = (aids: readonly ChartAid[]): PhaseBandsLayer[] =>
 
 interface BandBox {
   band: PhaseBand;
-  alpha: number;
+  /** Its fill: `band-low`, `band-mid`, `band-high`, coolest first. */
+  fill: string;
   /** Canvas y of the band's top and bottom edges. */
   top: number;
   bottom: number;
 }
 
 /** Each band's place on the canvas, clipped to the plot; bands off the axis are left out. */
-function bandBoxes(u: uPlot, aids: readonly ChartAid[]): BandBox[] {
+function bandBoxes(u: uPlot, aids: readonly ChartAid[], colors: ChartColors): BandBox[] {
   const { bbox } = u;
   const { min, max } = u.scales.temperature ?? {};
   if (min === undefined || max === undefined) return [];
@@ -48,8 +46,8 @@ function bandBoxes(u: uPlot, aids: readonly ChartAid[]): BandBox[] {
     layer.bands.flatMap((band, i) => {
       const bottom = Math.min(bbox.top + bbox.height, y(band.fromC ?? min));
       const top = Math.max(bbox.top, y(band.toC ?? max));
-      const alpha = BAND_ALPHAS[Math.min(i, BAND_ALPHAS.length - 1)] ?? 0;
-      return bottom > top ? [{ band, alpha, top, bottom }] : [];
+      const fill = colors.bands[Math.min(i, colors.bands.length - 1)] ?? colors.surface;
+      return bottom > top ? [{ band, fill, top, bottom }] : [];
     }),
   );
 }
@@ -58,24 +56,21 @@ function bandBoxes(u: uPlot, aids: readonly ChartAid[]): BandBox[] {
 export function drawPhaseBands(u: uPlot, aids: readonly ChartAid[], colors: ChartColors): void {
   const { ctx, bbox } = u;
   ctx.save();
-  ctx.fillStyle = colors.tone.ink;
-  for (const box of bandBoxes(u, aids)) {
-    ctx.globalAlpha = box.alpha;
+  for (const box of bandBoxes(u, aids, colors)) {
+    ctx.fillStyle = box.fill;
     ctx.fillRect(bbox.left, box.top, bbox.width, box.bottom - box.top);
   }
   ctx.restore();
 }
 
-/** Every line drawn on the plot, as canvas points, up to `rightPx`. */
-function canvasLines(u: uPlot, rightPx: number): CanvasLine[] {
+/** Every line drawn on the plot as canvas points: the curves, the projection and the now line. */
+function canvasLines(u: uPlot, aids: readonly ChartAid[]): CanvasLine[] {
   const xs = Array.from(u.data[0], (t) => u.valToPos(t, 'x', true));
-  const last = xs.findIndex((x) => x > rightPx);
-  const end = last === -1 ? xs.length : last + 1;
-  return u.series.slice(1).flatMap((series, k) => {
+  const curves = u.series.slice(1).flatMap((series, k) => {
     const values = u.data[k + 1];
     const scale = series.scale;
     if (!values || scale === undefined) return [];
-    const line: CanvasLine = xs.slice(0, end).flatMap((x, j) => {
+    const line: CanvasLine = xs.flatMap((x, j) => {
       const v = values[j];
       // undefined: another line's time, joined across; null: a break.
       if (v === undefined) return [];
@@ -83,13 +78,25 @@ function canvasLines(u: uPlot, rightPx: number): CanvasLine[] {
     });
     return [line];
   });
+  const ahead = projections(aids).map((layer) =>
+    layer.points.map((p) =>
+      p.v === null ? null : { x: u.valToPos(p.t, 'x', true), y: u.valToPos(p.v, layer.axis, true) },
+    ),
+  );
+  const now = nowLines(aids).map((line) => {
+    const x = u.valToPos(line.t, 'x', true);
+    return [
+      { x, y: u.bbox.top },
+      { x, y: u.bbox.top + u.bbox.height },
+    ];
+  });
+  return [...curves, ...ahead, ...now];
 }
 
 /**
- * Each band's name, once, at its left edge (just right of the Charge line when it is in view): at
- * the bottom of the band, or its top when a curve runs there (under the marker labels when they
- * sit there); when all of those are taken, at its right edge. On a chip of the band's own shade so
- * the grid never cuts through it. A band with no free spot has no name.
+ * Each band's name, once, inside its own band (`placeBandNames`): just right of the Charge line
+ * when it is in view, else at the plot's right edge; on a `surface` chip, so the grid never cuts
+ * through it and the name keeps its 4.5:1 on every band. A band with no free spot has no name.
  */
 export function drawBandLabels(
   u: uPlot,
@@ -97,51 +104,39 @@ export function drawBandLabels(
   taken: readonly Box[],
   colors: ChartColors,
 ): void {
-  const boxes = bandBoxes(u, aids);
+  const boxes = bandBoxes(u, aids, colors);
   if (boxes.length === 0) return;
   const { ctx, bbox } = u;
   const ratio = plotPixelRatio(u);
   const inset = BAND_LABEL_INSET_PX * ratio;
-  const height = BAND_LABEL_HEIGHT_PX * ratio;
+  const pad = BAND_LABEL_PAD_PX * ratio;
   const charge = u.valToPos(0, 'x', true);
   const left = (charge > bbox.left && charge < bbox.left + bbox.width ? charge : bbox.left) + inset;
+  const right = bbox.left + bbox.width - inset;
   ctx.save();
   ctx.font = `500 ${String(13 * ratio)}px ${colors.font}`;
   ctx.textBaseline = 'middle';
-  const widths = boxes.map((box) => ctx.measureText(box.band.label).width);
-  const lines = canvasLines(u, Infinity);
-  const plotRight = bbox.left + bbox.width;
+  const spots = placeBandNames(
+    boxes.map((box) => ({
+      top: box.top,
+      bottom: box.bottom,
+      width: ctx.measureText(box.band.label).width + 2 * pad,
+    })),
+    {
+      lefts: (width) => [left, right - width],
+      height: BAND_LABEL_HEIGHT_PX * ratio,
+      pad,
+      lines: canvasLines(u, aids),
+      taken,
+    },
+  );
   boxes.forEach((box, i) => {
-    const width = widths[i] ?? 0;
-    const at = (x: number): Box[] => {
-      const right = x + width;
-      // Under the marker labels that reach across this name's span, for the top spot's second try.
-      const below = Math.max(
-        box.top,
-        ...taken.filter((t) => t.left <= right && t.right >= x).map((t) => t.bottom),
-      );
-      return [
-        { left: x, right, bottom: box.bottom - inset / 2, top: box.bottom - inset / 2 - height },
-        { left: x, right, top: box.top + inset / 2, bottom: box.top + inset / 2 + height },
-        { left: x, right, top: below + inset, bottom: below + inset + height },
-      ];
-    };
-    // The left edge first; the right edge, still empty mid-roast, when the left is crowded.
-    const spots = [...at(left), ...at(plotRight - inset - width)].filter(
-      (spot) => spot.top >= box.top && spot.bottom <= box.bottom,
-    );
-    const spot = labelSpot(spots, lines, taken);
+    const spot = spots[i];
     if (!spot) return;
-    const chip = { x: spot.left - inset / 2, w: spot.right - spot.left + inset };
-    ctx.globalAlpha = 1;
     ctx.fillStyle = colors.surface;
-    ctx.fillRect(chip.x, spot.top, chip.w, height);
-    ctx.globalAlpha = box.alpha;
-    ctx.fillStyle = colors.tone.ink;
-    ctx.fillRect(chip.x, spot.top, chip.w, height);
-    ctx.globalAlpha = 1;
+    ctx.fillRect(spot.left, spot.top, spot.right - spot.left, spot.bottom - spot.top);
     ctx.fillStyle = colors.axis;
-    ctx.fillText(box.band.label, spot.left, (spot.top + spot.bottom) / 2);
+    ctx.fillText(box.band.label, spot.left + pad, (spot.top + spot.bottom) / 2);
   });
   ctx.restore();
 }

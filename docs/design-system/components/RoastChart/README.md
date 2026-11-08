@@ -5,7 +5,7 @@ The live roast chart: temperature against the target curve, rate of rise on a ri
 ## Layers (back to front)
 
 1. Phase bands (an aid, below): behind the grid.
-2. Grid: `border`, 1px.
+2. Grid: `chart-grid`, 1px, translucent so it shows the same on every band.
 3. Drop temperature line: `critical-text`, 1px dotted, labelled "Drop 212 °C".
 4. Ghost temperature and RoR: `ghost`, 2px.
 5. Target curve: `target`, 2px dashed 6 6.
@@ -18,7 +18,7 @@ The live roast chart: temperature against the target curve, rate of rise on a ri
 
 Drawn faint, so they never compete with the curves; none has a legend entry or a hover value. Each is a switch in Settings › Chart.
 
-- **Phase bands:** full-width fills of `ink` at 3 %, 6 % and 9 % for drying, Maillard and development, darker as the beans are. Each is named once at its left edge (just right of the Charge line when it is in view), `label` style in `ink-muted`, 8px in: at the bottom of the band, or its top when a curve runs there (under the marker labels when they sit there), else the same spots at its right edge, on a chip of the band's own shade so grid lines and markers never cut through the name. A band with no free spot, or too thin, has none: a name never hides a curve.
+- **Phase bands:** full-width fills in `band-low`, `band-mid` and `band-high` for drying, Maillard and development, stronger as the beans darken; a faint step apart in both themes, under the grid. Each band's name sits inside its own band, `label` style in `ink-muted` on a `surface` chip (so it keeps 4.5:1 and the grid never cuts it): vertically centred in the band's visible part, else at its top, else its bottom; just right of the Charge line (8px in) when it is in view, else at the plot's right edge. It never covers a curve, the projection, the now line, a marker's line or label, or another band's name: a band with no free spot, or too thin, has none.
 - **Projection:** a straight 2px line in the colour of the line it continues (`heat` for temperature), dashed 4 4 with round caps, at 55 % opacity: dotted-looking, so it never reads as the target's 6 6 dashes.
 - **Now line:** 1px solid `ink-muted` at 55 % opacity through the chart and the outputs strip; the hover line is the dashed one.
 - **Time window and temperature floor:** the chart can be given a time span and a lowest temperature (with Temperature focus, fitted below the expected turning point in 25 °C steps); the axes don't move while you hover.

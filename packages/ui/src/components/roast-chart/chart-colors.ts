@@ -7,6 +7,8 @@ export interface ChartColors {
   axis: string;
   grid: string;
   surface: string;
+  /** The phase bands' fills, coolest first (`band-low`, `band-mid`, `band-high`). */
+  bands: readonly string[];
   font: string;
 }
 
@@ -20,8 +22,9 @@ export function readChartColors(element: Element): ChartColors {
   return {
     tone,
     axis: read('--ink-muted'),
-    grid: read('--border'),
+    grid: read('--chart-grid'),
     surface: read('--surface'),
+    bands: [read('--band-low'), read('--band-mid'), read('--band-high')],
     font: read('--font-sans') || 'sans-serif',
   };
 }

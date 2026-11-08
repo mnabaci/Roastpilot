@@ -87,6 +87,18 @@ export function markerLabelBoxes(
   return boxes;
 }
 
+/** Where the markers' lines run, as thin boxes, so a band's name never sits across one. */
+export function markerLineBoxes(u: uPlot, markers: readonly ChartMarker[]): Box[] {
+  const { bbox } = u;
+  const half = plotPixelRatio(u);
+  return markers.flatMap((marker) => {
+    const x = u.valToPos(marker.t, 'x', true);
+    return x >= bbox.left && x <= bbox.left + bbox.width
+      ? [{ left: x - half, right: x + half, top: bbox.top, bottom: bbox.top + bbox.height }]
+      : [];
+  });
+}
+
 /** Event markers: 1.5px dashed vertical lines, labelled at the top unless `labels` is off (the strip). */
 export function drawMarkers(
   u: uPlot,

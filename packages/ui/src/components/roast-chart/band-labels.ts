@@ -48,3 +48,47 @@ export function labelSpot(
     (spot) => !crossesAny(spot, lines) && !taken.some((box) => overlaps(spot, box)),
   );
 }
+
+/** A band on the canvas, and how wide its name's chip is. */
+export interface BandSlot {
+  top: number;
+  bottom: number;
+  width: number;
+}
+
+export interface NamePlacement {
+  /** Where a chip this wide may start, in order: just right of Charge, then the plot's right edge. */
+  lefts: (width: number) => readonly number[];
+  /** The chip's height, and the room kept to its band's edges. */
+  height: number;
+  pad: number;
+  /** Every curve drawn, the projection and now line too. */
+  lines: readonly CanvasLine[];
+  /** The marker labels. */
+  taken: readonly Box[];
+}
+
+/**
+ * Where each band's name goes (docs/design-system RoastChart, Aids): inside its own band,
+ * vertically centred in its visible part, else at its top, else its bottom; at the left first,
+ * then the right edge. Never over a curve, a marker label or another band's name: a band with no
+ * such spot, or too thin for one, gets none (undefined).
+ */
+export function placeBandNames(
+  bands: readonly BandSlot[],
+  { lefts, height, pad, lines, taken }: NamePlacement,
+): (Box | undefined)[] {
+  const placed: Box[] = [];
+  return bands.map(({ top, bottom, width }) => {
+    const highest = top + pad;
+    const lowest = bottom - pad - height;
+    if (lowest < highest) return undefined;
+    const ys = [(highest + lowest) / 2, highest, lowest];
+    const spots = lefts(width).flatMap((left) =>
+      ys.map((y) => ({ left, right: left + width, top: y, bottom: y + height })),
+    );
+    const spot = labelSpot(spots, lines, [...taken, ...placed]);
+    if (spot) placed.push(spot);
+    return spot;
+  });
+}

@@ -300,7 +300,7 @@ describe('RoastChart', () => {
 
     /** A plot that records what is drawn on it: x in seconds, y as 300 − °C. */
     const fakePlot = (pixelRatio = 1) => {
-      const calls: { name: string; args: unknown[]; alpha: number }[] = [];
+      const calls: { name: string; args: unknown[]; alpha: number; fill: unknown }[] = [];
       // The canvas as uPlot sized it: 1000 CSS px wide at `pixelRatio`.
       const state: Record<string, unknown> = {
         globalAlpha: 1,
@@ -313,7 +313,12 @@ describe('RoastChart', () => {
             : name === 'measureText'
               ? () => ({ width: 40 })
               : (...args: unknown[]) => {
-                  calls.push({ name, args, alpha: Number(target.globalAlpha) });
+                  calls.push({
+                    name,
+                    args,
+                    alpha: Number(target.globalAlpha),
+                    fill: target.fillStyle,
+                  });
                 },
         set: (target, name: string, value) => {
           target[name] = value;
@@ -402,26 +407,49 @@ describe('RoastChart', () => {
       expect(created).toHaveLength(1);
     });
 
-    it('draws the phase bands behind everything, darker as they climb', () => {
-      draw(<RoastChart title="Roast curve" layers={[roasting, ...aids]} />);
-      const calls = runHooks(created[0], 'drawClear');
-      expect(calls.filter((c) => c.name === 'fillRect').map((c) => [c.args, c.alpha])).toEqual([
-        [[0, 150, 1000, 100], 0.03],
-        [[0, 108, 1000, 42], 0.06],
-        [[0, 50, 1000, 58], 0.09],
-      ]);
-      expect(calls.filter((c) => c.name === 'fillText')).toEqual([]);
-    });
+    describe('with the band tokens', () => {
+      const BANDS = {
+        '--band-low': 'band-low',
+        '--band-mid': 'band-mid',
+        '--band-high': 'band-high',
+        '--surface': 'surface',
+      };
+      beforeEach(() => {
+        for (const [token, value] of Object.entries(BANDS))
+          document.documentElement.style.setProperty(token, value);
+        return () => {
+          for (const token of Object.keys(BANDS))
+            document.documentElement.style.removeProperty(token);
+        };
+      });
 
-    it('names each band once, over the grid and markers, where no curve runs', () => {
-      draw(<RoastChart title="Roast curve" layers={[roasting, ...aids]} />);
-      const texts = runHooks(created[0], 'draw').filter((c) => c.name === 'fillText');
-      // At the bottom of each band, 8px in: the line at 175-180 °C stays clear of them all.
-      expect(texts.map((c) => c.args)).toEqual([
-        ['Drying', 8, 237],
-        ['Maillard', 8, 137],
-        ['Development', 8, 95],
-      ]);
+      it('draws the phase bands behind everything in their own tokens, coolest first', () => {
+        draw(<RoastChart title="Roast curve" layers={[roasting, ...aids]} />);
+        const calls = runHooks(created[0], 'drawClear');
+        expect(calls.filter((c) => c.name === 'fillRect').map((c) => [c.args, c.fill])).toEqual([
+          [[0, 150, 1000, 100], 'band-low'],
+          [[0, 108, 1000, 42], 'band-mid'],
+          [[0, 50, 1000, 58], 'band-high'],
+        ]);
+        expect(calls.filter((c) => c.name === 'fillText')).toEqual([]);
+      });
+
+      it('names each band inside it, centred, on a surface chip, clear of the curve', () => {
+        draw(<RoastChart title="Roast curve" layers={[roasting, ...aids]} />);
+        const calls = runHooks(created[0], 'draw');
+        // Drying and development centred in their bands (y 150–250, 50–108); the temperature line
+        // runs through Maillard's middle (y 121–125), so its name sits at the band's bottom.
+        expect(calls.filter((c) => c.name === 'fillText').map((c) => c.args)).toEqual([
+          ['Drying', 12, 200],
+          ['Maillard', 12, 137],
+          ['Development', 12, 79],
+        ]);
+        expect(calls.filter((c) => c.name === 'fillRect').map((c) => c.fill)).toEqual([
+          'surface',
+          'surface',
+          'surface',
+        ]);
+      });
     });
 
     it('puts a marker label flipped left at the edge on its own row, clear of the one before', () => {
@@ -474,7 +502,7 @@ describe('RoastChart', () => {
       ];
       for (const fn of created[0]?.opts.hooks.draw ?? []) fn(u);
       expect(calls.filter((c) => c.name === 'fillText').map((c) => c.args)).toEqual([
-        ['Drying', 952, 237],
+        ['Drying', 948, 150],
       ]);
     });
 
