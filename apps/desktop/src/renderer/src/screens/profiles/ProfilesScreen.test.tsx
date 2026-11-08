@@ -49,6 +49,7 @@ describe('ProfilesScreen', () => {
     expect(screen.getByRole('textbox', { name: 'BT cap' })).toBeDisabled();
     await userEvent.click(screen.getByRole('button', { name: /^More for (?!Profiles$)/ }));
     expect(screen.queryByRole('menuitem', { name: 'Delete' })).toBeNull();
+    expect(screen.queryByRole('menuitem', { name: /calibrat/ })).toBeNull();
     await userEvent.click(screen.getByRole('menuitem', { name: 'Duplicate' }));
     expect(api.duplicateProfile).toHaveBeenCalledWith('light-steps');
     await waitFor(() => {
@@ -377,6 +378,54 @@ describe('ProfilesScreen', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  describe('calibration', () => {
+    const header = () => within(screen.getByRole('banner'));
+    const choose = async (item: string) => {
+      await userEvent.click(screen.getByRole('button', { name: /^More for (?!Profiles$)/ }));
+      await userEvent.click(screen.getByRole('menuitem', { name: item }));
+    };
+
+    it('Mark as calibrated saves only that, and keeps an unsaved edit', async () => {
+      const calibrated = { ...MINE, needsCalibration: false };
+      const api = fakeApi({
+        listProfiles: vi.fn(() =>
+          Promise.resolve([...BUILT_INS, { profile: calibrated, builtIn: false }]),
+        ),
+      });
+      open(api);
+      expect(header().getByText('Needs calibration')).toBeInTheDocument();
+      await edit('BT cap', '205');
+      await choose('Mark as calibrated');
+      expect(api.saveProfile).toHaveBeenCalledWith(calibrated);
+      await waitFor(() => {
+        expect(header().queryByText('Needs calibration')).toBeNull();
+      });
+      expect(screen.getByRole('textbox', { name: 'BT cap' })).toHaveValue('205');
+      expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+    });
+
+    it('can be undone with Mark as needs calibration', async () => {
+      const calibrated = { profile: { ...MINE, needsCalibration: false }, builtIn: false };
+      const api = fakeApi();
+      open(api, [...BUILT_INS, calibrated]);
+      expect(header().queryByText('Needs calibration')).toBeNull();
+      await choose('Mark as needs calibration');
+      expect(api.saveProfile).toHaveBeenCalledWith({ ...MINE, needsCalibration: true });
+    });
+
+    it('says so when storage refuses', async () => {
+      const api = fakeApi({
+        saveProfile: vi.fn(() =>
+          Promise.resolve(err({ kind: 'storage-failed' as const, message: 'Disk full' })),
+        ),
+      });
+      open(api);
+      await choose('Mark as calibrated');
+      expect(await screen.findByRole('alert')).toHaveTextContent('Disk full');
+      expect(header().getByText('Needs calibration')).toBeInTheDocument();
+    });
+  });
+
   describe('while Auto runs a profile', () => {
     const running = {
       auto: { ...AUTO_OFF, enabled: true },
@@ -388,6 +437,9 @@ describe('ProfilesScreen', () => {
     it('holds Save and Delete for the one it runs, and keeps your edit', async () => {
       openRunning('custom-1');
       expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
+      await userEvent.click(screen.getByRole('button', { name: /^More for (?!Profiles$)/ }));
+      expect(screen.queryByRole('menuitem', { name: /calibrat/ })).toBeNull();
+      await userEvent.keyboard('{Escape}');
       await edit('BT cap', '205');
       expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
       expect(screen.getByRole('textbox', { name: 'BT cap' })).toHaveValue('205');
