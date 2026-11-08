@@ -2,6 +2,7 @@ import type { ProfileEntry } from '@roastpilot/shared';
 import { Badge, Button, ConfirmDialog, Menu, type MenuItem } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
+import { useLibraryFiles } from '../../features/use-library-files';
 import { useRun } from '../../features/use-run';
 import { useRoasters } from '../../stores/use-stores';
 import { useSaveSettings } from '../settings/use-save-settings';
@@ -31,6 +32,7 @@ export function ProfileActions({
   const [deleting, setDeleting] = useState(false);
   const { id } = entry.profile;
   const others = useRoasters((s) => s.roasters).filter((r) => !r.active);
+  const files = useLibraryFiles('profiles');
   const refresh = async () => {
     stores.auto.setState({ profiles: await api.listProfiles() });
   };
@@ -138,6 +140,12 @@ export function ProfileActions({
           },
         ]
       : []),
+    {
+      label: 'Export this profile',
+      onSelect: () => {
+        files.exportFile({ kind: 'profiles', ids: [id] });
+      },
+    },
     ...(yours
       ? [
           {

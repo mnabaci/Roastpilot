@@ -1,6 +1,5 @@
 import type { Logger, RoastRepository } from '@roastpilot/core';
 import {
-  err,
   ok,
   type ImportRoastsError,
   type Result,
@@ -69,8 +68,8 @@ export class RoastFileService {
     const { repository, logger } = this.#deps;
     const parsed = parseRoastFile(text);
     if (!parsed.ok) {
-      logger.warn('history.import-refused', { reason: parsed.error });
-      return err({ kind: parsed.error });
+      logger.warn('history.import-refused', { ...parsed.error });
+      return parsed;
     }
     const listed = await repository.list();
     if (!listed.ok) {

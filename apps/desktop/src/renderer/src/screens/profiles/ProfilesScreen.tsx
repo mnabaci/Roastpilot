@@ -5,6 +5,7 @@ import { useAuto, useSettings } from '../../stores/use-stores';
 import { activeEntry } from '../roast/use-active-profile';
 import { MilestoneBuilder } from './MilestoneBuilder';
 import { ProfileEditor } from './ProfileEditor';
+import { useProfileFiles } from './use-profile-files';
 
 /** Your profiles and the built-ins, with one open to edit (docs/spec/ui.md, Profiles screen). */
 export function ProfilesScreen({ openFirst }: { openFirst?: string | undefined }) {
@@ -17,24 +18,37 @@ export function ProfilesScreen({ openFirst }: { openFirst?: string | undefined }
   const open = profiles.find((e) => e.profile.id === openId) ?? activeEntry(profiles, chosenId);
   // The one Auto runs, marked in the list so it shows without opening it.
   const autoId = activeEntry(profiles, chosenId)?.profile.id;
+  const files = useProfileFiles((id) => {
+    setBuilding(false);
+    setOpenId(id);
+  });
   return (
     <SidebarLayout
       title="Profiles"
       contentLabel="Profile"
       titleAction={
-        base ? (
-          <Menu
-            label="More for Profiles"
-            items={[
-              {
-                label: 'New from milestones',
-                onSelect: () => {
-                  setBuilding(true);
-                },
+        <Menu
+          label="More for Profiles"
+          items={[
+            ...(base
+              ? [
+                  {
+                    label: 'New from milestones',
+                    onSelect: () => {
+                      setBuilding(true);
+                    },
+                  },
+                ]
+              : []),
+            {
+              label: 'Export all',
+              onSelect: () => {
+                files.exportFile({ kind: 'profiles' });
               },
-            ]}
-          />
-        ) : undefined
+            },
+            { label: 'Import a Roastpilot file', onSelect: files.importFile },
+          ]}
+        />
       }
       sidebar={
         <NavList

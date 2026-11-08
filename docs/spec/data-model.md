@@ -87,6 +87,8 @@ What each kind carries:
 - **Beans:** the bean's fields (name, origin, process, variety, altitude, density, moisture, screen, decaf, supplier, low-stock line, notes) and its profile's name. Not stock or purchases: those are your bags, not the bean's. Its profile links by name among the active roaster's profiles, else none. An imported bean starts with 0 g and is not archived.
 - **Profiles:** the profile in full, without its id or roaster. It joins the active roaster's profiles marked "needs calibration", as a copy to another roaster is: it was made on someone else's machine. It passes the same checks as Save, and the active roaster's limits.
 - **Roasters:** the record (name, model, batch sizes, limits and calibration, preheat hold, drum speed, bean cooler helps drum, PID gains). Not the port, which belongs to one computer, and never active: an imported Skywalker asks for its port on Connect.
+- **What counts as the same:** the content without what an import sets anyway: a bean's profile link and a profile's "needs calibration" don't make it differ, so importing a file twice adds nothing. A copy that came in earlier as "<name> (imported)" counts as already here too. A profile leaves what it was made from (`source`) behind, as that is an id.
+- **Export all** on Profiles writes the active roaster's list, built-ins included (they come back as already here); a refusal names the item and the first problem: `"Light" can't come in · BT cap: At most 235 °C`.
 
 ## Bean and drum cooling
 

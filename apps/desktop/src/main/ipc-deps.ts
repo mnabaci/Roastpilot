@@ -16,8 +16,9 @@ import type { BeanService } from './beans/bean-service';
 import type { CoachActions } from './coach-apply';
 import type { HandOutput } from './hand-output';
 import type { HistoryService } from './history/history-service';
-import type { DialogParent } from './history/roast-file-dialogs';
+import type { DialogParent } from './files/file-dialogs';
 import type { RoastFiles } from './history/roast-files';
+import type { LibraryFileActions } from './files/library-file-actions';
 import type { ProfileService } from './profiles/profile-service';
 import type { RoasterService } from './roasters/roaster-service';
 import type { SettingsService } from './settings/settings-service';
@@ -33,6 +34,8 @@ export interface IpcDeps {
   settings: Pick<SettingsService, 'get' | 'set'>;
   history: Pick<HistoryService, 'list' | 'get' | 'delete' | 'saveResult' | 'setBean'>;
   roastFiles: RoastFiles;
+  /** Beans, profiles and roasters as Roastpilot files. */
+  libraryFiles: LibraryFileActions;
   pilot: Pick<AutoPilot, 'chargeSoon' | 'resume'>;
   profiles: Pick<
     ProfileService,

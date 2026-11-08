@@ -1,10 +1,12 @@
-import { createLogger } from '@roastpilot/core';
+import { createLogger, ManualClock } from '@roastpilot/core';
 import { describe, expect, it } from 'vitest';
 import { openDatabase } from './open-database';
 import { drizzleOn } from './proxy-db';
 import { SqliteBeanRepository } from './sqlite-bean-repository';
+import { SqliteProfileRepository } from './sqlite-profile-repository';
 import { SqliteRoastRepository } from './sqlite-roast-repository';
 import { SqliteRoasterRepository } from './sqlite-roaster-repository';
+import { TEST_PROFILE } from './test-profile';
 
 /** Two beans with 1000 g green each, and a way to make a later statement fail. */
 function setup() {
@@ -21,7 +23,8 @@ function setup() {
     roasts: sqlite.prepare('SELECT * FROM roasts ORDER BY id').all(),
     samples: sqlite.prepare('SELECT count(*) AS n FROM roast_samples').get(),
     purchases: sqlite.prepare('SELECT * FROM bean_purchases ORDER BY id').all(),
-    roasters: sqlite.prepare('SELECT id, is_active FROM roasters ORDER BY id').all(),
+    roasters: sqlite.prepare('SELECT id, name, is_active FROM roasters ORDER BY id').all(),
+    profiles: sqlite.prepare('SELECT id FROM profiles ORDER BY id').all(),
   });
   /** From now on, `event` on `table` fails (when `when` holds), as a broken statement would. */
   const failOn = (event: string, table: string, when = '1') => {
@@ -35,10 +38,25 @@ function setup() {
     roasts: new SqliteRoastRepository(db, logger),
     beans: new SqliteBeanRepository(db),
     roasters: new SqliteRoasterRepository(db, logger),
+    profiles: new SqliteProfileRepository(db, new ManualClock(0), logger),
   };
 }
 
 const failed = { ok: false, error: { kind: 'storage-failed' } };
+const BEAN = {
+  name: 'Guji',
+  origin: 'Ethiopia',
+  process: 'washed',
+  variety: null,
+  altitudeM: null,
+  densityGL: null,
+  moisturePct: null,
+  screen: null,
+  decaf: false,
+  supplier: null,
+  lowStockG: 500,
+  notes: null,
+} as const;
 const newRoast = {
   startedAt: '2026-11-04T10:00:00.000Z',
   mode: 'manual',
@@ -118,6 +136,48 @@ describe('all-or-nothing writes', () => {
     const before = env.snapshot();
     env.failOn('UPDATE', 'roasters', 'NEW.is_active = 0');
     expect(await env.roasters.setActive(2)).toMatchObject(failed);
+    expect(env.snapshot()).toEqual(before);
+  });
+
+  it('beans addAll: no bean comes in when a later one fails', async () => {
+    const env = setup();
+    const before = env.snapshot();
+    env.failOn('INSERT', 'beans', "NEW.name = 'Second'");
+    const fields = { ...BEAN, name: 'First' };
+    expect(
+      await env.beans.addAll([
+        { fields, profileId: null },
+        { fields: { ...fields, name: 'Second' }, profileId: null },
+      ]),
+    ).toMatchObject(failed);
+    expect(env.snapshot()).toEqual(before);
+  });
+
+  it('profiles saveAll: no profile comes in when a later one fails', async () => {
+    const env = setup();
+    const before = env.snapshot();
+    env.failOn('INSERT', 'profiles', "NEW.id = 'custom-2'");
+    expect(
+      await env.profiles.saveAll([TEST_PROFILE, { ...TEST_PROFILE, id: 'custom-2' }], 1),
+    ).toMatchObject(failed);
+    expect(env.snapshot()).toEqual(before);
+  });
+
+  it('roasters addAll: no roaster comes in when a later one fails', async () => {
+    const env = setup();
+    const listed = await env.roasters.list();
+    const first = listed.ok ? listed.value[0] : undefined;
+    if (!first) throw new Error('no roaster');
+    const { id, ...record } = first;
+    expect(id).toBe(1);
+    const before = env.snapshot();
+    env.failOn('INSERT', 'roasters', "NEW.name = 'Second'");
+    expect(
+      await env.roasters.addAll([
+        { ...record, name: 'First', active: false },
+        { ...record, name: 'Second', active: false },
+      ]),
+    ).toMatchObject(failed);
     expect(env.snapshot()).toEqual(before);
   });
 

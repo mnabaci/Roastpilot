@@ -33,6 +33,7 @@ async function launch(file: object, { saveFails = false } = {}) {
       stored = [...stored.filter((p) => p.id !== profile.id), profile];
       return Promise.resolve(ok(undefined));
     },
+    saveAll: () => Promise.resolve(ok(undefined)),
     delete: () => Promise.resolve(ok(false)),
   };
   const entries: LogEntry[] = [];

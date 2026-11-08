@@ -49,13 +49,17 @@ export class BeanService {
     return [];
   }
 
+  /** Every bean, archived ones too, or why they can't be read (logged). */
+  async read(): Promise<Result<Bean[], StorageError>> {
+    const listed = await this.#deps.repository.list();
+    if (!listed.ok) this.#deps.logger.warn('beans.read-failed', { error: listed.error });
+    return listed;
+  }
+
   /** One bean, archived ones too; `not-found` when there's no such bean. */
   async find(id: BeanId): Promise<Result<Bean, StorageError>> {
-    const listed = await this.#deps.repository.list();
-    if (!listed.ok) {
-      this.#deps.logger.warn('beans.read-failed', { id, error: listed.error });
-      return listed;
-    }
+    const listed = await this.read();
+    if (!listed.ok) return listed;
     const bean = listed.value.find((b) => b.id === id);
     return bean ? ok(bean) : err({ kind: 'not-found', id });
   }
@@ -89,6 +93,13 @@ export class BeanService {
 
   async add(fields: BeanFields): Promise<Result<BeanId, StorageError>> {
     return this.#after('added', await this.#deps.repository.add(fields));
+  }
+
+  /** Imported beans, all or nothing; their ids in order. */
+  async addAll(
+    beans: readonly { fields: BeanFields; profileId: ProfileId | null }[],
+  ): Promise<Result<BeanId[], StorageError>> {
+    return this.#after('imported', await this.#deps.repository.addAll(beans));
   }
 
   async update({ id, fields, profileId }: UpdateBean): Promise<Result<void, StorageError>> {

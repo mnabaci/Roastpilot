@@ -62,26 +62,27 @@ export const ProfileSourceSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('roast'), roastId: z.number().int().positive() }),
 ]);
 
+/** A profile's fields before its rules: a Roastpilot file leaves some out (profile-file). */
+export const AutoProfileObjectSchema = z.object({
+  schemaVersion: z.literal(PROFILE_SCHEMA_VERSION),
+  id: ProfileIdSchema,
+  name: z.string().min(1),
+  /** What your own profile was made from. */
+  source: ProfileSourceSchema.optional(),
+  needsCalibration: z.boolean(),
+  batchG: z.number().positive(),
+  chargeC: z.number(),
+  dryEndC: z.number(),
+  /** Drop this long after your first-crack tap. */
+  devTimeS: z.number().positive(),
+  /** Drop at this temperature, whatever the time. */
+  capC: z.number(),
+  curve: z.array(CurvePointSchema).min(2),
+  phases: z.array(ProfilePhaseSchema).min(1),
+});
+
 /** A roast plan for one roaster (docs/spec/roast-control.md, Profile format). */
-export const AutoProfileSchema = z
-  .object({
-    schemaVersion: z.literal(PROFILE_SCHEMA_VERSION),
-    id: ProfileIdSchema,
-    name: z.string().min(1),
-    /** What your own profile was made from. */
-    source: ProfileSourceSchema.optional(),
-    needsCalibration: z.boolean(),
-    batchG: z.number().positive(),
-    chargeC: z.number(),
-    dryEndC: z.number(),
-    /** Drop this long after your first-crack tap. */
-    devTimeS: z.number().positive(),
-    /** Drop at this temperature, whatever the time. */
-    capC: z.number(),
-    curve: z.array(CurvePointSchema).min(2),
-    phases: z.array(ProfilePhaseSchema).min(1),
-  })
-  .superRefine(checkProfile);
+export const AutoProfileSchema = AutoProfileObjectSchema.superRefine(checkProfile);
 
 /** One PID's gains. Output in % per unit of error. */
 export const PidGainsSchema = z.object({

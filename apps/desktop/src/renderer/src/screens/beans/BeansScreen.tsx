@@ -2,6 +2,7 @@ import type { BeanId } from '@roastpilot/shared';
 import { Badge, Button, cn, Menu, NavList, SidebarLayout } from '@roastpilot/ui';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
+import { useLibraryFiles } from '../../features/use-library-files';
 import { useBeans } from '../../stores/use-stores';
 import { useRoastList } from '../history/use-roast-list';
 import { BatchCalculator } from './BatchCalculator';
@@ -33,6 +34,10 @@ export function BeansScreen({
     setPickedId(id);
     setRight({ kind: 'bean' });
   };
+  const files = useLibraryFiles('beans', (id) => {
+    // An imported bean is never archived, so it shows in the list as it is.
+    if (typeof id === 'number') showBean(id);
+  });
   return (
     <SidebarLayout
       title="Beans"
@@ -56,6 +61,14 @@ export function BeansScreen({
                   },
                 ]
               : []),
+            {
+              label: 'Export all',
+              disabled: beans.length === 0,
+              onSelect: () => {
+                files.exportFile({ kind: 'beans' });
+              },
+            },
+            { label: 'Import a Roastpilot file', onSelect: files.importFile },
           ]}
         />
       }

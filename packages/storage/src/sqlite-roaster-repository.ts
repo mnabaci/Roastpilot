@@ -82,6 +82,21 @@ export class SqliteRoasterRepository implements RoasterRepository {
     });
   }
 
+  addAll(list: readonly Omit<Roaster, 'id'>[]): Promise<Result<Roaster[], StorageError>> {
+    return transaction(this.#db, async (tx) => {
+      const added: Roaster[] = [];
+      for (const roaster of list) {
+        const row = await tx
+          .insert(roasters)
+          .values(toColumns(roaster))
+          .returning({ id: roasters.id })
+          .get();
+        added.push({ ...roaster, id: row.id });
+      }
+      return ok(added);
+    });
+  }
+
   save({ id, ...roaster }: Roaster): Promise<Result<void, StorageError>> {
     return attempt(async () => {
       await this.#db.update(roasters).set(toColumns(roaster)).where(eq(roasters.id, id)).run();

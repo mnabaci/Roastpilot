@@ -47,6 +47,13 @@ describe('Roastpilot roast file', () => {
     expect(roast?.samples).toEqual({ tS: [0], values: { bt: [180] } });
   });
 
+  it('writes the same bytes as before: no indentation, the envelope first', () => {
+    const text = JSON.stringify(toRoastFile([], NAMES, new Date('2026-11-06T12:00:00.000Z')));
+    expect(text).toBe(
+      '{"format":"roastpilot-roasts","version":2,"exportedAt":"2026-11-06T12:00:00.000Z","roasts":[]}',
+    );
+  });
+
   it('still reads a version 1 file, samples as rows', () => {
     const { roasts, ...head } = toRoastFile([ROAST], NAMES, new Date());
     const v1 = {
@@ -66,7 +73,10 @@ describe('Roastpilot roast file', () => {
       ...file,
       roasts: [{ ...first, samples: { tS: [0, 1], values: { bt: [180] } } }],
     };
-    expect(parseRoastFile(JSON.stringify(broken))).toEqual({ ok: false, error: 'not-roastpilot' });
+    expect(parseRoastFile(JSON.stringify(broken))).toEqual({
+      ok: false,
+      error: { kind: 'not-roastpilot' },
+    });
   });
 
   it('reads back what it wrote', () => {
@@ -88,12 +98,25 @@ describe('Roastpilot roast file', () => {
       }),
     ],
   ])('refuses %s', (_, text) => {
-    expect(parseRoastFile(text)).toEqual({ ok: false, error: 'not-roastpilot' });
+    expect(parseRoastFile(text)).toEqual({ ok: false, error: { kind: 'not-roastpilot' } });
   });
 
   it('refuses a file from a newer Roastpilot', () => {
     const text = JSON.stringify({ format: 'roastpilot-roasts', version: 99, roasts: [] });
-    expect(parseRoastFile(text)).toEqual({ ok: false, error: 'newer-version' });
+    expect(parseRoastFile(text)).toEqual({ ok: false, error: { kind: 'newer-version' } });
+  });
+
+  it('refuses another kind by name', () => {
+    const text = JSON.stringify({
+      format: 'roastpilot-beans',
+      version: 1,
+      exportedAt: '',
+      beans: [],
+    });
+    expect(parseRoastFile(text)).toEqual({
+      ok: false,
+      error: { kind: 'wrong-kind', fileKind: 'beans' },
+    });
   });
 
   it('matches names exactly', () => {

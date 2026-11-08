@@ -1,10 +1,11 @@
 import { z } from 'zod';
+import { FILE_KINDS } from './roastpilot-file';
 import { RoastDetailSchema, RoastIdSchema } from './saved-roast';
 
 /** A Roastpilot roast file (docs/spec/data-model.md, Roastpilot roast files). */
-export const ROAST_FILE_FORMAT = 'roastpilot-roasts';
+export const ROAST_FILE_FORMAT = FILE_KINDS.roasts.format;
 /** Version 2 keeps samples as columns (ADR 0015); version 1 files still import. */
-export const ROAST_FILE_VERSION = 2;
+export const ROAST_FILE_VERSION = FILE_KINDS.roasts.version;
 
 /** One roast as a file carries it: ids stay behind, the bean and roaster go by name. */
 export const FileRoastSchema = RoastDetailSchema.omit({
@@ -43,12 +44,17 @@ export const SampleColumnsSchema = z
     message: 'Every channel has one value per time',
   });
 
+/** A version 2 roast: samples as columns (ADR 0015). */
+export const FileRoastV2Schema = FileRoastSchema.omit({ samples: true }).extend({
+  samples: SampleColumnsSchema,
+});
+
 /** Version 2: the same roasts, samples as columns (ADR 0015). */
 export const RoastFileV2Schema = z.object({
   format: z.literal(ROAST_FILE_FORMAT),
   version: z.literal(2),
   exportedAt: z.string(),
-  roasts: z.array(FileRoastSchema.omit({ samples: true }).extend({ samples: SampleColumnsSchema })),
+  roasts: z.array(FileRoastV2Schema),
 });
 
 export const RoastFileSchema = z.discriminatedUnion('version', [

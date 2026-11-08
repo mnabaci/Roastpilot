@@ -29,46 +29,55 @@ const MAX_OFFSET_C = 20;
 /** A drum with a speed turns at its roaster's usual speed when on (docs/spec/roasters.md). */
 export const DRUM_SPEED = { minPct: 5, maxPct: 100, stepPct: 5, defaultPct: 60 } as const;
 
-export const RoasterSchema = z
-  .object({
-    id: RoasterIdSchema,
-    name: z.string().trim().min(1, 'Enter a name').max(64),
-    model: RoasterModelSchema,
-    connection: ConnectTargetSchema.nullable(),
-    batchMinG: z.number().positive('Must be above 0'),
-    batchIdealG: z.number().positive('Must be above 0'),
-    batchMaxG: z.number().positive('Must be above 0'),
-    maxTempC: z.number().positive('Must be above 0'),
-    maxTimeS: z.number().positive('Must be above 0'),
-    tempOffsetC: z
-      .number()
-      .min(-MAX_OFFSET_C, `At least -${String(MAX_OFFSET_C)} °C`)
-      .max(MAX_OFFSET_C, `At most ${String(MAX_OFFSET_C)} °C`),
-    tuning: AutoTuningSchema,
-    /** The tray fan sits under the drum, so it stays on while the drum cools (roasters.md). */
-    coolerHelpsDrum: z.boolean(),
-    /** The usual speed of a drum that has one; an on/off drum ignores it. */
-    drumSpeedPct: z
-      .number()
-      .min(DRUM_SPEED.minPct, `At least ${String(DRUM_SPEED.minPct)} %`)
-      .max(DRUM_SPEED.maxPct, `At most ${String(DRUM_SPEED.maxPct)} %`)
-      .multipleOf(DRUM_SPEED.stepPct, `In steps of ${String(DRUM_SPEED.stepPct)} %`),
-    active: z.boolean(),
-  })
-  .superRefine((roaster, ctx) => {
-    const issue = (field: string, message: string) => {
-      ctx.addIssue({ code: 'custom', path: [field], message });
-    };
-    const limits = MODEL_LIMITS[roaster.model];
-    if (roaster.maxTempC > limits.maxTempC) {
-      issue('maxTempC', `At most ${String(limits.maxTempC)} °C on this model`);
-    }
-    if (roaster.maxTimeS > limits.maxTimeS) {
-      issue('maxTimeS', `At most ${String(limits.maxTimeS / 60)} min on this model`);
-    }
-    if (roaster.batchMinG > roaster.batchIdealG) issue('batchMinG', 'Must not be above ideal');
-    if (roaster.batchIdealG > roaster.batchMaxG) issue('batchMaxG', 'Must not be below ideal');
-  });
+/** A record's fields before its rules: a Roastpilot file leaves some out (roaster-file). */
+export const RoasterObjectSchema = z.object({
+  id: RoasterIdSchema,
+  name: z.string().trim().min(1, 'Enter a name').max(64),
+  model: RoasterModelSchema,
+  connection: ConnectTargetSchema.nullable(),
+  batchMinG: z.number().positive('Must be above 0'),
+  batchIdealG: z.number().positive('Must be above 0'),
+  batchMaxG: z.number().positive('Must be above 0'),
+  maxTempC: z.number().positive('Must be above 0'),
+  maxTimeS: z.number().positive('Must be above 0'),
+  tempOffsetC: z
+    .number()
+    .min(-MAX_OFFSET_C, `At least -${String(MAX_OFFSET_C)} °C`)
+    .max(MAX_OFFSET_C, `At most ${String(MAX_OFFSET_C)} °C`),
+  tuning: AutoTuningSchema,
+  /** The tray fan sits under the drum, so it stays on while the drum cools (roasters.md). */
+  coolerHelpsDrum: z.boolean(),
+  /** The usual speed of a drum that has one; an on/off drum ignores it. */
+  drumSpeedPct: z
+    .number()
+    .min(DRUM_SPEED.minPct, `At least ${String(DRUM_SPEED.minPct)} %`)
+    .max(DRUM_SPEED.maxPct, `At most ${String(DRUM_SPEED.maxPct)} %`)
+    .multipleOf(DRUM_SPEED.stepPct, `In steps of ${String(DRUM_SPEED.stepPct)} %`),
+  active: z.boolean(),
+});
+
+type RoasterRuleShape = Pick<
+  z.infer<typeof RoasterObjectSchema>,
+  'model' | 'maxTempC' | 'maxTimeS' | 'batchMinG' | 'batchIdealG' | 'batchMaxG'
+>;
+
+/** Limits at or below the model's own, and batch sizes in order (docs/spec/roasters.md). */
+export function checkRoaster(roaster: RoasterRuleShape, ctx: z.RefinementCtx): void {
+  const issue = (field: string, message: string) => {
+    ctx.addIssue({ code: 'custom', path: [field], message });
+  };
+  const limits = MODEL_LIMITS[roaster.model];
+  if (roaster.maxTempC > limits.maxTempC) {
+    issue('maxTempC', `At most ${String(limits.maxTempC)} °C on this model`);
+  }
+  if (roaster.maxTimeS > limits.maxTimeS) {
+    issue('maxTimeS', `At most ${String(limits.maxTimeS / 60)} min on this model`);
+  }
+  if (roaster.batchMinG > roaster.batchIdealG) issue('batchMinG', 'Must not be above ideal');
+  if (roaster.batchIdealG > roaster.batchMaxG) issue('batchMaxG', 'Must not be below ideal');
+}
+
+export const RoasterSchema = RoasterObjectSchema.superRefine(checkRoaster);
 
 export const NewRoasterSchema = z.object({
   name: z.string().trim().min(1).max(64),

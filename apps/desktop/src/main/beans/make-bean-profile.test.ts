@@ -24,6 +24,7 @@ function setup({
       names.set(profile.id, profile.name);
       return Promise.resolve(ok(undefined));
     },
+    saveAll: () => Promise.resolve(ok(undefined)),
     delete: (id) => {
       if (deleteFails) return Promise.resolve(FAILED);
       const had = stored.includes(id);

@@ -70,6 +70,28 @@ describe('SqliteRoasterRepository', () => {
     });
   });
 
+  it('adds many at once, in order, with their ids', async () => {
+    const { repository } = setup();
+    const [skywalker] = await listed(repository);
+    if (!skywalker) throw new Error('no roaster');
+    const { id, ...fields } = skywalker;
+    expect(id).toBe(1);
+    const added = await repository.addAll([
+      { ...fields, name: 'A', active: false, connection: null },
+      { ...fields, name: 'B', active: false, connection: null },
+    ]);
+    expect(added.ok && added.value.map((r) => [r.id, r.name])).toEqual([
+      [3, 'A'],
+      [4, 'B'],
+    ]);
+    expect((await listed(repository)).map((r) => r.name)).toEqual([
+      skywalker.name,
+      'Simulator',
+      'A',
+      'B',
+    ]);
+  });
+
   it('saves changes, the connection and gains included', async () => {
     const { repository } = setup();
     const [skywalker] = await listed(repository);
