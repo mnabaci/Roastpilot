@@ -125,6 +125,19 @@ describe('RoastChart', () => {
     expect(legend).toHaveTextContent('TemperatureRoR');
   });
 
+  it('shows a control beside its title', () => {
+    draw(
+      <RoastChart
+        title="Roast curve"
+        titleAction={<button type="button">Show preheat</button>}
+        layers={[bt([[0, 180]])]}
+      />,
+    );
+    expect(screen.getByRole('region', { name: 'Roast curve' })).toContainElement(
+      screen.getByRole('button', { name: 'Show preheat' }),
+    );
+  });
+
   it('says so when there are no readings', () => {
     draw(<RoastChart title="Roast curve" layers={[bt([])]} />);
     expect(screen.getByRole('img', { name: 'No readings yet' })).toBeInTheDocument();
@@ -307,7 +320,12 @@ describe('RoastChart', () => {
         ctx,
         bbox: { left: 0, top: 0, width: 1000, height: 300 },
         scales: { temperature: { min: 50, max: 250 } },
-        data: [[]],
+        // The temperature line as drawn: -0:30, charge, 7:00.
+        series: [{}, { scale: 'temperature' }],
+        data: [
+          [-30, 0, 420],
+          [180, 179, 175],
+        ],
         valToPos: (v: number, scale: string) => (scale === 'x' ? v : 300 - v),
       };
       return { u, calls };
@@ -379,7 +397,7 @@ describe('RoastChart', () => {
       expect(created).toHaveLength(1);
     });
 
-    it('draws the phase bands behind everything, darker as they climb, each named once', () => {
+    it('draws the phase bands behind everything, darker as they climb', () => {
       draw(<RoastChart title="Roast curve" layers={[roasting, ...aids]} />);
       const calls = runHooks(created[0], 'drawClear');
       expect(calls.filter((c) => c.name === 'fillRect').map((c) => [c.args, c.alpha])).toEqual([
@@ -387,10 +405,35 @@ describe('RoastChart', () => {
         [[0, 108, 1000, 42], 0.06],
         [[0, 50, 1000, 58], 0.09],
       ]);
-      expect(calls.filter((c) => c.name === 'fillText').map((c) => c.args[0])).toEqual([
-        'Drying',
-        'Maillard',
-        'Development',
+      expect(calls.filter((c) => c.name === 'fillText')).toEqual([]);
+    });
+
+    it('names each band once, over the grid and markers, where no curve runs', () => {
+      draw(<RoastChart title="Roast curve" layers={[roasting, ...aids]} />);
+      const texts = runHooks(created[0], 'draw').filter((c) => c.name === 'fillText');
+      // At the bottom of each band, 8px in: the line at 175-180 °C stays clear of them all.
+      expect(texts.map((c) => c.args)).toEqual([
+        ['Drying', 8, 237],
+        ['Maillard', 8, 137],
+        ['Development', 8, 95],
+      ]);
+    });
+
+    it('puts a marker label flipped left at the edge on its own row, clear of the one before', () => {
+      draw(
+        <RoastChart
+          title="Roast curve"
+          layers={[roasting]}
+          markers={[
+            { id: 'ghost-first-crack', label: 'Ghost FC', t: 900, tone: 'ghost' },
+            { id: 'ghost-drop', label: 'Ghost drop', t: 990, tone: 'ghost' },
+          ]}
+        />,
+      );
+      const texts = runHooks(created[0], 'draw').filter((c) => c.name === 'fillText');
+      expect(texts.map((c) => c.args)).toEqual([
+        ['Ghost FC', 908, 16],
+        ['Ghost drop', 942, 34],
       ]);
     });
 
@@ -401,9 +444,10 @@ describe('RoastChart', () => {
         bands: [{ label: 'Maillard', fromC: 150, toC: 160 }],
       };
       draw(<RoastChart title="Roast curve" layers={[roasting, thin]} />);
-      const calls = runHooks(created[0], 'drawClear');
-      expect(calls.filter((c) => c.name === 'fillRect')).toHaveLength(1);
-      expect(calls.filter((c) => c.name === 'fillText')).toHaveLength(0);
+      expect(runHooks(created[0], 'drawClear').filter((c) => c.name === 'fillRect')).toHaveLength(
+        1,
+      );
+      expect(runHooks(created[0], 'draw').filter((c) => c.name === 'fillText')).toHaveLength(0);
     });
 
     it('draws the projection faint and dashed, from now to where it ends', () => {

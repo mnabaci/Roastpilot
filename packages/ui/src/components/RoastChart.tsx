@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type uPlot from 'uplot';
 import 'uplot/dist/uPlot.min.css';
 import { formatClock } from '../lib/format';
@@ -20,6 +20,8 @@ import { useUplot, type Overlay } from './roast-chart/use-uplot';
 
 export interface RoastChartProps {
   title: string;
+  /** A quiet control beside the title, such as History's Show preheat. */
+  titleAction?: ReactNode;
   /**
    * Back to front. The first `heat` temperature line gets the current-point dot; `output` lines go
    * to the strip. Aids (now line, projection, phase bands) have no legend entry.
@@ -53,6 +55,7 @@ const structureOf = (layers: readonly LineLayer[]) =>
  */
 export function RoastChart({
   title,
+  titleAction,
   layers,
   markers = NO_MARKERS,
   timeWindow,
@@ -189,7 +192,10 @@ export function RoastChart({
       className={cn('flex flex-col gap-2.5 rounded-xl bg-surface px-5 py-4.5', className)}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-heading text-ink">{title}</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-heading text-ink">{title}</h2>
+          {titleAction}
+        </div>
         <div className="flex items-center gap-4">
           {hoverT === undefined ? null : (
             <span className="text-label font-semibold text-ink tabular-nums">

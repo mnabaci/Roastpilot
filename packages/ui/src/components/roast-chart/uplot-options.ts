@@ -2,7 +2,7 @@ import type uPlot from 'uplot';
 import { formatClock } from '../../lib/format';
 import type { ChartColors } from './chart-colors';
 import type { ChartAid, ChartMarker, LineLayer } from './chart-layer';
-import { drawNowLines, drawPhaseBands, drawProjections } from './draw-aids';
+import { drawBandLabels, drawNowLines, drawPhaseBands, drawProjections } from './draw-aids';
 import { attachDrag, drawDragHandles, type ChartDrag, type TimeRange } from './drag-handles';
 import { drawLatestDot, drawMarkers } from './draw-markers';
 import { hoverCursor } from './hover-cursor';
@@ -174,6 +174,7 @@ export function buildChartOptions({
       draw: [
         (u) => {
           drawMarkers(u, markers(), colors, { labels: true });
+          drawBandLabels(u, aids(), colors);
           drawProjections(u, aids(), colors);
           drawNowLines(u, aids(), colors);
           const layer = layers[latestDotLayer];

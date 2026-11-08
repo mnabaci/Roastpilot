@@ -18,10 +18,14 @@ The live roast chart: temperature against the target curve, rate of rise on a ri
 
 Drawn faint, so they never compete with the curves; none has a legend entry or a hover value. Each is a switch in Settings › Chart.
 
-- **Phase bands:** full-width fills of `ink` at 3 %, 6 % and 9 % for drying, Maillard and development, darker as the beans are. Each is named once at its bottom-left corner, `label` style in `ink-muted`, 8px in; a band too thin for its name has none.
+- **Phase bands:** full-width fills of `ink` at 3 %, 6 % and 9 % for drying, Maillard and development, darker as the beans are. Each is named once at its left edge (just right of the Charge line when it is in view), `label` style in `ink-muted`, 8px in: at the bottom of the band, or its top when a curve runs there, on a chip of the band's own shade so grid lines and markers never cut through the name. A band with no free spot, or too thin, has none: a name never hides a curve.
 - **Projection:** a straight 2px line in the colour of the line it continues (`heat` for temperature), dashed 4 4 with round caps, at 55 % opacity: dotted-looking, so it never reads as the target's 6 6 dashes.
 - **Now line:** 1px solid `ink-muted` at 55 % opacity through the chart and the outputs strip; the hover line is the dashed one.
 - **Time window and temperature floor:** the chart can be given a time span and a lowest temperature (50 °C with Temperature focus); the axes don't move while you hover.
+
+## Header
+
+- Title (`heading`) on the left, with an optional quiet control beside it (History's Show preheat: a `sm` ghost button, `heat-tint` while on); the legend on the right.
 
 ## Outputs strip
 
