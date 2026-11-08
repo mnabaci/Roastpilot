@@ -12,7 +12,10 @@ import { StepsTable } from './StepsTable';
 import { TopValues } from './TopValues';
 import { useProfileDraft } from './use-profile-draft';
 
-/** One profile: its top values, a preview, its steps (docs/spec/ui.md, Profiles screen). */
+/**
+ * One profile: its top values, the preview right under them so what you shape stays in view, then
+ * its steps (docs/spec/ui.md, Profiles screen, Layout).
+ */
 export function ProfileEditor({
   entry,
   onSelect,
@@ -25,12 +28,13 @@ export function ProfileEditor({
   const active = useSettings((s) => s.settings.autoProfile) === entry.profile.id;
   const locked = useProfileLocked();
   const readOnly = entry.builtIn;
+  const steps = isStepProfile(entry.profile);
   // While a cell has a problem the chart keeps the last profile that worked.
   const [shown, setShown] = useState(valid ?? entry.profile);
   if (valid && valid !== shown) setShown(valid);
   const preview = useMemo(() => profilePreview(shown), [shown]);
   const curveDrag =
-    valid && !readOnly && !isStepProfile(entry.profile)
+    valid && !readOnly && !steps
       ? {
           points: valid.curve.slice(1).map((p) => ({ t: p.tS, v: p.c })),
           onMove: (index: number, to: { t: number; v: number }) => {
@@ -55,13 +59,6 @@ export function ProfileEditor({
           change({ ...draft, ...part });
         }}
       />
-      <StepsTable
-        draft={draft}
-        errors={errors}
-        steps={isStepProfile(entry.profile)}
-        readOnly={readOnly}
-        onChange={change}
-      />
       <RoastChart
         title="Preview"
         height={200}
@@ -69,8 +66,21 @@ export function ProfileEditor({
         markers={preview.markers}
         drag={curveDrag}
       />
-      {isStepProfile(entry.profile) ? null : (
-        <CurvePointsTable draft={draft} errors={errors} readOnly={readOnly} onChange={change} />
+      {steps ? (
+        <StepsTable draft={draft} errors={errors} steps readOnly={readOnly} onChange={change} />
+      ) : (
+        // Steps and curve points side by side, Steps the wider; stacked in a narrower window.
+        <div className="grid items-start gap-4 xl:grid-cols-3">
+          <StepsTable
+            className="xl:col-span-2"
+            draft={draft}
+            errors={errors}
+            steps={false}
+            readOnly={readOnly}
+            onChange={change}
+          />
+          <CurvePointsTable draft={draft} errors={errors} readOnly={readOnly} onChange={change} />
+        </div>
       )}
     </div>
   );
