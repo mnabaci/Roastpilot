@@ -437,6 +437,27 @@ describe('RoastChart', () => {
       ]);
     });
 
+    it('draws no current-point dot past the edge of the window', () => {
+      draw(
+        <RoastChart
+          title="Roast curve"
+          layers={[
+            bt([
+              [0, 180],
+              [1200, 120],
+            ]),
+          ]}
+        />,
+      );
+      const { u, calls } = fakePlot();
+      u.data = [
+        [0, 1200],
+        [180, 120],
+      ];
+      for (const fn of created[0]?.opts.hooks.draw ?? []) fn(u);
+      expect(calls.filter((c) => c.name === 'arc')).toEqual([]);
+    });
+
     it('leaves a band too thin for its name unnamed', () => {
       const thin: ChartAid = {
         kind: 'phase-bands',

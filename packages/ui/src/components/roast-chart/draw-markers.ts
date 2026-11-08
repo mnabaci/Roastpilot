@@ -128,6 +128,8 @@ export function drawLatestDot(
   const ratio = devicePixelRatio;
   const x = u.valToPos(t, 'x', true);
   const y = u.valToPos(value, layer.axis, true);
+  // Past a time window's edge (History focused on a roast still cooling): no dot in the gutter.
+  if (x < u.bbox.left || x > u.bbox.left + u.bbox.width) return;
   const { ctx } = u;
   ctx.save();
   ctx.beginPath();
