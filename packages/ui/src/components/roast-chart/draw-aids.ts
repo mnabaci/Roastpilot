@@ -9,6 +9,7 @@ import type {
   ProjectionLayer,
 } from './chart-layer';
 import { plotPixelRatio } from './pixel-ratio';
+import { nowLineSegments } from './now-line-gaps';
 
 /** The projection and the now line are drawn faint, under the lines they belong to. */
 const FAINT_ALPHA = 0.55;
@@ -178,8 +179,19 @@ export function drawProjections(u: uPlot, aids: readonly ChartAid[], colors: Cha
   ctx.restore();
 }
 
-/** The now line: 1px solid `ink-muted`, faint, from the plot's top to its bottom. */
-export function drawNowLines(u: uPlot, aids: readonly ChartAid[], colors: ChartColors): void {
+/** Room kept between the now line and a marker label it breaks under. */
+const LABEL_ROOM = 2;
+
+/**
+ * The now line: 1px solid `ink-muted`, faint, from the plot's top to its bottom, broken under the
+ * marker labels it would cross.
+ */
+export function drawNowLines(
+  u: uPlot,
+  aids: readonly ChartAid[],
+  colors: ChartColors,
+  labels: readonly Box[] = [],
+): void {
   const { ctx, bbox } = u;
   const ratio = plotPixelRatio(u);
   ctx.save();
@@ -190,8 +202,16 @@ export function drawNowLines(u: uPlot, aids: readonly ChartAid[], colors: ChartC
     const x = u.valToPos(line.t, 'x', true);
     if (x < bbox.left || x > bbox.left + bbox.width) continue;
     ctx.beginPath();
-    ctx.moveTo(x, bbox.top);
-    ctx.lineTo(x, bbox.top + bbox.height);
+    for (const [from, to] of nowLineSegments(
+      x,
+      bbox.top,
+      bbox.top + bbox.height,
+      labels,
+      LABEL_ROOM * ratio,
+    )) {
+      ctx.moveTo(x, from);
+      ctx.lineTo(x, to);
+    }
     ctx.stroke();
   }
   ctx.restore();
