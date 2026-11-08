@@ -17,6 +17,8 @@ import {
   type Roaster,
   type RoasterId,
 } from '@roastpilot/shared';
+import { deleteRefusal } from './delete-guard';
+import { freeName, planCopy } from './profile-copy';
 
 export interface ProfileServiceDeps {
   store: ProfileRepository;
@@ -106,9 +108,7 @@ export class ProfileService {
   fromMilestones(milestones: Milestones): Promise<Result<ProfileEntry, ProfileError>> {
     const base = builderBase(this.#builtIns());
     if (!base) throw new Error('A roaster model must ship a curve profile');
-    const taken = new Set(this.#ownHere().map((p) => p.name));
-    let name = MILESTONES_NAME;
-    for (let n = 2; taken.has(name); n++) name = `${MILESTONES_NAME} ${String(n)}`;
+    const name = freeName(MILESTONES_NAME, new Set(this.#ownHere().map((p) => p.name)));
     const profile = profileFromMilestones({ milestones, base, id: this.#deps.newId(), name });
     return this.#store(profile, this.#deps.activeRoaster().id);
   }
@@ -128,20 +128,16 @@ export class ProfileService {
     const target = this.#deps.roaster(roasterId);
     if (!source || !target) return err({ kind: 'not-found', id });
     const there = this.#own.filter((own) => own.roasterId === roasterId).map((own) => own.profile);
-    const earlier = there.find(
-      (p) => p.source?.kind === 'profile' && p.source.profileId === source.id,
-    );
-    if (earlier) return err({ kind: 'already-copied', id: earlier.id, name: earlier.name });
     const from = this.#deps.roaster(this.#deps.activeRoaster().id)?.name;
-    const base = from ? `${source.name} (from ${from})` : source.name;
-    const taken = new Set([...ROASTER_MODELS[target.model].profiles, ...there].map((p) => p.name));
-    let name = base;
-    for (let n = 2; taken.has(name); n++) name = `${base} ${String(n)}`;
+    const plan = planCopy(source, there, ROASTER_MODELS[target.model].profiles, from);
+    if (plan.kind === 'already-copied') {
+      return err({ kind: 'already-copied', id: plan.profile.id, name: plan.profile.name });
+    }
     return this.#store(
       {
         ...source,
         id: this.#deps.newId(),
-        name,
+        name: plan.name,
         needsCalibration: true,
         source: { kind: 'profile', profileId: source.id },
       },
@@ -181,12 +177,11 @@ export class ProfileService {
    * (the same until Drop, as Auto reads `active()` on every tick) refuses them all.
    */
   async deleteMany(ids: readonly ProfileId[]): Promise<Result<void, ProfileError>> {
-    const builtIn = ids.find((id) => this.#isBuiltIn(id));
-    if (builtIn !== undefined) return err({ kind: 'built-in', id: builtIn });
-    const inUse = ids.find((id) => id === this.#deps.chosenId() || id === this.active().id);
-    if (inUse !== undefined) {
-      this.#deps.logger.warn('profiles.delete-refused', { id: inUse, reason: 'in-use' });
-      return err({ kind: 'in-use', id: inUse });
+    const inUse = [this.#deps.chosenId(), this.active().id];
+    const refused = deleteRefusal(ids, { isBuiltIn: (id) => this.#isBuiltIn(id), inUse });
+    if (refused) {
+      this.#deps.logger.warn('profiles.delete-refused', { id: refused.id, reason: refused.kind });
+      return err(refused);
     }
     const deleted = await this.#deps.store.deleteMany(ids);
     if (!deleted.ok) return this.#failed(deleted.error);
