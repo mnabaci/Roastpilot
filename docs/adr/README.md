@@ -22,5 +22,6 @@ One file per decision: context, decision, consequences. Add one with the `plan-f
 - [Roastpilot installs its own Mac updates until it has a Developer ID](0018-own-mac-installer.md)
 - [The coach runs Auto in the background](0019-coach-runs-auto-in-the-background.md)
 - [The design system lives in the repo](0020-design-system-in-the-repo.md)
+- [One Roastpilot file shape for every kind](0021-one-roastpilot-file-shape.md)
 
 Template: [template.md](template.md)
