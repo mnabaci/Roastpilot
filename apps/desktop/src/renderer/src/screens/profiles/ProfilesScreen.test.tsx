@@ -339,7 +339,8 @@ describe('ProfilesScreen', () => {
 
   it('asks once before deleting, then goes back to the one Auto uses', async () => {
     const api = fakeApi({ listProfiles: vi.fn(() => Promise.resolve(BUILT_INS)) });
-    open(api);
+    open(api, withMine, 'light-steps');
+    await userEvent.click(screen.getByRole('button', { name: 'Mine' }));
     await userEvent.click(screen.getByRole('button', { name: /^More for (?!Profiles$)/ }));
     await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
     expect(api.deleteProfile).not.toHaveBeenCalled();
@@ -349,6 +350,37 @@ describe('ProfilesScreen', () => {
     await waitFor(() => {
       expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Light · Steps');
     });
+  });
+
+  it('keeps Delete on the profile Auto uses, disabled with why', async () => {
+    open();
+    await userEvent.click(screen.getByRole('button', { name: 'More for Mine' }));
+    const item = screen.getByRole('menuitem', { name: 'Delete' });
+    expect(item).toHaveAttribute('aria-disabled', 'true');
+    expect(item).toHaveAccessibleDescription('Auto uses this one');
+  });
+
+  it('says so in a toast when main refuses a delete as in use', async () => {
+    const api = fakeApi({
+      deleteProfile: vi.fn(() => Promise.resolve(err({ kind: 'in-use' as const, id: 'custom-1' }))),
+    });
+    const { stores } = open(api, withMine, 'light-steps');
+    await userEvent.click(screen.getByRole('button', { name: 'Mine' }));
+    await userEvent.click(screen.getByRole('button', { name: 'More for Mine' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+    await userEvent.click(
+      within(screen.getByRole('alertdialog', { name: 'Delete this profile?' })).getByRole(
+        'button',
+        { name: 'Delete' },
+      ),
+    );
+    await waitFor(() => {
+      expect(stores.toasts.getState().toasts.map((t) => [t.kind, t.text])).toContainEqual([
+        'error',
+        "Can't delete a profile Auto uses or is running",
+      ]);
+    });
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Mine');
   });
 
   it('says so when storage refuses, and keeps your edit', async () => {
@@ -475,7 +507,9 @@ describe('ProfilesScreen', () => {
     it("the profile's ⋯ exports it, before Delete", async () => {
       const { api } = open();
       await userEvent.click(screen.getByRole('button', { name: 'More for Mine' }));
-      const items = screen.getAllByRole('menuitem').map((item) => item.textContent);
+      const items = screen
+        .getAllByRole('menuitem')
+        .map((item) => item.getAttribute('aria-label') ?? item.textContent);
       expect(items.slice(-2)).toEqual(['Export this profile', 'Delete']);
       await userEvent.click(screen.getByRole('menuitem', { name: 'Export this profile' }));
       expect(api.exportLibrary).toHaveBeenCalledWith({ kind: 'profiles', ids: ['custom-1'] });
@@ -612,6 +646,32 @@ describe('ProfilesScreen', () => {
       expect(list().queryByRole('button', { name: /Two/ })).toBeNull();
       expect(stores.auto.getState().drafts).toEqual({});
       expect(stores.toasts.getState().toasts.map((t) => t.text)).toContain('Deleted 2 profiles');
+    });
+
+    it('says which refusal it was when main finds one in use', async () => {
+      const api = fakeApi({
+        deleteProfiles: vi.fn(() =>
+          Promise.resolve(err({ kind: 'in-use' as const, id: 'custom-2' })),
+        ),
+      });
+      const { stores } = renderApp(
+        <ProfilesScreen />,
+        { profiles: many, ...settingsOn('custom-1') },
+        api,
+      );
+      await startSelect();
+      await userEvent.click(box('Two'));
+      await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+      await userEvent.click(
+        within(screen.getByRole('alertdialog', { name: 'Delete 1 profile?' })).getByRole('button', {
+          name: 'Delete',
+        }),
+      );
+      await waitFor(() => {
+        expect(stores.toasts.getState().toasts.map((t) => t.text)).toContain(
+          "Can't delete a profile Auto uses or is running",
+        );
+      });
     });
 
     it('keeps them all and says so when the delete is refused', async () => {

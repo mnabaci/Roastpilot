@@ -3,7 +3,9 @@ import { Badge, Button, ConfirmDialog, Menu, type MenuItem } from '@roastpilot/u
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useLibraryFiles } from '../../features/use-library-files';
+import { IN_USE } from '../../features/profile-messages';
 import { useRun } from '../../features/use-run';
+import { useToast } from '../../features/use-toast';
 import { useRoasters } from '../../stores/use-stores';
 import { useSaveSettings } from '../settings/use-save-settings';
 import type { ProfileDraftState } from './use-profile-draft';
@@ -33,6 +35,7 @@ export function ProfileActions({
   const { id } = entry.profile;
   const others = useRoasters((s) => s.roasters).filter((r) => !r.active);
   const files = useLibraryFiles('profiles');
+  const toast = useToast();
   const refresh = async () => {
     stores.auto.setState({ profiles: await api.listProfiles() });
   };
@@ -110,6 +113,11 @@ export function ProfileActions({
       'profiles.delete-failed',
       async () => {
         const deleted = await api.deleteProfile(id);
+        if (!deleted.ok && deleted.error.kind === 'in-use') {
+          logger.warn('profiles.refused', { ...deleted.error });
+          toast('error', IN_USE);
+          return;
+        }
         if (!deleted.ok) {
           refused(deleted.error);
           return;
@@ -146,17 +154,19 @@ export function ProfileActions({
         files.exportFile({ kind: 'profiles', ids: [id] });
       },
     },
-    ...(yours
-      ? [
+    // The one Auto uses (or runs) stays listed, disabled with why: pick another for Auto first.
+    ...(entry.builtIn
+      ? []
+      : [
           {
             label: 'Delete',
             destructive: true,
             onSelect: () => {
               setDeleting(true);
             },
+            ...(active && { disabled: true, hint: locked ? 'Running now' : 'Auto uses this one' }),
           },
-        ]
-      : []),
+        ]),
   ];
   return (
     <div className="flex flex-col items-end gap-1">

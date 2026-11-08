@@ -33,15 +33,20 @@ function setup(start: AutoProfile[] = []) {
       return Promise.resolve(ok(had));
     },
   };
+  let deleted = 0;
   const service = new ProfileService({
     store,
     newId: () => 'custom-new',
     chosenId: () => chosen,
     activeRoaster: () => ({ id: roasterId, model: 'skywalker' }),
+    onDeleted: () => {
+      deleted += 1;
+    },
     logger: silentLogger,
   });
   return {
     service,
+    deletions: () => deleted,
     stored: () => stored,
     useRoaster: (id: number) => {
       roasterId = id;
@@ -173,14 +178,15 @@ describe('ProfileService', () => {
     expect(stored()).toEqual([]);
   });
 
-  it('runs the chosen profile, and the default once it is deleted', async () => {
-    const { service, choose } = setup([MINE]);
+  it("runs the chosen profile, and the default when this roaster hasn't got it", async () => {
+    const { service, choose, useRoaster } = setup([MINE]);
     await service.list();
     choose('custom-a');
     expect(service.active().name).toBe('Mine');
     await service.save({ ...MINE, name: 'Edited' });
     expect(service.active().name).toBe('Edited');
-    await service.delete('custom-a');
+    // Once the chosen one isn't on this roaster, the first built-in.
+    useRoaster(2);
     expect(service.active().id).toBe('light-steps');
   });
 
@@ -193,6 +199,30 @@ describe('ProfileService', () => {
     expect(stored()).toEqual([three]);
     const own = (await service.list()).filter((e) => !e.builtIn).map((e) => e.profile.id);
     expect(own).toEqual(['custom-c']);
+  });
+
+  it('refuses to delete the profile Auto uses or is running, alone or among others', async () => {
+    const two: AutoProfile = { ...MINE, id: 'custom-b', name: 'Two' };
+    const { service, stored, choose } = setup([MINE, two]);
+    await service.list();
+    choose('custom-a');
+    // The one Auto uses is the one it runs, from Preheat until Drop.
+    expect(service.active().id).toBe('custom-a');
+    expect(await service.delete('custom-a')).toEqual(err({ kind: 'in-use', id: 'custom-a' }));
+    expect(await service.deleteMany(['custom-b', 'custom-a'])).toEqual(
+      err({ kind: 'in-use', id: 'custom-a' }),
+    );
+    expect(stored()).toEqual([MINE, two]);
+    expect(await service.delete('custom-b')).toEqual(ok(undefined));
+  });
+
+  it('says once a delete has gone through, so the beans it unlinked are read again', async () => {
+    const { service, deletions } = setup([MINE]);
+    await service.list();
+    await service.delete('custom-a');
+    expect(deletions()).toBe(1);
+    await service.delete('custom-a');
+    expect(deletions()).toBe(1);
   });
 
   it('deletes none when one is a built-in', async () => {

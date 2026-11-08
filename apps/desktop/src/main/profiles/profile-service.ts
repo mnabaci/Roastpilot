@@ -25,6 +25,8 @@ export interface ProfileServiceDeps {
   chosenId: () => ProfileId;
   /** Profiles belong to a roaster: only the active one's are listed (docs/spec/roasters.md). */
   activeRoaster: () => Pick<Roaster, 'id' | 'model'>;
+  /** After a delete: the beans it unlinked are read again. */
+  onDeleted?: () => void;
   logger: Logger;
 }
 
@@ -149,15 +151,24 @@ export class ProfileService {
     return this.deleteMany([id]);
   }
 
-  /** Your own, in one write, all or nothing; a built-in among them refuses them all. */
+  /**
+   * Your own, in one write, all or nothing. A built-in, the profile Auto uses or the one it runs
+   * (the same until Drop, as Auto reads `active()` on every tick) refuses them all.
+   */
   async deleteMany(ids: readonly ProfileId[]): Promise<Result<void, ProfileError>> {
     const builtIn = ids.find((id) => this.#isBuiltIn(id));
     if (builtIn !== undefined) return err({ kind: 'built-in', id: builtIn });
+    const inUse = ids.find((id) => id === this.#deps.chosenId() || id === this.active().id);
+    if (inUse !== undefined) {
+      this.#deps.logger.warn('profiles.delete-refused', { id: inUse, reason: 'in-use' });
+      return err({ kind: 'in-use', id: inUse });
+    }
     const deleted = await this.#deps.store.deleteMany(ids);
     if (!deleted.ok) return this.#failed(deleted.error);
     if (deleted.value === 0) return err({ kind: 'not-found', id: ids.join(', ') });
     this.#own = this.#own.filter((own) => !ids.includes(own.profile.id));
     this.#deps.logger.info('profiles.deleted', { ids });
+    this.#deps.onDeleted?.();
     return ok(undefined);
   }
 

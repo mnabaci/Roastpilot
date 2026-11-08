@@ -159,6 +159,8 @@ export const ProfileEntrySchema = z.object({
 export const ProfileErrorSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('built-in'), id: ProfileIdSchema }),
   z.object({ kind: z.literal('not-found'), id: ProfileIdSchema }),
+  /** Auto uses it, or is running it until Drop: pick another for Auto first. */
+  z.object({ kind: z.literal('in-use'), id: ProfileIdSchema }),
   z.object({ kind: z.literal('storage-failed'), message: z.string() }),
 ]);
 

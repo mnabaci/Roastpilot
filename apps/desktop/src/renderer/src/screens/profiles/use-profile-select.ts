@@ -1,5 +1,6 @@
 import type { ProfileEntry, ProfileId } from '@roastpilot/shared';
 import { useDeps } from '../../app/app-context';
+import { IN_USE } from '../../features/profile-messages';
 import { useLibraryFiles } from '../../features/use-library-files';
 import { useRun } from '../../features/use-run';
 import { useSelection } from '../../features/use-selection';
@@ -47,7 +48,10 @@ export function useProfileSelect(
       async () => {
         const deleted = await api.deleteProfiles(ids);
         if (!deleted.ok) {
-          toast('error', "Couldn't delete them · see Logs");
+          toast(
+            'error',
+            deleted.error.kind === 'in-use' ? IN_USE : "Couldn't delete them · see Logs",
+          );
           return;
         }
         const listed = await api.listProfiles();
