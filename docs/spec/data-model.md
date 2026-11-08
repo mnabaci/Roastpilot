@@ -50,7 +50,7 @@ The same migration adds `profiles` (`id`, `doc`, `updated_at`), your own profile
 
 One migration per milestone.
 
-- **Roasters:** `roasters` as in the table above, with Skywalker and Simulator inserted. `profiles.roaster_id` and `roasts.roaster_id` point at it; existing rows get Skywalker. The migration can't read `settings.json`, so the app moves the saved connection into its record on first start.
+- **Roasters:** `roasters` as in the table above, with Skywalker and Simulator inserted. `profiles.roaster_id` and `roasts.roaster_id` point at it; existing rows get Skywalker. The migration can't read `settings.json`, so the app moves the saved connection into its record on first start. An empty `connection` (Skywalker before a port is picked) is a roaster with no port yet; one that no longer parses is read as none and logged (`storage.roaster-connection-unreadable`).
 - **Beans:** `beans` and `bean_purchases` as above, plus on `roasts`: `bean_id`, `ghost_roast_id`, `batch_g`, `roasted_g`, `rating` (1–5), `is_favourite`, `notes`, empty on older roasts. Which profile a roast ran comes from its JSON copy, so there's no `profile_id`.
 - **Stock:** `green_g` and `roasted_g` on the bean are running totals. Start takes the batch off `green_g` as the roast row is made; the roasted weight adds to `roasted_g`, and changing it later adds only the difference. Deleting a roast gives neither back, as those beans are gone; Adjust stock corrects any count.
 - **All or nothing:** every stock write (Start, a roast's weights or bean, Add stock) runs in one transaction; a failure leaves the database as it was.
