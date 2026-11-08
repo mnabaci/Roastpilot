@@ -15,138 +15,177 @@
   }
   .wrap {
     padding: 20px;
+  }
+  .card {
+    width: 340px;
+    box-sizing: border-box;
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    padding: var(--space-5);
     display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    align-items: flex-start;
+    flex-direction: column;
+    gap: 18px;
   }
-  button {
+  .out {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .lab {
+    font-size: 15px;
+    line-height: 22px;
+    font-weight: 600;
+  }
+  .val {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  output {
+    min-width: 56px;
+    text-align: right;
+    font-size: 26px;
+    line-height: 32px;
+    font-weight: 700;
+  }
+  .badge {
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    line-height: 14px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .badge.heat {
+    background: var(--heat-tint);
+    color: var(--heat);
+  }
+  .badge.air {
+    background: var(--air-tint);
+    color: var(--air);
+  }
+  /* Drawn by the app, never the browser: a border-strong track filled up to the value in the
+     output's colour, and a 20px thumb in that colour with a 2px surface ring. 28px hit area. */
+  .range {
+    position: relative;
+    height: 28px;
+    cursor: pointer;
+  }
+  .range:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .track {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: var(--space-2);
+    transform: translateY(-50%);
+    border-radius: var(--radius-full, 9999px);
+    background: linear-gradient(
+      to right,
+      var(--fill) calc(var(--at) * 100%),
+      var(--border-strong) calc(var(--at) * 100%)
+    );
+  }
+  .thumb {
+    position: absolute;
+    top: 50%;
+    left: calc(var(--at) * (100% - var(--space-5)) + var(--space-5) / 2);
+    box-sizing: border-box;
+    width: var(--space-5);
+    height: var(--space-5);
+    transform: translate(-50%, -50%);
+    border: 2px solid var(--surface);
+    border-radius: var(--radius-full, 9999px);
+    background: var(--fill);
+  }
+  /* Button, ghost variant, size sm. */
+  .resume {
+    align-self: flex-start;
+    height: var(--control-sm);
+    padding: 0 14px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--ink);
     font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
   }
-  :focus-visible {
+  .resume:hover {
+    background: var(--surface-hover);
+  }
+  .resume:focus-visible {
     outline: 2px solid var(--focus);
     outline-offset: 2px;
   }
 </style>
 <div class="wrap">
-  <div
-    style="
-      width: 340px;
-      background: var(--surface);
-      border-radius: var(--radius-xl);
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    "
-  >
-    <div style="display: flex; flex-direction: column; gap: 10px">
-      <div style="display: flex; align-items: center; justify-content: space-between">
-        <label for="h" style="font-size: 15px; font-weight: 600">Heater</label>
-        <div style="display: flex; align-items: center; gap: 10px">
-          <span
-            class="badge"
-            style="
-              padding: 4px 8px;
-              border-radius: var(--radius-sm);
-              background: var(--heat-tint);
-              color: var(--heat);
-            "
-            >MANUAL</span
-          ><span
-            style="
-              font-size: 26px;
-              line-height: 32px;
-              font-weight: 700;
-              min-width: 56px;
-              text-align: right;
-            "
-            >75%</span
-          >
-        </div>
+  <div class="card">
+    <div class="out">
+      <div class="top">
+        <span class="lab">Heater</span>
+        <div class="val"><span class="badge heat">Manual</span><output>75%</output></div>
       </div>
-      <input
-        id="h"
-        type="range"
-        min="0"
-        max="100"
-        step="5"
-        value="75"
-        style="width: 100%; height: 28px; accent-color: var(--heat-fill)"
-      /><button
-        style="
-          align-self: flex-start;
-          height: 44px;
-          padding: 0 14px;
-          border-radius: var(--radius-md);
-          border: 0;
-          background: transparent;
-          color: var(--ink);
-          font-size: 13px;
-          font-weight: 600;
-        "
+      <div
+        class="range"
+        role="slider"
+        aria-label="Heater"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="75"
+        tabindex="0"
+        style="--fill: var(--heat-fill); --at: 0.75"
       >
-        Resume auto
-      </button>
-    </div>
-    <div style="display: flex; flex-direction: column; gap: 10px">
-      <div style="display: flex; align-items: center; justify-content: space-between">
-        <label for="f" style="font-size: 15px; font-weight: 600">Fan</label>
-        <div style="display: flex; align-items: center; gap: 10px">
-          <span
-            class="badge"
-            style="
-              padding: 4px 8px;
-              border-radius: var(--radius-sm);
-              background: var(--air-tint);
-              color: var(--air);
-            "
-            >AUTO</span
-          ><span
-            style="
-              font-size: 26px;
-              line-height: 32px;
-              font-weight: 700;
-              min-width: 56px;
-              text-align: right;
-            "
-            >35%</span
-          >
-        </div>
+        <span class="track"></span><span class="thumb"></span>
       </div>
-      <input
-        id="f"
-        type="range"
-        min="0"
-        max="100"
-        step="5"
-        value="35"
-        style="width: 100%; height: 28px; accent-color: var(--air)"
-      />
+      <button class="resume">Resume auto</button>
     </div>
-    <div style="display: flex; flex-direction: column; gap: 10px">
-      <div style="display: flex; align-items: center; justify-content: space-between">
-        <label for="d" style="font-size: 15px; font-weight: 600">Drum</label
-        ><span
-          style="
-            font-size: 26px;
-            line-height: 32px;
-            font-weight: 700;
-            min-width: 56px;
-            text-align: right;
-          "
-          >60%</span
-        >
+    <div class="out">
+      <div class="top">
+        <span class="lab">Fan</span>
+        <div class="val"><span class="badge air">Auto</span><output>35%</output></div>
       </div>
-      <input
-        id="d"
-        type="range"
-        min="0"
-        max="100"
-        step="5"
-        value="60"
-        style="width: 100%; height: 28px; accent-color: var(--ink-muted)"
-      />
+      <div
+        class="range"
+        role="slider"
+        aria-label="Fan"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="35"
+        tabindex="0"
+        style="--fill: var(--air); --at: 0.35"
+      >
+        <span class="track"></span><span class="thumb"></span>
+      </div>
+    </div>
+    <div class="out">
+      <div class="top">
+        <span class="lab">Drum</span>
+        <div class="val"><output>60%</output></div>
+      </div>
+      <div
+        class="range"
+        role="slider"
+        aria-label="Drum"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="60"
+        tabindex="0"
+        style="--fill: var(--ink-muted); --at: 0.6"
+      >
+        <span class="track"></span><span class="thumb"></span>
+      </div>
     </div>
   </div>
 </div>

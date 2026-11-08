@@ -26,57 +26,98 @@
     align-items: center;
     gap: 16px;
     width: 100%;
-    height: 44px;
-    padding: 0 24px;
-    background: var(--surface);
+    height: var(--control-sm);
+    padding: 0 var(--space-6);
+    /* A roast is heating: ember in both states. */
+    background: var(--heat-tint);
     border-bottom: 1px solid var(--border);
     cursor: pointer;
     white-space: nowrap;
     overflow: hidden;
   }
   button:hover {
-    background: var(--surface-hover);
-  }
-  button.need {
-    background: var(--heat-tint);
+    filter: brightness(1.1);
   }
   button:focus-visible {
     outline: 2px solid var(--focus);
     outline-offset: -2px;
   }
+  .dot {
+    width: 8px;
+    height: 8px;
+    flex: none;
+    border-radius: var(--radius-full, 9999px);
+    background: var(--heat);
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  @keyframes pulse {
+    50% {
+      opacity: 0.5;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dot {
+      animation: none;
+    }
+  }
   .lead {
+    flex: none;
     font-size: 15px;
+    line-height: 22px;
     font-weight: 600;
+    color: var(--heat);
   }
   .need .lead {
-    color: var(--heat);
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 700;
+  }
+  .nums {
+    display: flex;
+    gap: 16px;
+    min-width: 0;
+    overflow: hidden;
   }
   .n {
     font-size: 13px;
+    line-height: 18px;
+    font-weight: 500;
     color: var(--ink-muted);
   }
   .n b {
     font-weight: 500;
     color: var(--ink);
-    margin-left: 4px;
   }
-  .go {
+  svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
     margin-left: auto;
-    color: var(--ink-muted);
+    fill: none;
+    stroke: var(--ink-muted);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
 </style>
 <div class="wrap">
   <button aria-label="Open Roast">
-    <span class="lead">Roasting · 7:42</span><span class="n">Temp<b>182.4 °C</b></span
-    ><span class="n">RoR<b>8.1</b></span
-    ><span class="n">Heater<b>60 %</b></span
-    ><span class="n">Fan<b>40 %</b></span
-    ><span class="go">›</span>
+    <span class="dot" aria-hidden="true"></span><span class="lead">Roasting · 7:42</span
+    ><span class="nums"
+      ><span class="n">Temp <b>182.4 °C</b></span
+      ><span class="n">RoR <b>8.1</b></span
+      ><span class="n">Heater <b>60 %</b></span
+      ><span class="n">Fan <b>40 %</b></span></span
+    ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
   </button>
   <button class="need" aria-label="Open Roast">
-    <span class="lead">Dump beans · Cooling beans 3:58 left</span
-    ><span class="n">Temp<b>196.2 °C</b></span
-    ><span class="go">›</span>
+    <span class="dot" aria-hidden="true"></span
+    ><span class="lead">Dump beans · Cooling beans 3:58 left</span
+    ><span class="nums"
+      ><span class="n">Temp <b>196.2 °C</b></span></span
+    ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
   </button>
 </div>
 <script></script>

@@ -1,4 +1,4 @@
-<!-- @dsCard group="Actions" height=250 subtitle="Primary, tonal, ghost, danger, disabled" -->
+<!-- @dsCard group="Actions" height=310 subtitle="Primary, tonal, outline, ghost, danger, disabled" -->
 <!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
 <link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
 <link
@@ -72,6 +72,18 @@
   .tonal:hover {
     background: var(--surface-hover);
   }
+  .outline {
+    height: 44px;
+    min-width: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface-raised);
+    color: var(--ink);
+    font-size: 13px;
+  }
+  .outline:hover {
+    background: var(--surface-hover);
+  }
   .ghost {
     height: 48px;
     padding: 0 14px;
@@ -112,6 +124,9 @@
     </button>
     <button class="btn ghost">Cancel</button>
     <button class="btn tonal" disabled>Heating…</button>
+  </div>
+  <div class="row" style="justify-content: flex-end">
+    <button class="btn outline">Dismiss</button>
   </div>
   <button class="btn danger">
     <svg viewBox="0 0 24 24" aria-hidden="true">
