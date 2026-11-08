@@ -23,13 +23,14 @@ interface Created {
 const created: Created[] = [];
 const setData = vi.fn();
 const destroy = vi.fn();
+const redraw = vi.fn();
 const stepped: uPlot.Series.PathBuilder = () => null;
 
 // jsdom has no canvas: this engine only records what the chart asks it to draw.
 const engine: PlotEngine = {
   create: (opts, data) => {
     created.push({ opts, data } as unknown as Created);
-    return { setData, destroy, redraw: vi.fn(), setSize: vi.fn() };
+    return { setData, destroy, redraw, setSize: vi.fn() };
   },
   stepped: () => stepped,
 };
@@ -65,6 +66,7 @@ beforeEach(() => {
   created.length = 0;
   setData.mockClear();
   destroy.mockClear();
+  redraw.mockClear();
   document.documentElement.style.setProperty('--heat', 'rgb(255, 122, 77)');
   document.documentElement.style.setProperty('--air', 'rgb(76, 211, 240)');
 });
@@ -399,6 +401,37 @@ describe('RoastChart', () => {
       expect(screen.getByRole('list', { name: 'Legend' }).querySelectorAll('li')).toHaveLength(1);
       expect(screen.getByRole('img', { name: 'Temperature 175.0 °C' })).toBeInTheDocument();
       expect(created[0]?.opts.series).toHaveLength(2);
+    });
+
+    it('takes each new reading as one setData and at most one redraw per plot, never a rebuild', () => {
+      const at = (nowS: number): ChartLayer[] => [
+        bt([
+          [0, 179],
+          [nowS, 175],
+        ]),
+        { ...heater, points: [{ t: nowS, v: 80 }] },
+        ...aids.map((aid) => (aid.kind === 'now-line' ? { ...aid, t: nowS } : aid)),
+      ];
+      const window = (nowS: number) => ({ fromS: -30, toS: Math.max(736, nowS + 60) });
+      const { rerender } = draw(
+        <RoastChart title="Roast curve" layers={at(420)} timeWindow={window(420)} />,
+      );
+      for (let s = 421; s <= 430; s++) {
+        setData.mockClear();
+        redraw.mockClear();
+        rerender(<RoastChart title="Roast curve" layers={at(s)} timeWindow={window(s)} />);
+        expect(setData).toHaveBeenCalledTimes(2);
+        expect(redraw.mock.calls.length).toBeLessThanOrEqual(2);
+      }
+      expect(created).toHaveLength(2);
+      // The same layers again (a render with no new reading): nothing is drawn.
+      const same = at(430);
+      rerender(<RoastChart title="Roast curve" layers={same} timeWindow={window(430)} />);
+      setData.mockClear();
+      redraw.mockClear();
+      rerender(<RoastChart title="Roast curve" layers={same} timeWindow={window(430)} />);
+      expect(setData).not.toHaveBeenCalled();
+      expect(redraw).not.toHaveBeenCalled();
     });
 
     it('turns aids on and off with a redraw, not a rebuild', () => {
