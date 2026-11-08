@@ -1,4 +1,4 @@
-<!-- @dsCard group="Inputs" height=120 subtitle="Compare with, none and picked" -->
+<!-- @dsCard group="Inputs" height=260 subtitle="Closed, and open on the app's own panel" -->
 <!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
 <link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
 <link
@@ -17,81 +17,124 @@
     display: flex;
     gap: 24px;
     flex-wrap: wrap;
+    align-items: flex-start;
   }
-  label {
+  .col {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    font-size: 13px;
-    color: var(--ink-muted);
     width: 280px;
   }
-  .f {
-    position: relative;
+  label {
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--ink-muted);
+  }
+  svg {
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  /* The field: a button that opens the Select panel, never a native select. */
+  .field {
     display: flex;
     align-items: center;
-  }
-  .f svg {
-    position: absolute;
-    right: 12px;
-    pointer-events: none;
-  }
-  select {
-    appearance: none;
-    height: 44px;
+    gap: 8px;
     width: 100%;
+    height: var(--control-sm);
     box-sizing: border-box;
-    padding: 0 40px 0 14px;
+    padding: 0 12px 0 14px;
     border-radius: var(--radius-md);
     border: 1px solid var(--border);
     background: var(--surface);
     color: var(--ink);
     font: inherit;
     font-size: 15px;
+    line-height: 22px;
+    text-align: left;
+    cursor: pointer;
   }
-  select:hover {
+  .field:hover,
+  .field[aria-expanded='true'] {
     border-color: var(--border-strong);
   }
-  select:focus-visible {
+  .field:focus-visible {
     outline: 2px solid var(--focus);
     outline-offset: 2px;
   }
+  .value {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .chev {
+    width: 20px;
+    height: 20px;
+    color: var(--ink-muted);
+  }
+  [aria-expanded='true'] .chev {
+    transform: rotate(180deg);
+  }
+  /* The Select panel, 4px under the field. */
+  .panel {
+    margin-top: -2px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-strong);
+    background: var(--surface-raised);
+  }
+  .opt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: var(--control-sm);
+    box-sizing: border-box;
+    padding: 6px 12px;
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    line-height: 22px;
+  }
+  .opt.hl {
+    background: var(--surface-hover);
+  }
+  .opt svg {
+    width: 16px;
+    height: 16px;
+  }
+  .opt .sp {
+    width: 16px;
+    flex: none;
+  }
 </style>
 <div class="wrap">
-  <label
-    >Compare with
-    <div class="f">
-      <select>
-        <option>None</option>
-        <option>Mon 2 Nov · 18:20</option></select
-      ><svg
-        aria-hidden="true"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="var(--ink-muted)"
-        stroke-width="2"
-      >
-        <path d="m6 9 6 6 6-6" />
-      </svg></div
-  ></label>
-  <label
-    >Compare with
-    <div class="f">
-      <select>
-        <option>Mon 2 Nov · 18:20</option></select
-      ><svg
-        aria-hidden="true"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="var(--ink-muted)"
-        stroke-width="2"
-      >
-        <path d="m6 9 6 6 6-6" />
-      </svg></div
-  ></label>
+  <div class="col">
+    <label for="cmp">Compare with</label>
+    <button id="cmp" class="field" aria-haspopup="listbox" aria-expanded="false">
+      <span class="value">None</span
+      ><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+    </button>
+  </div>
+  <div class="col">
+    <label for="prof">Profile</label>
+    <button id="prof" class="field" aria-haspopup="listbox" aria-expanded="true">
+      <span class="value">Light · Curve</span
+      ><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+    </button>
+    <div class="panel" role="listbox" aria-label="Profile">
+      <div class="opt" role="option"><span class="sp"></span>None</div>
+      <div class="opt hl" role="option" aria-selected="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>Light · Curve
+      </div>
+      <div class="opt" role="option"><span class="sp"></span>Light · Steps</div>
+    </div>
+  </div>
 </div>
 <script></script>

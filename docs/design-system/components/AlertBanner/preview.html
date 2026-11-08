@@ -1,4 +1,4 @@
-<!-- @dsCard group="Feedback" height=170 subtitle="Critical and warning" -->
+<!-- @dsCard group="Feedback" height=170 subtitle="Critical with Acknowledge, and warning" -->
 <!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
 <link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
 <link
@@ -16,102 +16,93 @@
   .wrap {
     padding: 20px;
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 16px;
-    align-items: flex-start;
   }
+  .banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 18px;
+    border-radius: var(--radius-lg);
+    border: 1px solid;
+  }
+  .critical {
+    background: var(--critical-surface);
+    border-color: var(--critical);
+  }
+  .warning {
+    background: var(--surface-raised);
+    border-color: var(--warning);
+  }
+  p {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    line-height: 22px;
+    font-weight: 600;
+  }
+  svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .critical svg {
+    color: var(--critical-text);
+  }
+  .warning svg {
+    color: var(--warning);
+  }
+  /* Button, Outline variant, size sm. */
   button {
+    flex: none;
+    height: var(--control-sm);
+    min-width: var(--control-sm);
+    padding: 0 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-strong);
+    background: var(--surface-raised);
+    color: var(--ink);
     font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
   }
-  :focus-visible {
+  button:hover {
+    background: var(--surface-hover);
+  }
+  button:focus-visible {
     outline: 2px solid var(--focus);
     outline-offset: 2px;
   }
 </style>
-<div class="wrap" style="flex-direction: column; align-items: stretch">
-  <div
-    role="alert"
-    style="
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 12px 18px;
-      border-radius: var(--radius-lg);
-      background: var(--critical-surface);
-      border: 1px solid var(--critical);
-    "
-  >
-    <div style="display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600">
-      <svg
-        aria-hidden="true"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="var(--critical-text)"
-        stroke-width="2"
-      >
-        <path d="M12 3 2 21h20L12 3z" />
-        <path d="M12 10v5" />
-        <path d="M12 18v.5" /></svg
+<div class="wrap">
+  <div role="alert" class="banner critical">
+    <p>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+        <path d="M12 9v4" />
+        <path d="M12 17h.01" /></svg
       >Emergency stop · heater off, fan and bean cooler on
-    </div>
-    <button
-      style="
-        height: 44px;
-        padding: 0 16px;
-        border-radius: var(--radius-md);
-        border: 0;
-        background: var(--surface-raised);
-        color: var(--ink);
-        font-size: 14px;
-      "
-    >
-      Dismiss
-    </button>
+    </p>
+    <button>Acknowledge</button>
   </div>
-  <div
-    role="status"
-    style="
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 12px 18px;
-      border-radius: var(--radius-lg);
-      background: var(--surface-raised);
-      border: 1px solid var(--warning);
-    "
-  >
-    <div style="display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600">
-      <svg
-        aria-hidden="true"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="var(--warning)"
-        stroke-width="2"
-      >
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 7v6" />
-        <path d="M12 16v.5" /></svg
+  <div role="status" class="banner warning">
+    <p>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 8v4" />
+        <path d="M12 16h.01" /></svg
       >Temperature stalled for 60 s · check the roaster
-    </div>
-    <button
-      style="
-        height: 44px;
-        padding: 0 16px;
-        border-radius: var(--radius-md);
-        border: 0;
-        background: var(--surface-raised);
-        color: var(--ink);
-        font-size: 14px;
-      "
-    >
-      Dismiss
-    </button>
+    </p>
   </div>
 </div>
 <script></script>
