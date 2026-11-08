@@ -65,6 +65,17 @@ export class RoasterService {
     return ok(added.value);
   }
 
+  /** Imported records, all or nothing; never active (docs/spec/data-model.md). */
+  async addAll(records: readonly Omit<Roaster, 'id'>[]): Promise<Result<Roaster[], RoasterError>> {
+    const added = await this.#deps.repository.addAll(
+      records.map((record) => ({ ...record, active: false })),
+    );
+    if (!added.ok) return this.#refused(added.error);
+    this.#deps.logger.info('roasters.imported', { ids: added.value.map((r) => r.id) });
+    this.#set([...this.#roasters, ...added.value]);
+    return ok(added.value);
+  }
+
   async save(roaster: Roaster): Promise<Result<Roaster, RoasterError>> {
     if (this.#deps.inUse()) return err({ kind: 'in-use' });
     const known = this.#roasters.find((r) => r.id === roaster.id);

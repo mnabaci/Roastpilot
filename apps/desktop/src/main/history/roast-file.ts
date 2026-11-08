@@ -1,14 +1,14 @@
 import {
   err,
   FileRoastSchema,
+  FileRoastV2Schema,
   ok,
-  ROAST_FILE_FORMAT,
-  ROAST_FILE_VERSION,
-  RoastFileSchema,
+  readEnvelope,
+  toEnvelope,
+  type EnvelopeProblem,
   type FileRoast,
   type Result,
   type RoastDetail,
-  type RoastFile,
   type RoastFileV2,
 } from '@roastpilot/shared';
 import { fromColumns, toColumns } from './sample-columns';
@@ -24,43 +24,44 @@ const nameOf = (names: ReadonlyMap<number, string>, id: number | null): string |
 
 /** Saved roasts as a Roastpilot file, version 2 (docs/spec/data-model.md, Roastpilot roast files). */
 export function toRoastFile(roasts: readonly RoastDetail[], names: Names, now: Date): RoastFileV2 {
-  return {
-    format: ROAST_FILE_FORMAT,
-    version: ROAST_FILE_VERSION,
-    exportedAt: now.toISOString(),
-    roasts: roasts.map((roast) => {
-      // The schema keeps only what a file carries: ids stay behind.
-      const carried = FileRoastSchema.parse({
-        ...roast,
-        beanName: nameOf(names.beans, roast.beanId),
-        roasterName: nameOf(names.roasters, roast.roasterId),
-      });
-      return { ...carried, samples: toColumns(carried.samples) };
-    }),
-  };
+  const items = roasts.map((roast) => {
+    // The schema keeps only what a file carries: ids stay behind.
+    const carried = FileRoastSchema.parse({
+      ...roast,
+      beanName: nameOf(names.beans, roast.beanId),
+      roasterName: nameOf(names.roasters, roast.roasterId),
+    });
+    return { ...carried, samples: toColumns(carried.samples) };
+  });
+  return toEnvelope('roasts', items, now);
 }
 
-/** A file's roasts as History keeps them, whichever version wrote it. */
-function roastsOf(file: RoastFile): FileRoast[] {
-  if (file.version === 1) return file.roasts;
-  return file.roasts.map((roast) => ({ ...roast, samples: fromColumns(roast.samples) }));
+/** A file's roasts as History keeps them, whichever version wrote them; undefined if one is bad. */
+function roastsOf(version: number, items: unknown[]): FileRoast[] | undefined {
+  const roasts: FileRoast[] = [];
+  for (const item of items) {
+    if (version === 1) {
+      const v1 = FileRoastSchema.safeParse(item);
+      if (!v1.success) return undefined;
+      roasts.push(v1.data);
+      continue;
+    }
+    const v2 = FileRoastV2Schema.safeParse(item);
+    if (!v2.success) return undefined;
+    roasts.push({ ...v2.data, samples: fromColumns(v2.data.samples) });
+  }
+  return roasts;
 }
 
-export type RoastFileProblem = 'not-roastpilot' | 'newer-version';
+/** Why a roast file is refused: its envelope, or a roast in it that isn't one. */
+export type RoastFileProblem = EnvelopeProblem;
 
 /** A Roastpilot file's roasts, or why the whole file is refused. */
 export function parseRoastFile(text: string): Result<FileRoast[], RoastFileProblem> {
-  let json: unknown;
-  try {
-    json = JSON.parse(text);
-  } catch {
-    // Not JSON at all: it isn't one of our files.
-    return err('not-roastpilot');
-  }
-  const version = (json as { version?: unknown } | null)?.version;
-  if (typeof version === 'number' && version > ROAST_FILE_VERSION) return err('newer-version');
-  const parsed = RoastFileSchema.safeParse(json);
-  return parsed.success ? ok(roastsOf(parsed.data)) : err('not-roastpilot');
+  const envelope = readEnvelope(text, 'roasts');
+  if (!envelope.ok) return envelope;
+  const roasts = roastsOf(envelope.value.version, envelope.value.items);
+  return roasts ? ok(roasts) : err({ kind: 'not-roastpilot' });
 }
 
 /** The id of the one with exactly this name, if any. */

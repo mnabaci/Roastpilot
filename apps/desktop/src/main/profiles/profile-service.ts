@@ -123,6 +123,28 @@ export class ProfileService {
     return this.#store(profile, roasterId);
   }
 
+  /** Imported profiles on the active roaster, all or nothing. */
+  async addAll(profiles: readonly AutoProfile[]): Promise<Result<void, ProfileError>> {
+    const roasterId = this.#deps.activeRoaster().id;
+    const saved = await this.#deps.store.saveAll(profiles, roasterId);
+    if (!saved.ok) return this.#failed(saved.error);
+    const ids = new Set(profiles.map((p) => p.id));
+    const others = this.#own.filter((own) => !ids.has(own.profile.id));
+    this.#own = [...others, ...profiles.map((profile) => ({ profile, roasterId }))];
+    this.#deps.logger.info('profiles.imported', { ids: [...ids], roasterId });
+    return ok(undefined);
+  }
+
+  /** Every profile's name by id: each model's built-ins, and your own on any roaster. */
+  async allNames(): Promise<Map<ProfileId, string>> {
+    const read = await this.#deps.store.list();
+    if (read.ok) this.#own = read.value;
+    else this.#deps.logger.warn('profiles.list-failed', { error: read.error });
+    const builtIns = Object.values(ROASTER_MODELS).flatMap((model) => model.profiles);
+    const all = [...builtIns, ...this.#own.map((own) => own.profile)];
+    return new Map(all.map((profile) => [profile.id, profile.name]));
+  }
+
   save(profile: AutoProfile): Promise<Result<ProfileEntry, ProfileError>> {
     if (this.#isBuiltIn(profile.id)) {
       return Promise.resolve(err({ kind: 'built-in', id: profile.id }));

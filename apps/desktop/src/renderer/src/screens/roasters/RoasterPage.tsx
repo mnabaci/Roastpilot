@@ -2,6 +2,7 @@ import type { Roaster } from '@roastpilot/shared';
 import { cn, ConfirmDialog, Menu, type MenuItem } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
+import { useLibraryFiles } from '../../features/use-library-files';
 import { useRun } from '../../features/use-run';
 import { useConnection } from '../../stores/use-stores';
 import { ConnectPanel } from './ConnectPanel';
@@ -19,6 +20,7 @@ export function RoasterPage({ roaster, onDeleted }: { roaster: Roaster; onDelete
   const note = modelNote(roaster);
   const [deleting, setDeleting] = useState(false);
   const [problem, setProblem] = useState<string>();
+  const files = useLibraryFiles('roasters');
   const use = () => {
     setProblem(undefined);
     run(
@@ -53,19 +55,27 @@ export function RoasterPage({ roaster, onDeleted }: { roaster: Roaster; onDelete
     );
   };
   // Nothing changes while a roaster is in use (docs/spec/roasters.md); the active one can't go.
-  const more: MenuItem[] =
-    roaster.active || locked
-      ? []
-      : [
-          { label: 'Use this roaster', onSelect: use },
-          {
-            label: 'Delete',
-            destructive: true,
-            onSelect: () => {
-              setDeleting(true);
-            },
+  // Export only reads the record, so it is always there.
+  const changeable = !roaster.active && !locked;
+  const exportThis: MenuItem = {
+    label: 'Export this roaster',
+    onSelect: () => {
+      files.exportFile({ kind: 'roasters', ids: [roaster.id] });
+    },
+  };
+  const more: MenuItem[] = changeable
+    ? [
+        { label: 'Use this roaster', onSelect: use },
+        exportThis,
+        {
+          label: 'Delete',
+          destructive: true,
+          onSelect: () => {
+            setDeleting(true);
           },
-        ];
+        },
+      ]
+    : [exportThis];
   return (
     <div className={cn('flex flex-col gap-6', PAGE_WIDTH)}>
       <header className="flex items-start justify-between gap-4">
@@ -76,7 +86,7 @@ export function RoasterPage({ roaster, onDeleted }: { roaster: Roaster; onDelete
           </div>
           {note ? <p className="text-label text-ink-muted">{note}</p> : null}
         </div>
-        {more.length > 0 ? <Menu label={`More for ${roaster.name}`} items={more} /> : null}
+        <Menu label={`More for ${roaster.name}`} items={more} />
       </header>
       {problem ? (
         <p role="alert" className="text-label text-critical-text">

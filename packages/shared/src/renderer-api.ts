@@ -25,7 +25,16 @@ import type { Milestones } from './milestones';
 import type { AutoProfile, ProfileEntry, ProfileError, ProfileId } from './profile';
 import type { Result } from './result';
 import type { RoastAction, RoastActionError, RoastState } from './roast';
+import type {
+  ExportLibraryError,
+  ExportLibraryRequest,
+  ExportLibraryResult,
+  ImportLibraryError,
+  ImportLibraryResult,
+  LibraryKind,
+} from './library-file';
 import type { ExportRoastsRequest, SetRoastBeanRequest } from './roast-file';
+import type { EnvelopeProblem } from './roastpilot-file';
 import type { NewRoaster, Roaster, RoasterError, RoasterId } from './roaster';
 import type { SafetyEvent, AcknowledgeError } from './safety-event';
 import type {
@@ -102,8 +111,7 @@ export type ImportRoastsResult =
   | { status: 'cancelled' }
   /** `newestId`: the newest roast added, for History to open; null when all were already here. */
   | { status: 'imported'; added: number; skipped: number; newestId: RoastId | null };
-export type ImportRoastsError =
-  StorageError | { kind: 'read-failed' } | { kind: 'not-roastpilot' } | { kind: 'newer-version' };
+export type ImportRoastsError = StorageError | { kind: 'read-failed' } | EnvelopeProblem;
 
 /** Saved roasts (docs/spec/ui.md, History screen). */
 export interface HistoryApi {
@@ -202,6 +210,19 @@ export interface RoastersApi {
   onRoasters(listener: (roasters: Roaster[]) => void): Unsubscribe;
 }
 
+/**
+ * Beans, profiles and roasters as Roastpilot files (docs/spec/data-model.md, Beans, profiles and
+ * roasters files). Main asks where; nothing is ever overwritten.
+ */
+export interface LibraryFilesApi {
+  /** Every item of the kind, or the ones named. */
+  exportLibrary(
+    request: ExportLibraryRequest,
+  ): Promise<Result<ExportLibraryResult, ExportLibraryError>>;
+  /** Asks for a file of the kind; the same ones are skipped, clashes come in renamed. */
+  importLibrary(kind: LibraryKind): Promise<Result<ImportLibraryResult, ImportLibraryError>>;
+}
+
 /** The window itself: what it needs when it opens, and where the app menu sends it. */
 export interface AppApi {
   getSnapshot(): Promise<Snapshot>;
@@ -237,5 +258,6 @@ export interface RoastpilotApi
     ProfilesApi,
     RoastersApi,
     BeansApi,
+    LibraryFilesApi,
     AppApi,
     UpdatesApi {}

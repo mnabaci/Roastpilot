@@ -14,6 +14,11 @@ function setup(usage = { roasts: 0, profiles: 0 }) {
       stored = [...stored, added];
       return Promise.resolve(ok(added));
     },
+    addAll: (list) => {
+      const added = list.map((roaster, i) => ({ ...roaster, id: stored.length + 1 + i }));
+      stored = [...stored, ...added];
+      return Promise.resolve(ok(added));
+    },
     save: (roaster) => {
       stored = stored.map((r) => (r.id === roaster.id ? roaster : r));
       return Promise.resolve(ok(undefined));
@@ -66,6 +71,29 @@ describe('RoasterService', () => {
       value: { name: 'Second', active: false, batchIdealG: 375, maxTempC: 240 },
     });
     expect(onChange).toHaveBeenCalledOnce();
+  });
+
+  it('adds imported records at once, none active, and tells the windows', async () => {
+    const { service, onChange, stored } = setup();
+    await service.load();
+    const [skywalker] = BUILT_IN_ROASTERS;
+    if (!skywalker) throw new Error('no roaster');
+    const { id, ...record } = skywalker;
+    expect(id).toBe(1);
+    const added = await service.addAll([{ ...record, name: 'Friend', active: false }]);
+    expect(added.ok && added.value.map((r) => [r.id, r.name, r.active])).toEqual([
+      [3, 'Friend', false],
+    ]);
+    expect(service.all.map((r) => r.name)).toEqual(['Skywalker', 'Simulator', 'Friend']);
+    expect(stored()).toHaveLength(3);
+    expect(onChange).toHaveBeenLastCalledWith(service.all);
+  });
+
+  it('an import that fails to save adds nothing', async () => {
+    const { service, repository, onChange } = setup();
+    repository.addAll = () => Promise.resolve(err({ kind: 'storage-failed', message: 'full' }));
+    expect(await service.addAll([])).toEqual(err({ kind: 'storage-failed', message: 'full' }));
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it('switches the active roaster', async () => {

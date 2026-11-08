@@ -75,6 +75,24 @@ export class SqliteBeanRepository implements BeanRepository {
     });
   }
 
+  /** Inserted one by one inside the transaction, so the ids come back in order. */
+  addAll(
+    list: readonly { fields: BeanFields; profileId: ProfileId | null }[],
+  ): Promise<Result<BeanId[], StorageError>> {
+    return transaction(this.#db, async (tx) => {
+      const ids: BeanId[] = [];
+      for (const { fields, profileId } of list) {
+        const row = await tx
+          .insert(beans)
+          .values({ ...fields, profileId })
+          .returning({ id: beans.id })
+          .get();
+        ids.push(row.id);
+      }
+      return ok(ids);
+    });
+  }
+
   async #changed(
     id: BeanId,
     change: () => Promise<{ id: number }[]>,

@@ -1,46 +1,63 @@
 import type { Logger } from '@roastpilot/core';
+import type { FileKind } from '@roastpilot/shared';
 import type { BrowserWindow } from 'electron';
 
-/** A Roastpilot roast file's extension (docs/adr/0013-roastpilot-roast-files.md): JSON inside. */
+/** A Roastpilot file's extension, whatever its kind (ADRs 0013, 0021): JSON inside. */
 export const ROAST_FILE_EXTENSION = 'rpr';
+
+export type ExportFormat = 'csv' | 'roastpilot';
+/** What an import asks for: a Roastpilot file of a kind, or an Artisan roast. */
+export type ImportKind = FileKind | 'artisan';
 
 interface Filter {
   name: string;
   extensions: string[];
 }
 
-/** What the save dialog says and suggests for an export of `count` roasts, on `day`. */
+/** One and many of each kind, as the dialogs say it. */
+const NOUNS: Readonly<Record<FileKind, readonly [string, string]>> = {
+  roasts: ['roast', 'roasts'],
+  beans: ['bean', 'beans'],
+  profiles: ['profile', 'profiles'],
+  roasters: ['roaster', 'roasters'],
+};
+
+/** What the save dialog says and suggests for an export of `count` of `kind`, on `day`. */
 export function exportDialog(
-  format: 'csv' | 'roastpilot',
+  kind: FileKind,
+  format: ExportFormat,
   count: number | 'all',
   day: Date,
 ): { title: string; defaultPath: string; filters: Filter[] } {
-  const what = count === 1 ? 'roast' : 'roasts';
+  const [one, many] = NOUNS[kind];
+  const what = count === 1 ? one : many;
   const extension = format === 'csv' ? 'csv' : ROAST_FILE_EXTENSION;
   return {
-    title: count === 'all' ? 'Export all roasts' : `Export ${String(count)} ${what}`,
+    title: count === 'all' ? `Export all ${many}` : `Export ${String(count)} ${what}`,
     defaultPath: `Roastpilot ${what} ${day.toISOString().slice(0, 10)}.${extension}`,
-    filters: [{ name: format === 'csv' ? 'CSV' : 'Roastpilot roasts', extensions: [extension] }],
+    filters: [{ name: format === 'csv' ? 'CSV' : `Roastpilot ${many}`, extensions: [extension] }],
   };
 }
 
 /** What the open dialog says and accepts. */
-export function importDialog(kind: 'artisan' | 'roastpilot'): { title: string; filters: Filter[] } {
-  return kind === 'artisan'
-    ? {
-        title: 'Import an Artisan roast',
-        filters: [{ name: 'Artisan roast', extensions: ['alog'] }],
-      }
-    : {
-        title: 'Import Roastpilot roasts',
-        filters: [{ name: 'Roastpilot roasts', extensions: [ROAST_FILE_EXTENSION] }],
-      };
+export function importDialog(kind: ImportKind): { title: string; filters: Filter[] } {
+  if (kind === 'artisan') {
+    return {
+      title: 'Import an Artisan roast',
+      filters: [{ name: 'Artisan roast', extensions: ['alog'] }],
+    };
+  }
+  const name = `Roastpilot ${NOUNS[kind][1]}`;
+  return {
+    title: `Import ${name}`,
+    filters: [{ name, extensions: [ROAST_FILE_EXTENSION] }],
+  };
 }
 
 /** The window a dialog opens on: on macOS it is a sheet on that window. */
 export type DialogParent = BrowserWindow;
 
-/** Electron's `dialog`, narrowed to the two calls History uses, always with a parent window. */
+/** Electron's `dialog`, narrowed to the two calls file actions use, always with a parent window. */
 export interface FileDialogs {
   showSaveDialog(
     parent: DialogParent,
@@ -53,12 +70,13 @@ export interface FileDialogs {
 }
 
 export type ChooseExportPath = (
-  format: 'csv' | 'roastpilot',
+  kind: FileKind,
+  format: ExportFormat,
   count: number | 'all',
   parent: DialogParent,
 ) => Promise<string | undefined>;
 export type ChooseImportPath = (
-  kind: 'artisan' | 'roastpilot',
+  kind: ImportKind,
   parent: DialogParent,
 ) => Promise<string | undefined>;
 
@@ -67,10 +85,10 @@ export function exportPathChooser(
   dialogs: Pick<FileDialogs, 'showSaveDialog'>,
   now: () => Date,
 ): ChooseExportPath {
-  return async (format, count, parent) => {
+  return async (kind, format, count, parent) => {
     const { canceled, filePath } = await dialogs.showSaveDialog(
       parent,
-      exportDialog(format, count, now()),
+      exportDialog(kind, format, count, now()),
     );
     return canceled || filePath === '' ? undefined : filePath;
   };
@@ -108,7 +126,7 @@ export function pathChoosers({
     ): ((...args: A) => Promise<string | undefined>) =>
     async (...args) => {
       if (open) {
-        logger.info('history.dialog-already-open', { dialog });
+        logger.info('files.dialog-already-open', { dialog });
         return undefined;
       }
       open = true;

@@ -7,6 +7,7 @@ import { BeanEditor } from './BeanEditor';
 import { BeanFacts } from './BeanFacts';
 import { BeanRoasts } from './BeanRoasts';
 import { AddStockForm, AdjustStockForm } from './StockForms';
+import { useLibraryFiles } from '../../features/use-library-files';
 import { useBeanActions } from './use-bean-actions';
 
 type Panel = 'none' | 'edit' | 'add-stock' | 'adjust-stock';
@@ -27,6 +28,7 @@ export function BeanDetail({
 }) {
   const [panel, setPanel] = useState<Panel>('none');
   const actions = useBeanActions({ bean, beans, roasts, onRoast, onOpenProfile });
+  const files = useLibraryFiles('beans');
   const close = () => {
     setPanel('none');
   };
@@ -78,6 +80,12 @@ export function BeanDetail({
                 label: bean.profileId === null ? 'Make a profile' : 'Make another profile',
                 disabled: !actions.canMakeProfile,
                 onSelect: actions.makeProfile,
+              },
+              {
+                label: 'Export this bean',
+                onSelect: () => {
+                  files.exportFile({ kind: 'beans', ids: [bean.id] });
+                },
               },
               { label: bean.archived ? 'Bring back' : 'Archive', onSelect: actions.archive },
             ]}

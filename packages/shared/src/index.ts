@@ -65,6 +65,7 @@ export type {
   AppApi,
   AutoApi,
   BeansApi,
+  LibraryFilesApi,
   CoachApi,
   RoastersApi,
   ProfilesApi,
@@ -103,6 +104,7 @@ export {
   type LogRecord,
 } from './log-record';
 export {
+  AutoProfileObjectSchema,
   AutoProfileSchema,
   AutoTuningSchema,
   CURVE_FOLLOW_DEFAULTS,
@@ -131,6 +133,27 @@ export {
   type ProfileId,
   type ProfilePhase,
 } from './profile';
+export { overRoasterLimits, type RoasterLimits } from './profile-rules';
+export {
+  ExportLibraryRequestSchema,
+  FileBeanSchema,
+  FileProfileSchema,
+  FileRoasterSchema,
+  ImportLibraryRequestSchema,
+  LibraryKindSchema,
+  type BadItem,
+  type ExportLibraryError,
+  type ExportLibraryRequest,
+  type ExportLibraryResult,
+  type FileBean,
+  type FileProfile,
+  type FileRoaster,
+  type ImportLibraryError,
+  type ImportLibraryRequest,
+  type ImportLibraryResult,
+  type LibraryItemId,
+  type LibraryKind,
+} from './library-file';
 export { err, ok, type Result } from './result';
 export {
   RoastActionErrorSchema,
@@ -219,7 +242,9 @@ export {
   RoasterErrorSchema,
   RoasterIdSchema,
   RoasterModelSchema,
+  RoasterObjectSchema,
   RoasterSchema,
+  checkRoaster,
   type NewRoaster,
   type Roaster,
   type RoasterError,
@@ -267,6 +292,7 @@ export {
 export {
   ExportRoastsRequestSchema,
   FileRoastSchema,
+  FileRoastV2Schema,
   ROAST_FILE_FORMAT,
   ROAST_FILE_VERSION,
   RoastFileSchema,
@@ -280,6 +306,16 @@ export {
   type SampleColumns,
   type SetRoastBeanRequest,
 } from './roast-file';
+export {
+  FILE_KINDS,
+  FileKindSchema,
+  readEnvelope,
+  toEnvelope,
+  type Envelope,
+  type EnvelopeProblem,
+  type FileKind,
+  type FileOf,
+} from './roastpilot-file';
 export {
   AppInfoSchema,
   OpenReleasePageErrorSchema,

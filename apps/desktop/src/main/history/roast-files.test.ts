@@ -1,7 +1,7 @@
 import { createLogger } from '@roastpilot/core';
 import { err, ok } from '@roastpilot/shared';
 import { describe, expect, it, vi } from 'vitest';
-import type { DialogParent } from './roast-file-dialogs';
+import type { DialogParent } from '../files/file-dialogs';
 import { createRoastFiles, type RoastFilesDeps } from './roast-files';
 
 /** The window that asked; the dialogs open on it. */
@@ -33,7 +33,7 @@ describe('roast files', () => {
     expect(await files.exportRoasts({ format: 'roastpilot', ids: [3, 4] }, WINDOW)).toEqual(
       ok({ status: 'saved', fileName: 'roasts.json' }),
     );
-    expect(deps.chooseExportPath).toHaveBeenCalledWith('roastpilot', 2, WINDOW);
+    expect(deps.chooseExportPath).toHaveBeenCalledWith('roasts', 'roastpilot', 2, WINDOW);
     expect(deps.files.exportFile).toHaveBeenCalledWith([3, 4]);
     expect(deps.writeText).toHaveBeenCalledWith('/tmp/roasts.json', '{}');
   });
@@ -41,7 +41,7 @@ describe('roast files', () => {
   it('writes every roast as CSV when none are named', async () => {
     const { deps, files } = setup();
     await files.exportRoasts({ format: 'csv' }, WINDOW);
-    expect(deps.chooseExportPath).toHaveBeenCalledWith('csv', 'all', WINDOW);
+    expect(deps.chooseExportPath).toHaveBeenCalledWith('roasts', 'csv', 'all', WINDOW);
     expect(deps.history.exportCsv).toHaveBeenCalledWith(undefined);
   });
 
@@ -78,6 +78,6 @@ describe('roast files', () => {
     await files.importArtisan(WINDOW);
     expect(deps.chooseImportPath).toHaveBeenCalledWith('artisan', WINDOW);
     await files.importRoasts(WINDOW);
-    expect(deps.chooseImportPath).toHaveBeenCalledWith('roastpilot', WINDOW);
+    expect(deps.chooseImportPath).toHaveBeenCalledWith('roasts', WINDOW);
   });
 });

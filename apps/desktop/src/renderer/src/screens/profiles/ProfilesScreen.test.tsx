@@ -372,4 +372,47 @@ describe('ProfilesScreen', () => {
       screen.getByRole('button', { name: /^More for (?!Profiles$)/ }).parentElement,
     ).not.toContainElement(message);
   });
+
+  describe('files', () => {
+    it("the profile's ⋯ exports it, before Delete", async () => {
+      const { api } = open();
+      await userEvent.click(screen.getByRole('button', { name: 'More for Mine' }));
+      const items = screen.getAllByRole('menuitem').map((item) => item.textContent);
+      expect(items.slice(-2)).toEqual(['Export this profile', 'Delete']);
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Export this profile' }));
+      expect(api.exportLibrary).toHaveBeenCalledWith({ kind: 'profiles', ids: ['custom-1'] });
+    });
+
+    it('the list ⋯ has New from milestones, Export all and Import', async () => {
+      const { api } = open();
+      await userEvent.click(screen.getByRole('button', { name: 'More for Profiles' }));
+      expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+        'New from milestones',
+        'Export all',
+        'Import a Roastpilot file',
+      ]);
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Export all' }));
+      expect(api.exportLibrary).toHaveBeenCalledWith({ kind: 'profiles' });
+    });
+
+    it('an import reloads the list and opens the newest profile added', async () => {
+      const imported = { ...STEPS, id: 'custom-9', name: 'From a friend', needsCalibration: true };
+      const api = fakeApi({
+        importLibrary: vi.fn(() =>
+          Promise.resolve(
+            ok({ status: 'imported' as const, added: 1, skipped: 0, newestId: 'custom-9' }),
+          ),
+        ),
+        listProfiles: vi.fn(() =>
+          Promise.resolve([...withMine, { profile: imported, builtIn: false }]),
+        ),
+      });
+      const { stores } = open(api);
+      await userEvent.click(screen.getByRole('button', { name: 'More for Profiles' }));
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Import a Roastpilot file' }));
+      expect(api.importLibrary).toHaveBeenCalledWith('profiles');
+      expect(await screen.findByRole('button', { name: 'More for From a friend' })).toBeTruthy();
+      expect(stores.toasts.getState().toasts.map((t) => t.text)).toContain('Imported 1 profile');
+    });
+  });
 });

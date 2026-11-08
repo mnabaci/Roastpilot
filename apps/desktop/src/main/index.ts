@@ -31,7 +31,9 @@ import { createAppLogger } from './logging/app-logger';
 import { listLogDays, readLogDay } from './logging/log-reader';
 import { pruneOldLogsLater } from './logging/prune';
 import { makeProfileFromRoast } from './profiles/make-profile';
-import { pathChoosers } from './history/roast-file-dialogs';
+import { pathChoosers } from './files/file-dialogs';
+import { createLibraryFileActions } from './files/library-file-actions';
+import { createLibraryKinds } from './files/library-wiring';
 import { makeBeanProfile } from './beans/make-bean-profile';
 import { createPowerGuard } from './power-guard';
 import { createQuitGuard } from './quit-guard';
@@ -212,6 +214,11 @@ app
     // Only the app's own page, in one of its windows, may call main (docs/spec/architecture.md).
     const senderCheck = { page: appPage(), logger: ipcLogger };
     const historyLogger = logger.child('history');
+    const filesLogger = logger.child('files');
+    // One file dialog at a time, whichever screen asks.
+    const choosers = pathChoosers({ dialogs: dialog, now: () => new Date(), logger: filesLogger });
+    const readText = (path: string) => readFile(path, 'utf8');
+    const writeText = (path: string, text: string) => writeFile(path, text, 'utf8');
     registerIpcHandlers(
       withErrorLogging(
         createIpcHandlers({
@@ -224,10 +231,24 @@ app
           roastFiles: createRoastFiles({
             history,
             files: roastFileService,
-            ...pathChoosers({ dialogs: dialog, now: () => new Date(), logger: historyLogger }),
-            readText: (path) => readFile(path, 'utf8'),
-            writeText: (path, text) => writeFile(path, text, 'utf8'),
+            ...choosers,
+            readText,
+            writeText,
             logger: historyLogger,
+          }),
+          libraryFiles: createLibraryFileActions({
+            kinds: createLibraryKinds({
+              beans,
+              profiles,
+              roasters,
+              newProfileId: () => `custom-${randomUUID()}`,
+              now: () => new Date(),
+              logger: filesLogger,
+            }),
+            ...choosers,
+            readText,
+            writeText,
+            logger: filesLogger,
           }),
           pilot,
           profiles,

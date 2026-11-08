@@ -5,6 +5,11 @@ export interface ProfileRepository {
   list(): Promise<Result<{ profile: AutoProfile; roasterId: RoasterId }[], StorageError>>;
   /** Adds it, or replaces the one with the same id. */
   save(profile: AutoProfile, roasterId: RoasterId): Promise<Result<void, StorageError>>;
+  /** Saves them all on one roaster, all or nothing (an import). */
+  saveAll(
+    profiles: readonly AutoProfile[],
+    roasterId: RoasterId,
+  ): Promise<Result<void, StorageError>>;
   /** Whether it was there to remove. */
   delete(id: ProfileId): Promise<Result<boolean, StorageError>>;
 }

@@ -28,13 +28,21 @@ export function unavailableRepository(message: string): RoastRepository {
 /** The same for your own profiles: the built-ins stay available, saving says why it can't. */
 export function unavailableProfiles(message: string): ProfileRepository {
   const fail = () => Promise.resolve(err({ kind: 'storage-failed' as const, message }));
-  return { list: fail, save: fail, delete: fail };
+  return { list: fail, save: fail, saveAll: fail, delete: fail };
 }
 
 /** The same for roaster records: the built-ins stand in, changes say why they can't be saved. */
 export function unavailableRoasters(message: string): RoasterRepository {
   const fail = () => Promise.resolve(err({ kind: 'storage-failed' as const, message }));
-  return { list: fail, add: fail, save: fail, setActive: fail, usage: fail, delete: fail };
+  return {
+    list: fail,
+    add: fail,
+    addAll: fail,
+    save: fail,
+    setActive: fail,
+    usage: fail,
+    delete: fail,
+  };
 }
 
 /** The same for beans: the screen opens empty, changes say why they can't be saved. */
@@ -43,6 +51,7 @@ export function unavailableBeans(message: string): BeanRepository {
   return {
     list: fail,
     add: fail,
+    addAll: fail,
     update: fail,
     setArchived: fail,
     addStock: fail,
