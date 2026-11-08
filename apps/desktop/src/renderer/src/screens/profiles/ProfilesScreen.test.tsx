@@ -332,7 +332,8 @@ describe('ProfilesScreen', () => {
     open(fakeApi(), [...BUILT_INS, curve], 'custom-c');
     const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
     expect(headings).toEqual(['Preview', 'Steps', 'Curve points']);
-    const batch = screen.getByRole('textbox', { name: 'Batch' });
+    const batch = screen.getByRole('textbox', { name: 'Tuned for' });
+    expect(batch).toHaveAccessibleDescription('Batch size');
     const preview = screen.getByRole('heading', { name: 'Preview' });
     expect(batch.compareDocumentPosition(preview) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });

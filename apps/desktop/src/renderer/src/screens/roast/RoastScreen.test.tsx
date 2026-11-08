@@ -6,6 +6,8 @@ import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { pick } from '../../test/pick';
 import { addReading } from '../../stores/roast-store';
+import { BEAN } from '../../test/beans';
+import { SKYWALKER } from '../../test/roasters';
 import { BUILT_INS as profiles } from '../../test/profiles';
 import { CONNECTED, fakeApi, renderApp } from '../../test/render-app';
 import { RoastScreen } from './RoastScreen';
@@ -770,6 +772,37 @@ describe('RoastScreen', () => {
       expect(screen.queryByText('Needs calibration')).toBeNull();
       await openSetup();
       expect(screen.getByLabelText('Profile')).toHaveTextContent(/^Light · Steps$/);
+    });
+
+    it("starts the batch at the profile's tuned-for batch without a plan, and warns when far off", async () => {
+      const { stores } = renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...auto('ready'),
+        beans: [{ ...BEAN, batchPlan: null, greenG: 2000 }],
+        roasters: [SKYWALKER],
+      });
+      await openSetup();
+      await pick(screen.getByLabelText('Bean'), /^Yirgacheffe/);
+      expect(stores.beans.getState().setup.batchG).toBe(385);
+      expect(screen.queryByText(/^Profile tuned for/)).toBeNull();
+      const batch = screen.getByLabelText('Batch');
+      await userEvent.clear(batch);
+      await userEvent.type(batch, '300');
+      expect(
+        screen.getByText('Profile tuned for 385 g · a 300 g batch runs hotter and faster'),
+      ).toBeInTheDocument();
+      // A note, not a block: Preheat stays.
+      expect(screen.getByRole('button', { name: 'Preheat' })).toBeEnabled();
+    });
+
+    it("starts the batch at the bean's plan when it has one", async () => {
+      const { stores } = renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...auto('ready'),
+        beans: [{ ...BEAN, greenG: 2000 }],
+        roasters: [SKYWALKER],
+      });
+      await openSetup();
+      await pick(screen.getByLabelText('Bean'), /^Yirgacheffe/);
+      expect(stores.beans.getState().setup.batchG).toBe(375);
     });
 
     it('picks a profile', async () => {

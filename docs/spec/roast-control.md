@@ -19,14 +19,14 @@ roaster's sensor, and heat percentages from its heater. So every profile has a `
 
 ## Profile format
 
-| Field            | Meaning                                                                                  |
-| ---------------- | ---------------------------------------------------------------------------------------- |
-| Batch size (g)   | The batch the profile was written for (Skywalker Light: 385 g)                           |
-| Charge temp (°C) | BT to charge at, reached and held by the preheat routine                                 |
-| Phases           | Ordered list, see below                                                                  |
-| End rule         | Drop at development time after first crack, with a BT cap                                |
-| Curve points     | `(time, BT)` points: the dashed target on the chart, and the RoR `follow` phases aim for |
-| Dry-end temp     | BT where Drying becomes Maillard (marker on the chart)                                   |
+| Field            | Meaning                                                                                                                                                                                                                       |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Batch size (g)   | "Tuned for" in the editor: the batch the profile was tuned for (Skywalker Light: 385 g); the Roast screen starts there without a bean's plan, and notes a batch more than 10 % off ([batch-and-stock.md](batch-and-stock.md)) |
+| Charge temp (°C) | BT to charge at, reached and held by the preheat routine                                                                                                                                                                      |
+| Phases           | Ordered list, see below                                                                                                                                                                                                       |
+| End rule         | Drop at development time after first crack, with a BT cap                                                                                                                                                                     |
+| Curve points     | `(time, BT)` points: the dashed target on the chart, and the RoR `follow` phases aim for                                                                                                                                      |
+| Dry-end temp     | BT where Drying becomes Maillard (marker on the chart)                                                                                                                                                                        |
 
 Each phase:
 

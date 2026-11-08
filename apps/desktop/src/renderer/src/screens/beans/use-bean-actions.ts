@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
 import { activeRoaster } from '../../stores/roasters-store';
+import { activeEntry } from '../roast/use-active-profile';
 import { useAuto, useRoast, useRoasters } from '../../stores/use-stores';
-import { setupForBean } from '../roast/roast-setup';
+import { setupForBean, tunedForG } from '../roast/roast-setup';
 
 /** What a bean's header can do: roast it, make it a profile, archive it; one line when it fails. */
 export function useBeanActions({
@@ -40,10 +41,12 @@ export function useBeanActions({
 
   const roastThis = () => {
     if (!roaster) return;
+    const { settings } = stores.settings.getState();
     const setup = setupForBean(bean, {
       roaster,
       roasts,
-      profileId: stores.settings.getState().settings.autoProfile,
+      profileId: settings.autoProfile,
+      tunedForG: tunedForG(settings, activeEntry(profiles, settings.autoProfile)?.profile),
     });
     stores.beans.setState({ setup });
     run(
