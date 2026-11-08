@@ -87,6 +87,22 @@ export function ProfileActions({
       { failed: "Couldn't copy the profile · try again" },
     );
   };
+  // Saves the profile as it is saved, so an unsaved edit stays an edit.
+  const setNeedsCalibration = (needsCalibration: boolean) => {
+    run(
+      'profiles.calibration-failed',
+      async () => {
+        const saved = await api.saveProfile({ ...entry.profile, needsCalibration });
+        if (!saved.ok) {
+          refused(saved.error);
+          return;
+        }
+        setProblem(undefined);
+        await refresh();
+      },
+      { failed: "Couldn't change the profile · try again" },
+    );
+  };
   const remove = () => {
     run(
       'profiles.delete-failed',
@@ -102,7 +118,8 @@ export function ProfileActions({
       { failed: "Couldn't delete the profile · try again" },
     );
   };
-  const deletable = !entry.builtIn && !(active && locked);
+  const yours = !entry.builtIn && !(active && locked);
+  const { needsCalibration } = entry.profile;
   const more: MenuItem[] = [
     { label: 'Duplicate', onSelect: duplicate },
     ...others.map((roaster) => ({
@@ -111,7 +128,17 @@ export function ProfileActions({
         copyTo(roaster.id, roaster.name);
       },
     })),
-    ...(deletable
+    ...(yours
+      ? [
+          {
+            label: needsCalibration ? 'Mark as calibrated' : 'Mark as needs calibration',
+            onSelect: () => {
+              setNeedsCalibration(!needsCalibration);
+            },
+          },
+        ]
+      : []),
+    ...(yours
       ? [
           {
             label: 'Delete',

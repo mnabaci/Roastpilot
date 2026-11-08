@@ -87,7 +87,8 @@ Visual language: the [Roastpilot design system](../design-system/README.md) (ADR
 
 ## Profiles screen
 
-- **Header:** the profile's name as the title (click to rename; built-ins are read-only), with Built-in, Needs calibration and Not saved as badges; on the right one action for the state: Save and Discard while edited, else Use for Auto, or an AUTO badge if Auto already uses it; then "⋯" with Duplicate, Copy to <roaster> and Delete (red).
+- **Header:** the profile's name as the title (click to rename; built-ins are read-only), with Built-in, Needs calibration and Not saved as badges; on the right one action for the state: Save and Discard while edited, else Use for Auto, or an AUTO badge if Auto already uses it; then "⋯" with Duplicate, Copy to <roaster>, Mark as calibrated (Mark as needs calibration once it is) and Delete (red).
+- **Calibration:** once Auto roasts on your own profile go as planned, Mark as calibrated takes away its Needs calibration, and with it the note on the setup card, the profile picker and the coach card. It saves only that, so an unsaved edit stays one. Built-ins stay as they ship (duplicate one to calibrate it), and the profile Auto is running waits until Drop, as Delete does.
 - **List:** the profile Auto uses carries an AUTO badge (`air`), unsaved ones Edited (an edit undone by hand, like adding a step and removing it, is no edit: no badge, no Save).
 - **Milestone 4:** list on the left (the shared sidebar), editor on the right. Built-ins are read-only with Duplicate; a copy can be renamed, edited, saved, discarded or deleted (asked once inline). "Use for Auto" picks the one Auto runs.
 - Top values: charge temp, dry-end temp, development time, BT cap, batch size.
