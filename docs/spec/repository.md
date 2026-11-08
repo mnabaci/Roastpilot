@@ -68,7 +68,7 @@ Enforced by ESLint (`eslint-plugin-boundaries`) and CI. Only `apps/desktop` may 
 - Conventional commits (`feat:`, `fix:`, `chore:`, `docs:`).
 - GitHub Actions on every PR, on Ubuntu and Windows: install, format check, lint, typecheck, test, build.
 - commitlint checks commit messages; Dependabot opens grouped weekly update PRs.
-- Design tokens flow one way: design system → `packages/ui/tokens.json` (`sync-tokens`) → generated CSS.
+- The design system lives in the repo ([ADR 0020](../adr/0020-design-system-in-the-repo.md)): guidelines in `docs/design-system`, tokens in `packages/ui/tokens.json` → generated CSS (`pnpm --filter @roastpilot/ui tokens`). The claude.ai page is a read-only view regenerated with `/design-sync` after merges.
 
 ## Open source
 

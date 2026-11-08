@@ -1,7 +1,7 @@
 # UI
 
 Seven screens: Roast, History, Beans, Profiles, Roasters, Settings and Logs. The roasting screen is readable from a step back from the laptop.
-Visual language: the [Roastpilot design system](https://claude.ai/artifact/66HZ9N2dqd7ULbqovZktYe). Its components are built in `packages/ui` (`Button`, `Badge`, `StatCard`, `OutputControl`, `CoachCard`, `PhaseStepper`, `AlertBanner`) and shown in Storybook (`pnpm storybook`).
+Visual language: the [Roastpilot design system](../design-system/README.md) (ADR 0020), with a page per component in `docs/design-system/components/`; the [claude.ai page](https://claude.ai/artifact/66HZ9N2dqd7ULbqovZktYe) is a read-only view generated from it with `/design-sync`. The components are built in `packages/ui` and shown in Storybook (`pnpm storybook`).
 
 ## App frame
 

@@ -24,4 +24,4 @@ The source of truth for what Roastpilot does and how it is built. Change the spe
 | [install-and-update.md](install-and-update.md)         | Releases, installers, updates, data across updates               |
 | [build-order.md](build-order.md)                       | Milestones and open questions                                    |
 
-Design system: [Roastpilot](https://claude.ai/artifact/66HZ9N2dqd7ULbqovZktYe) (tokens synced into `packages/ui/tokens.json`).
+Design system: [docs/design-system](../design-system/README.md), the source of truth ([ADR 0020](../adr/0020-design-system-in-the-repo.md)); tokens in `packages/ui/tokens.json`. The [claude.ai page](https://claude.ai/artifact/66HZ9N2dqd7ULbqovZktYe) is a read-only view generated from it with `/design-sync`.
