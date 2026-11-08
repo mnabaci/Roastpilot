@@ -136,7 +136,8 @@ export function buildChartOptions({
       ],
       draw: [
         (u) => {
-          // Marker labels keep off the current-point dot; band names off the labels and lines.
+          // Marker labels keep off the current-point dot; band names off the labels and lines; the
+          // now line breaks under the labels.
           const layer = layers[latestDotLayer];
           const keepClear = layer ? latestDotClearance(u, latestDotLayer + 1, layer) : [];
           const shown = markers();
@@ -144,7 +145,7 @@ export function buildChartOptions({
           drawBandLabels(u, aids(), { labels, lines: markerLineBoxes(u, shown) }, colors);
           drawMarkers(u, shown, colors, { labels: true, keepClear });
           drawProjections(u, aids(), colors);
-          drawNowLines(u, aids(), colors);
+          drawNowLines(u, aids(), colors, labels);
           if (layer) drawLatestDot(u, latestDotLayer + 1, layer, colors);
           drawDragHandles(u, dragging?.drag(), colors);
         },
