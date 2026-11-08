@@ -6,6 +6,7 @@ import {
   type AutoProfile,
   type ProfilePhase,
   type Result,
+  sayInUnit,
 } from '@roastpilot/shared';
 import { formatClock } from '@roastpilot/ui';
 import { reader, type Reader } from './draft-reader';
@@ -189,7 +190,7 @@ export function fromDraft(
   if (parsed.success) return ok(parsed.data);
   const errors: Record<string, string> = {};
   for (const issue of parsed.error.issues) {
-    errors[cellOf(issue.path, soak !== undefined)] ??= issue.message;
+    errors[cellOf(issue.path, soak !== undefined)] ??= sayInUnit(issue.message, 'c');
   }
   return err(errors);
 }

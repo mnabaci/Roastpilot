@@ -1,5 +1,18 @@
+import { sayInUnit } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import { curveReason, phaseReason, STALLING, stepReason } from './coach-reason';
+import {
+  curveReason as curveTokens,
+  phaseReason as phaseTokens,
+  STALLING,
+  stepReason as stepTokens,
+} from './coach-reason';
+
+// What the card says in °C.
+const curveReason = (...args: Parameters<typeof curveTokens>) =>
+  sayInUnit(curveTokens(...args), 'c');
+const stepReason = (...args: Parameters<typeof stepTokens>) => sayInUnit(stepTokens(...args), 'c');
+const phaseReason = (...args: Parameters<typeof phaseTokens>) =>
+  sayInUnit(phaseTokens(...args), 'c');
 
 describe('coach reasons', () => {
   it('says how far BT is from the curve, and where RoR is heading', () => {
@@ -18,6 +31,12 @@ describe('coach reasons', () => {
   it('names a phase and where it began', () => {
     expect(phaseReason('Maillard', 150.4)).toBe('Maillard from 150 °C');
     expect(phaseReason('Soak', undefined)).toBe('Soak');
+  });
+
+  it('says it all in °F, a gap and a RoR without + 32', () => {
+    expect(sayInUnit(curveTokens(-4, 'falling'), 'f')).toBe('7.2 °F below target, RoR falling');
+    expect(sayInUnit(stepTokens(6.54, 8, 12), 'f')).toBe('RoR 11.7 · step wants 14.4–21.6');
+    expect(sayInUnit(phaseTokens('Maillard', 150), 'f')).toBe('Maillard from 302 °F');
   });
 
   it('says so when RoR stalls', () => {

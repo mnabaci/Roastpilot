@@ -1,4 +1,11 @@
-import { err, MilestonesSchema, ok, type Milestones, type Result } from '@roastpilot/shared';
+import {
+  err,
+  MilestonesSchema,
+  ok,
+  sayInUnit,
+  type Milestones,
+  type Result,
+} from '@roastpilot/shared';
 import { formatClock } from '@roastpilot/ui';
 import { reader } from './draft-reader';
 import type { DraftErrors, PointDraft } from './profile-draft';
@@ -56,7 +63,9 @@ export function fromMilestoneDraft(draft: MilestoneDraft): Result<Milestones, Dr
   const parsed = MilestonesSchema.safeParse(candidate);
   if (parsed.success) return ok(parsed.data);
   const errors: Record<string, string> = {};
-  for (const issue of parsed.error.issues) errors[cellOf(issue.path)] ??= issue.message;
+  for (const issue of parsed.error.issues) {
+    errors[cellOf(issue.path)] ??= sayInUnit(issue.message, 'c');
+  }
   return err(errors);
 }
 

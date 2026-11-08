@@ -1,6 +1,7 @@
 import {
   err,
   ok,
+  sayInUnit,
   type CoachSetting,
   type CoachStatus,
   type Reading,
@@ -172,7 +173,11 @@ export class Coach {
       gaps: gapsOf(input),
       set: input.set,
     });
-    if (posted) this.#logger.info('coach.suggested', { ...posted });
+    // The log says the reason in °C; the card says it in your unit.
+    if (posted) {
+      const reason = posted.kind === 'setting' ? { reason: sayInUnit(posted.reason, 'c') } : {};
+      this.#logger.info('coach.suggested', { ...posted, ...reason });
+    }
   }
 
   /** A run for this roast, caught up from charge and starting from your heater. */

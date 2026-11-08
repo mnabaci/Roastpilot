@@ -1,4 +1,4 @@
-import { RoasterSchema, type Result, type Roaster } from '@roastpilot/shared';
+import { RoasterSchema, sayInUnit, type Result, type Roaster } from '@roastpilot/shared';
 import { formatClock } from '@roastpilot/ui';
 
 /** The roaster editor's cells, as typed. */
@@ -132,7 +132,7 @@ export function fromRoasterDraft(
   if (parsed.success) return { ok: true, value: parsed.data };
   for (const issue of parsed.error.issues) {
     const cell = CELL_OF[issue.path.join('.')];
-    if (cell) errors[cell] ??= issue.message;
+    if (cell) errors[cell] ??= sayInUnit(issue.message, 'c');
   }
   return { ok: false, error: errors };
 }

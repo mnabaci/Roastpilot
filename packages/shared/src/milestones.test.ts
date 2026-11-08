@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MilestonesSchema, type Milestones } from './milestones';
+import { sayInUnit } from './units';
 
 /** Light · Curve's milestones (docs/spec/roast-control.md, Milestone builder). */
 const LIGHT: Milestones = {
@@ -11,10 +12,12 @@ const LIGHT: Milestones = {
   extras: [],
 };
 
-/** Each problem as `path: message`, so a test names the cell it lands on. */
+/** Each problem as `path: message` in °C, so a test names the cell it lands on. */
 function problems(milestones: Milestones): string[] {
   const parsed = MilestonesSchema.safeParse(milestones);
-  return parsed.success ? [] : parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`);
+  return parsed.success
+    ? []
+    : parsed.error.issues.map((i) => `${i.path.join('.')}: ${sayInUnit(i.message, 'c')}`);
 }
 
 describe('MilestonesSchema', () => {
@@ -22,8 +25,14 @@ describe('MilestonesSchema', () => {
     expect(problems(LIGHT)).toEqual([]);
   });
 
+  it('says its limits in °F when the screen shows °F', () => {
+    const parsed = MilestonesSchema.safeParse({ ...LIGHT, drop: { tS: 663, c: 233 } });
+    const message = parsed.success ? '' : (parsed.error.issues[0]?.message ?? '');
+    expect(sayInUnit(message, 'f')).toBe('At most 450 °F');
+  });
+
   it('keeps charge inside the profile limits', () => {
-    expect(problems({ ...LIGHT, chargeC: 240 })).toEqual(['chargeC: Between 100 and 230 °C']);
+    expect(problems({ ...LIGHT, chargeC: 240 })).toEqual(['chargeC: Between 100 °C and 230 °C']);
   });
 
   it('puts the turning point after charge and cooler than it', () => {

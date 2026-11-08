@@ -1,6 +1,6 @@
 import { silentLogger, type ProfileRepository } from '@roastpilot/core';
 import { BUILT_IN_ROASTERS, SKYWALKER_PROFILES } from '@roastpilot/drivers';
-import { err, ok, type AutoProfile, type Roaster } from '@roastpilot/shared';
+import { err, ok, tempInText, type AutoProfile, type Roaster } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { ProfileService } from '../profiles/profile-service';
 import { exported, filesOf, without } from './codec-test-kit';
@@ -105,7 +105,7 @@ describe('profile files', () => {
   it('refuses a profile that fails the checks Save makes', async () => {
     const bad = without({ ...MINE, capC: 250 }, 'id');
     expect(await filesOf('profiles', setup().codec).importFile(fileOf([bad]))).toEqual(
-      err({ kind: 'bad-item', name: 'Mine', reason: 'BT cap: At most 235 °C' }),
+      err({ kind: 'bad-item', name: 'Mine', reason: `BT cap: At most ${tempInText(235)}` }),
     );
   });
 
@@ -116,7 +116,7 @@ describe('profile files', () => {
       err({
         kind: 'bad-item',
         name: 'Mine',
-        reason: `BT cap ${String(MINE.capC)} °C is above this roaster's ${String(MINE.capC - 5)} °C`,
+        reason: `BT cap ${tempInText(MINE.capC)} is above this roaster's ${tempInText(MINE.capC - 5)}`,
       }),
     );
     const short = setup([], { maxTimeS: 5 * 60 });

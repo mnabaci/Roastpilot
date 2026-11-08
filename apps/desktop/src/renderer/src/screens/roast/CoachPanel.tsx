@@ -1,3 +1,4 @@
+import { sayInUnit } from '@roastpilot/shared';
 import { CoachCard } from '@roastpilot/ui';
 import { useRef, useState } from 'react';
 import { useDeps } from '../../app/app-context';
@@ -63,7 +64,7 @@ export function CoachPanel() {
     <CoachCard
       changes={coachChanges(advice)}
       applying={applyingId === advice.id}
-      reason={advice.reason}
+      reason={sayInUnit(advice.reason, 'c')}
       {...(note ? { note } : {})}
       onApply={apply}
       onDismiss={dismiss}

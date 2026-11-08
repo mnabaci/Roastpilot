@@ -1,4 +1,4 @@
-import { FILE_KINDS, type FileKind } from '@roastpilot/shared';
+import { FILE_KINDS, sayInUnit, type FileKind } from '@roastpilot/shared';
 
 /** One and many of each kind, as the toasts say it. */
 const NOUNS: Readonly<Record<FileKind, readonly [string, string]>> = {
@@ -36,6 +36,8 @@ export function importProblemText(problem: ImportProblem): string {
     const { screen } = FILE_KINDS[problem.fileKind];
     return `This is a ${NOUNS[problem.fileKind][1]} file · import it on ${screen}`;
   }
-  if ('reason' in problem) return `"${problem.name}" can't come in · ${problem.reason}`;
+  if ('reason' in problem) {
+    return `"${problem.name}" can't come in · ${sayInUnit(problem.reason, 'c')}`;
+  }
   return PROBLEMS[problem.kind] ?? "Couldn't import · see Logs";
 }
