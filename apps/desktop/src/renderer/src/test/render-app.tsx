@@ -1,15 +1,17 @@
-import { silentLogger } from '@roastpilot/core';
+import { silentLogger, type Logger } from '@roastpilot/core';
 import {
   DEFAULT_SETTINGS,
   SAFETY_NOTICE_VERSION,
   type ConnectionState,
   type RoastpilotApi,
 } from '@roastpilot/shared';
+import { PlotEngineProvider } from '@roastpilot/ui';
 import { render } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { vi, type Mocked } from 'vitest';
 import { AppProvider } from '../app/AppProvider';
 import type { ChimePlayer } from '../features/chime';
+import { fakePlotEngine } from './fake-plot-engine';
 import { createStores, type StoresSeed } from '../stores/stores';
 import { fakeAppApi } from './fake-api';
 import { withSpies } from './with-spies';
@@ -42,12 +44,22 @@ export const ACCEPTED_SETTINGS = {
   safetyNoticeAccepted: SAFETY_NOTICE_VERSION,
 };
 
-/** Renders `ui` with stores already seeded (and ready), and returns the fakes. */
-export function renderApp(ui: ReactNode, seed: StoresSeed = {}, api = fakeApi()) {
+/**
+ * Renders `ui` with stores already seeded (and ready), and returns the fakes. Charts draw through
+ * a fake plot engine (jsdom has no canvas), so no test needs to mock a module.
+ */
+export function renderApp(
+  ui: ReactNode,
+  seed: StoresSeed = {},
+  api = fakeApi(),
+  logger: Logger = silentLogger,
+) {
   const stores = createStores({ ready: true, settings: ACCEPTED_SETTINGS, ...seed });
   const chime = fakeChime();
   const view = render(
-    <AppProvider deps={{ api, stores, logger: silentLogger, chime }}>{ui}</AppProvider>,
+    <PlotEngineProvider value={fakePlotEngine}>
+      <AppProvider deps={{ api, stores, logger, chime }}>{ui}</AppProvider>
+    </PlotEngineProvider>,
   );
   return { ...view, api, stores, chime };
 }

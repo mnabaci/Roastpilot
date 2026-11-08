@@ -6,7 +6,6 @@ import {
   type RoastPhase,
   type RoastSummary,
 } from '@roastpilot/shared';
-import type * as Ui from '@roastpilot/ui';
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -16,11 +15,6 @@ import { BEAN } from '../../test/beans';
 import { STEPS } from '../../test/profiles';
 import { fakeApi, renderApp } from '../../test/render-app';
 import { HistoryScreen } from './HistoryScreen';
-
-vi.mock('@roastpilot/ui', async (importOriginal) => ({
-  ...(await importOriginal<typeof Ui>()),
-  RoastChart: (await import('../../test/fake-ui')).FakeRoastChart,
-}));
 
 const summary = (id: number, startedAt: string, over: Partial<RoastSummary> = {}) => ({
   id,
@@ -117,7 +111,11 @@ async function pickDelete() {
   await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
 }
 
-const chartLayers = () => screen.getByRole('region', { name: 'Roast curve' }).dataset.layers;
+/** The chart legend's entries, back to front. */
+const legend = () =>
+  within(screen.getByRole('list', { name: 'Legend' }))
+    .getAllByRole('listitem')
+    .map((item) => item.textContent);
 
 describe('HistoryScreen', () => {
   it('says how roasts get here when there are none', async () => {
@@ -145,13 +143,14 @@ describe('HistoryScreen', () => {
   it('Compare with draws the other roast as a ghost line', async () => {
     setup();
     await screen.findByRole('region', { name: 'Roast curve' });
-    expect(chartLayers()).not.toContain('compare-bt');
+    const own = legend();
     await userEvent.click(screen.getByRole('button', { name: 'Compare: None' }));
     const [, other] = screen.getAllByRole('option');
     if (!other) throw new Error('expected another roast to compare with');
     await userEvent.click(other);
+    // The other roast goes behind this one's lines, named after it.
     await vi.waitFor(() => {
-      expect(chartLayers()).toContain('compare-bt');
+      expect(legend()).toEqual([expect.stringMatching(/Nov/), ...own]);
     });
   });
 
