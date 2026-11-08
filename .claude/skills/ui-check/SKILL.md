@@ -38,6 +38,8 @@ pnpm ui click Settings Appearance Light Roasters   # then the same shots in Ligh
 
 ## Check
 
+- **README scenes:** after a screen change, run `pnpm screenshots` and read every changed `docs/images/*.png` for clipping, artefacts and stale copy. A scene's moment or clicks change in `apps/desktop/src/screenshots/scenes.ts` or `sample-world.ts`, never in the PNGs. No app or data folder needed: it renders the screens from sample data.
+
 - Every screen the change touches, at 960 × 640 and 1600 × 1000, in Dark and Light. Scroll long screens to the end too.
 - `noSideScroll` and `noPageScroll` must both be `true` in every shot's output.
 - **Open and look at every screenshot** (read the PNG). Then measure what should line up (`design-review` › Measure).

@@ -79,7 +79,13 @@ export default defineConfig(
 
   // Electron main and preload run in Node.
   {
-    files: ['apps/desktop/src/main/**', 'apps/desktop/src/preload/**', '**/*.config.ts'],
+    files: [
+      'apps/desktop/src/main/**',
+      'apps/desktop/src/preload/**',
+      'apps/desktop/src/screenshots/**',
+      'apps/desktop/.storybook/**',
+      '**/*.config.ts',
+    ],
     languageOptions: { globals: globals.node },
   },
 

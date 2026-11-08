@@ -42,9 +42,11 @@ Claude Code runs these as skills; other agents open and follow the file. Skill `
 - **Safety first:** any path that can leave the heater on must end in `safeStop()`; safety rules are tested.
 - **Roasting practice:** anything Auto or the coach does or suggests must make sense to a roaster (charge, soak, turning point, dry end, first crack, development, drop) and match `docs/spec/roast-control.md`.
 - **Errors are handled, never hidden:** expected failures are typed `Result`s; only programmer errors throw. No empty `catch`, and no fire-and-forget promise without a `.catch` that logs. Every error path and edge case (timeouts, disconnects, bad input, hardware faults) has a test. See `docs/spec/errors-and-logging.md`.
+- **UI tests share one environment per worker:** never `vi.mock` a module in a UI test; inject the dependency (e.g. the chart engine provider `PlotEngineProvider`) instead, and restore anything you change on globals.
 - **Log what matters:** through the injected `Logger`, never `console`. Structured events with context; log every failure and state change, not every reading.
 - **Fix what you find:** if a file you touch or read for a change breaks these rules or a skill's checklist, refactor it to comply in the same PR, as its own `refactor:` commit. Don't build on top of a violation.
 - **Never touch the user's data:** run the app only on a throwaway data folder (`ui-check`), never the real one.
+- **README screenshots stay current:** a UI change that shows in a README scene runs `pnpm screenshots` and commits the changed `docs/images/*.png` in the same PR. Never edit the PNGs by hand; change a scene in `apps/desktop/src/screenshots/` instead. Its guard test must stay green.
 
 ## Package boundaries
 
@@ -68,6 +70,8 @@ pnpm test:watch     # tests in watch mode
 pnpm test:coverage  # tests with coverage
 pnpm storybook      # component workshop at http://localhost:6006 (dark/light switch in the toolbar)
 pnpm ui <command>   # drive and screenshot the running app (ui-check skill)
+pnpm storybook:app  # the app's screens on sample data at http://localhost:6008
+pnpm screenshots    # regenerate the README screenshots (docs/images) in headless Chrome
 pnpm --filter @roastpilot/ui tokens   # regenerate CSS from tokens.json
 ```
 

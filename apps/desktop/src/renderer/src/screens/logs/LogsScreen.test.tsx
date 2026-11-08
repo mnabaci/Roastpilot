@@ -61,7 +61,8 @@ beforeEach(() => {
   Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
 });
 afterEach(() => {
-  vi.restoreAllMocks();
+  // jsdom has no clipboard; take the fake away again (test files share one jsdom).
+  Reflect.deleteProperty(navigator, 'clipboard');
 });
 
 describe('LogsScreen', () => {

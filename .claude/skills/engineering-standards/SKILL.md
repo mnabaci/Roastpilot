@@ -46,6 +46,7 @@ Read this before touching code. It is the checklist `code-review` holds you to.
 - Vitest, next to the code: `thing.ts` + `thing.test.ts`.
 - Every rule, controller, state transition and safety condition has a test, using `SimulatedDriver` and a fake clock.
 - Test behaviour through public APIs, not private details.
+- UI tests share one environment per worker: never `vi.mock` a module in a UI test; inject the dependency (e.g. the chart engine provider `PlotEngineProvider`) instead, and restore anything you change on globals.
 
 ## 6. Finish
 

@@ -14,7 +14,7 @@ const print = (value: unknown): void => {
 
 async function shot(session: CdpSession, command: Extract<Command, { kind: 'shot' }>) {
   // The size override lasts as long as this connection, so measure and shoot in it.
-  await session.call('Emulation.setDeviceMetricsOverride', {
+  await session.send('Emulation.setDeviceMetricsOverride', {
     width: command.width,
     height: command.height,
     deviceScaleFactor: command.scale,
@@ -24,7 +24,7 @@ async function shot(session: CdpSession, command: Extract<Command, { kind: 'shot
   if (command.scrollEnd !== undefined)
     print(await evaluate(session, scrollToEnd(command.scrollEnd)));
   print(await evaluate(session, measureOverflow));
-  const { data } = await session.call<{ data: string }>('Page.captureScreenshot', {
+  const { data } = await session.send<{ data: string }>('Page.captureScreenshot', {
     format: 'png',
   });
   const file = resolve(command.file);

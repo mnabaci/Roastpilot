@@ -1,8 +1,11 @@
 import { useEffect, useRef, type RefObject } from 'react';
-import uPlot from 'uplot';
+import type uPlot from 'uplot';
 import type { ChartMarker } from './chart-layer';
+import type { Plot, PlotEngine } from './plot-engine';
 
 export interface UplotInput {
+  /** What draws the plot (`usePlotEngine()`). */
+  engine: PlotEngine;
   element: RefObject<HTMLDivElement | null>;
   /** Rebuild only when this changes (the set of layers, the height); new points are a setData. */
   structure: string;
@@ -17,8 +20,9 @@ export interface UplotInput {
   ) => uPlot.Options;
 }
 
-/** Runs one uPlot in `element`: built on a structure change, fed by setData, redrawn for markers, resized with width. */
+/** Runs one plot in `element`: built on a structure change, fed by setData, redrawn for markers, resized with width. */
 export function useUplot({
+  engine,
   element,
   structure,
   width,
@@ -27,7 +31,7 @@ export function useUplot({
   markers,
   build,
 }: UplotInput): void {
-  const chartRef = useRef<uPlot | null>(null);
+  const chartRef = useRef<Plot | null>(null);
   const markersRef = useRef(markers);
   const dataRef = useRef(data);
   const buildRef = useRef(build);
@@ -40,7 +44,7 @@ export function useUplot({
   useEffect(() => {
     const el = element.current;
     if (!el) return;
-    const chart = new uPlot(
+    const chart = engine.create(
       buildRef.current({ width: width || el.clientWidth || 600, height }, () => markersRef.current),
       dataRef.current,
       el,
@@ -52,7 +56,7 @@ export function useUplot({
     };
     // Width changes are a setSize below; points are a setData. Only structure and height rebuild.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [structure, height, element]);
+  }, [structure, height, element, engine]);
 
   useEffect(() => {
     chartRef.current?.setData(data);

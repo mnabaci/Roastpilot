@@ -5,8 +5,12 @@ packages:
 onlyBuiltDependencies:
   - electron
   - esbuild
-  - better-sqlite3
   - '@serialport/bindings-cpp'
+
+# drizzle-kit's optional SQLite driver: the app uses node:sqlite, and `drizzle-kit generate` needs
+# no driver, so it is never compiled (its native build breaks on new Windows images).
+ignoredBuiltDependencies:
+  - better-sqlite3
 
 # Patched versions of build-only dependencies Dependabot can't bump through their parents.
 overrides:

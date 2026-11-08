@@ -9,6 +9,7 @@ roastpilot/
     src/main/            composition root: wires core, drivers, storage; IPC handlers
     src/preload/         contextBridge facade
     src/renderer/        screens, Zustand stores, feature components
+    src/screenshots/     README scenes: main's services headless on the Simulator, as Storybook stories
   packages/
     core/                pure TypeScript: state machine, PID, controllers, rules, registries, events
     drivers/             RoasterDriver + Transport implementations (Skywalker TC4, Simulator, Serial)

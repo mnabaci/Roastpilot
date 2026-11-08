@@ -44,6 +44,8 @@ How the app's safety rules work: [docs/spec/safety.md](docs/spec/safety.md).
 
 ## Screenshots
 
+Regenerate with `pnpm screenshots`.
+
 Auto mid-roast on the Simulator: following the Light · Curve plan, with a 5★ roast as the ghost.
 
 ![Roast screen in Auto, mid-roast, with the ghost and the plan](docs/images/roast-auto.png)
