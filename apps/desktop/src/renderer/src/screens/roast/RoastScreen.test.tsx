@@ -805,6 +805,44 @@ describe('RoastScreen', () => {
       expect(stores.beans.getState().setup.batchG).toBe(375);
     });
 
+    it('labels the suggested profile, says why, and Use this profile picks it', async () => {
+      const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...auto('ready'),
+        settings: { ...settings, autoProfile: 'light-curve' },
+        beans: [BEAN],
+        setup: { beanId: BEAN.id, batchG: 375, ghostRoastId: null },
+        roasters: [SKYWALKER],
+      });
+      await openSetup();
+      const row = screen.getByRole('region', { name: 'Suggested profile' });
+      expect(row).toHaveTextContent(
+        'Suggested profileLight · Steps' +
+          'Use this profile' +
+          'The default · star a roast of this bean to improve it',
+      );
+      // The bean hint says why it speaks.
+      expect(
+        screen.getByText(
+          'Dense beans (830 g/L): these often take heat slowly · consider more heat early',
+        ),
+      ).toBeInTheDocument();
+      await userEvent.click(within(row).getByRole('button', { name: 'Use this profile' }));
+      expect(api.setSettings).toHaveBeenCalledWith(
+        expect.objectContaining({ autoProfile: 'light-steps' }),
+      );
+    });
+
+    it('hides the suggestion when it is already the profile picked', async () => {
+      renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...auto('ready'),
+        beans: [BEAN],
+        setup: { beanId: BEAN.id, batchG: 375, ghostRoastId: null },
+        roasters: [SKYWALKER],
+      });
+      await openSetup();
+      expect(screen.queryByRole('region', { name: 'Suggested profile' })).toBeNull();
+    });
+
     it('picks a profile', async () => {
       const { api } = renderApp(<RoastScreen onConnect={onConnect} />, auto('ready'));
       await openSetup();
