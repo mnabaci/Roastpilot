@@ -2,4 +2,4 @@
 
 Types, the IPC contract with zod schemas, units and constants shared by every package.
 
-May import: nothing internal. See `CLAUDE.md` for the rules that apply here.
+May import: nothing internal. See `AGENTS.md` for the rules that apply here.
