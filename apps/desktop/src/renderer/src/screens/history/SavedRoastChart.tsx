@@ -31,7 +31,7 @@ export function SavedRoastChart({
       ),
     [detail, compare, compareLabel, smoothingS],
   );
-  const focus = useMemo(() => savedRoastFocus(detail), [detail]);
+  const focus = useMemo(() => savedRoastFocus(detail, compare), [detail, compare]);
   return (
     <RoastChart
       title="Roast curve"

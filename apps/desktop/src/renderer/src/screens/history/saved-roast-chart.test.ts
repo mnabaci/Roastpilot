@@ -117,6 +117,26 @@ describe('savedRoastFocus', () => {
     expect(savedRoastFocus(unfinished)).toEqual({ fromS: -30, toS: 690 });
   });
 
+  it('reaches the end of a longer compared roast, so its crack and drop stay in view', () => {
+    const short = roast({
+      dropTimeS: 480,
+      events: [{ kind: 'drop', tS: 480, bt: 199 }],
+      samples: [
+        { tS: -420, values: { bt: 150 } },
+        { tS: 480, values: { bt: 199 } },
+      ],
+    });
+    // The compared roast cools until 15:00.
+    expect(savedRoastFocus(short, roast({}))).toEqual({ fromS: -30, toS: 930 });
+    // A shorter compared roast changes nothing.
+    expect(savedRoastFocus(roast({}), short)).toEqual({ fromS: -30, toS: 930 });
+  });
+
+  it("offers Show preheat for the compared roast's preheat alone", () => {
+    const noPreheat = roast({ samples: [{ tS: 0, values: { bt: 180 } }] });
+    expect(savedRoastFocus(noPreheat, roast({}))).toEqual({ fromS: -30, toS: 930 });
+  });
+
   it('is none when it would hide nothing, so there is no Show preheat', () => {
     const noPreheat = roast({ samples: [{ tS: 0, values: { bt: 180 } }] });
     expect(savedRoastFocus(noPreheat)).toBeUndefined();
