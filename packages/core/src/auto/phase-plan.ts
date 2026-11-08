@@ -39,6 +39,12 @@ export function isSoak(profile: AutoProfile, phaseIndex: number): boolean {
   return phaseIndex === 0 && profile.phases[0]?.heat.mode === 'fixed';
 }
 
+/** How long the opening soak runs, in seconds; 0 for a profile that starts without one. */
+export function soakLengthS(profile: AutoProfile): number {
+  const [first] = profile.phases;
+  return isSoak(profile, 0) && first?.next.on === 'time' ? first.next.afterS : 0;
+}
+
 /** The profile with its opening soak set to `soakS`: a fixed phase that ends on time. */
 export function withSoakTime(profile: AutoProfile, soakS: number): AutoProfile {
   return {
@@ -49,16 +55,4 @@ export function withSoakTime(profile: AutoProfile, soakS: number): AutoProfile {
         : phase,
     ),
   };
-}
-
-/**
- * Whether dry end has come. The temperature starts above it at charge and falls through it, so it
- * only counts after the soak, once the roast is climbing.
- */
-export function dryEndReached(
-  profile: AutoProfile,
-  phaseIndex: number,
-  btC: number | undefined,
-): boolean {
-  return phaseIndex > 0 && btC !== undefined && btC >= profile.dryEndC;
 }

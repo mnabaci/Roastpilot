@@ -138,8 +138,20 @@ describe('profileFromRoast, around charge', () => {
     expect(make(cold)).toBeUndefined();
   });
 
+  it('with the heater on from charge, there is no soak: the first step starts at charge', () => {
+    const phases = make(withBt(dip))?.phases;
+    expect(phases?.[0]).toMatchObject({ name: 'Step 1', heat: { mode: 'target', pct: 60 } });
+    expect(phases?.some((p) => p.heat.mode === 'fixed')).toBe(false);
+  });
+
+  it('times the first step from charge without a soak, so the plan keeps the roast time', () => {
+    const first = make(withBt(dip))?.phases[0];
+    if (first?.heat.mode !== 'target' || first.next.on !== 'bt') throw new Error('expected a step');
+    expect(first.heat.durationS).toBe(first.next.backupS - 60);
+  });
+
   it('with the heater on through the dip, the first step only climbs', () => {
-    const step = make(withBt(dip))?.phases[1];
+    const step = make(withBt(dip))?.phases[0];
     if (step?.heat.mode !== 'target') throw new Error('expected a target step');
     expect(step.heat.rorMin).toBeGreaterThan(0);
   });

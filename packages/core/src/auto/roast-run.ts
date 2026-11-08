@@ -3,7 +3,8 @@ import { BEAN_TEMP } from '../safety/safety-rule';
 import { dueEndRule, type EndRule } from './end-rules';
 import { heatControlFor } from './heat-control';
 import type { OutputController } from './output-controller';
-import { advancePhase, dryEndReached } from './phase-plan';
+import { DryEndWatch } from './dry-end-watch';
+import { advancePhase, isSoak } from './phase-plan';
 import { SettledBt } from './settled-bt';
 import { StallGuard } from './stall-guard';
 
@@ -47,7 +48,7 @@ export class RoastRun {
   #phaseStartedS = 0;
   #control: OutputController | undefined;
   #lastMs: number;
-  #dryEnd = false;
+  readonly #dryEnd: DryEndWatch;
   #stallTripped = false;
   /** The heater sent last, and what a following curve phase starts from. */
   #lastHeaterPct: number | undefined;
@@ -58,6 +59,7 @@ export class RoastRun {
     this.#tuning = tuning;
     this.#chargedAtMs = chargedAtMs;
     this.#lastMs = chargedAtMs;
+    this.#dryEnd = new DryEndWatch(profile);
   }
 
   get chargedAtMs(): number {
@@ -117,7 +119,7 @@ export class RoastRun {
         this.#index = nextIndex;
         this.#phaseStartedS = elapsedS;
       }
-      if (dryEndReached(this.#profile, this.#index, btC)) this.#dryEnd = true;
+      this.#dryEnd.next(this.#index, btC);
       this.#lastMs = atMs;
     }
   }
@@ -140,25 +142,21 @@ export class RoastRun {
       this.#control = undefined;
       events.push({ kind: 'phase', name: this.phaseName ?? '' });
     }
-    if (!this.#dryEnd && dryEndReached(this.#profile, this.#index, btC)) {
-      this.#dryEnd = true;
-      events.push({ kind: 'dry-end' });
-    }
+    if (this.#dryEnd.next(this.#index, btC)) events.push({ kind: 'dry-end' });
 
     const phase = this.#profile.phases[this.#index];
     const plannedFanPct = phase?.fanPct ?? 0;
-    // The soak is fixed by design: the guard starts when the soak ends.
-    const guarded =
-      this.#index > 0
-        ? this.#guard.update({
-            elapsedS,
-            ror,
-            plannedFanPct,
-            firstCracked,
-            // How the heat control ended the last reading: heat goes first, the fan last.
-            heaterMaxed: this.#control?.maxed ?? false,
-          })
-        : { tripped: false, fanPct: plannedFanPct };
+    // The soak is fixed by design: the guard starts when the soak ends, or at charge without one.
+    const guarded = !isSoak(this.#profile, this.#index)
+      ? this.#guard.update({
+          elapsedS,
+          ror,
+          plannedFanPct,
+          firstCracked,
+          // How the heat control ended the last reading: heat goes first, the fan last.
+          heaterMaxed: this.#control?.maxed ?? false,
+        })
+      : { tripped: false, fanPct: plannedFanPct };
     if (guarded.tripped !== this.#stallTripped) {
       this.#stallTripped = guarded.tripped;
       events.push({ kind: 'stall-guard', tripped: guarded.tripped });
