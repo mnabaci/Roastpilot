@@ -11,7 +11,7 @@ The repo is the design system's source of truth (ADR 0020, `docs/adr/0020-design
 | ----------- | --------------------------------------------------- |
 | Tokens      | `packages/ui/tokens.json`                           |
 | Brand book  | `docs/design-system/README.md`                      |
-| Guidelines  | `docs/design-system/components/<Name>.md`           |
+| Guidelines  | `docs/design-system/components/<Name>/README.md`    |
 | Previews    | `docs/design-system/components/<Name>/preview.html` |
 | Live states | Storybook (`pnpm storybook`)                        |
 
