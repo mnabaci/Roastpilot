@@ -46,15 +46,18 @@ export class SqliteRoasterRepository implements RoasterRepository {
       this.#logger.warn('storage.roaster-unreadable', { id: row.id, model });
       return [];
     }
-    const target = ConnectTargetSchema.safeParse(connection && parseJson(connection));
+    // NULL is a roaster with no port picked yet (the seeded Skywalker): valid, not unreadable.
+    const target =
+      connection === null ? null : ConnectTargetSchema.safeParse(parseJson(connection));
     // A lost connection only means picking the port again; the record itself stays.
-    if (!target.success) this.#logger.warn('storage.roaster-connection-unreadable', { id: row.id });
+    if (target?.success === false)
+      this.#logger.warn('storage.roaster-connection-unreadable', { id: row.id });
     return [
       {
         ...plain,
         model: knownModel.data,
         tuning: tuning.data,
-        connection: target.success ? target.data : null,
+        connection: target?.success ? target.data : null,
         active: isActive,
       },
     ];

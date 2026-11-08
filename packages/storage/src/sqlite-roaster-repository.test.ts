@@ -138,11 +138,34 @@ describe('SqliteRoasterRepository', () => {
     });
   });
 
-  it('keeps a roaster whose connection no longer parses, without one, and logs it', async () => {
-    const { repository, sqlite, entries } = setup();
-    sqlite.exec(`UPDATE roasters SET connection = '{"kind":"usb"' WHERE id = 1`);
+  it('reads a fresh database, Skywalker with no port picked yet, without a warning', async () => {
+    const { repository, entries } = setup();
     const [skywalker] = await listed(repository);
     expect(skywalker).toMatchObject({ id: 1, connection: null });
-    expect(entries.map((e) => e.event)).toContain('storage.roaster-connection-unreadable');
+    expect(entries.filter((e) => e.level === 'warn' || e.level === 'error')).toEqual([]);
+  });
+
+  it('reads a connection saved as none back as none, without a warning', async () => {
+    const { repository, entries } = setup();
+    const [, simulator] = await listed(repository);
+    if (!simulator) throw new Error('no simulator');
+    await repository.save({ ...simulator, connection: null });
+    expect((await listed(repository))[1]).toMatchObject({ id: 2, connection: null });
+    expect(entries.map((e) => e.event)).not.toContain('storage.roaster-connection-unreadable');
+  });
+
+  it.each([
+    ['is not JSON', '{"kind":"usb"'],
+    ['is JSON of an unknown kind', '{"kind":"usb"}'],
+    ['is an empty text', ''],
+  ])('keeps a roaster whose connection %s, without one, and logs it', async (_name, stored) => {
+    const { repository, sqlite, entries } = setup();
+    sqlite.prepare('UPDATE roasters SET connection = ? WHERE id = 1').run(stored);
+    const [skywalker] = await listed(repository);
+    expect(skywalker).toMatchObject({ id: 1, connection: null });
+    expect(entries.find((e) => e.event === 'storage.roaster-connection-unreadable')).toMatchObject({
+      level: 'warn',
+      context: { id: 1 },
+    });
   });
 });

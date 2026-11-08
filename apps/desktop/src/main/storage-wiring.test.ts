@@ -1,4 +1,5 @@
-import { silentLogger } from '@roastpilot/core';
+import { createLogger, silentLogger } from '@roastpilot/core';
+import type { LogEntry } from '@roastpilot/shared';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -25,6 +26,17 @@ describe('openStores', () => {
     expect(await stores.roasterStore.list()).toMatchObject({ ok: true });
     expect(await stores.beanStore.list()).toMatchObject({ ok: true });
     stores.close();
+  });
+
+  it('a fresh database starts without a storage warning', async () => {
+    const entries: LogEntry[] = [];
+    const logger = createLogger({ write: (e) => entries.push(e) }, 'main');
+    const stores = openStores(join(tempDir(), 'roastpilot.db'), systemClock, logger);
+    expect(await stores.roasterStore.list()).toMatchObject({ ok: true });
+    expect(await stores.profileStore.list()).toMatchObject({ ok: true });
+    expect(await stores.beanStore.list()).toMatchObject({ ok: true });
+    stores.close();
+    expect(entries.filter((e) => e.level === 'warn' || e.level === 'error')).toEqual([]);
   });
 
   it('without a database every store fails with the reason, and close does nothing', async () => {
