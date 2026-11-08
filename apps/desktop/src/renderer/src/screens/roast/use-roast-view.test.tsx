@@ -11,7 +11,7 @@ interface Moment {
   /** The live line's coolest point and its last time. */
   lowestC: number;
   nowS: number;
-  ghost: { dropS?: number; tpC?: number };
+  ghost: { dropS?: number; tpC?: number; loading?: boolean };
 }
 
 const roasting: RoastState = {
@@ -54,10 +54,16 @@ function Probe({ first }: { first: Moment }) {
 const start: Moment = { roast: roasting, lowestC: 90, nowS: 300, ghost: { dropS: 660, tpC: 88 } };
 // A manual roast without the coach: the ghost alone sets the expected end and turning point.
 const settings = { ...ACCEPTED_SETTINGS, coachInManual: false };
+/** The saved roasts load after the first render, as in the app. */
+const savedRoastsLoaded = () =>
+  act(async () => {
+    await Promise.resolve();
+  });
 
 describe('useRoastView', () => {
-  it("keeps the window's edge when the expected end moves earlier mid-roast", () => {
+  it("keeps the window's edge when the expected end moves earlier mid-roast", async () => {
     renderApp(<Probe first={start} />, { settings });
+    await savedRoastsLoaded();
     expect(screen.getByText('edge 720 floor 50')).toBeInTheDocument();
     act(() => {
       setMoment((m) => ({ ...m, nowS: 301, ghost: { dropS: 500, tpC: 88 } }));
@@ -65,8 +71,9 @@ describe('useRoastView', () => {
     expect(screen.getByText('edge 720 floor 50')).toBeInTheDocument();
   });
 
-  it('steps the floor straight down for a dip below it, never back up', () => {
+  it('steps the floor straight down for a dip below it, never back up', async () => {
     renderApp(<Probe first={start} />, { settings });
+    await savedRoastsLoaded();
     act(() => {
       setMoment((m) => ({ ...m, nowS: 301, lowestC: 20 }));
     });
@@ -77,8 +84,9 @@ describe('useRoastView', () => {
     expect(screen.getByText('edge 720 floor 0')).toBeInTheDocument();
   });
 
-  it('starts afresh for the next roast', () => {
+  it('starts afresh for the next roast', async () => {
     renderApp(<Probe first={start} />, { settings });
+    await savedRoastsLoaded();
     act(() => {
       setMoment((m) => ({ ...m, nowS: 301, lowestC: 20 }));
     });
@@ -93,7 +101,7 @@ describe('useRoastView', () => {
     expect(screen.getByText('edge 720 floor 50')).toBeInTheDocument();
   });
 
-  it('keeps its window and floor when the Roast screen is left mid-roast and opened again', () => {
+  it('keeps its window and floor when the Roast screen is left mid-roast and opened again', async () => {
     let show: (screen: boolean | 'again') => void = () => undefined;
     // A ghost turning at 120 °C and dropping at 15:00: floor 100, edge 16:00.
     const first: Moment = { ...start, ghost: { dropS: 900, tpC: 120 } };
@@ -109,6 +117,7 @@ describe('useRoastView', () => {
       return <Probe first={shown === 'again' ? back : first} />;
     }
     renderApp(<Screens />, { settings });
+    await savedRoastsLoaded();
     act(() => {
       setMoment((m) => ({ ...m, nowS: 301, lowestC: 80 }));
     });
@@ -120,5 +129,17 @@ describe('useRoastView', () => {
       show('again');
     });
     expect(screen.getByText('edge 960 floor 75')).toBeInTheDocument();
+  });
+
+  it('keeps no floor set while the ghost it starts from is still loading', async () => {
+    // Opened mid-roast (a reload): the ghost isn't read yet, so 12:00 and the 50 °C default…
+    renderApp(<Probe first={{ ...start, ghost: { loading: true } }} />, { settings });
+    await savedRoastsLoaded();
+    expect(screen.getByText('edge 780 floor 50')).toBeInTheDocument();
+    // …until it is: then its drop and 100 °C turning point set them, as they would have at Start.
+    act(() => {
+      setMoment((m) => ({ ...m, nowS: 301, ghost: { dropS: 660, tpC: 100 } }));
+    });
+    expect(screen.getByText('edge 720 floor 75')).toBeInTheDocument();
   });
 });

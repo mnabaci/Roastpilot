@@ -26,7 +26,7 @@ export function useRoastView({
   roast: RoastState;
   lines: readonly LineLayer[];
   rorCPerMin: number | undefined;
-  ghost: { dropS?: number; tpC?: number };
+  ghost: { dropS?: number; tpC?: number; loading?: boolean };
 }): RoastView {
   const chartProjection = useSettings((s) => s.settings.chartProjection);
   const chartNowLine = useSettings((s) => s.settings.chartNowLine);
@@ -88,7 +88,11 @@ export function useRoastView({
   // Kept from this render on (React's "state from the previous render"): the window never
   // shrinks and the floor never rises during the roast.
   const next = view.held;
-  if (next && (next.window.toS !== previous?.window.toS || next.floorC !== previous.floorC)) {
+  // Held only once the ghost and saved roasts it starts from have loaded (after a reload
+  // mid-roast), so a floor set from a turning point not known yet is never kept.
+  const ready = expected.loaded && ghost.loading !== true;
+  const changed = next?.window.toS !== previous?.window.toS || next?.floorC !== previous?.floorC;
+  if (next && (previous !== undefined || ready) && changed) {
     setHeld({ chargedAtMs: roast.chargedAtMs, view: next });
   }
   return view;

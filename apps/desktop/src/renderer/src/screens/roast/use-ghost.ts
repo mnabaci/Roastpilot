@@ -17,7 +17,15 @@ export function useGhost(
     bt,
     smoothingS,
   }: { elapsedS: number | undefined; bt: number | undefined; smoothingS: number },
-): { layers: LineLayer[]; markers: ChartMarker[]; line?: string; dropS?: number; tpC?: number } {
+): {
+  layers: LineLayer[];
+  markers: ChartMarker[];
+  line?: string;
+  dropS?: number;
+  tpC?: number;
+  /** A ghost is picked but not read yet: its drop and turning point are unknown, not none. */
+  loading: boolean;
+} {
   const ghostId = useBeans((s) => s.setup.ghostRoastId);
   const ghost = useSavedRoast(ghostId ?? undefined);
   const detail = ghost.status === 'loaded' ? ghost.detail : undefined;
@@ -37,6 +45,7 @@ export function useGhost(
   const tpC = detail?.events.find((e) => e.kind === 'turning-point')?.bt ?? undefined;
   return {
     ...chart,
+    loading: ghost.status === 'loading',
     ...(delta ? { line: formatGhostDelta(delta) } : {}),
     ...(dropS === undefined ? {} : { dropS }),
     ...(tpC === undefined ? {} : { tpC }),

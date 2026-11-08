@@ -836,6 +836,10 @@ describe('RoastScreen', () => {
       roast: { ...roast('roasting'), chargedAtMs: 0 },
       readings: [reading({ bt: 180 }, 0), reading({ bt: 175 }, 1000)],
     });
+    // The saved roasts and settings settle first.
+    await act(async () => {
+      await Promise.resolve();
+    });
     drawn.setData.mockClear();
     drawn.redraw.mockClear();
     await userEvent.click(screen.getByRole('button', { name: 'Again' }));

@@ -10,6 +10,8 @@ export interface RoastExpectations {
   firstCrackC: number | undefined;
   /** For the chart's fitted floor when there is no ghost or plan (docs/spec/ui.md, Chart). */
   turningPointC: number | undefined;
+  /** False until the saved roasts have loaded: until then the two above are unknown, not none. */
+  loaded: boolean;
 }
 
 /** BT at first crack and at the turning point to expect, from the last saved roasts. */
@@ -20,6 +22,7 @@ export function useRoastExpectations(): RoastExpectations {
     () => ({
       firstCrackC: roasts ? expectedFirstCrackC(roasts, roasterId) : undefined,
       turningPointC: roasts ? savedTurningPointC(roasts, roasterId) : undefined,
+      loaded: roasts !== undefined,
     }),
     [roasts, roasterId],
   );
