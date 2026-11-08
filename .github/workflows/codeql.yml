@@ -1,0 +1,55 @@
+name: CodeQL
+
+# Our own CodeQL setup instead of GitHub's default setup. Each run still downloads the CodeQL
+# bundle from GitHub's release servers (GitHub picks the version), which time out on bad days, so:
+# - if setup fails, it waits a minute and tries once more;
+# - a failed job can be re-run by hand, which default setup's runs couldn't.
+# Same languages as before; the firmware's C++ isn't analysed.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 4 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, actions]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: init
+        continue-on-error: true
+        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+      - name: Wait before trying setup again
+        if: steps.init.outcome == 'failure'
+        run: sleep 60
+      - if: steps.init.outcome == 'failure'
+        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+      - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          category: /language:${{ matrix.language }}
