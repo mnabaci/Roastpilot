@@ -1,9 +1,12 @@
 import {
   err,
+  fileFieldsOf,
+  FileProfileFieldsSchema,
   FileProfileSchema,
   ok,
   overRoasterLimits,
   type FileProfile,
+  type LibraryItemId,
   type Roaster,
 } from '@roastpilot/shared';
 import type { ProfileService } from '../profiles/profile-service';
@@ -27,15 +30,15 @@ export function profileCodec({
   activeRoaster: () => Pick<Roaster, 'maxTempC' | 'maxTimeS'>;
   newId: () => string;
 }): LibraryCodec<FileProfile> {
-  const listed = async () => (await profiles.list()).map((entry) => entry.profile);
+  // Only what a file carries: no id, no source.
+  const listed = async (ids?: readonly LibraryItemId[]) =>
+    (await profiles.list())
+      .map((entry) => entry.profile)
+      .filter((profile) => !ids || ids.includes(profile.id))
+      .map((profile) => fileFieldsOf(FileProfileFieldsSchema, profile));
   return {
-    exportItems: async (ids) => {
-      const all = await listed();
-      const chosen = ids ? all.filter((profile) => ids.includes(profile.id)) : all;
-      // The schema keeps only what a file carries: no id, no source.
-      return ok(chosen.map((profile) => FileProfileSchema.parse(profile)));
-    },
-    here: async () => ok((await listed()).map((profile) => FileProfileSchema.parse(profile))),
+    exportItems: async (ids) => ok(await listed(ids)),
+    here: async () => ok({ items: await listed(), archived: [] }),
     readItem: (item) => {
       const parsed = FileProfileSchema.safeParse(item);
       if (!parsed.success) return err(problemOf(parsed.error));

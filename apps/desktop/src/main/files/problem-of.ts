@@ -8,6 +8,16 @@ const FIELD_NAMES: Readonly<Record<string, string>> = {
   name: 'Name',
   origin: 'Origin',
   process: 'Process',
+  variety: 'Variety',
+  decaf: 'Decaf',
+  supplier: 'Supplier',
+  notes: 'Notes',
+  profileName: 'Profile',
+  schemaVersion: 'Profile version',
+  needsCalibration: 'Needs calibration',
+  model: 'Model',
+  tuning: 'PID gains',
+  coolerHelpsDrum: 'Bean cooler helps drum',
   altitudeM: 'Altitude',
   densityGL: 'Density',
   moisturePct: 'Moisture',
@@ -37,10 +47,17 @@ function placeOf([field, index]: readonly PropertyKey[]): string | undefined {
   return FIELD_NAMES[field];
 }
 
-/** Why an item was refused, in one line: the first problem, after the field it is in. */
+/** zod's own words ("Invalid input: expected number"), which are for developers, not roasters. */
+const ZOD_WORDS = /^(Invalid |Too (big|small): |Unrecognized key)/;
+
+/**
+ * Why an item was refused, in one line: the first problem, after the field it is in. zod's own
+ * words become "not valid"; a field with no name here is left unnamed.
+ */
 export function problemOf({ issues }: Issues): string {
   const [first] = issues;
-  if (!first) return 'Not a valid item';
-  const place = placeOf(first.path);
-  return place ? `${place}: ${first.message}` : first.message;
+  const own = first && !ZOD_WORDS.test(first.message) ? first.message : undefined;
+  const place = first ? placeOf(first.path) : undefined;
+  if (place) return `${place}: ${own ?? 'not valid'}`;
+  return own ?? 'Not valid';
 }

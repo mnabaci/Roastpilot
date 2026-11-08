@@ -284,7 +284,13 @@ describe('RoastersScreen', () => {
       const api = fakeApi({
         importLibrary: vi.fn(() =>
           Promise.resolve(
-            ok({ status: 'imported' as const, added: 1, skipped: 1, newestId: SIMULATOR.id }),
+            ok({
+              status: 'imported' as const,
+              added: 1,
+              skipped: 1,
+              archived: 0,
+              newestId: SIMULATOR.id,
+            }),
           ),
         ),
       });

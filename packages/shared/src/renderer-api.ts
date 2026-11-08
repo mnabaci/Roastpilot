@@ -106,12 +106,14 @@ export interface LogsApi {
 export type ExportRoastsResult = { status: 'cancelled' } | { status: 'saved'; fileName: string };
 export type ExportRoastsError = StorageError | { kind: 'write-failed' };
 export type ImportArtisanResult = { status: 'cancelled' } | { status: 'imported'; id: RoastId };
-export type ImportArtisanError = StorageError | { kind: 'read-failed' } | { kind: 'not-artisan' };
+export type ImportArtisanError =
+  StorageError | { kind: 'read-failed' } | { kind: 'too-big' } | { kind: 'not-artisan' };
 export type ImportRoastsResult =
   | { status: 'cancelled' }
   /** `newestId`: the newest roast added, for History to open; null when all were already here. */
   | { status: 'imported'; added: number; skipped: number; newestId: RoastId | null };
-export type ImportRoastsError = StorageError | { kind: 'read-failed' } | EnvelopeProblem;
+export type ImportRoastsError =
+  StorageError | { kind: 'read-failed' } | { kind: 'too-big' } | EnvelopeProblem;
 
 /** Saved roasts (docs/spec/ui.md, History screen). */
 export interface HistoryApi {

@@ -1,4 +1,12 @@
-import { err, FileRoasterSchema, ok, type FileRoaster } from '@roastpilot/shared';
+import {
+  err,
+  fileFieldsOf,
+  FileRoasterFieldsSchema,
+  FileRoasterSchema,
+  ok,
+  type FileRoaster,
+  type LibraryItemId,
+} from '@roastpilot/shared';
 import type { RoasterService } from '../roasters/roaster-service';
 import { asStorageError, type LibraryCodec } from './library-kind';
 import { problemOf } from './problem-of';
@@ -16,18 +24,14 @@ export function roasterCodec({
 }: {
   roasters: Pick<RoasterService, 'all' | 'addAll'>;
 }): LibraryCodec<FileRoaster> {
-  // The schema keeps only what a file carries: no id, port or active flag.
-  const all = () => roasters.all.map((roaster) => FileRoasterSchema.parse(roaster));
+  // Only what a file carries: no id, port or active flag.
+  const listed = (ids?: readonly LibraryItemId[]) =>
+    roasters.all
+      .filter((roaster) => !ids || ids.includes(roaster.id))
+      .map((roaster) => fileFieldsOf(FileRoasterFieldsSchema, roaster));
   return {
-    exportItems: (ids) =>
-      Promise.resolve(
-        ok(
-          roasters.all
-            .filter((roaster) => !ids || ids.includes(roaster.id))
-            .map((roaster) => FileRoasterSchema.parse(roaster)),
-        ),
-      ),
-    here: () => Promise.resolve(ok(all())),
+    exportItems: (ids) => Promise.resolve(ok(listed(ids))),
+    here: () => Promise.resolve(ok({ items: listed(), archived: [] })),
     readItem: (item) => {
       const parsed = FileRoasterSchema.safeParse(item);
       return parsed.success ? ok(parsed.data) : err(problemOf(parsed.error));

@@ -1,6 +1,6 @@
 import { tempInText } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import { importedText, importProblemText } from './file-messages';
+import { exportProblemText, importedText, importProblemText } from './file-messages';
 
 describe('file messages', () => {
   it('counts what came in and what was already here, singular and plural', () => {
@@ -8,6 +8,19 @@ describe('file messages', () => {
     expect(importedText('beans', 1, 2)).toBe('Imported 1 bean · 2 were already here');
     expect(importedText('roasters', 1, 0)).toBe('Imported 1 roaster');
     expect(importedText('roasts', 0, 4)).toBe('Imported 0 roasts · 4 were already here');
+  });
+
+  it('counts archived beans apart, as they are hidden', () => {
+    expect(importedText('beans', 0, 0, 1)).toBe('Imported 0 beans · 1 is archived');
+    expect(importedText('beans', 2, 1, 1)).toBe(
+      'Imported 2 beans · 1 was already here · 1 is archived',
+    );
+    expect(importedText('beans', 1, 0, 2)).toBe('Imported 1 bean · 2 are archived');
+  });
+
+  it('says what went wrong with an export', () => {
+    expect(exportProblemText({ kind: 'not-found' })).toBe('Nothing to export · it was deleted');
+    expect(exportProblemText({ kind: 'write-failed' })).toBe("Couldn't export · see Logs");
   });
 
   it('refuses another kind by name, saying where it goes', () => {
@@ -38,6 +51,8 @@ describe('file messages', () => {
     ['read-failed', "Couldn't read that file · see Logs"],
     ['not-artisan', "That file isn't an Artisan roast"],
     ['storage-failed', "Couldn't import · see Logs"],
+    ['too-big', 'That file is too big · Roastpilot files are under 50 MB'],
+    ['empty', 'Nothing to import · the file is empty'],
   ])('%s: one line', (kind, text) => {
     expect(importProblemText({ kind }, 'c')).toBe(text);
   });

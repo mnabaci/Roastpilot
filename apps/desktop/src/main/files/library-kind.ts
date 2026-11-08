@@ -1,5 +1,6 @@
 import type { Logger } from '@roastpilot/core';
 import {
+  err,
   ok,
   toEnvelope,
   type ImportLibraryError,
@@ -19,8 +20,8 @@ export interface LibraryCodec<Item> {
   exportItems(ids?: readonly LibraryItemId[]): Promise<Result<Item[], StorageError>>;
   /** One item from a file, checked as Save checks it; why it is refused otherwise. */
   readItem(item: unknown): Result<Item, string>;
-  /** What is here now, as files carry it, to compare with. */
-  here(): Promise<Result<Item[], StorageError>>;
+  /** What is here now, as files carry it, to compare with; archived ones apart. */
+  here(): Promise<Result<Here<Item>, StorageError>>;
   /** What counts as the same: the item without what an import sets anyway. */
   contentOf: (item: Item) => unknown;
   nameOf: (item: Item) => string;
@@ -31,16 +32,28 @@ export interface LibraryCodec<Item> {
   addAll(items: readonly Item[]): Promise<Result<LibraryItemId[], StorageError>>;
 }
 
+/** What is here, as files carry it: shown, and archived (only beans archive). */
+export interface Here<Item> {
+  items: Item[];
+  archived: Item[];
+}
+
 export interface LibraryImported {
   added: number;
+  /** Already here and shown. */
   skipped: number;
+  /** Already here, but archived. */
+  archived: number;
   /** The last one added, for the screen to open; null when all were already here. */
   newestId: LibraryItemId | null;
 }
 
 /** A kind's files: written as text, and read back into the library. */
 export interface LibraryFiles {
-  exportFile(ids?: readonly LibraryItemId[]): Promise<Result<string, StorageError>>;
+  /** The file's text; `not-found` when ids are given and none of them is here any more. */
+  exportFile(
+    ids?: readonly LibraryItemId[],
+  ): Promise<Result<string, StorageError | { kind: 'not-found' }>>;
   importFile(text: string): Promise<Result<LibraryImported, ImportLibraryError>>;
 }
 
@@ -65,6 +78,11 @@ export function libraryFiles<Item>(
       if (!items.ok) {
         logger.warn('files.export-failed', { kind, error: items.error });
         return items;
+      }
+      // Gone since the screen asked: an empty file would only look like it worked.
+      if (ids && items.value.length === 0) {
+        logger.warn('files.export-not-found', { kind, ids });
+        return err({ kind: 'not-found' });
       }
       logger.info('files.exported', { kind, items: items.value.length });
       // No indentation, as roast files: a file is for Roastpilot to read back.

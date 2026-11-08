@@ -498,7 +498,13 @@ describe('ProfilesScreen', () => {
       const api = fakeApi({
         importLibrary: vi.fn(() =>
           Promise.resolve(
-            ok({ status: 'imported' as const, added: 1, skipped: 0, newestId: 'custom-9' }),
+            ok({
+              status: 'imported' as const,
+              added: 1,
+              skipped: 0,
+              archived: 0,
+              newestId: 'custom-9',
+            }),
           ),
         ),
         listProfiles: vi.fn(() =>

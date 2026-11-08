@@ -298,7 +298,9 @@ describe('BeansScreen', () => {
       const second = { ...BEAN, id: 2, name: 'Huila' };
       const api = fakeApi({
         importLibrary: vi.fn(() =>
-          Promise.resolve(ok({ status: 'imported' as const, added: 3, skipped: 1, newestId: 2 })),
+          Promise.resolve(
+            ok({ status: 'imported' as const, added: 3, skipped: 1, archived: 0, newestId: 2 }),
+          ),
         ),
       });
       const { stores } = show(api, [BEAN, second]);

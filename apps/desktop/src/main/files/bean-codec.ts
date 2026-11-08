@@ -1,11 +1,11 @@
 import {
   err,
+  fileFieldsOf,
   FileBeanSchema,
   ok,
   type Bean,
   type FileBean,
   type ProfileEntry,
-  type LibraryItemId,
   type ProfileId,
   type Result,
   type StorageError,
@@ -20,7 +20,7 @@ const MAX_BEAN_NAME = 120;
 
 /** The bean as a file carries it: its fields and its profile's name, not its stock. */
 const toFile = (bean: Bean, profileNames: ReadonlyMap<ProfileId, string>): FileBean =>
-  FileBeanSchema.parse({
+  fileFieldsOf(FileBeanSchema, {
     ...bean,
     profileName: bean.profileId === null ? null : (profileNames.get(bean.profileId) ?? null),
   });
@@ -44,17 +44,28 @@ export function beanCodec({
   /** Every profile's name by id, on any roaster (allProfileNames). */
   profileNames: () => Promise<Result<ReadonlyMap<ProfileId, string>, StorageError>>;
 }): LibraryCodec<FileBean> {
-  const here = async (ids?: readonly LibraryItemId[]) => {
-    const read = await beans.read();
-    if (!read.ok) return read;
+  /** Every bean as `Bean` and as the file carries it. */
+  const read = async () => {
+    const all = await beans.read();
+    if (!all.ok) return all;
     const names = await profileNames();
     if (!names.ok) return names;
-    const chosen = ids ? read.value.filter((bean) => ids.includes(bean.id)) : read.value;
-    return ok(chosen.map((bean) => toFile(bean, names.value)));
+    return ok(all.value.map((bean) => ({ bean, file: toFile(bean, names.value) })));
   };
   return {
-    exportItems: here,
-    here: () => here(),
+    exportItems: async (ids) => {
+      const all = await read();
+      if (!all.ok) return all;
+      const chosen = ids ? all.value.filter(({ bean }) => ids.includes(bean.id)) : all.value;
+      return ok(chosen.map(({ file }) => file));
+    },
+    here: async () => {
+      const all = await read();
+      if (!all.ok) return all;
+      const files = (archived: boolean) =>
+        all.value.filter(({ bean }) => bean.archived === archived).map(({ file }) => file);
+      return ok({ items: files(false), archived: files(true) });
+    },
     readItem: (item) => {
       const parsed = FileBeanSchema.safeParse(item);
       return parsed.success ? ok(parsed.data) : err(problemOf(parsed.error));

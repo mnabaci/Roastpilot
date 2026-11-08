@@ -136,8 +136,11 @@ export {
 export { overRoasterLimits, type RoasterLimits } from './profile-rules';
 export {
   ExportLibraryRequestSchema,
+  fileFieldsOf,
   FileBeanSchema,
+  FileProfileFieldsSchema,
   FileProfileSchema,
+  FileRoasterFieldsSchema,
   FileRoasterSchema,
   ImportLibraryRequestSchema,
   LibraryKindSchema,

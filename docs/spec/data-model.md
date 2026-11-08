@@ -70,18 +70,23 @@ One migration per milestone.
 
 Every Roastpilot file follows one shape and one flow, roasts included ([ADR 0021](../adr/0021-one-roastpilot-file-shape.md)):
 
-| Part    | Rule                                                                                                                                                            |
-| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| File    | `.rpr`, JSON without indentation: `{ format, version, exportedAt, <items> }`; `format` says the kind, `version` its own version, from 1                         |
-| Kinds   | `roastpilot-roasts` (`roasts`, version 2), `roastpilot-beans` (`beans`), `roastpilot-profiles` (`profiles`), `roastpilot-roasters` (`roasters`), version 1 each |
-| Units   | Always °C, grams and seconds, whatever the °F setting: a file reads the same on any computer                                                                    |
-| Ids     | Stay behind; links go by name                                                                                                                                   |
-| Export  | Each screen's title "⋯": Export all; each item's "⋯": Export this <kind>. Toast: "Saved profiles.rpr"                                                           |
-| Import  | Each screen's title "⋯": Import a Roastpilot file. Toast: "Imported 3 profiles · 1 was already here"; the screen opens the newest one added                     |
-| Same    | Something with the same name and the same content is skipped and counted as already here                                                                        |
-| Clash   | Same name, different content: added as "<name> (imported)", then "(imported 2)"…; nothing of yours is ever overwritten                                          |
-| Refused | A file that isn't one, a newer `version`, or one item that doesn't pass its checks refuses the whole file, with an error toast saying why                       |
-| Kind    | Another kind is refused by name: "This is a beans file · import it on Beans"                                                                                    |
+| Part    | Rule                                                                                                                                                                                                                   |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| File    | `.rpr`, JSON without indentation: `{ format, version, exportedAt, <items> }`; `format` says the kind, `version` its own version, from 1                                                                                |
+| Kinds   | `roastpilot-roasts` (`roasts`, version 2), `roastpilot-beans` (`beans`), `roastpilot-profiles` (`profiles`), `roastpilot-roasters` (`roasters`), version 1 each                                                        |
+| Units   | Always °C, grams and seconds, whatever the °F setting: a file reads the same on any computer                                                                                                                           |
+| Ids     | Stay behind; links go by name                                                                                                                                                                                          |
+| Export  | Each screen's title "⋯": Export all; each item's "⋯": Export this <kind>. Toast: "Saved profiles.rpr"                                                                                                                  |
+| Import  | Each screen's title "⋯": Import a Roastpilot file. Toast: "Imported 3 profiles · 1 was already here"; the screen opens the newest one added                                                                            |
+| Same    | Something with the same name and the same content is skipped and counted as already here                                                                                                                               |
+| Archive | A bean that matches an archived one is skipped too, but counted apart, as you can't see it: "Imported 0 beans · 1 is archived" ("Imported 2 beans · 1 was already here · 1 is archived")                               |
+| Clash   | Same name, different content: added as "<name> (imported)", then "(imported 2)"…; nothing of yours is ever overwritten                                                                                                 |
+| Refused | A file that isn't one, a newer `version`, or one item that doesn't pass its checks refuses the whole file, with an error toast saying why                                                                              |
+| Empty   | A file with no items imports nothing: "Nothing to import · the file is empty" (error toast)                                                                                                                            |
+| Size    | A file over 50 MB, roasts included, isn't read: "That file is too big · Roastpilot files are under 50 MB"                                                                                                              |
+| Writing | An export goes to `<name>.tmp` beside the file first, then takes its place, so a failed write never leaves half a file; one whose items were all deleted meanwhile saves nothing: "Nothing to export · it was deleted" |
+| One     | Imports of one kind run one at a time, from the dialog to the write, so two quick clicks never both add the same thing                                                                                                 |
+| Kind    | Another kind is refused by name: "This is a beans file · import it on Beans"                                                                                                                                           |
 
 What each kind carries:
 
@@ -89,7 +94,8 @@ What each kind carries:
 - **Profiles:** the profile in full, without its id or roaster. It joins the active roaster's profiles marked "needs calibration", as a copy to another roaster is: it was made on someone else's machine. It passes the same checks as Save, and the active roaster's limits.
 - **Roasters:** the record (name, model, batch sizes, limits and calibration, preheat hold, drum speed, bean cooler helps drum, PID gains). Not the port, which belongs to one computer, and never active: an imported Skywalker asks for its port on Connect.
 - **What counts as the same:** the content without what an import sets anyway: a bean's profile link and a profile's "needs calibration" don't make it differ, so importing a file twice adds nothing. A copy that came in earlier as "<name> (imported)" counts as already here too. A profile leaves what it was made from (`source`) behind, as that is an id.
-- **Export all** on Profiles writes the active roaster's list, built-ins included (they come back as already here); a refusal names the item and the first problem: `"Light" can't come in · BT cap: At most 235 °C`.
+- **Export all** on Profiles writes the active roaster's list, built-ins included (they come back as already here); a refusal names the item (cut to 40 characters with "…", "Item 3" when it has no name) and the first problem in the screens' words: `"Light" can't come in · BT cap: At most 235 °C`, or "<field>: not valid" rather than a validator's own words.
+- **What is stored** is exported as it is, never checked again: a record saved under looser rules (a roaster above today's model limit) still exports, and still counts when an import compares. Only what comes in is checked.
 
 ## Bean and drum cooling
 

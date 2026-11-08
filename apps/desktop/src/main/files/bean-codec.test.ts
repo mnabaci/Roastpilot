@@ -74,7 +74,7 @@ describe('bean files', () => {
       [entry('light-steps', 'Light steps'), entry('p9', 'Guji light')],
     );
     expect(await filesOf('beans', codec).importFile(text)).toEqual(
-      ok({ added: 1, skipped: 0, newestId: 20 }),
+      ok({ added: 1, skipped: 0, archived: 0, newestId: 20 }),
     );
     const fields = without(
       GUJI,
@@ -101,7 +101,16 @@ describe('bean files', () => {
     const mine = { ...GUJI, greenG: 0, profileId: null, archived: false };
     const { beans, codec } = setup([mine]);
     expect(await filesOf('beans', codec).importFile(text)).toEqual(
-      ok({ added: 0, skipped: 1, newestId: null }),
+      ok({ added: 0, skipped: 1, archived: 0, newestId: null }),
+    );
+    expect(beans.addAll).not.toHaveBeenCalled();
+  });
+
+  it('the same bean archived here counts as archived, as you would not see it', async () => {
+    const text = await exported('beans', setup([GUJI, { ...GUJI, id: 5, name: 'Huila' }]).codec);
+    const { beans, codec } = setup([GUJI, { ...GUJI, id: 5, name: 'Huila', archived: false }]);
+    expect(await filesOf('beans', codec).importFile(text)).toEqual(
+      ok({ added: 0, skipped: 1, archived: 1, newestId: null }),
     );
     expect(beans.addAll).not.toHaveBeenCalled();
   });

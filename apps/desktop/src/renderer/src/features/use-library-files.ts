@@ -1,6 +1,6 @@
 import type { ExportLibraryRequest, LibraryItemId, LibraryKind } from '@roastpilot/shared';
 import { useDeps } from '../app/app-context';
-import { importedText, importProblemText } from './file-messages';
+import { exportProblemText, importedText, importProblemText } from './file-messages';
 import { useTemperatureUnit } from './use-temperature-unit';
 import { useRun } from './use-run';
 import { useToast } from './use-toast';
@@ -25,7 +25,7 @@ export function useLibraryFiles(
       'files.export-failed',
       async () => {
         const saved = await api.exportLibrary(request);
-        if (!saved.ok) toast('error', "Couldn't export · see Logs");
+        if (!saved.ok) toast('error', exportProblemText(saved.error));
         else if (saved.value.status === 'saved') toast('success', `Saved ${saved.value.fileName}`);
       },
       { failed: "Couldn't export · try again" },
@@ -38,8 +38,8 @@ export function useLibraryFiles(
         const imported = await api.importLibrary(kind);
         if (!imported.ok) toast('error', importProblemText(imported.error, unit));
         else if (imported.value.status === 'imported') {
-          const { added, skipped, newestId } = imported.value;
-          toast('success', importedText(kind, added, skipped));
+          const { added, skipped, archived, newestId } = imported.value;
+          toast('success', importedText(kind, added, skipped, archived));
           if (newestId !== null) onImported(newestId);
         }
       },

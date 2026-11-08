@@ -77,10 +77,10 @@ describe('Roastpilot files between two computers, on real storage', () => {
 
     const friend = await computer();
     expect(await friend.kinds.profiles.importFile(profileFile)).toEqual(
-      ok({ added: 1, skipped: 0, newestId: 'custom-in-1' }),
+      ok({ added: 1, skipped: 0, archived: 0, newestId: 'custom-in-1' }),
     );
     expect(await friend.kinds.beans.importFile(beanFile)).toEqual(
-      ok({ added: 1, skipped: 0, newestId: 1 }),
+      ok({ added: 1, skipped: 0, archived: 0, newestId: 1 }),
     );
     const [bean] = await friend.beans.list();
     // Linked by name to the profile that just came in; no stock, not archived.
@@ -90,21 +90,21 @@ describe('Roastpilot files between two computers, on real storage', () => {
 
     // The same files again: everything already here.
     expect(await friend.kinds.profiles.importFile(profileFile)).toEqual(
-      ok({ added: 0, skipped: 1, newestId: null }),
+      ok({ added: 0, skipped: 1, archived: 0, newestId: null }),
     );
     expect(await friend.kinds.beans.importFile(beanFile)).toEqual(
-      ok({ added: 0, skipped: 1, newestId: null }),
+      ok({ added: 0, skipped: 1, archived: 0, newestId: null }),
     );
     // Their Skywalker is the same record as the friend's own.
     expect(await friend.kinds.roasters.importFile(roasterFile)).toEqual(
-      ok({ added: 0, skipped: 1, newestId: null }),
+      ok({ added: 0, skipped: 1, archived: 0, newestId: null }),
     );
 
     // Changed at home, then sent again: comes in beside, nothing overwritten.
     await mine.roasters.save({ ...mine.roasters.active(), tempOffsetC: -4 });
     const changed = textOf(await mine.kinds.roasters.exportFile([1]));
     expect(await friend.kinds.roasters.importFile(changed)).toEqual(
-      ok({ added: 1, skipped: 0, newestId: 3 }),
+      ok({ added: 1, skipped: 0, archived: 0, newestId: 3 }),
     );
     expect(friend.roasters.all.map((r) => [r.name, r.active, r.connection])).toEqual([
       ['Skywalker', true, null],
