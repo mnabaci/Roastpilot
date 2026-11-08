@@ -6,7 +6,10 @@ import { useDeps } from '../../app/app-context';
 
 const NOT_SAVED = "Couldn't save settings · kept until you quit";
 
-/** Saves a change to the settings and keeps what main actually saved; `notSaved` is its error toast. */
+/**
+ * Saves a change to the settings and keeps what main actually saved, unless another change came
+ * since; `notSaved` is its error toast.
+ */
 export function useSaveSettings(notSaved = NOT_SAVED): (change: Partial<Settings>) => void {
   const { api, stores, logger } = useDeps();
   const store = stores.settings;
@@ -21,7 +24,9 @@ export function useSaveSettings(notSaved = NOT_SAVED): (change: Partial<Settings
         async () => {
           const saved = await api.setSettings(next);
           if (saved.ok) {
-            store.setState({ settings: saved.value });
+            // Only while this is still the latest change: a slower answer to an earlier save
+            // must not undo a switch flipped since.
+            if (store.getState().settings === next) store.setState({ settings: saved.value });
             return;
           }
           // Kept in memory for this session; the file write is what failed.

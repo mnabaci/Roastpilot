@@ -1,5 +1,5 @@
 import { err } from '@roastpilot/shared';
-import { screen, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
@@ -123,6 +123,36 @@ describe('SettingsScreen', () => {
     expect(stores.settings.getState().settings.chartPhaseBands).toBe(false);
     expect(api.setSettings).toHaveBeenCalledWith(
       expect.objectContaining({ chartPhaseBands: false, chartProjection: true }),
+    );
+  });
+
+  it('keeps every chart aid flipped in quick succession, whatever order the saves answer in', async () => {
+    // Each save answers only when the test says, the first one last.
+    const answers: (() => void)[] = [];
+    const api = fakeApi({
+      setSettings: (settings) =>
+        new Promise((resolve) => {
+          answers.push(() => {
+            resolve({ ok: true, value: settings });
+          });
+        }),
+    });
+    const { stores } = renderApp(<Settings first="chart" />, {}, api);
+    for (const name of ['Projection', 'Now line', 'Temperature focus', 'Phase bands'])
+      await userEvent.click(screen.getByRole('switch', { name }));
+    await act(async () => {
+      for (const answer of answers.reverse()) answer();
+      await Promise.resolve();
+    });
+    expect(stores.settings.getState().settings).toMatchObject({
+      chartProjection: false,
+      chartNowLine: false,
+      chartTemperatureFocus: false,
+      chartPhaseBands: false,
+    });
+    expect(screen.getByRole('switch', { name: 'Phase bands' })).toHaveAttribute(
+      'aria-checked',
+      'false',
     );
   });
 
