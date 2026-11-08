@@ -102,7 +102,7 @@ const phaseBands: ChartAid = {
   ],
 };
 const roastWindow = { fromS: -30, toS: 736 };
-const roasting = { timeWindow: roastWindow, temperatureFloorC: 50 };
+const roasting = { timeWindow: roastWindow, temperatureFloorC: 75 };
 
 /** Everything on, as a roast shows it by default. */
 export const DuringARoast: Story = {
@@ -124,7 +124,7 @@ export const NowLine: Story = {
   args: { ...roasting, layers: [temperature, ror, heater, fan, nowLine] },
 };
 export const NowLineLight: Story = { ...NowLine, globals: { theme: 'Light' } };
-/** Temperature focus on, the other aids off: the axis runs 50–250 °C. */
+/** Temperature focus on, the other aids off: the axis fitted to a 92 °C turning point, 75–250 °C. */
 export const TemperatureFocus: Story = { args: { ...roasting, layers: [temperature, ror] } };
 export const TemperatureFocusLight: Story = { ...TemperatureFocus, globals: { theme: 'Light' } };
 /** The same roast with every aid off: the whole recording, 0–250 °C. */

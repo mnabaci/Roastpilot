@@ -21,7 +21,11 @@ const AIDS: readonly { key: AidKey; name: string; hint: string }[] = [
     hint: 'Where the temperature is heading at this RoR',
   },
   { key: 'chartNowLine', name: 'Now line', hint: 'A line at the current time' },
-  { key: 'chartTemperatureFocus', name: 'Temperature focus', hint: 'Temperature axis from 50 °C' },
+  {
+    key: 'chartTemperatureFocus',
+    name: 'Temperature focus',
+    hint: 'Temperature axis fitted to the roast',
+  },
   {
     key: 'chartPhaseBands',
     name: 'Phase bands',

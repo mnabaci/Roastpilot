@@ -51,9 +51,9 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
   const planLines = usePlanLines(shown.bt, numbers.elapsedS);
   const view = useRoastView({
     roast,
-    lines: chart.layers,
+    lines: [...ghost.layers, ...chart.layers],
     rorCPerMin: shown.ror,
-    ghostDropS: ghost.dropS,
+    ghost,
   });
   // Connected, or lost and reconnecting: either way the outputs stay, with dashes while lost.
   const hasRoaster = connected || lost;

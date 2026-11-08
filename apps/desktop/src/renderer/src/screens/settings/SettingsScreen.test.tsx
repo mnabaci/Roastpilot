@@ -113,7 +113,7 @@ describe('SettingsScreen', () => {
     for (const [name, hint] of [
       ['Projection', 'Where the temperature is heading at this RoR'],
       ['Now line', 'A line at the current time'],
-      ['Temperature focus', 'Temperature axis from 50 °C'],
+      ['Temperature focus', 'Temperature axis fitted to the roast'],
       ['Phase bands', 'Drying, Maillard and development behind the curve'],
     ] as const) {
       expect(within(card).getByRole('switch', { name })).toHaveAttribute('aria-checked', 'true');

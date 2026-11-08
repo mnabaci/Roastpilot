@@ -119,7 +119,7 @@ export function drawBandLabels(
     const spots: Box[] = [
       { left, right, bottom: box.bottom - inset / 2, top: box.bottom - inset / 2 - height },
       { left, right, top: box.top + inset / 2, bottom: box.top + inset / 2 + height },
-      { left, right, top: below + inset / 2, bottom: below + inset / 2 + height },
+      { left, right, top: below + inset, bottom: below + inset + height },
     ].filter((spot) => spot.top >= box.top && spot.bottom <= box.bottom);
     const spot = labelSpot(spots, lines, taken);
     if (!spot) return;

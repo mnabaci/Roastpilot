@@ -8,7 +8,7 @@ import { formatGhostDelta, ghostChart, ghostDelta } from './ghost';
 /**
  * The ghost picked in the setup: its faded layers once charged (before it, the chart's clock is
  * the preheat's), while roasting how today compares with it ("+3 °C vs ghost · 0:12 ahead"), and
- * when it dropped.
+ * when it turned and dropped.
  */
 export function useGhost(
   roast: RoastState,
@@ -17,7 +17,7 @@ export function useGhost(
     bt,
     smoothingS,
   }: { elapsedS: number | undefined; bt: number | undefined; smoothingS: number },
-): { layers: LineLayer[]; markers: ChartMarker[]; line?: string; dropS?: number } {
+): { layers: LineLayer[]; markers: ChartMarker[]; line?: string; dropS?: number; tpC?: number } {
   const ghostId = useBeans((s) => s.setup.ghostRoastId);
   const ghost = useSavedRoast(ghostId ?? undefined);
   const detail = ghost.status === 'loaded' ? ghost.detail : undefined;
@@ -33,9 +33,12 @@ export function useGhost(
       : undefined;
   // When the ghost dropped: the roast's expected end when there is no profile.
   const dropS = detail?.dropTimeS ?? undefined;
+  // Its turning point: where the chart's fitted floor starts from.
+  const tpC = detail?.events.find((e) => e.kind === 'turning-point')?.bt ?? undefined;
   return {
     ...chart,
     ...(delta ? { line: formatGhostDelta(delta) } : {}),
     ...(dropS === undefined ? {} : { dropS }),
+    ...(tpC === undefined ? {} : { tpC }),
   };
 }

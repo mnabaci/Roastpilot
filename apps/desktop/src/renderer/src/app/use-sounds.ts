@@ -4,7 +4,7 @@ import type { ChimePlayer } from '../features/chime';
 import { listenDue, stepsReached, stillWaiting, type WaitState } from '../features/sound-cues';
 import { createSoundRepeats, type SoundRepeats } from '../features/sound-repeats';
 import { playStepSound } from '../features/step-sound';
-import { useExpectedFirstCrack } from '../features/use-expected-first-crack';
+import { useRoastExpectations } from '../features/use-roast-expectations';
 import type { Stores } from '../stores/stores';
 import { useDeps } from './app-context';
 
@@ -90,7 +90,7 @@ function playSounds(
  */
 export function useSounds(): void {
   const { stores, chime } = useDeps();
-  const expectedC = useExpectedFirstCrack();
+  const expectedC = useRoastExpectations().firstCrackC;
   // Read by the store listener below, so a reloaded roast list doesn't restart it.
   const expected = useRef(expectedC);
   useEffect(() => {
