@@ -58,7 +58,8 @@ Each phase:
 - A step profile's dashed curve comes from its steps: charge, the turning point, each step's end at its planned time, then the BT cap at the planned drop.
 - Every planned curve, curve or step, is one smooth monotone curve through its points: exact at each point, flat at the turning point, the same on the chart, in "vs plan" and in what Auto aims for.
 - These numbers come from roasts 6 and 7 and stay marked "needs calibration" until tuned on real roasts: first crack came at 191–193 °C and both roasts dropped near 197 °C.
-- The soak runs for the Soak time setting, in Settings under Auto: 0:30, 0:45, 1:00, 1:15, 1:30 or 2:00 (default 1:00). It applies to both Light profiles and is taken at Start. Roasts 6 and 7 turned the heater on at about 1:06 and 0:54.
+- **The soak is part of each profile:** Off, 0:30, 0:45, 1:00, 1:15, 1:30 or 2:00 (both Light profiles: 1:00). Off leaves it out: the first step starts at charge with its own heat. Roasts 6 and 7 turned the heater on at about 1:06 and 0:54.
+- **From the old setting:** the soak used to be one setting for every profile (Settings › Auto › Soak time). The first launch of the version that moves it writes a value other than 1:00 into your own profiles that soak, once, then the setting is gone; built-ins stay 1:00 (duplicate one to change it).
 
 **Medium** and **Dark** use the same structure with lower heat step-downs and longer development. Their numbers are placeholders until calibrated:
 
