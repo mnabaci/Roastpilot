@@ -7,6 +7,8 @@ import {
   type ProfileEntry,
   type LibraryItemId,
   type ProfileId,
+  type Result,
+  type StorageError,
 } from '@roastpilot/shared';
 import type { BeanService } from '../beans/bean-service';
 import type { ProfileService } from '../profiles/profile-service';
@@ -35,16 +37,20 @@ const profileIdByName = (entries: readonly ProfileEntry[], name: string | null) 
 export function beanCodec({
   beans,
   profiles,
+  profileNames,
 }: {
   beans: Pick<BeanService, 'read' | 'addAll'>;
-  profiles: Pick<ProfileService, 'list' | 'allNames'>;
+  profiles: Pick<ProfileService, 'list'>;
+  /** Every profile's name by id, on any roaster (allProfileNames). */
+  profileNames: () => Promise<Result<ReadonlyMap<ProfileId, string>, StorageError>>;
 }): LibraryCodec<FileBean> {
   const here = async (ids?: readonly LibraryItemId[]) => {
     const read = await beans.read();
     if (!read.ok) return read;
-    const names = await profiles.allNames();
+    const names = await profileNames();
+    if (!names.ok) return names;
     const chosen = ids ? read.value.filter((bean) => ids.includes(bean.id)) : read.value;
-    return ok(chosen.map((bean) => toFile(bean, names)));
+    return ok(chosen.map((bean) => toFile(bean, names.value)));
   };
   return {
     exportItems: here,

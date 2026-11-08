@@ -55,13 +55,18 @@ export class ProfileService {
     return this.#own.filter((own) => own.roasterId === id).map((own) => own.profile);
   }
 
+  /** Every profile on the active roaster: its built-ins, then your own. */
+  #here(): AutoProfile[] {
+    return [...this.#builtIns(), ...this.#ownHere()];
+  }
+
   #isBuiltIn(id: ProfileId): boolean {
     return this.#builtIns().some((profile) => profile.id === id);
   }
 
   /** The profile Auto runs: the chosen one if this roaster has it, else its first built-in. */
   active(): AutoProfile {
-    const all = [...this.#builtIns(), ...this.#ownHere()];
+    const all = this.#here();
     const chosen = all.find((profile) => profile.id === this.#deps.chosenId());
     const profile = chosen ?? all[0];
     if (!profile) throw new Error('A roaster model must ship at least one profile');
@@ -81,7 +86,7 @@ export class ProfileService {
 
   /** A copy of your own, called `name` ("Light curve copy" without one), in one write. */
   async duplicate(id: ProfileId, name?: string): Promise<Result<ProfileEntry, ProfileError>> {
-    const source = [...this.#builtIns(), ...this.#ownHere()].find((p) => p.id === id);
+    const source = this.#here().find((p) => p.id === id);
     if (!source) return err({ kind: 'not-found', id });
     const copy = {
       ...source,
@@ -105,7 +110,7 @@ export class ProfileService {
 
   /** A copy on another roaster, which hasn't been roasted there yet. */
   async copyTo(id: ProfileId, roasterId: RoasterId): Promise<Result<ProfileEntry, ProfileError>> {
-    const source = [...this.#builtIns(), ...this.#ownHere()].find((p) => p.id === id);
+    const source = this.#here().find((p) => p.id === id);
     if (!source) return err({ kind: 'not-found', id });
     return this.#store(
       {
@@ -128,21 +133,9 @@ export class ProfileService {
     const roasterId = this.#deps.activeRoaster().id;
     const saved = await this.#deps.store.saveAll(profiles, roasterId);
     if (!saved.ok) return this.#failed(saved.error);
-    const ids = new Set(profiles.map((p) => p.id));
-    const others = this.#own.filter((own) => !ids.has(own.profile.id));
-    this.#own = [...others, ...profiles.map((profile) => ({ profile, roasterId }))];
-    this.#deps.logger.info('profiles.imported', { ids: [...ids], roasterId });
+    this.#remember(profiles, roasterId);
+    this.#deps.logger.info('profiles.imported', { ids: profiles.map((p) => p.id), roasterId });
     return ok(undefined);
-  }
-
-  /** Every profile's name by id: each model's built-ins, and your own on any roaster. */
-  async allNames(): Promise<Map<ProfileId, string>> {
-    const read = await this.#deps.store.list();
-    if (read.ok) this.#own = read.value;
-    else this.#deps.logger.warn('profiles.list-failed', { error: read.error });
-    const builtIns = Object.values(ROASTER_MODELS).flatMap((model) => model.profiles);
-    const all = [...builtIns, ...this.#own.map((own) => own.profile)];
-    return new Map(all.map((profile) => [profile.id, profile.name]));
   }
 
   save(profile: AutoProfile): Promise<Result<ProfileEntry, ProfileError>> {
@@ -191,10 +184,16 @@ export class ProfileService {
   ): Promise<Result<ProfileEntry, ProfileError>> {
     const saved = await this.#deps.store.save(profile, roasterId);
     if (!saved.ok) return this.#failed(saved.error);
-    const others = this.#own.filter((own) => own.profile.id !== profile.id);
-    this.#own = [...others, { profile, roasterId }];
+    this.#remember([profile], roasterId);
     this.#deps.logger.info('profiles.saved', { id: profile.id, roasterId });
     return ok({ profile, builtIn: false });
+  }
+
+  /** Saved ones in memory, each replacing the one with its id. */
+  #remember(profiles: readonly AutoProfile[], roasterId: RoasterId): void {
+    const ids = new Set(profiles.map((p) => p.id));
+    const others = this.#own.filter((own) => !ids.has(own.profile.id));
+    this.#own = [...others, ...profiles.map((profile) => ({ profile, roasterId }))];
   }
 
   #failed(error: { kind: string; message?: string }): Result<never, ProfileError> {

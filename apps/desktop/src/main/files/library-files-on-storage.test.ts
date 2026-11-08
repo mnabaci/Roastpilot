@@ -49,6 +49,7 @@ async function computer() {
   const kinds = createLibraryKinds({
     beans,
     profiles,
+    profileStore: stores.profileStore,
     roasters,
     newProfileId: () => `custom-in-${String(++n)}`,
     now: () => new Date('2026-11-08T10:00:00.000Z'),

@@ -82,13 +82,6 @@ describe('ProfileService', () => {
     expect((await service.list()).filter((e) => !e.builtIn)).toEqual([]);
   });
 
-  it('names every profile by id: the built-ins of every model, your own on any roaster', async () => {
-    const { service } = setup([MINE]);
-    const names = await service.allNames();
-    expect(names.get('custom-a')).toBe('Mine');
-    expect(names.get('light-steps')).toBe(SKYWALKER_PROFILES['light-steps'].name);
-  });
-
   it('lists the built-ins first, then your own', async () => {
     const { service } = setup([MINE]);
     const list = await service.list();

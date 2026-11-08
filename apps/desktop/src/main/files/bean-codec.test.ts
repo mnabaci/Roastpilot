@@ -33,11 +33,9 @@ function setup(here: Bean[], active: ProfileEntry[] = []) {
     read: vi.fn(() => Promise.resolve(ok(here))),
     addAll: vi.fn((list: readonly unknown[]) => Promise.resolve(ok(list.map((_, i) => 20 + i)))),
   };
-  const profiles = {
-    list: () => Promise.resolve(active),
-    allNames: () => Promise.resolve(new Map([['custom-guji', 'Guji light']])),
-  };
-  return { beans, codec: beanCodec({ beans, profiles }) };
+  const profiles = { list: () => Promise.resolve(active) };
+  const profileNames = () => Promise.resolve(ok(new Map([['custom-guji', 'Guji light']])));
+  return { beans, codec: beanCodec({ beans, profiles, profileNames }) };
 }
 
 describe('bean files', () => {

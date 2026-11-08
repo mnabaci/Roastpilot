@@ -240,6 +240,7 @@ app
             kinds: createLibraryKinds({
               beans,
               profiles,
+              profileStore: stores.profileStore,
               roasters,
               newProfileId: () => `custom-${randomUUID()}`,
               now: () => new Date(),
