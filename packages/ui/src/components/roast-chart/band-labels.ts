@@ -31,7 +31,8 @@ export function crossesAny(box: Box, lines: readonly CanvasLine[]): boolean {
   );
 }
 
-const overlaps = (a: Box, b: Box): boolean =>
+/** Whether two boxes meet (touching counts). */
+export const overlaps = (a: Box, b: Box): boolean =>
   a.left <= b.right && a.right >= b.left && a.top <= b.bottom && a.bottom >= b.top;
 
 /**

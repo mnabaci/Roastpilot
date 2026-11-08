@@ -39,6 +39,19 @@ describe('labelRows', () => {
       ),
     ).toEqual([0, 1, 2]);
   });
+
+  it('skips a row blocked for a label, keeping the others where they were', () => {
+    expect(
+      labelRows(
+        [
+          { x: 0, width: 50 },
+          { x: 100, width: 50 },
+        ],
+        8,
+        (row, index) => index === 1 && row === 0,
+      ),
+    ).toEqual([0, 1]);
+  });
 });
 
 describe('labelX', () => {

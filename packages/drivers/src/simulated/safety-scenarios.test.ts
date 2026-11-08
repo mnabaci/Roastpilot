@@ -55,6 +55,39 @@ describe('safety scenarios on the simulated Skywalker', () => {
     expect(monitor.locked).toBe(true);
   });
 
+  /** Issue #93: a hot manual roast, preheated, charged, then heater 80 and fan 50; drop at 10:11. */
+  async function hotRoastToDrop(r: Awaited<ReturnType<typeof roaster>>) {
+    await r.driver.setOutput('heater', 100);
+    await r.driver.setOutput('fan', 30);
+    while ((await r.run(1)) < 180);
+    r.sim.chargeBeans();
+    r.monitor.roastStarted();
+    await r.driver.setOutput('heater', 80);
+    await r.driver.setOutput('fan', 50);
+    const dropBt = await r.run(611);
+    r.sim.dumpBeans();
+    r.monitor.roastEnded();
+    return dropBt;
+  }
+
+  it('a hot roast dropped under the limit cools without tripping (issue #93)', async () => {
+    const r = await roaster();
+    expect(await hotRoastToDrop(r)).toBeLessThan(240);
+    await r.driver.setOutput('heater', 0);
+    await r.driver.setOutput('fan', 100);
+    await r.driver.setOutput('cooling', 100);
+    await r.run(180);
+    expect(r.tripped()).toEqual([]);
+  });
+
+  it('a heater left on after drop still trips at 240 °C and safe-stops', async () => {
+    const r = await roaster();
+    await hotRoastToDrop(r);
+    await r.run(600);
+    expect(r.tripped()).toEqual(['max-temperature']);
+    expect(await r.outputs()).toMatchObject({ heater: 0, fan: 100 });
+  });
+
   it('refuses to unlock while still over the limit, then unlocks once it has cooled', async () => {
     const { monitor, driver, run } = await roaster();
     await driver.setOutput('heater', 100);

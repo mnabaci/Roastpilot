@@ -16,6 +16,7 @@ import {
 } from '../skywalker';
 import {
   DEFAULT_THERMAL_CONSTANTS,
+  removeBeans,
   stepRoaster,
   type RoasterTemps,
   type ThermalConstants,
@@ -145,10 +146,10 @@ export class SimulatedDriver implements RoasterDriver {
     this.#temps = { ...this.#temps, beansC: this.#constants.ambientC };
   }
 
-  /** Beans out into the cooling tray: the probe reads the drum again. */
+  /** Beans out into the cooling tray: the probe reads the drum again, from where it was. */
   dumpBeans(): void {
     this.#advance();
-    this.#temps = { ...this.#temps, beansC: undefined };
+    this.#temps = removeBeans(this.#temps);
   }
 
   /** The cable is back. Call `connect()` again before talking to the roaster. */

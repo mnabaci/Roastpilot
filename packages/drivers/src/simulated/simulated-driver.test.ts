@@ -117,6 +117,40 @@ describe('SimulatedDriver', () => {
     });
   });
 
+  describe('after drop', () => {
+    /** A hot manual roast like issue #93: preheat, charge, heater 80 and fan 50 to 10:11. */
+    async function hotRoast() {
+      const { clock, driver } = await connected();
+      await driver.setOutput('heater', 100);
+      await driver.setOutput('fan', 30);
+      while ((await pollFor(clock, driver, 1)) < 180);
+      driver.chargeBeans();
+      await driver.setOutput('heater', 80);
+      await driver.setOutput('fan', 50);
+      const dropBt = await pollFor(clock, driver, 611);
+      return { clock, driver, dropBt };
+    }
+
+    it('cools from the drop temperature with heater 0 and fan 100, never rising', async () => {
+      const { clock, driver, dropBt } = await hotRoast();
+      await driver.setOutput('heater', 0);
+      await driver.setOutput('fan', 100);
+      await driver.setOutput('cooling', 100);
+      driver.dumpBeans();
+      const after: number[] = [];
+      for (let s = 0; s < 180; s++) after.push(await pollFor(clock, driver, 1));
+      expect(Math.max(...after)).toBeLessThanOrEqual(dropBt);
+      // Like the real Skywalker: about 10 °C down in the first 15 s.
+      expect(after[14]).toBeLessThan(dropBt - 5);
+    });
+
+    it('still heats the empty drum if the heater stays on', async () => {
+      const { clock, driver, dropBt } = await hotRoast();
+      driver.dumpBeans();
+      expect(await pollFor(clock, driver, 60)).toBeGreaterThan(dropBt);
+    });
+  });
+
   describe('sketch behaviour', () => {
     it('switches everything off after 10 s without a command', async () => {
       const { clock, driver } = await connected();

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { fitError, fitThermalConstants, replayRoast, type FitSample } from './thermal-fit';
-import { DEFAULT_THERMAL_CONSTANTS, stepRoaster, type ThermalConstants } from './thermal-model';
+import {
+  DEFAULT_THERMAL_CONSTANTS,
+  removeBeans,
+  stepRoaster,
+  type ThermalConstants,
+} from './thermal-model';
 
 /** A roast made by the model itself: preheat, charge at 0, turn the heat down, drop at 500 s. */
 function syntheticRoast(constants: ThermalConstants): FitSample[] {
@@ -15,7 +20,7 @@ function syntheticRoast(constants: ThermalConstants): FitSample[] {
     };
     samples.push({ tS, bt: temps.probeC, beans, ...inputs });
     if (beans && temps.beansC === undefined) temps = { ...temps, beansC: constants.ambientC };
-    if (!beans) temps = { ...temps, beansC: undefined };
+    if (!beans && temps.beansC !== undefined) temps = removeBeans(temps);
     for (let s = 0; s < 2; s++) temps = stepRoaster(temps, inputs, constants, 0.5);
   }
   return samples;

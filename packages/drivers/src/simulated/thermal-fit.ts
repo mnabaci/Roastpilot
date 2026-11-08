@@ -1,5 +1,6 @@
 import { minimise } from './nelder-mead';
 import {
+  removeBeans,
   stepRoaster,
   type RoasterTemps,
   type ThermalConstants,
@@ -38,7 +39,7 @@ export function replayRoast(samples: readonly FitSample[], constants: ThermalCon
   let prev = first;
   for (const next of samples.slice(1)) {
     if (prev.beans && temps.beansC === undefined) temps = { ...temps, beansC: constants.ambientC };
-    if (!prev.beans && temps.beansC !== undefined) temps = { ...temps, beansC: undefined };
+    if (!prev.beans && temps.beansC !== undefined) temps = removeBeans(temps);
     const gapS = next.tS - prev.tS;
     const steps = Math.max(1, Math.ceil(gapS / MAX_STEP_S));
     for (let s = 0; s < steps; s++) temps = stepRoaster(temps, prev, constants, gapS / steps);
