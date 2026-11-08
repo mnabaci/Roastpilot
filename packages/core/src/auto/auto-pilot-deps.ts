@@ -23,7 +23,6 @@ export interface AutoPilotDeps {
   drop: () => Promise<void>;
   profile: () => AutoProfile;
   tuning: () => AutoTuning;
-  soakS: () => number;
   onEvent: (event: AutoEvent) => void;
   onChange: (status: AutoStatus) => void;
   logger?: Logger;

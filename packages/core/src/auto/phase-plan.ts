@@ -63,15 +63,3 @@ export function soakLengthS(profile: AutoProfile): number {
   const [first] = profile.phases;
   return isSoak(profile, 0) && first?.next.on === 'time' ? first.next.afterS : 0;
 }
-
-/** The profile with its opening soak set to `soakS`: a fixed phase that ends on time. */
-export function withSoakTime(profile: AutoProfile, soakS: number): AutoProfile {
-  return {
-    ...profile,
-    phases: profile.phases.map((phase, index) =>
-      isSoak(profile, index) && phase.next.on === 'time'
-        ? { ...phase, next: { on: 'time', afterS: soakS } }
-        : phase,
-    ),
-  };
-}

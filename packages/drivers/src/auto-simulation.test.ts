@@ -1,3 +1,4 @@
+import type { AutoProfile } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { simulateAutoRoast, type SimulatedRow } from './auto-simulation.harness';
 import { SKYWALKER_PROFILES, SKYWALKER_TUNING } from './skywalker-profiles';
@@ -29,10 +30,38 @@ describe.each(STYLES)('$name on the simulator', (profile) => {
     expect(rows.find((row) => row.tS > 65)?.heater).toBeGreaterThan(0);
   });
 
-  it('follows the soak time setting', async () => {
-    const { rows } = await simulateAutoRoast({ profile, tuning, soakS: 90, firstCrackAtC: 191 });
+  it("follows the profile's own soak", async () => {
+    const [soak, ...rest] = profile.phases;
+    if (!soak) throw new Error('no soak');
+    const longer: AutoProfile = {
+      ...profile,
+      phases: [{ ...soak, next: { on: 'time', afterS: 90 } }, ...rest],
+    };
+    const { rows } = await simulateAutoRoast({ profile: longer, tuning, firstCrackAtC: 191 });
     expect(rows.filter((row) => row.tS < 90).every((row) => row.heater === 0)).toBe(true);
     expect(rows.find((row) => row.tS > 95)?.heater).toBeGreaterThan(0);
+  });
+
+  describe('without a soak', () => {
+    const noSoak = { ...profile, phases: profile.phases.slice(1) };
+
+    it('heats from charge and still drops by itself, with no stop and no safety trip', async () => {
+      const roast = await simulateAutoRoast({ profile: noSoak, tuning, firstCrackAtC: 191 });
+      expect(roast.rows.find((row) => row.tS >= 5)?.heater).toBeGreaterThan(0);
+      expect(roast.roastEnded).toBe(true);
+      expect(roast.stopped).toBe(false);
+      expect(roast.safety).toEqual([]);
+    });
+
+    it('marks dry end once, after the dip, not on the hot charge', async () => {
+      const { events } = await simulateAutoRoast({ profile: noSoak, tuning, firstCrackAtC: 191 });
+      const kinds = events.map((event) => event.kind);
+      expect(kinds.filter((kind) => kind === 'dry-end')).toHaveLength(1);
+      // Charge comes in above dry end: the first phase starts before dry end is marked.
+      expect(kinds.indexOf('dry-end')).toBeGreaterThan(kinds.indexOf('phase'));
+      const phases = events.flatMap((event) => (event.kind === 'phase' ? [event.name] : []));
+      expect(phases).toEqual(noSoak.phases.map((phase) => phase.name));
+    });
   });
 
   it('runs every phase, in order, and marks dry end once', async () => {

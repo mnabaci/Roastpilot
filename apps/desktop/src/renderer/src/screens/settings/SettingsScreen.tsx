@@ -2,7 +2,6 @@ import { NavList, SidebarLayout } from '@roastpilot/ui';
 import type { ReactNode } from 'react';
 import { AboutSection } from './AboutSection';
 import { AppearanceSection } from './AppearanceSection';
-import { AutoSection } from './AutoSection';
 import { ChartSection } from './ChartSection';
 import { ControlsSection } from './ControlsSection';
 import { RoastSection } from './RoastSection';
@@ -12,7 +11,6 @@ import { SETTINGS_SECTIONS, type SettingsSection } from './settings-section';
 const SECTION: Readonly<Record<SettingsSection, () => ReactNode>> = {
   controls: () => <ControlsSection />,
   roast: () => <RoastSection />,
-  auto: () => <AutoSection />,
   sounds: () => <SoundsSection />,
   chart: () => <ChartSection />,
   appearance: () => <AppearanceSection />,

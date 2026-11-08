@@ -302,7 +302,7 @@ describe('createAppServices', () => {
   });
 
   describe('Auto', () => {
-    const AUTO = { roastMode: 'auto', soakTimeS: 45 } as const;
+    const AUTO = { roastMode: 'auto' } as const;
 
     function autoSetup(settings: Partial<Settings> = AUTO) {
       const opened = openDatabase(':memory:', silentLogger);
@@ -339,7 +339,7 @@ describe('createAppServices', () => {
       expect(published.map(([c]) => c)).toContain(IPC_CHANNELS.autoStatus);
     });
 
-    it('saves an Auto roast with its profile copy and soak, and the phase it ran', async () => {
+    it("saves an Auto roast with its profile copy and the profile's own soak, and the phase it ran", async () => {
       const { clock, services, sim, repository } = autoSetup();
       await services.settings.get();
       await services.session.connect(sim, { kind: 'simulator' });
@@ -351,7 +351,7 @@ describe('createAppServices', () => {
       const saved = await repository.get(1);
       if (!saved.ok) throw new Error('not saved');
       expect(saved.value.mode).toBe('auto');
-      expect(saved.value.profile?.phases[0]?.next).toEqual({ on: 'time', afterS: 45 });
+      expect(saved.value.profile?.phases[0]?.next).toEqual({ on: 'time', afterS: 60 });
       expect(saved.value.events.map((e) => [e.kind, e.detail])).toContainEqual(['phase', 'Soak']);
     });
 

@@ -171,7 +171,6 @@ export {
   CoolingTimeSchema,
   RoasterCoolToSchema,
   RoastModeSchema,
-  SoakTimeSchema,
   ThemeSchema,
   DEFAULT_SETTINGS,
   needsSafetyNotice,
@@ -184,7 +183,6 @@ export {
   type RoasterCoolTo,
   type RoastMode,
   type Settings,
-  type SoakTime,
   type SettingsWriteError,
   type Theme,
 } from './settings';

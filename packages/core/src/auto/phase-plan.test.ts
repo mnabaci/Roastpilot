@@ -8,7 +8,6 @@ import {
   isSoak,
   soakLengthS,
   withCapUnder,
-  withSoakTime,
 } from './phase-plan';
 
 const PROFILE: AutoProfile = {
@@ -93,24 +92,6 @@ describe('isSoak', () => {
   it('is no phase of a profile that opens with heat control', () => {
     const [, heatOn] = PROFILE.phases;
     expect(isSoak({ ...PROFILE, phases: heatOn ? [heatOn] : [] }, 0)).toBe(false);
-  });
-});
-
-describe('withSoakTime', () => {
-  it('changes only the opening soak', () => {
-    const changed = withSoakTime(PROFILE, 90);
-    expect(changed.phases[0]?.next).toEqual({ on: 'time', afterS: 90 });
-    expect(changed.phases.slice(1)).toEqual(PROFILE.phases.slice(1));
-  });
-
-  it('leaves the original alone', () => {
-    withSoakTime(PROFILE, 90);
-    expect(PROFILE.phases[0]?.next).toEqual({ on: 'time', afterS: 60 });
-  });
-
-  it('leaves a profile that opens without a timed fixed phase', () => {
-    const phases = PROFILE.phases.slice(1);
-    expect(withSoakTime({ ...PROFILE, phases }, 90).phases).toEqual(phases);
   });
 });
 
