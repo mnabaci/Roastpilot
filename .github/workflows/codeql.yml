@@ -1,11 +1,9 @@
 name: CodeQL
 
-# Our own CodeQL setup instead of GitHub's default setup, whose runs downloaded the CodeQL bundle
-# from GitHub's release servers every time, failed whenever they timed out, and couldn't be re-run.
-# - The action is pinned to the release whose CodeQL CLI the runners already have installed
-#   (v4.39.1 → CLI 2.27.3), so it downloads nothing. Bump it once the runner image has the newer CLI
-#   ("Did not find CodeQL tools version … in the toolcache" in the init log means it hasn't yet).
-# - If setup still fails (a download that times out), it tries once more after a minute.
+# Our own CodeQL setup instead of GitHub's default setup. Each run still downloads the CodeQL
+# bundle from GitHub's release servers (GitHub picks the version), which time out on bad days, so:
+# - if setup fails, it waits a minute and tries once more;
+# - a failed job can be re-run by hand, which default setup's runs couldn't.
 # Same languages as before; the firmware's C++ isn't analysed.
 
 on:
@@ -40,7 +38,7 @@ jobs:
           persist-credentials: false
       - id: init
         continue-on-error: true
-        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           languages: ${{ matrix.language }}
           build-mode: none
@@ -48,10 +46,10 @@ jobs:
         if: steps.init.outcome == 'failure'
         run: sleep 60
       - if: steps.init.outcome == 'failure'
-        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           languages: ${{ matrix.language }}
           build-mode: none
-      - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+      - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           category: /language:${{ matrix.language }}
