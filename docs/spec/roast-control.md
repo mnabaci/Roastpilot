@@ -44,13 +44,13 @@ Each phase:
 
 **Light** is the user's own step profile ("Soak" technique). Temperatures are from this modded Skywalker's sensor. Written for 385 g; the default batch is 375 g:
 
-| Phase       | Ends at | Duration | RoR range | Heat estimate | Fan | Next phase when          |
-| ----------- | ------- | -------- | --------- | ------------- | --- | ------------------------ |
-| Soak        | –       | –        | –         | 0%, fixed     | 30% | 1:00 (Soak time setting) |
-| Heat on     | 150 °C  | 4:05     | 14–18     | 85%           | 30% | BT 150 °C (backup 6:30)  |
-| Yellowing   | 165 °C  | 1:14     | 12–14     | 65%           | 50% | BT 165 °C (backup 8:00)  |
-| Maillard    | 180 °C  | 1:38     | 8–10      | 50%           | 65% | BT 180 °C (backup 11:00) |
-| Development | 191 °C  | 1:34     | 3–7       | 40%           | 80% | End rule                 |
+| Phase       | Ends at | Duration | RoR range | Heat estimate | Fan | Next phase when           |
+| ----------- | ------- | -------- | --------- | ------------- | --- | ------------------------- |
+| Soak        | –       | –        | –         | 0%, fixed     | 30% | 1:00 (the profile's soak) |
+| Heat on     | 150 °C  | 4:05     | 14–18     | 85%           | 30% | BT 150 °C (backup 6:30)   |
+| Yellowing   | 165 °C  | 1:14     | 12–14     | 65%           | 50% | BT 165 °C (backup 8:00)   |
+| Maillard    | 180 °C  | 1:38     | 8–10      | 50%           | 65% | BT 180 °C (backup 11:00)  |
+| Development | 191 °C  | 1:34     | 3–7       | 40%           | 80% | End rule                  |
 
 - Charge temp 180 °C. Dry end at BT 150 °C. Drop at 1:45 after first crack (about 15.5 % development; roast 7 dropped at 1:31, 13.8 %), or at BT 200 °C, whichever comes first.
 - Curve points, from roast 7 (2026-11-04): 0:00 180 °C, 1:04 92 °C (turning point), 2:34 110 °C, 5:05 150 °C, 6:19 165 °C, 7:57 180 °C, 9:18 190 °C, 11:03 197 °C.
@@ -144,7 +144,7 @@ A curve profile is usually: a fixed soak phase, then one `follow` phase until dr
    4. Heater off before charge, so the beans don't scorch on landing: at "Add beans" you press Charge soon. The heater goes to 0 at once (not on the next reading), whichever way the phases will control heat, and a per-roaster countdown runs (Skywalker: 5 s), then the flow panel says "Beans in". You charge and press Start, and the heater stays at 0 through the soak. With no Start within 30 s of the countdown ending, the hold resumes and Charge soon is offered again. Start without Charge soon also works, as a heater cut at that moment. A heater you set by hand stays yours.
    5. Limits: the cool step and the climb each give up after 15 min, and when the hold's 10 min run out the heater goes to 0 and Auto hands the outputs to you. Both are logged, so a stuck probe or a forgotten roaster can't keep running. The flow panel then says "Preheat ran out · heater off · end, then Preheat again" and offers no Start: the drum is cooling.
 2. **Charge:** you press Start (beans in). The clock starts at 0 and the first phase begins.
-3. **Phases:** the controller runs each phase and moves on when its trigger fires (or its backup time passes). Dry end is marked automatically at the dry-end temp.
+3. **Phases:** the controller runs each phase and moves on when its trigger fires (or its backup time passes). Dry end is marked automatically at the dry-end temp. BT comes in hot at charge and falls through these temperatures, so a temperature trigger or dry end counts only once BT has been below it (and dry end never in the soak): a profile without a soak skips no step at charge.
 4. **First crack:** you press First crack; the app records time and BT and starts the development timer. Only your tap starts the timer: the Development heat and fan step can begin earlier, on its BT trigger, but it never counts as a crack. With no tap, the BT cap ends the roast.
 5. **Drop:** at the development time, or when BT reaches the cap. Heater 0%, fan 100%, bean cooler on, prompt "Dump beans"; drum cooling starts too ([manual-mode.md](manual-mode.md)).
 6. **Cooling:** the beans cool for the bean cooling time (default 4 min), then the roast is saved; the drum keeps cooling to its target unless the next batch's preheat starts (back-to-back session).
