@@ -1,16 +1,8 @@
 import { silentLogger, type Logger } from '@roastpilot/core';
 import {
-  AUTO_OFF,
-  COACH_QUIET,
   DEFAULT_SETTINGS,
-  NO_ROAST_SETUP,
   SAFETY_NOTICE_VERSION,
-  UPDATES_OFF,
-  err,
-  ok,
-  type AutoProfile,
   type ConnectionState,
-  type Roaster,
   type RoastpilotApi,
 } from '@roastpilot/shared';
 import { PlotEngineProvider } from '@roastpilot/ui';
@@ -20,98 +12,13 @@ import { vi, type Mocked } from 'vitest';
 import { AppProvider } from '../app/AppProvider';
 import type { ChimePlayer } from '../features/chime';
 import { fakePlotEngine } from './fake-plot-engine';
-import { READY_ROAST } from '@roastpilot/shared';
 import { createStores, type StoresSeed } from '../stores/stores';
+import { fakeAppApi } from './fake-api';
+import { withSpies } from './with-spies';
 
-/** A `window.roastpilot` whose calls all succeed; override what a test needs. */
+/** A `window.roastpilot` whose calls all succeed, each a spy; override what a test needs. */
 export function fakeApi(overrides: Partial<RoastpilotApi> = {}): Mocked<RoastpilotApi> {
-  const unsubscribe = () => undefined;
-  return {
-    listPorts: vi.fn(() => Promise.resolve([])),
-    connect: vi.fn(() => Promise.resolve(ok(undefined))),
-    disconnect: vi.fn(() => Promise.resolve()),
-    setOutput: vi.fn(() => Promise.resolve(ok(undefined))),
-    emergencyStop: vi.fn(() => Promise.resolve()),
-    acknowledgeSafety: vi.fn(() => Promise.resolve(ok(undefined))),
-    onReading: vi.fn(() => unsubscribe),
-    onConnection: vi.fn(() => unsubscribe),
-    onSafetyEvent: vi.fn(() => unsubscribe),
-    log: vi.fn(),
-    getSnapshot: vi.fn(() =>
-      Promise.resolve({
-        connection: { status: 'disconnected' } as const,
-        roast: READY_ROAST,
-        readings: [],
-        safety: { locked: false, tripped: [] },
-        auto: AUTO_OFF,
-        coach: COACH_QUIET,
-        setup: NO_ROAST_SETUP,
-        currentRoastId: null,
-      }),
-    ),
-    roastAction: vi.fn(() => Promise.resolve(ok(undefined))),
-    onRoast: vi.fn(() => unsubscribe),
-    getSettings: vi.fn(() => Promise.resolve(DEFAULT_SETTINGS)),
-    setSettings: vi.fn((settings) => Promise.resolve(ok(settings))),
-    listLogDays: vi.fn(() => Promise.resolve([])),
-    readLogDay: vi.fn(() => Promise.resolve({ records: [], unreadable: 0, truncated: false })),
-    onLogEntries: vi.fn(() => unsubscribe),
-    openLogFolder: vi.fn(() => Promise.resolve()),
-    onNavigate: vi.fn(() => unsubscribe),
-    onShowSafetyNotice: vi.fn(() => unsubscribe),
-    listRoasts: vi.fn(() => Promise.resolve([])),
-    getRoast: vi.fn((id: number) => Promise.resolve(err({ kind: 'not-found' as const, id }))),
-    deleteRoast: vi.fn(() => Promise.resolve(ok(undefined))),
-    exportRoasts: vi.fn(() => Promise.resolve(ok({ status: 'cancelled' as const }))),
-    importRoasts: vi.fn(() => Promise.resolve(ok({ status: 'cancelled' as const }))),
-    setRoastBean: vi.fn(() => Promise.resolve(ok(undefined))),
-    importArtisan: vi.fn(() => Promise.resolve(ok({ status: 'cancelled' as const }))),
-    onRoastsChanged: vi.fn(() => unsubscribe),
-    autoChargeSoon: vi.fn(() => Promise.resolve(ok(undefined))),
-    autoResume: vi.fn(() => Promise.resolve(ok(undefined))),
-    onAutoStatus: vi.fn(() => unsubscribe),
-    coachApply: vi.fn(() => Promise.resolve(ok(undefined))),
-    coachDismiss: vi.fn(() => Promise.resolve()),
-    onCoachStatus: vi.fn(() => unsubscribe),
-    listProfiles: vi.fn(() => Promise.resolve([])),
-    duplicateProfile: vi.fn((id: string) =>
-      Promise.resolve(err({ kind: 'not-found' as const, id })),
-    ),
-    saveProfile: vi.fn((profile: AutoProfile) => Promise.resolve(ok({ profile, builtIn: false }))),
-    deleteProfile: vi.fn(() => Promise.resolve(ok(undefined))),
-    copyProfile: vi.fn((request: { id: string }) =>
-      Promise.resolve(err({ kind: 'not-found' as const, id: request.id })),
-    ),
-    makeProfileFromMilestones: vi.fn(() =>
-      Promise.resolve(err({ kind: 'storage-failed' as const, message: 'not in this test' })),
-    ),
-    listRoasters: vi.fn(() => Promise.resolve([])),
-    addRoaster: vi.fn(() => Promise.resolve(err({ kind: 'in-use' as const }))),
-    saveRoaster: vi.fn((roaster: Roaster) => Promise.resolve(ok(roaster))),
-    deleteRoaster: vi.fn(() => Promise.resolve(ok(undefined))),
-    setActiveRoaster: vi.fn(() => Promise.resolve(ok(undefined))),
-    chooseConnection: vi.fn(() => Promise.resolve(ok(undefined))),
-    onRoasters: vi.fn(() => unsubscribe),
-    listBeans: vi.fn(() => Promise.resolve([])),
-    addBean: vi.fn(() => Promise.resolve(ok(1))),
-    updateBean: vi.fn(() => Promise.resolve(ok(undefined))),
-    setBeanArchived: vi.fn(() => Promise.resolve(ok(undefined))),
-    addStock: vi.fn(() => Promise.resolve(ok(undefined))),
-    adjustStock: vi.fn(() => Promise.resolve(ok(undefined))),
-    onBeans: vi.fn(() => unsubscribe),
-    makeBeanProfile: vi.fn((request: { beanId: number }) =>
-      Promise.resolve(err({ kind: 'bean-not-found' as const, id: request.beanId })),
-    ),
-    setRoastSetup: vi.fn(() => Promise.resolve()),
-    saveRoastResult: vi.fn(() => Promise.resolve(ok(undefined))),
-    makeProfileFromRoast: vi.fn(() => Promise.resolve(err({ kind: 'too-short' as const }))),
-    getAppInfo: vi.fn(() => Promise.resolve({ version: '0.1.0', update: UPDATES_OFF })),
-    checkForUpdates: vi.fn(() => Promise.resolve()),
-    restartToUpdate: vi.fn(() => Promise.resolve(ok(undefined))),
-    openReleasePage: vi.fn(() => Promise.resolve(ok(undefined))),
-    onUpdateStatus: vi.fn(() => unsubscribe),
-    ...overrides,
-  } as Mocked<RoastpilotApi>;
+  return withSpies(fakeAppApi(overrides));
 }
 
 const percent = { kind: 'output', unit: 'percent', min: 0, max: 100, step: 5 } as const;
