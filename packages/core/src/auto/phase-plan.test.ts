@@ -4,8 +4,8 @@ import { developmentTimeRule, btCapRule, dueEndRule } from './end-rules';
 import {
   advancePhase,
   CAP_BELOW_MAX_C,
-  dryEndReached,
   isSoak,
+  soakLengthS,
   withCapUnder,
   withSoakTime,
 } from './phase-plan';
@@ -104,18 +104,13 @@ describe('withSoakTime', () => {
   });
 });
 
-describe('dryEndReached', () => {
-  it('ignores the temperature falling through it after charge', () => {
-    expect(dryEndReached(PROFILE, 0, 170)).toBe(false);
+describe('soakLengthS', () => {
+  it("is the soak's own time", () => {
+    expect(soakLengthS(PROFILE)).toBe(60);
   });
 
-  it('counts once the soak is over and BT has climbed to it', () => {
-    expect(dryEndReached(PROFILE, 1, 149)).toBe(false);
-    expect(dryEndReached(PROFILE, 1, 150)).toBe(true);
-  });
-
-  it('needs a reading', () => {
-    expect(dryEndReached(PROFILE, 1, undefined)).toBe(false);
+  it('is 0 for a profile that starts without a soak', () => {
+    expect(soakLengthS({ ...PROFILE, phases: PROFILE.phases.slice(1) })).toBe(0);
   });
 });
 

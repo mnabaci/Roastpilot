@@ -110,6 +110,15 @@ describe('Coach', () => {
       });
     });
 
+    it("without a soak, from charge: the first step's heat", () => {
+      const { feed, advice } = setup({
+        profile: { ...COACH_PROFILE, phases: COACH_PROFILE.phases.slice(1) },
+      });
+      feed(0);
+      // Drying's 80 %, corrected by at most its 20-point limit.
+      expect(advice()).toMatchObject({ kind: 'setting', heater: { from: 0, to: 60 } });
+    });
+
     it('heads-ups still come during the soak', () => {
       const longSoak: AutoProfile = {
         ...COACH_PROFILE,

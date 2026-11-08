@@ -105,6 +105,12 @@ describe('profileFromMilestones', () => {
     expect(phases.at(-1)?.next).toEqual({ on: 'end' });
   });
 
+  it('keeps a base without a soak without one', () => {
+    const base = { ...BASE, phases: BASE.phases.slice(1) };
+    const profile = profileFromMilestones({ milestones: light, base, id: 'c', name: 'M' });
+    expect(profile.phases[0]).toMatchObject({ name: 'Heat on', heat: { mode: 'follow' } });
+  });
+
   it('drops a phase that would start at or above the cap; the one before runs to the end', () => {
     const low = {
       ...light,

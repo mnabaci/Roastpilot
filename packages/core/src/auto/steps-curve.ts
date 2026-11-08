@@ -1,4 +1,5 @@
 import type { AutoProfile, CurvePoint } from '@roastpilot/shared';
+import { soakLengthS } from './phase-plan';
 
 /**
  * A step profile's planned curve, for the chart: charge and the turning point as written, each
@@ -7,8 +8,8 @@ import type { AutoProfile, CurvePoint } from '@roastpilot/shared';
  */
 export function plannedCurve(profile: AutoProfile): readonly CurvePoint[] {
   if (!profile.phases.some((phase) => phase.heat.mode === 'target')) return profile.curve;
-  const [soak] = profile.phases;
-  let atS = soak?.next.on === 'time' ? soak.next.afterS : 0;
+  // Without a soak, the first step starts at charge.
+  let atS = soakLengthS(profile);
   const steps = profile.phases.flatMap((phase) => {
     if (phase.heat.mode !== 'target') return [];
     atS += phase.heat.durationS;
