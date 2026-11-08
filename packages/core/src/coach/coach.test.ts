@@ -115,8 +115,8 @@ describe('Coach', () => {
         profile: { ...COACH_PROFILE, phases: COACH_PROFILE.phases.slice(1) },
       });
       feed(0);
-      // Drying's 80 %, corrected by at most its 20-point limit.
-      expect(advice()).toMatchObject({ kind: 'setting', heater: { from: 0, to: 60 } });
+      // Drying, not a later step: BT is above Drying's 150 °C only because it was just charged.
+      expect(advice()).toMatchObject({ kind: 'setting', heater: { from: 0, to: 80 } });
     });
 
     it('heads-ups still come during the soak', () => {
