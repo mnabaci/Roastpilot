@@ -255,6 +255,22 @@ describe('RoastChart', () => {
       expect(screen.getByRole('img', { name: 'Heater 70%, Fan 50%' })).toBeInTheDocument();
     });
 
+    it('rebuilds both plots in the new colours when the theme changes', async () => {
+      draw(
+        <RoastChart title="Roast curve" layers={[bt([[0, 180]]), { ...ror, axis: 'output' }]} />,
+      );
+      expect(created).toHaveLength(2);
+      const root = document.documentElement;
+      await act(async () => {
+        root.style.setProperty('--heat', 'rgb(194, 62, 20)');
+        root.dataset.theme = 'light';
+        await Promise.resolve();
+      });
+      expect(created).toHaveLength(4);
+      expect(created[2]?.opts.series[1]?.stroke).toBe('rgb(194, 62, 20)');
+      delete root.dataset.theme;
+    });
+
     it('has no strip without output layers', () => {
       draw(<RoastChart title="Roast curve" layers={[bt([[0, 180]])]} />);
       expect(created).toHaveLength(1);

@@ -9,6 +9,7 @@ import type { ChartDrag, TimeRange } from './roast-chart/drag-handles';
 import { usePlotEngine } from './roast-chart/plot-engine';
 import { buildChartOptions, buildStripOptions } from './roast-chart/uplot-options';
 import { splitLayers } from './roast-chart/split-layers';
+import { useThemeKey } from './roast-chart/use-theme-key';
 import { useUplot } from './roast-chart/use-uplot';
 
 export interface RoastChartProps {
@@ -93,6 +94,8 @@ export function RoastChart({
   );
   const scaleKey = `${String(timeWindow?.fromS)}:${String(timeWindow?.toS)}:${String(temperatureFloorC)}`;
   const rightAxis = main.some((l) => l.axis === 'ror');
+  // Colours are read when a plot is built: a new theme rebuilds both.
+  const theme = useThemeKey();
 
   useEffect(() => {
     const element = plotRef.current;
@@ -109,7 +112,7 @@ export function RoastChart({
   useUplot({
     engine,
     element: plotRef,
-    structure: `${structureOf(main)}#${String(rightAxis)}`,
+    structure: `${structureOf(main)}#${String(rightAxis)}#${theme}`,
     width,
     height,
     data: mainData,
@@ -143,7 +146,7 @@ export function RoastChart({
   useUplot({
     engine,
     element: stripRef,
-    structure: `${structureOf(strip)}#${String(rightAxis)}`,
+    structure: `${structureOf(strip)}#${String(rightAxis)}#${theme}`,
     width,
     height: STRIP_HEIGHT,
     data: stripData,
