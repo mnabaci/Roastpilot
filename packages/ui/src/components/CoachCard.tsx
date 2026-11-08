@@ -1,5 +1,6 @@
 import { cn } from '../lib/utils';
 import { Button } from './Button';
+import { CoachChanges, type CoachChange } from './CoachChanges';
 
 interface CoachCardBase {
   /** Said after the label, e.g. "needs calibration". */
@@ -10,8 +11,8 @@ interface CoachCardBase {
 
 interface CoachSuggestionProps extends CoachCardBase {
   variant?: 'suggestion';
-  /** The suggested change, one line per output: ["Heater 65% → 75%", "Fan 50% → 40%"]. */
-  changes: readonly string[];
+  /** The suggested changes, heater first: one aligned row per output. */
+  changes: readonly CoachChange[];
   /** Why, in one line, e.g. "4 °C below target, RoR falling". */
   reason: string;
   onApply: () => void;
@@ -65,13 +66,9 @@ export function CoachCard(props: CoachCardProps) {
       )}
     >
       <Label text="Coach suggests" note={note} />
-      {/* The change and its reason read as one block; one line per output, so it never wraps mid-way. */}
-      <div className="flex flex-col gap-0.5">
-        {props.changes.map((change) => (
-          <p key={change} className="text-readout-lg text-ink">
-            {change}
-          </p>
-        ))}
+      {/* The changes and their reason read as one block. */}
+      <div className="flex flex-col gap-1">
+        <CoachChanges changes={props.changes} />
         <p className="text-body text-ink-muted">{props.reason}</p>
       </div>
       <div className="flex gap-2.5">
