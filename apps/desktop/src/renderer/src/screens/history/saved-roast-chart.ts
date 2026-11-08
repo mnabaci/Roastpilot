@@ -1,4 +1,4 @@
-import { plannedCurve } from '@roastpilot/core';
+import { plannedCurve, savedRoastWindow, type TimeWindow } from '@roastpilot/core';
 import { READY_ROAST, type Reading, type RoastDetail, type RoastState } from '@roastpilot/shared';
 import type { LineLayer, ChartMarker } from '@roastpilot/ui';
 import { roastChartData } from '../roast/roast-chart-data';
@@ -53,4 +53,20 @@ export function savedRoastChart(
     width: 2,
   };
   return { layers: [ghost, ...chart.layers], markers: chart.markers };
+}
+
+/**
+ * History's focused view of a saved roast: −0:30 to its cool end (or End roast, or else drop)
+ * + 0:30 (docs/spec/ui.md, History). Undefined when that would hide nothing: the roast has no
+ * end to focus on, or no reading outside it, so Show preheat would change nothing.
+ */
+export function savedRoastFocus(detail: RoastDetail): TimeWindow | undefined {
+  const endEvent = detail.events.find((e) => e.kind === 'cool-end' || e.kind === 'end');
+  const focus = savedRoastWindow({
+    coolEndS: endEvent?.tS,
+    dropS: detail.dropTimeS ?? undefined,
+  });
+  if (!focus) return undefined;
+  const outside = detail.samples.some((s) => s.tS < focus.fromS || s.tS > focus.toS);
+  return outside ? focus : undefined;
 }

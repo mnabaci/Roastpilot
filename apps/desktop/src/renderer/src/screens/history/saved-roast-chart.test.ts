@@ -1,6 +1,6 @@
 import type { RoastDetail } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import { savedAsLive, savedRoastChart } from './saved-roast-chart';
+import { savedAsLive, savedRoastChart, savedRoastFocus } from './saved-roast-chart';
 
 const DETAIL: RoastDetail = {
   id: 1,
@@ -76,5 +76,50 @@ describe('saved roast chart', () => {
     });
     expect(chart.layers[0]?.points[0]).toEqual({ t: -1, v: 100 });
     expect(chart.layers[1]?.id).toBe('bt');
+  });
+});
+
+describe('savedRoastFocus', () => {
+  const roast = (over: Partial<RoastDetail>): RoastDetail => ({
+    ...DETAIL,
+    dropTimeS: 660,
+    samples: [
+      { tS: -420, values: { bt: 150 } },
+      { tS: 0, values: { bt: 180 } },
+      { tS: 660, values: { bt: 199 } },
+      { tS: 900, values: { bt: 60 } },
+    ],
+    events: [
+      { kind: 'charge', tS: 0, bt: 180 },
+      { kind: 'drop', tS: 660, bt: 199 },
+      { kind: 'cool-end', tS: 900, bt: 60 },
+    ],
+    ...over,
+  });
+
+  it('runs from −0:30 to the cool end + 0:30', () => {
+    expect(savedRoastFocus(roast({}))).toEqual({ fromS: -30, toS: 930 });
+  });
+
+  it('runs to End roast + 0:30 when the roast was ended there', () => {
+    const ended = roast({
+      events: [
+        { kind: 'charge', tS: 0, bt: 180 },
+        { kind: 'drop', tS: 660, bt: 199 },
+        { kind: 'end', tS: 700, bt: 150 },
+      ],
+    });
+    expect(savedRoastFocus(ended)).toEqual({ fromS: -30, toS: 730 });
+  });
+
+  it('runs to drop + 0:30 when cooling never ended', () => {
+    const unfinished = roast({ events: [{ kind: 'drop', tS: 660, bt: 199 }] });
+    expect(savedRoastFocus(unfinished)).toEqual({ fromS: -30, toS: 690 });
+  });
+
+  it('is none when it would hide nothing, so there is no Show preheat', () => {
+    const noPreheat = roast({ samples: [{ tS: 0, values: { bt: 180 } }] });
+    expect(savedRoastFocus(noPreheat)).toBeUndefined();
+    expect(savedRoastFocus(roast({ dropTimeS: null, events: [] }))).toBeUndefined();
   });
 });

@@ -28,6 +28,8 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
   const [compareId, setCompareId] = useState<RoastId>();
   const [deleteError, setDeleteError] = useState<string>();
   const [filter, setFilter] = useState(NO_FILTER);
+  // Show preheat stays as you browse History; it isn't saved (docs/spec/ui.md, History).
+  const [showPreheat, setShowPreheat] = useState(false);
   // An imported roast opens, even when the filter would hide it.
   const files = useRoastFiles((id) => {
     setFilter(NO_FILTER);
@@ -173,6 +175,8 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
           live={live}
           beans={beans}
           smoothingS={smoothingS}
+          showPreheat={showPreheat}
+          onShowPreheat={setShowPreheat}
         />
       </div>
     </SidebarLayout>
