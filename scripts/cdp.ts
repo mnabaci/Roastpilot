@@ -1,5 +1,9 @@
-// A minimal Chrome DevTools Protocol client over Node's own WebSocket: just what
-// scripts/screenshots.ts needs, so the repo needs no browser-automation dependency.
+// A minimal Chrome DevTools Protocol client over Node's own WebSocket, shared by
+// scripts/screenshots.ts and scripts/ui/ (the ui-check skill), so the repo needs no
+// browser-automation dependency.
+
+/** A command with no answer by then has failed (a page that hangs, a closed tab). */
+const CALL_TIMEOUT_MS = 30_000;
 
 interface Pending {
   resolve: (result: unknown) => void;
@@ -21,8 +25,10 @@ export class Cdp {
     this.#socket = socket;
     socket.addEventListener('message', (event: MessageEvent<string>) => {
       const reply = JSON.parse(event.data) as Reply;
-      const pending = reply.id === undefined ? undefined : this.#pending.get(reply.id);
-      if (!pending || reply.id === undefined) return;
+      // Only a whole-number id of a call this client made picks a handler; events are ignored.
+      if (typeof reply.id !== 'number' || !Number.isInteger(reply.id)) return;
+      const pending = this.#pending.get(reply.id);
+      if (pending === undefined) return;
       this.#pending.delete(reply.id);
       if (reply.error) pending.reject(new Error(reply.error.message));
       else pending.resolve(reply.result);
@@ -49,11 +55,19 @@ export class Cdp {
   send<T>(method: string, params: object = {}, sessionId?: string): Promise<T> {
     const id = ++this.#nextId;
     return new Promise<T>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.#pending.delete(id);
+        reject(new Error(`${method} timed out after ${String(CALL_TIMEOUT_MS)} ms`));
+      }, CALL_TIMEOUT_MS);
       this.#pending.set(id, {
         resolve: (result) => {
+          clearTimeout(timer);
           resolve(result as T);
         },
-        reject,
+        reject: (error) => {
+          clearTimeout(timer);
+          reject(new Error(`${method}: ${error.message}`));
+        },
       });
       this.#socket.send(JSON.stringify({ id, method, params, sessionId }));
     });
