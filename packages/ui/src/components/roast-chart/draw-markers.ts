@@ -35,18 +35,22 @@ export function drawMarkers(
   const ratio = devicePixelRatio;
   ctx.save();
   ctx.font = `600 ${String(13 * ratio)}px ${colors.font}`;
-  const shown = [...markers]
-    .sort((a, b) => a.t - b.t)
+  const right = bbox.left + bbox.width;
+  // Each label beside its line, or left of it near the edge; rows from where the labels really
+  // are, so one flipped left never runs into the label before it.
+  const shown = markers
     .map((marker) => ({ marker, x: u.valToPos(marker.t, 'x', true) }))
-    .filter(({ x }) => x >= bbox.left && x <= bbox.left + bbox.width);
+    .filter(({ x }) => x >= bbox.left && x <= right)
+    .map(({ marker, x }) => {
+      const width = ctx.measureText(marker.label).width;
+      return { marker, x, width, textX: labelX(x, width, right, LABEL_GAP * ratio) };
+    })
+    .sort((a, b) => a.textX - b.textX);
   const rows = labelRows(
-    shown.map(({ marker, x }) => ({
-      x: x + LABEL_GAP * ratio,
-      width: ctx.measureText(marker.label).width,
-    })),
+    shown.map(({ textX, width }) => ({ x: textX, width })),
     LABEL_GAP * ratio,
   );
-  shown.forEach(({ marker, x }, i) => {
+  shown.forEach(({ marker, x, textX }, i) => {
     ctx.strokeStyle = colors.tone[marker.tone];
     ctx.fillStyle = colors.tone[marker.tone];
     ctx.lineWidth = 1.5 * ratio;
@@ -57,12 +61,6 @@ export function drawMarkers(
     ctx.stroke();
     if (!labels) return;
     const row = rows[i] ?? 0;
-    const textX = labelX(
-      x,
-      ctx.measureText(marker.label).width,
-      bbox.left + bbox.width,
-      LABEL_GAP * ratio,
-    );
     ctx.fillText(marker.label, textX, bbox.top + (16 + row * LINE_HEIGHT) * ratio);
   });
   ctx.restore();
