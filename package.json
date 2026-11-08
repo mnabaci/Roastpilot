@@ -13,6 +13,7 @@
     "build": "pnpm --filter @roastpilot/desktop build",
     "serial:console": "node scripts/serial-console.ts",
     "fit:simulator": "jiti scripts/fit-simulator.ts",
+    "ui": "node scripts/ui/ui.ts",
     "storybook": "pnpm --filter @roastpilot/ui storybook",
     "build-storybook": "pnpm --filter @roastpilot/ui build-storybook",
     "typecheck": "tsc --noEmit -p tsconfig.json && pnpm -r --if-present typecheck",
