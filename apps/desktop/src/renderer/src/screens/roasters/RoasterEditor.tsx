@@ -120,10 +120,7 @@ export function RoasterEditor({ roaster, locked }: { roaster: Roaster; locked: b
           {TUNING_FIELDS.map(fields)}
         </div>
       ) : null}
-      <div className="flex flex-wrap items-center gap-2">
-        <Button variant="primary" disabled={locked || !edited || !checked.ok} onClick={save}>
-          Save
-        </Button>
+      <div className="flex flex-wrap items-center justify-end gap-2">
         {edited ? (
           <Button
             variant="ghost"
@@ -134,6 +131,9 @@ export function RoasterEditor({ roaster, locked }: { roaster: Roaster; locked: b
             Discard
           </Button>
         ) : null}
+        <Button variant="primary" disabled={locked || !edited || !checked.ok} onClick={save}>
+          Save
+        </Button>
       </div>
       {problem ? (
         <p role="alert" className="text-label text-critical-text">
