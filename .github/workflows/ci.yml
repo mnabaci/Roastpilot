@@ -12,9 +12,48 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# The steps of `pnpm check` run as parallel jobs. Format, lint and typecheck give the same answer on
+# every OS, so they run on Ubuntu; tests and the build run on Ubuntu and Windows. "Check (<os>)"
+# sums them up: those are the required checks.
 jobs:
-  check:
-    name: Check (${{ matrix.os }})
+  static:
+    name: Format and lint
+    runs-on: ubuntu-latest
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      # Native modules are rebuilt for Electron on developer machines; CI doesn't load them.
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm format:check
+      - run: pnpm lint
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm typecheck
+
+  build:
+    name: Build (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
@@ -31,15 +70,49 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: pnpm
-      # Native modules (serialport, better-sqlite3) are rebuilt for Electron on developer
-      # machines; CI doesn't load them yet, so skip install scripts. Revisit when storage tests
-      # need better-sqlite3 under Node (milestone 3).
       - run: pnpm install --frozen-lockfile --ignore-scripts
-      - run: pnpm format:check
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
       - run: pnpm build
       - name: Build Storybook
         if: matrix.os == 'ubuntu-latest'
         run: pnpm build-storybook
+
+  test:
+    name: Test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm test
+
+  check:
+    name: Check (${{ matrix.os }})
+    # Always runs, so a failed or cancelled part fails the required check instead of skipping it
+    # (a skipped required check would let the PR merge).
+    if: always()
+    needs: [static, typecheck, build, test]
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every part passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          for result in $RESULTS; do
+            if [ "$result" != success ]; then exit 1; fi
+          done
