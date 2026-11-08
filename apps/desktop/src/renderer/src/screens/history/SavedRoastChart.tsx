@@ -33,26 +33,26 @@ export function SavedRoastChart({
   );
   const focus = useMemo(() => savedRoastFocus(detail), [detail]);
   return (
-    <div className="flex flex-col gap-2">
-      {focus ? (
-        <Button
-          size="sm"
-          variant="ghost"
-          aria-pressed={showPreheat}
-          className={cn('self-end', showPreheat && 'bg-heat-tint text-heat')}
-          onClick={() => {
-            onShowPreheat(!showPreheat);
-          }}
-        >
-          Show preheat
-        </Button>
-      ) : null}
-      <RoastChart
-        title="Roast curve"
-        layers={chart.layers}
-        markers={chart.markers}
-        timeWindow={showPreheat ? undefined : focus}
-      />
-    </div>
+    <RoastChart
+      title="Roast curve"
+      titleAction={
+        focus ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-pressed={showPreheat}
+            className={cn(showPreheat && 'bg-heat-tint text-heat')}
+            onClick={() => {
+              onShowPreheat(!showPreheat);
+            }}
+          >
+            Show preheat
+          </Button>
+        ) : undefined
+      }
+      layers={chart.layers}
+      markers={chart.markers}
+      timeWindow={showPreheat ? undefined : focus}
+    />
   );
 }
