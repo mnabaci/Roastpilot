@@ -57,26 +57,28 @@ describe('autoFlowStep', () => {
     expect(autoFlowStep(ROASTING, status, PROFILE)).toMatchObject({
       primary: { action: 'first-crack' },
       secondary: { action: 'drop' },
-      hint: 'Yellowing · next at 165 °C',
+      hint: 'Step: Yellowing · next at 165 °C',
     });
     expect(autoFlowStep(ROASTING, { ...status, nextPhaseAtC: null }, PROFILE)?.hint).toBe(
-      'Yellowing',
+      'Step: Yellowing · last step',
     );
   });
 
   it('says the stall guard is adding heat', () => {
     const status = { ...ON, phaseName: 'Maillard', stallTripped: true };
-    expect(autoFlowStep(ROASTING, status, PROFILE)?.hint).toBe('Maillard · RoR low · more heat');
+    expect(autoFlowStep(ROASTING, status, PROFILE)?.hint).toBe(
+      'Step: Maillard · RoR low · more heat',
+    );
   });
 
   it('counts down to the drop in Development', () => {
     const status = { ...ON, phaseName: 'Development' };
     expect(autoFlowStep(DEVELOPMENT, status, PROFILE, { developmentS: 47 })).toMatchObject({
       primary: { action: 'drop' },
-      hint: 'Development · drops in 0:43 or at 200 °C',
+      hint: 'Step: Development · drops in 0:43 or at 200 °C',
     });
     expect(autoFlowStep(DEVELOPMENT, status, PROFILE, { developmentS: 95 })?.hint).toBe(
-      'Development · drops in 0:00 or at 200 °C',
+      'Step: Development · drops in 0:00 or at 200 °C',
     );
   });
 

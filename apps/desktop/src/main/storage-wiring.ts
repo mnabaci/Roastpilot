@@ -39,6 +39,7 @@ export interface Stores {
  */
 export function openStores(
   path: string,
+  /** Calendar time: it dates what is saved. */
   clock: Clock,
   logger: Logger,
   backup?: BackupPlan,

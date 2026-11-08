@@ -465,10 +465,33 @@ describe('ProfilesScreen', () => {
     await userEvent.click(screen.getByRole('menuitem', { name: 'Copy to Simulator' }));
     expect(api.copyProfile).toHaveBeenCalledWith({ id: 'light-steps', roasterId: 2 });
     // One line under the header, never inside the actions beside the name.
-    const message = await screen.findByText(/needs calibration there/);
+    const message = await screen.findByText(
+      /Copied to Simulator as "Mine" · make Simulator active to see it$/,
+    );
     expect(
       screen.getByRole('button', { name: /^More for (?!Profiles$)/ }).parentElement,
     ).not.toContainElement(message);
+  });
+
+  it('names the copy a roaster already has instead of making another', async () => {
+    const api = fakeApi({
+      copyProfile: vi.fn(() =>
+        Promise.resolve(
+          err({ kind: 'already-copied' as const, id: 'custom-9', name: 'Light · Steps (from X)' }),
+        ),
+      ),
+    });
+    renderApp(
+      <ProfilesScreen />,
+      { profiles: withMine, ...settingsOn('light-steps'), roasters: roastersWith(null) },
+      api,
+    );
+    await userEvent.click(screen.getByRole('button', { name: /^More for (?!Profiles$)/ }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Copy to Simulator' }));
+    expect(
+      await screen.findByText(/Simulator already has it as "Light · Steps \(from X\)"$/),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   describe('files', () => {

@@ -37,6 +37,7 @@ function setup({
     newId: () => 'custom-new',
     chosenId: () => 'light-steps',
     activeRoaster: () => ({ id: 1, model: 'skywalker' }),
+    roaster: () => ({ name: 'Skywalker', model: 'skywalker' }),
     logger: silentLogger,
   });
   const entries: LogEntry[] = [];

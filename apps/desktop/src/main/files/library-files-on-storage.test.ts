@@ -39,6 +39,7 @@ async function computer() {
     newId: () => `custom-${String(++n)}`,
     chosenId: () => 'light-steps',
     activeRoaster: () => roasters.active(),
+    roaster: (id) => roasters.all.find((r) => r.id === id),
     logger: silentLogger,
   });
   const beans = new BeanService({
