@@ -5,7 +5,13 @@ import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
 import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { useBeans, useRoast, useSettings } from '../../stores/use-stores';
-import { inProgressId, roastRows, roastTitle, selectionAfterDelete } from './history-format';
+import {
+  inProgressId,
+  roastRows,
+  roastTitle,
+  selectionAfterDelete,
+  wasStopped,
+} from './history-format';
 import { OpenRoast } from './OpenRoast';
 import { filterRoasts, NO_FILTER } from './roast-filter';
 import { RoastFilters } from './RoastFilters';
@@ -154,6 +160,7 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
           compareId={compareTo?.id}
           onCompare={setCompareId}
           live={live}
+          stopped={selected.status === 'loaded' && wasStopped(selected.detail)}
           onMakeProfile={profileMaker.make}
           onExport={(id, format) => {
             files.exportRoasts({ format, ids: [id] });

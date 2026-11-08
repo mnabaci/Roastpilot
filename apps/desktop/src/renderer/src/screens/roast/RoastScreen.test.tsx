@@ -198,17 +198,17 @@ describe('RoastScreen', () => {
   });
 
   const OFF = 'Heater, fan, drum and filter off now';
-  const ENDED = `${OFF} No bean cooling · dump the beans yourself The roast is saved as it is`;
+  const STOPPED = `${OFF} No bean cooling · dump the beans yourself The roast is saved as stopped`;
   it.each([
     [
       'preheat',
-      'End roast',
-      'End the roast?',
-      `${OFF} Back to Ready · the preheat isn't saved`,
-      'Keep roasting',
+      'Stop preheat',
+      'Stop the preheat?',
+      `${OFF} Back to Ready · nothing is saved`,
+      'Keep preheating',
     ],
-    ['roasting', 'End roast', 'End the roast?', ENDED, 'Keep roasting'],
-    ['development', 'End roast', 'End the roast?', ENDED, 'Keep roasting'],
+    ['roasting', 'Stop roast', 'Stop the roast?', STOPPED, 'Keep roasting'],
+    ['development', 'Stop roast', 'Stop the roast?', STOPPED, 'Keep roasting'],
     [
       'cooling',
       'Finish cooling now',
@@ -234,10 +234,10 @@ describe('RoastScreen', () => {
     expect(api.roastAction).toHaveBeenCalledWith('end');
   });
 
-  it.each(['ready', 'done'] as const)('%s has no End roast', (phase) => {
+  it.each(['ready', 'done'] as const)('%s has no stop', (phase) => {
     renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast(phase) });
     expect(
-      screen.queryByRole('button', { name: /End roast|Finish cooling/ }),
+      screen.queryByRole('button', { name: /^Stop (roast|preheat)|Finish cooling/ }),
     ).not.toBeInTheDocument();
   });
 

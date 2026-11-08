@@ -6,6 +6,7 @@ import {
   roastRows,
   roastTitle,
   selectionAfterDelete,
+  wasStopped,
 } from './history-format';
 
 const UTC_GB = { locale: 'en-GB', timeZone: 'UTC' };
@@ -77,5 +78,19 @@ describe('history formatting', () => {
     expect(inProgressId(roasts, 'development')).toBe(2);
     expect(inProgressId(roasts, 'done')).toBeUndefined();
     expect(inProgressId([summary(3), ...roasts], 'roasting')).toBeUndefined();
+  });
+});
+
+describe('wasStopped', () => {
+  const at = (kind: 'charge' | 'drop' | 'end' | 'cool-end') => ({ kind, tS: 0, bt: 180 });
+
+  it('is a roast with an end and no drop', () => {
+    expect(wasStopped({ events: [at('charge'), at('end')] })).toBe(true);
+  });
+
+  it('is not one that dropped, or never ended', () => {
+    expect(wasStopped({ events: [at('charge'), at('drop'), at('end')] })).toBe(false);
+    expect(wasStopped({ events: [at('charge'), at('drop'), at('cool-end')] })).toBe(false);
+    expect(wasStopped({ events: [at('charge')] })).toBe(false);
   });
 });

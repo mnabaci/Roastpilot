@@ -39,7 +39,7 @@ function stoppedStep(roast: RoastState, reason: AutoStopReason): FlowStep | unde
   const why = STOP_REASON[reason];
   if (roast.phase === 'preheat') {
     return reason === 'preheat-limit'
-      ? { stop: END_ROAST, hint: `${why} · heater off · end, then Preheat again.` }
+      ? { stop: END_ROAST, hint: `${why} · heater off · stop, then Preheat again.` }
       : { secondary: START, stop: END_ROAST, hint: `${why} · heater and fan are yours.` };
   }
   if (roast.phase === 'roasting') {

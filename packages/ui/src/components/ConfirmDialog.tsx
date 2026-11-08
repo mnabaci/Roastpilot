@@ -15,7 +15,7 @@ export interface ConfirmDialogProps {
   onConfirm: () => void;
   /** Deletes something: the verb in red text (`critical-text`), never a red fill. */
   destructive?: boolean;
-  /** Stops something normally, like End roast: the verb and icon in amber (`warning`), never red. */
+  /** Stops something normally, like Stop roast: the verb and icon in amber (`warning`), never red. */
   caution?: boolean;
   /** Before the question, in the tone's colour. */
   icon?: ReactNode;

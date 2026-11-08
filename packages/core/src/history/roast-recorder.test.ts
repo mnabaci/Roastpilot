@@ -409,7 +409,7 @@ describe('RoastRecorder', () => {
     expect(repository.roasts.get(1)?.samples.map((s) => s.tS)).toEqual([2]);
   });
 
-  it('End roast finishes the saved roast where it stopped', async () => {
+  it('Stop roast finishes the saved roast where it stopped', async () => {
     const { recorder, repository, saved, setNow } = setup();
     recorder.onRoastChange(CHARGED);
     setNow('2026-11-04T10:05:00.000Z');

@@ -1,6 +1,7 @@
 import {
   formatTemp,
   type Bean,
+  type RoastDetail,
   type RoastPhase,
   type RoastSummary,
   type TemperatureUnit,
@@ -11,6 +12,12 @@ import { formatClock, type RoastListItem } from '@roastpilot/ui';
 export interface DateOptions {
   locale?: string;
   timeZone?: string;
+}
+
+/** Stopped with Stop roast before drop: an `end` event and no drop (docs/spec/manual-mode.md, Stop). */
+export function wasStopped(detail: Pick<RoastDetail, 'events'>): boolean {
+  const kinds = new Set(detail.events.map((e) => e.kind));
+  return kinds.has('end') && !kinds.has('drop');
 }
 
 /** `Wed 4 Nov · 14:32`, in local time. */

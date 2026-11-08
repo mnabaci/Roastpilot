@@ -27,7 +27,7 @@ before charge (preheat) have negative times.
 | Start (charge)                                  | the `roasts` row (`started_at` = wall clock), every reading since Preheat    |
 | Every reading                                   | one `roast_samples` row                                                      |
 | Turning point, first crack, drop, cool end, end | one `roast_events` row; `fc_time_s`, `drop_time_s`, `drop_temp` on the roast |
-| Cool end or End roast                           | `ended_at`; the roast is complete                                            |
+| Cool end or Stop roast                          | `ended_at`; the roast is complete                                            |
 
 - With the charge point found earlier than the press (docs/spec/manual-mode.md), `started_at` and every time move with it.
 - Saving never asks anything: weights, rating and star arrive with the Beans milestone.

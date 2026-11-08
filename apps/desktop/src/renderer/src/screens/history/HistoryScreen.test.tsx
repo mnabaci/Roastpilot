@@ -289,6 +289,32 @@ describe('HistoryScreen', () => {
     });
   });
 
+  it('marks a roast stopped before drop with a Stopped badge by its title', async () => {
+    const stopped = {
+      ...detail(NEWER),
+      events: [
+        { kind: 'charge', tS: 0, bt: 180 },
+        { kind: 'end', tS: 300, bt: 170 },
+      ],
+    } as RoastDetail;
+    const api = fakeApi({
+      listRoasts: vi.fn(() => Promise.resolve([NEWER])),
+      getRoast: vi.fn(() => Promise.resolve(ok(stopped))),
+    });
+    renderApp(<HistoryScreen onOpenProfile={vi.fn()} />, {}, api);
+    expect(await screen.findByText('Stopped')).toBeInTheDocument();
+  });
+
+  it('has no Stopped badge on a roast that dropped', async () => {
+    const api = fakeApi({
+      listRoasts: vi.fn(() => Promise.resolve([NEWER])),
+      getRoast: vi.fn(() => Promise.resolve(ok(detail(NEWER)))),
+    });
+    renderApp(<HistoryScreen onOpenProfile={vi.fn()} />, {}, api);
+    await screen.findByRole('region', { name: 'Roast curve' });
+    expect(screen.queryByText('Stopped')).toBeNull();
+  });
+
   it('says why a roast is too short to make a profile from', async () => {
     const api = fakeApi({
       listRoasts: vi.fn(() => Promise.resolve([NEWER])),

@@ -85,7 +85,7 @@ describe('autoFlowStep', () => {
       const step = autoFlowStep(PREHEAT, { ...ON, stopReason: 'preheat-limit' }, PROFILE);
       expect(step).toEqual({
         stop: END_ROAST,
-        hint: 'Preheat ran out · heater off · end, then Preheat again.',
+        hint: 'Preheat ran out · heater off · stop, then Preheat again.',
       });
     });
 

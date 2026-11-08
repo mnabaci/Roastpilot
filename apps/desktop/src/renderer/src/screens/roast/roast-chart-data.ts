@@ -97,7 +97,7 @@ function rorPoints(readings: readonly Reading[], toT: (atMs: number) => number):
 }
 
 /**
- * The readings the RoR line is drawn from: charge to drop (or End roast), as Artisan does. There
+ * The readings the RoR line is drawn from: charge to drop (or Stop roast), as Artisan does. There
  * is no RoR line in preheat or cooling.
  */
 function roastingReadings(roast: RoastState, readings: readonly Reading[]): readonly Reading[] {
@@ -107,7 +107,7 @@ function roastingReadings(roast: RoastState, readings: readonly Reading[]): read
 }
 
 /**
- * The readings the lines are drawn from: up to cool end (or End roast), as History saves them.
+ * The readings the lines are drawn from: up to cool end (or Stop roast), as History saves them.
  * After that only the BT number stays live (docs/spec/ui.md, Chart).
  */
 function untilRoastEnd(roast: RoastState, readings: readonly Reading[]): readonly Reading[] {

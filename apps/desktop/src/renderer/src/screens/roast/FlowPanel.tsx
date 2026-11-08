@@ -4,7 +4,7 @@ import { Button } from '@roastpilot/ui';
 import { ConfirmButton } from '../../features/ConfirmButton';
 import { autoFlowStep } from './auto-flow';
 import { useTemperatureUnit } from '../../features/use-temperature-unit';
-import { END_ROAST, endConsequences, flowHint, flowStep, isConnected } from './flow-step';
+import { END_ROAST, flowHint, flowStep, isConnected, stopCopy } from './flow-step';
 import { useActiveProfile } from './use-active-profile';
 import { DrumCooling } from './DrumCooling';
 import { StayClose } from './StayClose';
@@ -70,6 +70,7 @@ export function FlowPanel({
   }
   const hint = autoStep?.hint ?? flowHint(roast, { coolingLeftS });
   const noRoast = phase === 'ready' || phase === 'done';
+  const stop = stopCopy(phase);
   return (
     <div className="flex flex-col gap-2">
       {/* Before a roast, the caution sits right above the action that starts one. */}
@@ -135,11 +136,11 @@ export function FlowPanel({
             key={phase}
             variant="secondary"
             icon={<CircleStop aria-hidden="true" />}
-            label={END_ROAST.label}
-            question="End the roast?"
-            consequences={endConsequences(phase)}
-            cancelLabel="Keep roasting"
-            confirmLabel={END_ROAST.label}
+            label={stop.label}
+            question={stop.question}
+            consequences={stop.consequences}
+            cancelLabel={stop.keep}
+            confirmLabel={stop.label}
             caution
             onConfirm={() => {
               act('end');

@@ -16,7 +16,7 @@ export const ALLOWED_FROM: Readonly<Record<RoastAction, readonly RoastPhase[]>> 
   drop: ['roasting', 'development'],
   // Only with no roast running, so a roast in progress can't be wiped by accident.
   clear: ['ready', 'done'],
-  // End roast / Finish cooling now: a normal stop, no heater lock (docs/spec/manual-mode.md).
+  // Stop roast / Finish cooling now: a normal stop, no heater lock (docs/spec/manual-mode.md).
   end: ['preheat', 'roasting', 'development', 'cooling'],
   'extend-cooling': ['cooling'],
   'cool-roaster': ['ready', 'done'],
