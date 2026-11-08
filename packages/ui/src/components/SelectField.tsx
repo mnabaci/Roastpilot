@@ -11,6 +11,8 @@ export interface SelectFieldProps<V extends string> {
   onChange: (value: V) => void;
   disabled?: boolean;
   hideLabel?: boolean;
+  /** Numbers (times, temperatures) among NumberFields: tabular, the text lined up with theirs. */
+  numeric?: boolean;
   className?: string;
 }
 
@@ -22,6 +24,7 @@ export function SelectField<V extends string>({
   onChange,
   disabled,
   hideLabel = false,
+  numeric = false,
   className,
 }: SelectFieldProps<V>) {
   const id = useId();
@@ -38,7 +41,10 @@ export function SelectField<V extends string>({
         options={options}
         onChange={onChange}
         disabled={disabled}
-        className="group flex h-control-sm w-full items-center gap-2 rounded-md border border-border bg-surface pr-3 pl-3.5 text-left text-body text-ink hover:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50 data-[state=open]:border-border-strong"
+        className={cn(
+          'group flex h-control-sm w-full items-center rounded-md border border-border bg-surface text-left text-body text-ink hover:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50 data-[state=open]:border-border-strong',
+          numeric ? 'gap-1 pr-2 pl-2.5 tabular-nums' : 'gap-2 pr-3 pl-3.5',
+        )}
       >
         <span className="min-w-0 flex-1 truncate">{current}</span>
         <ChevronDown
