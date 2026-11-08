@@ -6,17 +6,12 @@ import {
 } from '@roastpilot/core';
 import type { RoastState } from '@roastpilot/shared';
 import type { LineLayer } from '@roastpilot/ui';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useDeps } from '../../app/app-context';
 import { useRoastExpectations } from '../../features/use-roast-expectations';
 import { useSettings } from '../../stores/use-stores';
 import { useProfileInUse } from './use-active-profile';
-import { drawnRorCPerMin, roastView, type HeldView, type RoastView } from './roast-view';
-
-/** What one roast's view keeps between readings. */
-interface Held {
-  chargedAtMs: number | null;
-  view: HeldView;
-}
+import { drawnRorCPerMin, roastView, type RoastView } from './roast-view';
 
 /**
  * The Roast chart's frame and aids for this moment (`roastView`), from the profile in use, the
@@ -39,7 +34,12 @@ export function useRoastView({
   const chartPhaseBands = useSettings((s) => s.settings.chartPhaseBands);
   const profile = useProfileInUse();
   const expected = useRoastExpectations();
-  const [held, setHeld] = useState<Held>();
+  const { stores } = useDeps();
+  // From the app's store on mount, so a visit to another screen mid-roast changes nothing.
+  const [held, setHeld] = useState(() => stores.roastView.getState().held);
+  useEffect(() => {
+    stores.roastView.setState({ held });
+  }, [held, stores.roastView]);
   const previous = held?.chargedAtMs === roast.chargedAtMs ? held.view : undefined;
   const latest = lines.find((l) => l.id === 'bt')?.points.findLast((p) => p.v !== null);
   // The projection follows the RoR line as drawn, and none while the RoR number is unknown.

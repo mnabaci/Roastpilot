@@ -8,6 +8,7 @@ import {
 } from '@roastpilot/core';
 import type { RoastState, Settings } from '@roastpilot/shared';
 import type { ChartAid, ChartPoint, LineLayer, PhaseBand } from '@roastpilot/ui';
+import type { HeldView } from '../../stores/roast-view-store';
 
 /** The chart's four aids, as set in Settings › Chart. */
 export type ChartAidSettings = Pick<
@@ -35,12 +36,7 @@ export interface RoastViewInput {
   expectedFirstCrackC: number | undefined;
 }
 
-/** What a roast's view keeps from one reading to the next. */
-export interface HeldView {
-  window: TimeWindow;
-  /** The fitted floor, °C. */
-  floorC: number;
-}
+export type { HeldView };
 
 export interface RoastView {
   /** Undefined before Start: everything since Preheat. */

@@ -92,4 +92,33 @@ describe('useRoastView', () => {
     });
     expect(screen.getByText('edge 720 floor 50')).toBeInTheDocument();
   });
+
+  it('keeps its window and floor when the Roast screen is left mid-roast and opened again', () => {
+    let show: (screen: boolean | 'again') => void = () => undefined;
+    // A ghost turning at 120 °C and dropping at 15:00: floor 100, edge 16:00.
+    const first: Moment = { ...start, ghost: { dropS: 900, tpC: 120 } };
+    // Back on the Roast screen with the ghost still loading: nothing to expect yet.
+    const back: Moment = { ...start, nowS: 302, ghost: {} };
+    /** Another screen in between: the probe unmounts, as the Roast screen does. */
+    function Screens() {
+      const [shown, set] = useState<boolean | 'again'>(true);
+      useEffect(() => {
+        show = set;
+      }, []);
+      if (!shown) return <p>Settings</p>;
+      return <Probe first={shown === 'again' ? back : first} />;
+    }
+    renderApp(<Screens />, { settings });
+    act(() => {
+      setMoment((m) => ({ ...m, nowS: 301, lowestC: 80 }));
+    });
+    expect(screen.getByText('edge 960 floor 75')).toBeInTheDocument();
+    act(() => {
+      show(false);
+    });
+    act(() => {
+      show('again');
+    });
+    expect(screen.getByText('edge 960 floor 75')).toBeInTheDocument();
+  });
 });
