@@ -481,6 +481,32 @@ describe('RoastScreen', () => {
     expect(screen.getByRole('list', { name: 'Legend' })).not.toHaveTextContent('184');
   });
 
+  it('before a roast, a caution to stay close sits right above the action', () => {
+    renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast('ready') });
+    const line = screen.getByText('Stay with the roaster while it runs');
+    // Amber caution, never the red of a safety trip.
+    expect(line).toHaveClass('text-warning');
+    expect(line.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    const action = screen.getByRole('button', { name: 'Preheat' });
+    expect(line.nextElementSibling).toBe(action);
+  });
+
+  it.each(['preheat', 'roasting', 'cooling'] as const)(
+    '%s: the same line, quiet, under the controls',
+    (phase) => {
+      renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast(phase) });
+      const line = screen.getByText('Stay with the roaster while it runs');
+      expect(line).toHaveClass('text-ink-muted');
+      const outputs = screen.getByRole('region', { name: 'Outputs' });
+      expect(outputs.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    },
+  );
+
+  it('says nothing about staying close once the roast is done', () => {
+    renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast('done') });
+    expect(screen.queryByText('Stay with the roaster while it runs')).toBeNull();
+  });
+
   it('with no roaster, the last readings never show as live values', () => {
     renderApp(<RoastScreen onConnect={onConnect} />, {
       roast: roast('preheat'),

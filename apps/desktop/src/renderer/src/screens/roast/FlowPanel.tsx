@@ -7,6 +7,7 @@ import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { END_ROAST, endConsequences, flowHint, flowStep, isConnected } from './flow-step';
 import { useActiveProfile } from './use-active-profile';
 import { DrumCooling } from './DrumCooling';
+import { StayClose } from './StayClose';
 import { useRun } from '../../features/use-run';
 import { useToast } from '../../features/use-toast';
 import { roastActionFailed, roastActionRefused } from './roast-action-failed';
@@ -71,6 +72,8 @@ export function FlowPanel({
   const noRoast = phase === 'ready' || phase === 'done';
   return (
     <div className="flex flex-col gap-2">
+      {/* Before a roast, the caution sits right above the action that starts one. */}
+      {phase === 'ready' ? <StayClose caution /> : null}
       {step.chargeSoon ? (
         <Button
           variant="primary"

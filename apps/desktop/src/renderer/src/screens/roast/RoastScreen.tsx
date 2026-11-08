@@ -19,6 +19,7 @@ import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { useConnection, useRoast, useSettings } from '../../stores/use-stores';
 import { isConnected } from './flow-step';
 import { ClearRoast } from './ClearRoast';
+import { StayClose } from './StayClose';
 
 const STEPS = ['Preheat', 'Roast', 'First crack', 'Drop', 'Cool'] as const;
 
@@ -131,9 +132,7 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
             <CoachPanel />
             <OutputsPanel />
             {setupPanel}
-            {roast.phase === 'done' ? null : (
-              <p className="text-label text-ink-muted">Stay with the roaster while it runs.</p>
-            )}
+            {roast.phase === 'done' ? null : <StayClose />}
           </>
         )}
       </aside>
