@@ -18,7 +18,9 @@ describe('ClearRoast', () => {
   it('names the bean and batch it would return', async () => {
     renderApp(<ClearRoast />, seed);
     await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
-    expect(screen.getByText('Return 350 g of Yirgacheffe to stock?')).toBeInTheDocument();
+    expect(
+      screen.getByText('The roast stays in History. Return 350 g of Yirgacheffe to stock too?'),
+    ).toBeInTheDocument();
   });
 
   it('keeps the roast when the stock could not be returned', async () => {
