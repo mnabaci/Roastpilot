@@ -3,6 +3,7 @@ import { Button, Menu, RoastList, SidebarLayout } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
+import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { useBeans, useRoast, useSettings } from '../../stores/use-stores';
 import { inProgressId, roastRows, roastTitle, selectionAfterDelete } from './history-format';
 import { OpenRoast } from './OpenRoast';
@@ -23,6 +24,7 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
   const roasts = useRoastList();
   const livePhase = useRoast((s) => s.roast.phase);
   const smoothingS = useSettings((s) => s.settings.chartSmoothingS);
+  const unit = useTemperatureUnit();
   const beans = useBeans((s) => s.beans);
   const [picked, setPicked] = useState<RoastId>();
   const [compareId, setCompareId] = useState<RoastId>();
@@ -132,7 +134,7 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
           ) : null}
           <RoastList
             label="Saved roasts"
-            items={roastRows(listed, livePhase, {}, beans)}
+            items={roastRows(listed, livePhase, unit, {}, beans)}
             selectedId={selectedId}
             onSelect={(id) => {
               setPicked(id);

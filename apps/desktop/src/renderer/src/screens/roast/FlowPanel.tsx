@@ -3,6 +3,7 @@ import type { RoastAction } from '@roastpilot/shared';
 import { Button } from '@roastpilot/ui';
 import { ConfirmButton } from '../../features/ConfirmButton';
 import { autoFlowStep } from './auto-flow';
+import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { END_ROAST, endConsequences, flowHint, flowStep, isConnected } from './flow-step';
 import { useActiveProfile } from './use-active-profile';
 import { DrumCooling } from './DrumCooling';
@@ -33,7 +34,8 @@ export function FlowPanel({
   const { phase } = roast;
   const auto = useAuto((s) => s.status);
   const profile = useActiveProfile();
-  const autoStep = autoFlowStep(roast, auto, profile?.profile, { developmentS, heaterPct });
+  const unit = useTemperatureUnit();
+  const autoStep = autoFlowStep(roast, auto, profile?.profile, { developmentS, heaterPct, unit });
   const step = autoStep ?? flowStep(roast);
   const act = (action: RoastAction) => {
     run(

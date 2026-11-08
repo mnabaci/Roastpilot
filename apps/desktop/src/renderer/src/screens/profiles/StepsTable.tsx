@@ -1,3 +1,4 @@
+import { tempSymbol } from '@roastpilot/shared';
 import { Plus } from 'lucide-react';
 import { Button, cn } from '@roastpilot/ui';
 import type { ProfileDraft, StepDraft, DraftErrors } from './profile-draft';
@@ -50,7 +51,7 @@ export function StepsTable({
           <tr>
             {readOnly ? null : <th aria-label="Move" />}
             <th className={HEAD}>Step</th>
-            <th className={HEAD}>Ends °C</th>
+            <th className={HEAD}>Ends {tempSymbol(draft.unit)}</th>
             {steps ? <th className={HEAD}>Time</th> : null}
             {steps ? <th className={HEAD}>RoR min</th> : null}
             {steps ? <th className={HEAD}>RoR max</th> : null}

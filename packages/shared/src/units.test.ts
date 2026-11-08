@@ -5,6 +5,8 @@ import {
   diffNumber,
   diffPlain,
   diffToUnit,
+  formatDiff,
+  formatPlainTemp,
   formatTemp,
   fromUnit,
   rateInText,
@@ -43,6 +45,11 @@ describe('temperatures', () => {
     expect(formatTemp(205.5, 'c', 1)).toBe('205.5 °C');
   });
 
+  it('says a profile’s or a setting’s temperature with its unit', () => {
+    expect(formatPlainTemp(196.5, 'c')).toBe('196.5 °C');
+    expect(formatPlainTemp(50, 'f')).toBe('122 °F');
+  });
+
   it('keeps a field’s °C as stored', () => {
     expect(tempPlain(196.5, 'c')).toBe('196.5');
     expect(tempPlain(196.5, 'f')).toBe('386');
@@ -67,6 +74,11 @@ describe('differences', () => {
     expect(diffNumber(8.1, 'f', 1)).toBe('14.6');
     expect(diffNumber(10, 'f', 1)).toBe('18.0');
     expect(diffNumber(-0.01, 'c', 1)).toBe('0.0');
+  });
+
+  it('says a difference with its unit, without + 32', () => {
+    expect(formatDiff(3, 'c')).toBe('3 °C');
+    expect(formatDiff(3, 'f')).toBe('5.4 °F');
   });
 
   it('shows a typed difference to 0.1 °F, without a trailing .0', () => {

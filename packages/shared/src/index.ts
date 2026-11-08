@@ -341,6 +341,8 @@ export {
   diffNumber,
   diffPlain,
   diffToUnit,
+  formatDiff,
+  formatPlainTemp,
   formatTemp,
   fromUnit,
   rateInText,

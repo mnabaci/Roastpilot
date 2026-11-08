@@ -38,7 +38,7 @@ const detail: RoastDetail = {
 
 describe('eventRows', () => {
   it('lists the events in time order with the values at each moment', () => {
-    expect(eventRows(detail)).toEqual([
+    expect(eventRows(detail, 'c')).toEqual([
       {
         event: 'Charge',
         time: '0:00',
@@ -69,11 +69,14 @@ describe('eventRows', () => {
   });
 
   it('turning point gets its own row; an event with no sample yet has dashes', () => {
-    const rows = eventRows({
-      ...detail,
-      samples: [],
-      events: [{ kind: 'turning-point', tS: 64, bt: 92.2 }],
-    });
+    const rows = eventRows(
+      {
+        ...detail,
+        samples: [],
+        events: [{ kind: 'turning-point', tS: 64, bt: 92.2 }],
+      },
+      'c',
+    );
     expect(rows).toEqual([
       {
         event: 'Turning point',
@@ -86,6 +89,11 @@ describe('eventRows', () => {
     ]);
   });
 
+  it('says BT whole in °F and RoR × 1.8, never + 32', () => {
+    const [, firstCrack] = eventRows(detail, 'f');
+    expect(firstCrack).toMatchObject({ bt: '244 °F', ror: '21.6' });
+  });
+
   it('names what Auto did from the saved detail', () => {
     const auto: RoastDetail = {
       ...detail,
@@ -95,7 +103,7 @@ describe('eventRows', () => {
         { kind: 'override', tS: 80, bt: 155, detail: 'fan 50' },
       ],
     };
-    expect(eventRows(auto).map((row) => row.event)).toEqual([
+    expect(eventRows(auto, 'c').map((row) => row.event)).toEqual([
       'Step · Heat on',
       'Dry end',
       'Override · fan 50',

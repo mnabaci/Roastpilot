@@ -9,6 +9,7 @@ import type { LineLayer } from '@roastpilot/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRoastExpectations } from '../../features/use-roast-expectations';
+import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { useSettings } from '../../stores/use-stores';
 import { useProfileInUse } from './use-active-profile';
 import { drawnRorCPerMin, roastView, type RoastView } from './roast-view';
@@ -32,6 +33,7 @@ export function useRoastView({
   const chartNowLine = useSettings((s) => s.settings.chartNowLine);
   const chartTemperatureFocus = useSettings((s) => s.settings.chartTemperatureFocus);
   const chartPhaseBands = useSettings((s) => s.settings.chartPhaseBands);
+  const unit = useTemperatureUnit();
   const profile = useProfileInUse();
   const expected = useRoastExpectations();
   const { stores } = useDeps();
@@ -65,6 +67,7 @@ export function useRoastView({
         lines,
         expectedTpC,
         settings: { chartProjection, chartNowLine, chartTemperatureFocus, chartPhaseBands },
+        unit,
         profileDryEndC: profile?.dryEndC,
         expectedFirstCrackC: expected.firstCrackC,
       }),
@@ -81,6 +84,7 @@ export function useRoastView({
       chartNowLine,
       chartTemperatureFocus,
       chartPhaseBands,
+      unit,
       profile?.dryEndC,
       expected.firstCrackC,
     ],

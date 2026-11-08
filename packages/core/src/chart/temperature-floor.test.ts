@@ -72,3 +72,36 @@ describe('nextFloorC', () => {
     expect(nextFloorC(50, undefined)).toBe(50);
   });
 });
+
+describe('the floor in °F', () => {
+  const inF = (c: number) => Math.round(c * 1.8 + 32);
+
+  it('is TP − 15 °C rounded down to a multiple of 50 °F', () => {
+    // TP 88 °C (190 °F) − 15 °C is 163 °F: 150 °F.
+    expect(inF(startFloorC(88, 'f'))).toBe(150);
+    // TP 95 °C − 15 °C is 176 °F: 150 °F.
+    expect(inF(startFloorC(95, 'f'))).toBe(150);
+    // 50 °C with no TP is 122 °F: 100 °F.
+    expect(inF(startFloorC(undefined, 'f'))).toBe(100);
+    expect(inF(startFloorC(-30, 'f'))).toBe(0);
+  });
+
+  it('steps down to the multiple of 50 °F at or below the lowest line', () => {
+    const floor = startFloorC(88, 'f');
+    expect(nextFloorC(floor, 70, 'f')).toBe(floor);
+    // 60 °C is 140 °F: 100 °F.
+    expect(inF(nextFloorC(floor, 60, 'f'))).toBe(100);
+  });
+
+  it('moves a °C floor down onto the °F grid when the unit changes mid-roast, never up', () => {
+    // 75 °C is 167 °F: 150 °F.
+    expect(inF(nextFloorC(75, 88, 'f'))).toBe(150);
+    // And back: 150 °F is 65.6 °C: 50 °C.
+    expect(nextFloorC(nextFloorC(75, 88, 'f'), 88, 'c')).toBe(50);
+  });
+
+  it('keeps a floor exactly on the °F grid where it is, despite float dust', () => {
+    const onGrid = (100 - 32) / 1.8;
+    expect(nextFloorC(onGrid, 90, 'f')).toBe(onGrid);
+  });
+});

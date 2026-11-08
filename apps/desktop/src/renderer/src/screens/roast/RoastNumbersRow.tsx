@@ -1,4 +1,6 @@
+import { diffNumber, rorSymbol, tempNumber, tempSymbol } from '@roastpilot/shared';
 import { formatClock, formatNumber, StatCard } from '@roastpilot/ui';
+import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import type { RoastNumbers } from './roast-numbers';
 
 // A time that isn't a finite number shows a dash, never NaN:NaN.
@@ -20,19 +22,21 @@ export function RoastNumbersRow({
   /** The RoR the running Auto step aims for. */
   rorLine?: string | undefined;
 }) {
+  const unit = useTemperatureUnit();
   return (
     <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
       <StatCard
         label={tempName}
-        value={numbers.bt === undefined ? undefined : formatNumber(numbers.bt, 1)}
-        unit="°C"
+        value={numbers.bt === undefined ? undefined : tempNumber(numbers.bt, unit, 1)}
+        unit={tempSymbol(unit)}
         tone="heat"
         {...(tempLine ? { context: tempLine } : {})}
       />
       <StatCard
         label="RoR"
-        value={numbers.ror === undefined ? undefined : formatNumber(numbers.ror, 1)}
-        unit="°C/min"
+        // A rate: × 1.8 in °F, never + 32.
+        value={numbers.ror === undefined ? undefined : diffNumber(numbers.ror, unit, 1)}
+        unit={rorSymbol(unit)}
         tone="air"
         {...(rorLine ? { context: rorLine } : {})}
       />

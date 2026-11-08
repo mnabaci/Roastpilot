@@ -1,6 +1,7 @@
 import type { RoastState } from '@roastpilot/shared';
 import type { LineLayer, ChartMarker } from '@roastpilot/ui';
 import { useMemo } from 'react';
+import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { useBeans } from '../../stores/use-stores';
 import { useSavedRoast } from '../history/use-saved-roast';
 import { formatGhostDelta, ghostChart, ghostDelta } from './ghost';
@@ -27,6 +28,7 @@ export function useGhost(
   loading: boolean;
 } {
   const ghostId = useBeans((s) => s.setup.ghostRoastId);
+  const unit = useTemperatureUnit();
   const ghost = useSavedRoast(ghostId ?? undefined);
   const detail = ghost.status === 'loaded' ? ghost.detail : undefined;
   const charged = roast.chargedAtMs !== null;
@@ -46,7 +48,7 @@ export function useGhost(
   return {
     ...chart,
     loading: ghost.status === 'loading',
-    ...(delta ? { line: formatGhostDelta(delta) } : {}),
+    ...(delta ? { line: formatGhostDelta(delta, unit) } : {}),
     ...(dropS === undefined ? {} : { dropS }),
     ...(tpC === undefined ? {} : { tpC }),
   };

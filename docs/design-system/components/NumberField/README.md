@@ -6,7 +6,7 @@ A short labelled input for a number or an `m:ss` time, in tables and rows of val
 
 - **Label** above, `label` style in `ink-muted`; in a table whose column header names it (`hideLabel`), read by screen readers only.
 - **Field**: a text input (`inputmode="decimal"`, so it takes `4:05` as well as `180`), `control-sm` (44px) tall, `surface` fill, 1px `border`, `radius-md`, 10px side padding, `body` in `ink`, tabular numerals.
-- **Unit** (optional): inside the field at the right, 10px from the edge, `label` in `ink-muted` (`°C`, `g`, `%`); the text keeps clear of it. Hidden from screen readers: the label names the unit.
+- **Unit** (optional): inside the field at the right, 10px from the edge, `label` in `ink-muted` (`°C`, `°F`, `g`, `%`); the text keeps clear of it. Hidden from screen readers: the label names the unit. A temperature field shows the unit chosen in Settings, and the screen converts what is typed.
 - **Hint** (optional): one line of `label` under the field, `ink-muted` ("At most 400 g on Skywalker"); `critical-text` when invalid.
 
 ## States

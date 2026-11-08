@@ -1,11 +1,13 @@
-import { DEFAULT_TEMP_NAMES, type RoastSummary } from '@roastpilot/shared';
+import { DEFAULT_TEMP_NAMES, tempNumber, tempSymbol, type RoastSummary } from '@roastpilot/shared';
 import { formatClock, formatNumber, StatCard } from '@roastpilot/ui';
+import { useTemperatureUnit } from '../../features/use-temperature-unit';
 
 const clock = (s: number | null) => (s === null ? undefined : formatClock(s));
 
 /** Total time, first crack, development and drop temperature of a saved roast. */
 export function SavedRoastStats({ roast }: { roast: RoastSummary }) {
   const { fcTimeS, dropTimeS } = roast;
+  const unit = useTemperatureUnit();
   const developmentS = fcTimeS !== null && dropTimeS !== null ? dropTimeS - fcTimeS : null;
   const share =
     developmentS !== null && dropTimeS !== null && dropTimeS > 0
@@ -22,8 +24,8 @@ export function SavedRoastStats({ roast }: { roast: RoastSummary }) {
       />
       <StatCard
         label="Drop"
-        value={formatNumber(roast.dropTemp, 1)}
-        unit="°C"
+        value={roast.dropTemp === null ? undefined : tempNumber(roast.dropTemp, unit, 1)}
+        unit={tempSymbol(unit)}
         tone="heat"
         context={DEFAULT_TEMP_NAMES.name}
       />

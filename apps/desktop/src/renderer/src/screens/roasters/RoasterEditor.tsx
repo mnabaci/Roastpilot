@@ -4,13 +4,14 @@ import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
+import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { fromRoasterDraft, toRoasterDraft } from './roaster-draft';
 import { refusalText } from './roaster-refusal';
 import {
   DRUM_FIELDS,
-  EVERYDAY_FIELDS,
+  everydayFields,
   TUNING_FIELDS,
-  TUNING_HINT,
+  tuningHint,
   type FieldGroup,
 } from './roaster-fields';
 
@@ -18,10 +19,11 @@ import {
 export function RoasterEditor({ roaster, locked }: { roaster: Roaster; locked: boolean }) {
   const { api, logger } = useDeps();
   const run = useRun();
-  const saved = useMemo(() => toRoasterDraft(roaster), [roaster]);
+  const unit = useTemperatureUnit();
+  const saved = useMemo(() => toRoasterDraft(roaster, unit), [roaster, unit]);
   const [draft, setDraft] = useState(saved);
   const [problem, setProblem] = useState<string>();
-  const checked = useMemo(() => fromRoasterDraft(draft, roaster), [draft, roaster]);
+  const checked = useMemo(() => fromRoasterDraft(draft, roaster, unit), [draft, roaster, unit]);
   const errors = checked.ok ? {} : checked.error;
   const edited = JSON.stringify(draft) !== JSON.stringify(saved);
   const save = () => {
@@ -77,7 +79,7 @@ export function RoasterEditor({ roaster, locked }: { roaster: Roaster; locked: b
         }}
       />
       {errors.name ? <p className="text-label text-critical-text">{errors.name}</p> : null}
-      {EVERYDAY_FIELDS.map(fields)}
+      {everydayFields(unit).map(fields)}
       {MODEL_DRUM_SPEED[roaster.model] ? fields(DRUM_FIELDS) : null}
       <fieldset className="flex flex-col gap-2">
         <legend className="pb-1 text-body font-semibold">Cooling</legend>
@@ -116,7 +118,7 @@ export function RoasterEditor({ roaster, locked }: { roaster: Roaster; locked: b
       </Button>
       {tuningShown ? (
         <div className="flex flex-col gap-4">
-          <p className="text-label text-ink-muted">{TUNING_HINT}</p>
+          <p className="text-label text-ink-muted">{tuningHint(unit)}</p>
           {TUNING_FIELDS.map(fields)}
         </div>
       ) : null}

@@ -18,14 +18,14 @@ const LIGHT: Milestones = {
 
 describe('milestone draft', () => {
   it('shows the milestones as typed text and reads them back', () => {
-    const draft = toMilestoneDraft(LIGHT);
+    const draft = toMilestoneDraft(LIGHT, 'c');
     expect(draft.chargeC).toBe('180');
     expect(draft.rows.turningPoint).toEqual({ time: '1:04', c: '92' });
     expect(fromMilestoneDraft(draft)).toEqual({ ok: true, value: LIGHT });
   });
 
   it('says what is wrong with a cell, as typed', () => {
-    const draft = toMilestoneDraft(LIGHT);
+    const draft = toMilestoneDraft(LIGHT, 'c');
     const typed = { ...draft, rows: { ...draft.rows, dryEnd: { time: '5', c: 'warm' } } };
     expect(fromMilestoneDraft(typed)).toEqual({
       ok: false,
@@ -34,7 +34,7 @@ describe('milestone draft', () => {
   });
 
   it('puts each milestone rule on its cell', () => {
-    const draft = toMilestoneDraft(LIGHT);
+    const draft = toMilestoneDraft(LIGHT, 'c');
     const late = { ...draft, rows: { ...draft.rows, firstCrack: { time: '9:33', c: '140' } } };
     expect(fromMilestoneDraft(late)).toEqual({
       ok: false,
@@ -49,14 +49,28 @@ describe('milestone draft', () => {
   });
 
   it('adds your point halfway between dry end and first crack, and removes it', () => {
-    const draft = addMilestonePoint(toMilestoneDraft(LIGHT));
+    const draft = addMilestonePoint(toMilestoneDraft(LIGHT, 'c'));
     expect(draft.extras).toEqual([{ time: '7:19', c: '171' }]);
     expect(fromMilestoneDraft(draft).ok).toBe(true);
     expect(removeMilestonePoint(draft, 0).extras).toEqual([]);
   });
 
+  it('shows and reads °F, whole, and says its limits in °F', () => {
+    const draft = toMilestoneDraft(LIGHT, 'f');
+    expect(draft.chargeC).toBe('356');
+    expect(draft.rows.drop).toEqual({ time: '11:03', c: '387' });
+    const typed = { ...draft, rows: { ...draft.rows, drop: { time: '11:03', c: '455' } } };
+    // 455 °F is 235 °C, over the 232 °C a drop may reach (450 °F).
+    expect(fromMilestoneDraft(typed)).toEqual({
+      ok: false,
+      error: { 'drop.c': 'At most 450 °F' },
+    });
+    // Your point halfway, in °F as typed: (302 + 376) / 2.
+    expect(addMilestonePoint(draft).extras).toEqual([{ time: '7:19', c: '339' }]);
+  });
+
   it('adds an empty point when there is nothing sensible to put it between', () => {
-    const draft = toMilestoneDraft(LIGHT);
+    const draft = toMilestoneDraft(LIGHT, 'c');
     const late = { ...draft, rows: { ...draft.rows, dryEnd: { time: '10:00', c: '150' } } };
     expect(addMilestonePoint(late).extras).toEqual([{ time: '', c: '' }]);
     const typo = { ...draft, rows: { ...draft.rows, firstCrack: { time: 'x', c: '191' } } };

@@ -14,14 +14,17 @@ describe('coach text', () => {
   });
 
   it('writes each heads-up in one line', () => {
-    expect(headsUpLine({ kind: 'first-crack-soon', id: 1, inS: 45 })).toBe(
+    expect(headsUpLine({ kind: 'first-crack-soon', id: 1, inS: 45 }, 'c')).toBe(
       'First crack in ~45 s · listen',
     );
-    expect(headsUpLine({ kind: 'drop-soon', id: 1, inS: 30, devTimeS: 105 })).toBe(
+    expect(headsUpLine({ kind: 'drop-soon', id: 1, inS: 30, devTimeS: 105 }, 'c')).toBe(
       'Drop in ~30 s · 1:45 development',
     );
-    expect(headsUpLine({ kind: 'cap-soon', id: 1, inS: 30, capC: 225 })).toBe(
+    expect(headsUpLine({ kind: 'cap-soon', id: 1, inS: 30, capC: 225 }, 'c')).toBe(
       'BT cap 225 °C in ~30 s',
+    );
+    expect(headsUpLine({ kind: 'cap-soon', id: 1, inS: 30, capC: 220 }, 'f')).toBe(
+      'BT cap 428 °F in ~30 s',
     );
   });
 

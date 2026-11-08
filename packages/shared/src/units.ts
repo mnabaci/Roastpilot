@@ -56,6 +56,10 @@ export const formatTemp = (c: number, unit: TemperatureUnit, decimals = 0): stri
 export const tempPlain = (c: number, unit: TemperatureUnit): string =>
   unit === 'f' ? fixed(toUnit(c, unit), 0) : String(c);
 
+/** A temperature from a profile or a setting, with its unit: `196.5 °C`, `386 °F`. */
+export const formatPlainTemp = (c: number, unit: TemperatureUnit): string =>
+  `${tempPlain(c, unit)} ${tempSymbol(unit)}`;
+
 /** A difference's number with the same decimals in both units: RoR 8.1 °C/min is 14.6 °F/min. */
 export const diffNumber = (c: number, unit: TemperatureUnit, decimals: number): string =>
   fixed(diffToUnit(c, unit), decimals);
@@ -63,6 +67,10 @@ export const diffNumber = (c: number, unit: TemperatureUnit, decimals: number): 
 /** A difference as its field shows it: °C as stored, °F to 0.1 with no trailing `.0` (3.6, 18). */
 export const diffPlain = (c: number, unit: TemperatureUnit): string =>
   unit === 'f' ? String(roundTo(diffToUnit(c, unit), 1)) : String(c);
+
+/** A difference with its unit: `3 °C`, `5.4 °F`. */
+export const formatDiff = (c: number, unit: TemperatureUnit): string =>
+  `${diffPlain(c, unit)} ${tempSymbol(unit)}`;
 
 // Messages written where the unit isn't known (zod rules, the coach in main) carry their
 // temperatures as tokens; the screen says them in its unit with `sayInUnit`.

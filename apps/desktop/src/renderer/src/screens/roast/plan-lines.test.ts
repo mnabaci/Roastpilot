@@ -11,13 +11,18 @@ const PLAN = [
 
 describe('planLine', () => {
   it('says how far BT is from the plan, rounded', () => {
-    expect(planLine(PLAN, 300, 146.4)).toBe('−4 °C vs plan');
-    expect(planLine(PLAN, 300, 153.2)).toBe('+3 °C vs plan');
-    expect(planLine(PLAN, 300, 150.3)).toBe('On plan');
+    expect(planLine(PLAN, 300, 146.4, 'c')).toBe('−4 °C vs plan');
+    expect(planLine(PLAN, 300, 153.2, 'c')).toBe('+3 °C vs plan');
+    expect(planLine(PLAN, 300, 150.3, 'c')).toBe('On plan');
+  });
+
+  it('says it in °F as a difference, never + 32', () => {
+    expect(planLine(PLAN, 300, 146, 'f')).toBe('−7 °F vs plan');
+    expect(planLine(PLAN, 300, 150.2, 'f')).toBe('On plan');
   });
 
   it('says nothing before the turning point', () => {
-    expect(planLine(PLAN, 30, 120)).toBeUndefined();
+    expect(planLine(PLAN, 30, 120, 'c')).toBeUndefined();
   });
 });
 
@@ -37,11 +42,28 @@ const PROFILE = {
   ],
 } as unknown as AutoProfile;
 
-const aim = (phaseName: string | null, firstCracked = false) => ({ phaseName, firstCracked });
+const aim = (phaseName: string | null, firstCracked = false) => ({
+  phaseName,
+  firstCracked,
+  unit: 'c' as const,
+});
 
 describe('rorAimLine', () => {
   it("gives a step's RoR range", () => {
     expect(rorAimLine(PROFILE, aim('Maillard'))).toBe('Aim 8–10');
+  });
+
+  it('gives it in °F/min, × 1.8 with no + 32', () => {
+    expect(rorAimLine(PROFILE, { ...aim('Maillard'), unit: 'f' })).toBe('Aim 14.4–18');
+    const onPlan = {
+      ...aim('Follow'),
+      unit: 'f' as const,
+      elapsedS: 300,
+      btC: 150,
+      curveFollow: CURVE_FOLLOW_DEFAULTS,
+    };
+    // 9.5 °C/min is 17.1 °F/min.
+    expect(rorAimLine(PROFILE, onPlan)).toBe('Aim 17');
   });
 
   it('aims for at least 5 until your first-crack tap', () => {

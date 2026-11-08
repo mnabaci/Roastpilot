@@ -6,7 +6,7 @@ import {
   READY_ROAST,
   type AutoProfile,
 } from '@roastpilot/shared';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { BUILT_INS, CURVE, STEPS } from '../../test/profiles';
@@ -81,6 +81,52 @@ describe('ProfilesScreen', () => {
     expect(screen.getByRole('textbox', { name: 'BT cap' })).toBeInvalid();
     expect(screen.getByText('At most 235 °C')).toBeInTheDocument();
     expect(api.saveProfile).not.toHaveBeenCalled();
+  });
+
+  describe('in °F', () => {
+    const inF = (profiles = withMine) =>
+      renderApp(
+        <ProfilesScreen />,
+        {
+          profiles,
+          settings: { ...DEFAULT_SETTINGS, autoProfile: 'custom-1', temperatureUnit: 'f' },
+        },
+        fakeApi({ listProfiles: vi.fn(() => Promise.resolve(profiles)) }),
+      );
+
+    it('shows °F and saves what you type in °C, which shows as typed again', async () => {
+      const { api } = inF();
+      // BT cap 200 °C is 392 °F.
+      expect(screen.getByRole('textbox', { name: 'BT cap' })).toHaveValue('392');
+      expect(screen.getByRole('columnheader', { name: 'Ends °F' })).toBeInTheDocument();
+      await edit('Charge temp', '370');
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      // Kept to 0.1 °C; the rest stays exactly as it was.
+      expect(api.saveProfile).toHaveBeenCalledWith({
+        ...MINE,
+        chargeC: 187.8,
+        curve: [{ tS: 0, c: 187.8 }, ...MINE.curve.slice(1)],
+      });
+      const saved = { ...MINE, chargeC: 187.8 };
+      inF([...BUILT_INS, { profile: saved, builtIn: false }]);
+      expect(screen.getAllByRole('textbox', { name: 'Charge temp' }).at(-1)).toHaveValue('370');
+    });
+
+    it('says a limit in °F', async () => {
+      inF();
+      await edit('BT cap', '460');
+      expect(screen.getByText('At most 455 °F')).toBeInTheDocument();
+    });
+
+    it('turns an unsaved °C edit into °F when the unit changes', async () => {
+      const { stores } = open();
+      await edit('BT cap', '205');
+      act(() => {
+        stores.settings.setState((s) => ({ settings: { ...s.settings, temperatureUnit: 'f' } }));
+      });
+      expect(screen.getByRole('textbox', { name: 'BT cap' })).toHaveValue('401');
+      expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+    });
   });
 
   it('says what is wrong with a step on its own line', async () => {

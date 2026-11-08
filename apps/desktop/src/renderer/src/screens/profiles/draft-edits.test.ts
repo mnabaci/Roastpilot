@@ -12,6 +12,7 @@ const PROFILE = {
   ],
 };
 const DRAFT = {
+  unit: 'c',
   points: [
     { time: '1:00', c: '100' },
     { time: '5:00', c: '150' },
@@ -41,6 +42,14 @@ describe('movePoint', () => {
   it('stays under the BT cap and above zero', () => {
     expect(movePoint(DRAFT, PROFILE, 2, { t: 600, v: 240 }).points[2]?.c).toBe('200');
     expect(movePoint(DRAFT, PROFILE, 0, { t: 60, v: -3 }).points[0]?.c).toBe('0');
+  });
+
+  it('writes whole °F in a °F draft, still under the cap', () => {
+    const inF = { ...DRAFT, unit: 'f' as const };
+    // 160.6 °C is 321.08 °F.
+    expect(movePoint(inF, PROFILE, 1, { t: 300, v: 160.6 }).points[1]?.c).toBe('321');
+    // The 200 °C cap is 392 °F.
+    expect(movePoint(inF, PROFILE, 2, { t: 600, v: 240 }).points[2]?.c).toBe('392');
   });
 });
 

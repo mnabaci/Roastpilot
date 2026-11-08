@@ -8,6 +8,7 @@ export function MilestonePointRow({
   cell,
   point,
   errors,
+  unit,
   onChange,
   onRemove,
 }: {
@@ -15,6 +16,8 @@ export function MilestonePointRow({
   cell: string;
   point: PointDraft;
   errors: DraftErrors;
+  /** What the temperature is typed in: `°C` or `°F`. */
+  unit: string;
   onChange: (next: PointDraft) => void;
   onRemove?: () => void;
 }) {
@@ -38,7 +41,7 @@ export function MilestonePointRow({
         label={`${label} temperature`}
         hideLabel
         className="flex-1"
-        unit="°C"
+        unit={unit}
         value={point.c}
         invalid={Boolean(errors[`${cell}.c`])}
         hint={errors[`${cell}.c`]}

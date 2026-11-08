@@ -1,5 +1,13 @@
 import { curveTargetC, followAimRor, STALL } from '@roastpilot/core';
-import type { AutoProfile, CurveFollow, CurvePoint } from '@roastpilot/shared';
+import {
+  diffPlain,
+  diffToUnit,
+  tempSymbol,
+  type AutoProfile,
+  type CurveFollow,
+  type CurvePoint,
+  type TemperatureUnit,
+} from '@roastpilot/shared';
 
 /**
  * How far BT is from the dashed plan now: "−4 °C vs plan", or "On plan". Only from the plan's
@@ -9,6 +17,7 @@ export function planLine(
   plan: readonly CurvePoint[],
   elapsedS: number,
   btC: number,
+  unit: TemperatureUnit,
 ): string | undefined {
   const turningPoint = plan.reduce<CurvePoint | undefined>(
     (low, p) => (low === undefined || p.c < low.c ? p : low),
@@ -17,9 +26,10 @@ export function planLine(
   if (!turningPoint || elapsedS < turningPoint.tS) return undefined;
   const planC = curveTargetC(plan, elapsedS);
   if (planC === undefined) return undefined;
-  const deltaC = Math.round(btC - planC);
-  if (deltaC === 0) return 'On plan';
-  return `${deltaC > 0 ? '+' : '−'}${String(Math.abs(deltaC))} °C vs plan`;
+  // A difference: −4 °C is −7 °F, never +25.
+  const delta = Math.round(diffToUnit(btC - planC, unit));
+  if (delta === 0) return 'On plan';
+  return `${delta > 0 ? '+' : '−'}${String(Math.abs(delta))} ${tempSymbol(unit)} vs plan`;
 }
 
 export interface AimInput {
@@ -29,6 +39,8 @@ export interface AimInput {
   elapsedS?: number;
   btC?: number;
   curveFollow?: CurveFollow;
+  /** The RoR's unit: a rate, × 1.8 in °F with no + 32. */
+  unit: TemperatureUnit;
 }
 
 /**
@@ -37,15 +49,16 @@ export interface AimInput {
  * guard's 5 °C/min (docs/spec/roast-control.md).
  */
 export function rorAimLine(profile: AutoProfile, input: AimInput): string | undefined {
-  const { phaseName, firstCracked, elapsedS, btC, curveFollow } = input;
+  const { phaseName, firstCracked, elapsedS, btC, curveFollow, unit } = input;
   const heat = profile.phases.find((p) => p.name === phaseName)?.heat;
   if (heat?.mode === 'follow') {
     if (elapsedS === undefined || btC === undefined || !curveFollow) return undefined;
     const aim = followAimRor(profile.curve, curveFollow, { elapsedS, btC, firstCracked });
-    return aim === undefined ? undefined : `Aim ${String(Math.round(aim))}`;
+    return aim === undefined ? undefined : `Aim ${String(Math.round(diffToUnit(aim, unit)))}`;
   }
   if (heat?.mode !== 'target') return undefined;
   const { rorMin, rorMax } = heat;
   const min = firstCracked ? rorMin : Math.min(rorMax, Math.max(rorMin, STALL.tripRor));
-  return min === rorMax ? `Aim ${String(min)}` : `Aim ${String(min)}–${String(rorMax)}`;
+  const [low, high] = [diffPlain(min, unit), diffPlain(rorMax, unit)];
+  return min === rorMax ? `Aim ${low}` : `Aim ${low}–${high}`;
 }

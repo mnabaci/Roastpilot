@@ -1,10 +1,11 @@
 import { milestonesFrom, profileFromMilestones } from '@roastpilot/core';
-import type { AutoProfile } from '@roastpilot/shared';
+import { tempSymbol, type AutoProfile } from '@roastpilot/shared';
 import { Plus } from 'lucide-react';
 import { Button, formatClock, NumberField, RoastChart } from '@roastpilot/ui';
 import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
+import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import {
   addMilestonePoint,
   fromMilestoneDraft,
@@ -38,7 +39,8 @@ export function MilestoneBuilder({
 }) {
   const { api, stores, logger } = useDeps();
   const run = useRun();
-  const [draft, setDraft] = useState(() => toMilestoneDraft(milestonesFrom(base)));
+  const unit = useTemperatureUnit();
+  const [draft, setDraft] = useState(() => toMilestoneDraft(milestonesFrom(base), unit));
   const [problem, setProblem] = useState<string>();
   const [busy, setBusy] = useState(false);
   const read = useMemo(() => fromMilestoneDraft(draft), [draft]);
@@ -117,7 +119,7 @@ export function MilestoneBuilder({
               label="Charge temperature"
               hideLabel
               className="flex-1"
-              unit="°C"
+              unit={tempSymbol(draft.unit)}
               value={draft.chargeC}
               invalid={Boolean(errors.chargeC)}
               hint={errors.chargeC}
@@ -134,6 +136,7 @@ export function MilestoneBuilder({
               cell={row}
               point={draft.rows[row]}
               errors={errors}
+              unit={tempSymbol(draft.unit)}
               onChange={(point) => {
                 setDraft({ ...draft, rows: { ...draft.rows, [row]: point } });
               }}
@@ -146,6 +149,7 @@ export function MilestoneBuilder({
               cell={`extras.${String(index)}`}
               point={point}
               errors={errors}
+              unit={tempSymbol(draft.unit)}
               onChange={(next) => {
                 setDraft({
                   ...draft,
@@ -175,6 +179,7 @@ export function MilestoneBuilder({
             height={200}
             layers={preview.layers}
             markers={preview.markers}
+            temperatureUnit={draft.unit}
           />
         </div>
       </div>

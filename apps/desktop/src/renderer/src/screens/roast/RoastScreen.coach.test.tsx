@@ -1,4 +1,10 @@
-import { err, READY_ROAST, type CoachStatus } from '@roastpilot/shared';
+import {
+  DEFAULT_SETTINGS,
+  diffInText,
+  err,
+  READY_ROAST,
+  type CoachStatus,
+} from '@roastpilot/shared';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -43,6 +49,33 @@ describe('RoastScreen coach card', () => {
     expect(card).toHaveTextContent(/Heater\s*from 65%\s*to 75%/);
     expect(card).toHaveTextContent(/Fan\s*from 50%\s*to 40%/);
     expect(card).toHaveTextContent('4 °C below target, RoR falling');
+  });
+
+  it('says its reason and a heads-up in °F, a gap without + 32', () => {
+    const inF = (coach: CoachStatus) =>
+      renderApp(<RoastScreen onConnect={() => undefined} />, {
+        connection: CONNECTED,
+        roast: roasting,
+        coach,
+        settings: { ...DEFAULT_SETTINGS, temperatureUnit: 'f' },
+      });
+    const advice = { ...SUGGESTION.advice, reason: `${diffInText(4)} below target, RoR falling` };
+    inF({ ...SUGGESTION, advice } as CoachStatus);
+    expect(screen.getByRole('region', { name: 'Coach suggestion' })).toHaveTextContent(
+      '7.2 °F below target, RoR falling',
+    );
+  });
+
+  it('says a BT cap heads-up in °F', () => {
+    renderApp(<RoastScreen onConnect={() => undefined} />, {
+      connection: CONNECTED,
+      roast: roasting,
+      coach: { advice: { kind: 'cap-soon', id: 3, inS: 30, capC: 220 }, needsCalibration: null },
+      settings: { ...DEFAULT_SETTINGS, temperatureUnit: 'f' },
+    });
+    expect(screen.getByRole('region', { name: 'Coach heads-up' })).toHaveTextContent(
+      'BT cap 428 °F in ~30 s',
+    );
   });
 
   it('names a profile that needs calibration after the label', () => {

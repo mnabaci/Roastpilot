@@ -1,6 +1,7 @@
 import { ROASTER_COOL_OFFER_ABOVE_C } from '@roastpilot/core';
-import type { RoastAction } from '@roastpilot/shared';
-import { Button, formatNumber } from '@roastpilot/ui';
+import { formatPlainTemp, formatTemp, type RoastAction } from '@roastpilot/shared';
+import { Button } from '@roastpilot/ui';
+import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { useRoast, useSettings } from '../../stores/use-stores';
 
 /**
@@ -11,11 +12,13 @@ export function DrumCooling({ onAction }: { onAction: (action: RoastAction) => v
   const runningToC = useRoast((s) => s.roast.roasterCoolToC);
   const bt = useRoast((s) => s.readings.at(-1)?.values.bt);
   const toC = useSettings((s) => s.settings.roasterCoolToC);
+  const unit = useTemperatureUnit();
   if (runningToC !== null) {
     return (
       <div className="flex items-center justify-between gap-2">
         <p role="status" className="text-label text-ink-muted">
-          Cooling the drum · {formatNumber(bt, 0) ?? '–'} °C → {runningToC} °C
+          Cooling the drum · {bt === undefined ? '–' : formatTemp(bt, unit)} →{' '}
+          {formatPlainTemp(runningToC, unit)}
         </p>
         <Button
           variant="ghost"

@@ -1,4 +1,4 @@
-import { FILE_KINDS, sayInUnit, type FileKind } from '@roastpilot/shared';
+import { FILE_KINDS, sayInUnit, type FileKind, type TemperatureUnit } from '@roastpilot/shared';
 
 /** One and many of each kind, as the toasts say it. */
 const NOUNS: Readonly<Record<FileKind, readonly [string, string]>> = {
@@ -30,14 +30,14 @@ const PROBLEMS: Readonly<Record<string, string>> = {
   'read-failed': "Couldn't read that file · see Logs",
 };
 
-/** One line for the error toast: why the whole file was refused. */
-export function importProblemText(problem: ImportProblem): string {
+/** One line for the error toast: why the whole file was refused, temperatures in `unit`. */
+export function importProblemText(problem: ImportProblem, unit: TemperatureUnit): string {
   if ('fileKind' in problem) {
     const { screen } = FILE_KINDS[problem.fileKind];
     return `This is a ${NOUNS[problem.fileKind][1]} file · import it on ${screen}`;
   }
   if ('reason' in problem) {
-    return `"${problem.name}" can't come in · ${sayInUnit(problem.reason, 'c')}`;
+    return `"${problem.name}" can't come in · ${sayInUnit(problem.reason, unit)}`;
   }
   return PROBLEMS[problem.kind] ?? "Couldn't import · see Logs";
 }

@@ -1,6 +1,13 @@
 import { rateOfRise, rorReadings } from '@roastpilot/core';
-import type { Reading, RoastDetail, SavedEvent } from '@roastpilot/shared';
-import { formatClock, formatNumber, type EventRow } from '@roastpilot/ui';
+import {
+  diffNumber,
+  formatTemp,
+  type Reading,
+  type RoastDetail,
+  type SavedEvent,
+  type TemperatureUnit,
+} from '@roastpilot/shared';
+import { formatClock, type EventRow } from '@roastpilot/ui';
 import { savedAsLive } from './saved-roast-chart';
 
 const EVENT_LABEL: Readonly<Record<SavedEvent['kind'], string>> = {
@@ -35,7 +42,7 @@ function readingAt(readings: readonly Reading[], atMs: number): Reading | undefi
  * fan at that moment, read from the saved samples. RoR only between charge and drop, as on the
  * chart; a value the roast didn't have is undefined.
  */
-export function eventRows(detail: RoastDetail): EventRow[] {
+export function eventRows(detail: RoastDetail, unit: TemperatureUnit): EventRow[] {
   const { readings } = savedAsLive(detail);
   const dropMs = detail.dropTimeS === null ? Infinity : detail.dropTimeS * 1000;
   return [...detail.events]
@@ -45,12 +52,13 @@ export function eventRows(detail: RoastDetail): EventRow[] {
       const values = readingAt(readings, atMs)?.values;
       const upTo = readings.filter((r) => r.atMs <= atMs);
       const ror = atMs > 0 && atMs <= dropMs ? rateOfRise(rorReadings(upTo, 0)) : undefined;
-      const bt = formatNumber(event.bt ?? values?.bt, 1);
+      const bt = event.bt ?? values?.bt;
       return {
         event: [EVENT_LABEL[event.kind], event.detail].filter(Boolean).join(' · '),
         time: formatClock(event.tS),
-        bt: bt === undefined ? undefined : `${bt} °C`,
-        ror: formatNumber(ror, 1),
+        bt: bt === undefined ? undefined : formatTemp(bt, unit, 1),
+        // A rate: × 1.8 in °F, never + 32.
+        ror: ror === undefined ? undefined : diffNumber(ror, unit, 1),
         heater: percent(values?.heater),
         fan: percent(values?.fan),
       };
