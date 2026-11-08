@@ -28,4 +28,4 @@ The live roast chart: temperature against the target curve, rate of rise on a ri
 
 - Legend above the chart, always, listing every layer (strip layers too). Axis labels `label` in `ink-muted`; time in minutes.
 - Each layer is a pluggable ChartLayer; a roaster with extra probes adds layers, not chart code. A layer on the `output` axis goes to the strip.
-- Built with uPlot in the app; this preview is static SVG.
+- Built with uPlot in the app; this preview is static SVG. Tests swap the drawing for a fake through `PlotEngineProvider` (jsdom has no canvas), never by mocking modules.

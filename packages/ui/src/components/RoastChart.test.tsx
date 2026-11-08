@@ -1,6 +1,10 @@
 import { act, render, screen } from '@testing-library/react';
+import type { ReactElement } from 'react';
+import type uPlot from 'uplot';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { RoastChart } from './RoastChart';
 import type { ChartLayer } from './roast-chart/chart-layer';
+import { PlotEngineProvider, type PlotEngine } from './roast-chart/plot-engine';
 
 interface Created {
   opts: {
@@ -14,21 +18,26 @@ interface Created {
 const created: Created[] = [];
 const setData = vi.fn();
 const destroy = vi.fn();
+const stepped: uPlot.Series.PathBuilder = () => null;
 
-vi.mock('uplot', () => ({
-  default: class {
-    static paths = { stepped: () => 'stepped-path' };
-    constructor(opts: Created['opts'], data: unknown[][]) {
-      created.push({ opts, data });
-    }
-    setData = setData;
-    destroy = destroy;
-    redraw = vi.fn();
-    setSize = vi.fn();
+// jsdom has no canvas: this engine only records what the chart asks it to draw.
+const engine: PlotEngine = {
+  create: (opts, data) => {
+    created.push({ opts, data } as unknown as Created);
+    return { setData, destroy, redraw: vi.fn(), setSize: vi.fn() };
   },
-}));
-
-const { RoastChart } = await import('./RoastChart');
+  stepped: () => stepped,
+};
+const withEngine = (ui: ReactElement) => (
+  <PlotEngineProvider value={engine}>{ui}</PlotEngineProvider>
+);
+const draw = (ui: ReactElement) => {
+  const view = render(withEngine(ui));
+  const rerender = (next: ReactElement) => {
+    view.rerender(withEngine(next));
+  };
+  return { ...view, rerender };
+};
 
 const bt = (points: [number, number][]): ChartLayer => ({
   id: 'bt',
@@ -57,14 +66,14 @@ beforeEach(() => {
 
 describe('RoastChart', () => {
   it('shows a legend entry per layer above the chart', () => {
-    render(<RoastChart title="Roast curve" layers={[bt([[0, 180]]), ror]} />);
+    draw(<RoastChart title="Roast curve" layers={[bt([[0, 180]]), ror]} />);
     const legend = screen.getByRole('list', { name: 'Legend' });
     expect(legend).toHaveTextContent('Temperature');
     expect(legend).toHaveTextContent('RoR');
   });
 
   it('describes the latest values for screen readers', () => {
-    render(
+    draw(
       <RoastChart
         title="Roast curve"
         layers={[
@@ -82,7 +91,7 @@ describe('RoastChart', () => {
   });
 
   it('hovering shows the time and each value there, and leaving brings the names back', () => {
-    render(
+    draw(
       <RoastChart
         title="Roast curve"
         layers={[
@@ -112,12 +121,12 @@ describe('RoastChart', () => {
   });
 
   it('says so when there are no readings', () => {
-    render(<RoastChart title="Roast curve" layers={[bt([])]} />);
+    draw(<RoastChart title="Roast curve" layers={[bt([])]} />);
     expect(screen.getByRole('img', { name: 'No readings yet' })).toBeInTheDocument();
   });
 
   it('draws each layer with its token colour and width', () => {
-    render(<RoastChart title="Roast curve" layers={[bt([[0, 180]]), ror]} />);
+    draw(<RoastChart title="Roast curve" layers={[bt([[0, 180]]), ror]} />);
     expect(created).toHaveLength(1);
     expect(created[0]?.opts.series.slice(1).map((s) => [s.stroke, s.width])).toEqual([
       ['rgb(255, 122, 77)', 3.5],
@@ -126,7 +135,7 @@ describe('RoastChart', () => {
   });
 
   it('pushes new points with setData instead of rebuilding the chart', () => {
-    const { rerender } = render(<RoastChart title="Roast curve" layers={[bt([[0, 180]])]} />);
+    const { rerender } = draw(<RoastChart title="Roast curve" layers={[bt([[0, 180]])]} />);
     rerender(
       <RoastChart
         title="Roast curve"
@@ -146,7 +155,7 @@ describe('RoastChart', () => {
   });
 
   it('rebuilds when a layer is added, and cleans up on unmount', () => {
-    const { rerender, unmount } = render(
+    const { rerender, unmount } = draw(
       <RoastChart title="Roast curve" layers={[bt([[0, 180]])]} />,
     );
     rerender(<RoastChart title="Roast curve" layers={[bt([[0, 180]]), ror]} />);
@@ -175,7 +184,7 @@ describe('RoastChart', () => {
     ]);
 
     it('draws output layers in a strip under the chart, as steps', () => {
-      render(
+      draw(
         <RoastChart
           title="Roast curve"
           layers={[
@@ -194,13 +203,13 @@ describe('RoastChart', () => {
       expect(chart?.opts.series.slice(1).map((s) => s.scale)).toEqual(['temperature', 'ror']);
       expect(strip?.opts.height).toBe(96);
       expect(strip?.opts.series.slice(1).map((s) => [s.scale, s.paths])).toEqual([
-        ['output', 'stepped-path'],
-        ['output', 'stepped-path'],
+        ['output', stepped],
+        ['output', stepped],
       ]);
     });
 
     it('gives both plots the same times, so they line up', () => {
-      render(
+      draw(
         <RoastChart
           title="Roast curve"
           layers={[
@@ -220,14 +229,14 @@ describe('RoastChart', () => {
     });
 
     it('lists the outputs in their own legend and describes their latest values', () => {
-      render(<RoastChart title="Roast curve" layers={[bt([[0, 180]]), heater, fan]} />);
+      draw(<RoastChart title="Roast curve" layers={[bt([[0, 180]]), heater, fan]} />);
       expect(screen.getByRole('list', { name: 'Outputs legend' })).toHaveTextContent('Heater');
       expect(screen.getByRole('list', { name: 'Legend' })).not.toHaveTextContent('Heater');
       expect(screen.getByRole('img', { name: 'Heater 70%, Fan 50%' })).toBeInTheDocument();
     });
 
     it('has no strip without output layers', () => {
-      render(<RoastChart title="Roast curve" layers={[bt([[0, 180]])]} />);
+      draw(<RoastChart title="Roast curve" layers={[bt([[0, 180]])]} />);
       expect(created).toHaveLength(1);
       expect(screen.getAllByRole('img')).toHaveLength(1);
     });

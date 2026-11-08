@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import uPlot from 'uplot';
+import type uPlot from 'uplot';
 import 'uplot/dist/uPlot.min.css';
 import { formatClock } from '../lib/format';
 import { cn } from '../lib/utils';
@@ -8,6 +8,7 @@ import { readChartColors } from './roast-chart/chart-colors';
 import type { ChartLayer, ChartMarker } from './roast-chart/chart-layer';
 import { describeLayers, Legend } from './roast-chart/chart-legend';
 import type { ChartDrag, TimeRange } from './roast-chart/drag-handles';
+import { usePlotEngine } from './roast-chart/plot-engine';
 import { buildChartOptions, buildStripOptions } from './roast-chart/uplot-options';
 import { useUplot } from './roast-chart/use-uplot';
 
@@ -33,7 +34,7 @@ const structureOf = (layers: readonly ChartLayer[]) =>
 
 /**
  * The live roast chart (design system: RoastChart): legend above, temperature and RoR drawn with
- * uPlot, and heater and fan in a strip underneath on the same time axis.
+ * uPlot (or the engine from `PlotEngineProvider`), and heater and fan in a strip underneath on the same time axis.
  */
 export function RoastChart({
   title,
@@ -43,6 +44,7 @@ export function RoastChart({
   className,
   drag,
 }: RoastChartProps) {
+  const engine = usePlotEngine();
   const plotRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
@@ -90,6 +92,7 @@ export function RoastChart({
   }, []);
 
   useUplot({
+    engine,
     element: plotRef,
     structure: `${structureOf(main)}#${String(rightAxis)}`,
     width,
@@ -120,6 +123,7 @@ export function RoastChart({
       }),
   });
   useUplot({
+    engine,
     element: stripRef,
     structure: `${structureOf(strip)}#${String(rightAxis)}`,
     width,
@@ -133,7 +137,7 @@ export function RoastChart({
         markers: readMarkers,
         colors: readChartColors(stripRef.current ?? document.documentElement),
         rightAxis,
-        stepped: uPlot.paths.stepped?.({ align: 1 }),
+        stepped: engine.stepped(),
         onHover: setHoverT,
         adjustTimeRange,
       }),
