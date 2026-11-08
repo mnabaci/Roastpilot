@@ -1,7 +1,6 @@
 import {
   builderBase,
   profileFromMilestones,
-  soakLengthS,
   type Logger,
   type ProfileRepository,
 } from '@roastpilot/core';
@@ -18,6 +17,8 @@ import {
   type Roaster,
   type RoasterId,
 } from '@roastpilot/shared';
+import { deleteRefusal } from './delete-guard';
+import { freeName, planCopy } from './profile-copy';
 
 export interface ProfileServiceDeps {
   store: ProfileRepository;
@@ -28,6 +29,8 @@ export interface ProfileServiceDeps {
   activeRoaster: () => Pick<Roaster, 'id' | 'model'>;
   /** Any roaster by id, for copies: their names and the built-ins already there. */
   roaster: (id: RoasterId) => Pick<Roaster, 'name' | 'model'> | undefined;
+  /** After a delete: the beans it unlinked are read again. */
+  onDeleted?: () => void;
   logger: Logger;
 }
 
@@ -59,13 +62,18 @@ export class ProfileService {
     return this.#own.filter((own) => own.roasterId === id).map((own) => own.profile);
   }
 
+  /** Every profile on the active roaster: its built-ins, then your own. */
+  #here(): AutoProfile[] {
+    return [...this.#builtIns(), ...this.#ownHere()];
+  }
+
   #isBuiltIn(id: ProfileId): boolean {
     return this.#builtIns().some((profile) => profile.id === id);
   }
 
   /** The profile Auto runs: the chosen one if this roaster has it, else its first built-in. */
   active(): AutoProfile {
-    const all = [...this.#builtIns(), ...this.#ownHere()];
+    const all = this.#here();
     const chosen = all.find((profile) => profile.id === this.#deps.chosenId());
     const profile = chosen ?? all[0];
     if (!profile) throw new Error('A roaster model must ship at least one profile');
@@ -85,7 +93,7 @@ export class ProfileService {
 
   /** A copy of your own, called `name` ("Light curve copy" without one), in one write. */
   async duplicate(id: ProfileId, name?: string): Promise<Result<ProfileEntry, ProfileError>> {
-    const source = [...this.#builtIns(), ...this.#ownHere()].find((p) => p.id === id);
+    const source = this.#here().find((p) => p.id === id);
     if (!source) return err({ kind: 'not-found', id });
     const copy = {
       ...source,
@@ -100,9 +108,7 @@ export class ProfileService {
   fromMilestones(milestones: Milestones): Promise<Result<ProfileEntry, ProfileError>> {
     const base = builderBase(this.#builtIns());
     if (!base) throw new Error('A roaster model must ship a curve profile');
-    const taken = new Set(this.#ownHere().map((p) => p.name));
-    let name = MILESTONES_NAME;
-    for (let n = 2; taken.has(name); n++) name = `${MILESTONES_NAME} ${String(n)}`;
+    const name = freeName(MILESTONES_NAME, new Set(this.#ownHere().map((p) => p.name)));
     const profile = profileFromMilestones({ milestones, base, id: this.#deps.newId(), name });
     return this.#store(profile, this.#deps.activeRoaster().id);
   }
@@ -122,20 +128,16 @@ export class ProfileService {
     const target = this.#deps.roaster(roasterId);
     if (!source || !target) return err({ kind: 'not-found', id });
     const there = this.#own.filter((own) => own.roasterId === roasterId).map((own) => own.profile);
-    const earlier = there.find(
-      (p) => p.source?.kind === 'profile' && p.source.profileId === source.id,
-    );
-    if (earlier) return err({ kind: 'already-copied', id: earlier.id, name: earlier.name });
     const from = this.#deps.roaster(this.#deps.activeRoaster().id)?.name;
-    const base = from ? `${source.name} (from ${from})` : source.name;
-    const taken = new Set([...ROASTER_MODELS[target.model].profiles, ...there].map((p) => p.name));
-    let name = base;
-    for (let n = 2; taken.has(name); n++) name = `${base} ${String(n)}`;
+    const plan = planCopy(source, there, ROASTER_MODELS[target.model].profiles, from);
+    if (plan.kind === 'already-copied') {
+      return err({ kind: 'already-copied', id: plan.profile.id, name: plan.profile.name });
+    }
     return this.#store(
       {
         ...source,
         id: this.#deps.newId(),
-        name,
+        name: plan.name,
         needsCalibration: true,
         source: { kind: 'profile', profileId: source.id },
       },
@@ -153,21 +155,9 @@ export class ProfileService {
     const roasterId = this.#deps.activeRoaster().id;
     const saved = await this.#deps.store.saveAll(profiles, roasterId);
     if (!saved.ok) return this.#failed(saved.error);
-    const ids = new Set(profiles.map((p) => p.id));
-    const others = this.#own.filter((own) => !ids.has(own.profile.id));
-    this.#own = [...others, ...profiles.map((profile) => ({ profile, roasterId }))];
-    this.#deps.logger.info('profiles.imported', { ids: [...ids], roasterId });
+    this.#remember(profiles, roasterId);
+    this.#deps.logger.info('profiles.imported', { ids: profiles.map((p) => p.id), roasterId });
     return ok(undefined);
-  }
-
-  /** Every profile's name by id: each model's built-ins, and your own on any roaster. */
-  async allNames(): Promise<Map<ProfileId, string>> {
-    const read = await this.#deps.store.list();
-    if (read.ok) this.#own = read.value;
-    else this.#deps.logger.warn('profiles.list-failed', { error: read.error });
-    const builtIns = Object.values(ROASTER_MODELS).flatMap((model) => model.profiles);
-    const all = [...builtIns, ...this.#own.map((own) => own.profile)];
-    return new Map(all.map((profile) => [profile.id, profile.name]));
   }
 
   save(profile: AutoProfile): Promise<Result<ProfileEntry, ProfileError>> {
@@ -178,35 +168,27 @@ export class ProfileService {
     return this.#store(profile, owner ?? this.#deps.activeRoaster().id);
   }
 
-  /**
-   * Your own profiles that soak, on every roaster, set to soak `soakS`; how many changed. Built-ins
-   * and profiles without a soak stay as they are (docs/spec/roast-control.md, From the old setting).
-   */
-  async setOwnSoaks(soakS: number): Promise<Result<number, ProfileError>> {
-    const read = await this.#deps.store.list();
-    if (!read.ok) return this.#failed(read.error);
-    this.#own = read.value;
-    const changing = read.value.filter(({ profile }) => {
-      const lengthS = soakLengthS(profile);
-      return lengthS > 0 && lengthS !== soakS;
-    });
-    for (const { profile, roasterId } of changing) {
-      const [soak, ...steps] = profile.phases;
-      if (!soak) continue;
-      const phases = [{ ...soak, next: { on: 'time' as const, afterS: soakS } }, ...steps];
-      const saved = await this.#store({ ...profile, phases }, roasterId);
-      if (!saved.ok) return saved;
-    }
-    return ok(changing.length);
+  delete(id: ProfileId): Promise<Result<void, ProfileError>> {
+    return this.deleteMany([id]);
   }
 
-  async delete(id: ProfileId): Promise<Result<void, ProfileError>> {
-    if (this.#isBuiltIn(id)) return err({ kind: 'built-in', id });
-    const deleted = await this.#deps.store.delete(id);
+  /**
+   * Your own, in one write, all or nothing. A built-in, the profile Auto uses or the one it runs
+   * (the same until Drop, as Auto reads `active()` on every tick) refuses them all.
+   */
+  async deleteMany(ids: readonly ProfileId[]): Promise<Result<void, ProfileError>> {
+    const inUse = [this.#deps.chosenId(), this.active().id];
+    const refused = deleteRefusal(ids, { isBuiltIn: (id) => this.#isBuiltIn(id), inUse });
+    if (refused) {
+      this.#deps.logger.warn('profiles.delete-refused', { id: refused.id, reason: refused.kind });
+      return err(refused);
+    }
+    const deleted = await this.#deps.store.deleteMany(ids);
     if (!deleted.ok) return this.#failed(deleted.error);
-    if (!deleted.value) return err({ kind: 'not-found', id });
-    this.#own = this.#own.filter((own) => own.profile.id !== id);
-    this.#deps.logger.info('profiles.deleted', { id });
+    if (deleted.value === 0) return err({ kind: 'not-found', id: ids.join(', ') });
+    this.#own = this.#own.filter((own) => !ids.includes(own.profile.id));
+    this.#deps.logger.info('profiles.deleted', { ids });
+    this.#deps.onDeleted?.();
     return ok(undefined);
   }
 
@@ -216,10 +198,16 @@ export class ProfileService {
   ): Promise<Result<ProfileEntry, ProfileError>> {
     const saved = await this.#deps.store.save(profile, roasterId);
     if (!saved.ok) return this.#failed(saved.error);
-    const others = this.#own.filter((own) => own.profile.id !== profile.id);
-    this.#own = [...others, { profile, roasterId }];
+    this.#remember([profile], roasterId);
     this.#deps.logger.info('profiles.saved', { id: profile.id, roasterId });
     return ok({ profile, builtIn: false });
+  }
+
+  /** Saved ones in memory, each replacing the one with its id. */
+  #remember(profiles: readonly AutoProfile[], roasterId: RoasterId): void {
+    const ids = new Set(profiles.map((p) => p.id));
+    const others = this.#own.filter((own) => !ids.has(own.profile.id));
+    this.#own = [...others, ...profiles.map((profile) => ({ profile, roasterId }))];
   }
 
   #failed(error: { kind: string; message?: string }): Result<never, ProfileError> {

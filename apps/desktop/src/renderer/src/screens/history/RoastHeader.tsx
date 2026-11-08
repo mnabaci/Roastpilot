@@ -1,5 +1,5 @@
 import type { RoastId, RoastSummary } from '@roastpilot/shared';
-import { ConfirmDialog, FilterSelect, Menu } from '@roastpilot/ui';
+import { Badge, ConfirmDialog, FilterSelect, Menu } from '@roastpilot/ui';
 import { useState } from 'react';
 import { roastTitle } from './history-format';
 import type { ProfileStyle } from './use-make-profile';
@@ -16,6 +16,7 @@ export function RoastHeader({
   compareId,
   onCompare,
   live,
+  stopped,
   onMakeProfile,
   onExport,
   onDelete,
@@ -27,6 +28,8 @@ export function RoastHeader({
   compareId: RoastId | undefined;
   onCompare: (id: RoastId | undefined) => void;
   live: boolean;
+  /** Ended with Stop roast before drop: a Stopped badge after the title. */
+  stopped: boolean;
   onMakeProfile: (id: RoastId, style: ProfileStyle) => void;
   onExport: (id: RoastId, format: 'roastpilot' | 'csv') => void;
   onDelete: (id: RoastId) => void;
@@ -34,7 +37,10 @@ export function RoastHeader({
   const [deleting, setDeleting] = useState(false);
   return (
     <header className="flex min-h-control-sm flex-wrap items-center gap-3">
-      <h2 className="mr-auto text-title">{roast ? roastTitle(roast.startedAt) : ''}</h2>
+      <div className="mr-auto flex min-w-0 items-center gap-3">
+        <h2 className="text-title">{roast ? roastTitle(roast.startedAt) : ''}</h2>
+        {stopped ? <Badge className="shrink-0">Stopped</Badge> : null}
+      </div>
       <FilterSelect
         label="Compare"
         allValue={NONE}

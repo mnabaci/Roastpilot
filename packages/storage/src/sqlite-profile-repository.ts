@@ -12,6 +12,7 @@ import { asc, eq } from 'drizzle-orm';
 import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy';
 import { attempt, parseJson } from './attempt';
 import { transaction } from './transaction';
+import { beans } from './schema/beans';
 import { profiles } from './schema/profiles';
 
 /** Your own profiles in SQLite, one JSON document each (docs/adr/0011-built-in-profile-as-data.md). */
@@ -68,14 +69,21 @@ export class SqliteProfileRepository implements ProfileRepository {
       .run();
   }
 
-  delete(id: ProfileId): Promise<Result<boolean, StorageError>> {
-    return attempt(async () => {
-      const deleted = await this.#db
-        .delete(profiles)
-        .where(eq(profiles.id, id))
-        .returning({ id: profiles.id })
-        .all();
-      return deleted.length > 0;
+  deleteMany(ids: readonly ProfileId[]): Promise<Result<number, StorageError>> {
+    return transaction(this.#db, async (tx) => {
+      let removed = 0;
+      // One statement per id, so a failure part way rolls back the ones before it.
+      for (const id of ids) {
+        const deleted = await tx
+          .delete(profiles)
+          .where(eq(profiles.id, id))
+          .returning({ id: profiles.id })
+          .all();
+        removed += deleted.length;
+        // No bean points at a profile that isn't there (docs/spec/data-model.md).
+        await tx.update(beans).set({ profileId: null }).where(eq(beans.profileId, id)).run();
+      }
+      return ok(removed);
     });
   }
 }

@@ -69,11 +69,12 @@ Inter, one family, with tabular numerals (`font-variant-numeric: tabular-nums`) 
 - List-and-detail screens (History, Beans, Profiles, Roasters, Settings) use SidebarLayout: a `sidebar`-wide (256px) column with the title and a NavList, the open item on the right; the two scroll separately.
 - Top bar: the mark, the tabs, Emergency stop. Connection is a dot on the Roasters tab: `ink-muted` not connected, `air` connected, `heat` connecting or reconnecting.
 - Scrollbars are thin: a `border-strong` thumb on a transparent track, in both themes; never the light system gutter.
-- Every screen follows one pattern: the title, with the list's rare actions in a "⋯" Menu beside it (History: Export CSV, Import; Beans: Batch calculator, Show archived; Logs: Open log folder); then filters in one row of FilterSelect chips; then the list. The open item has one header row: its name as the title with its badges, its one or two main actions, and "⋯" for the rest (Delete last, in red, asked in a dialog).
-  - Profiles: Save or Use for Auto (or an AUTO badge), ⋯ Duplicate, Copy, Delete.
-  - History: Compare ▾, Make profile ▾, ⋯ Delete.
-  - Beans: Roast this bean, Add stock, ⋯ Adjust stock, Edit, Make a profile, Archive.
-  - Roasters: ⋯ Use this roaster, Delete; Connect stays the big action under the header.
+- Every screen follows one pattern: the title, with the list's rare actions in a "⋯" Menu beside it (Export all and Import a Roastpilot file on History, Beans, Profiles and Roasters; Beans: Batch calculator, Show archived; Logs: Open log folder); then filters in one row of FilterSelect chips; then the list. The open item has one header row: its name as the title with its badges, its one or two main actions, and "⋯" for the rest (Delete last, in red, asked in a dialog).
+  - Profiles: Save or Use for Auto (or an AUTO badge), ⋯ Duplicate, Copy, Mark as calibrated, Export this profile, Delete (disabled, with why, on the one Auto uses or runs). Title ⋯: New from milestones, Export all, Import a Roastpilot file, Select.
+  - History: Compare ▾, Make profile ▾, ⋯ Export this roast, Delete. Title ⋯: Export all, Import a Roastpilot file, Import from Artisan, Select.
+  - Beans: Roast this bean, Add stock, ⋯ Adjust stock, Edit, Make a profile, Export this bean, Archive. Title ⋯: Batch calculator, Show archived, Export all, Import a Roastpilot file.
+  - Roasters: ⋯ Use this roaster, Export this roaster, Delete (Use and Delete disabled, with why, when they can't be done now); Connect stays the big action under the header. Title ⋯: Export all, Import a Roastpilot file.
+- An action not allowed right now stays in its "⋯", disabled, with a one-line hint saying why: menus keep their shape.
 - Every dropdown opens one panel (Select): fields, filter chips and "⋯" menus alike; never the system popup. Long lists (more than 8) get a search box; options may carry one detail line.
 - Settings are rows in a card: name and a one-line hint on the left, a Switch or SegmentedControl on the right.
 

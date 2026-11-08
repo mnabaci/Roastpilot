@@ -10,7 +10,7 @@ const WINDOW = { id: 1 } as unknown as DialogParent;
 
 const kindFiles = (): LibraryFiles => ({
   exportFile: vi.fn(() => Promise.resolve(ok('{}'))),
-  importFile: vi.fn(() => Promise.resolve(ok({ added: 3, skipped: 1, newestId: 9 }))),
+  importFile: vi.fn(() => Promise.resolve(ok({ added: 3, skipped: 1, archived: 0, newestId: 9 }))),
 });
 
 function setup(over: Partial<LibraryFileActionsDeps> = {}) {
@@ -26,6 +26,9 @@ function setup(over: Partial<LibraryFileActionsDeps> = {}) {
     chooseImportPath: vi.fn(() => Promise.resolve('/tmp/in.rpr')),
     readText: vi.fn(() => Promise.resolve('{"format":"x"}')),
     writeText: vi.fn(() => Promise.resolve()),
+    sizeOf: () => Promise.resolve(100),
+    rename: vi.fn(() => Promise.resolve()),
+    remove: () => Promise.resolve(),
     logger: createLogger({ write: (e) => entries.push(e) }, 'files'),
     ...over,
   };
@@ -40,7 +43,11 @@ describe('library file actions', () => {
     );
     expect(deps.chooseExportPath).toHaveBeenCalledWith('profiles', 'roastpilot', 1, WINDOW);
     expect(kinds.profiles.exportFile).toHaveBeenCalledWith(['custom-1']);
-    expect(deps.writeText).toHaveBeenCalledWith('/tmp/Roastpilot profiles.rpr', '{}');
+    expect(deps.writeText).toHaveBeenCalledWith('/tmp/Roastpilot profiles.rpr.tmp', '{}');
+    expect(deps.rename).toHaveBeenCalledWith(
+      '/tmp/Roastpilot profiles.rpr.tmp',
+      '/tmp/Roastpilot profiles.rpr',
+    );
   });
 
   it('exports all of a kind when none are named', async () => {
@@ -82,7 +89,7 @@ describe('library file actions', () => {
   it('imports the picked file into its kind, on the window that asked', async () => {
     const { deps, kinds, actions } = setup();
     expect(await actions.importLibrary('profiles', WINDOW)).toEqual(
-      ok({ status: 'imported', added: 3, skipped: 1, newestId: 9 }),
+      ok({ status: 'imported', added: 3, skipped: 1, archived: 0, newestId: 9 }),
     );
     expect(deps.chooseImportPath).toHaveBeenCalledWith('profiles', WINDOW);
     expect(kinds.profiles.importFile).toHaveBeenCalledWith('{"format":"x"}');
@@ -99,5 +106,54 @@ describe('library file actions', () => {
     const { actions, entries } = setup({ readText: () => Promise.reject(new Error('gone')) });
     expect(await actions.importLibrary('beans', WINDOW)).toEqual(err({ kind: 'read-failed' }));
     expect(entries.map((e) => e.event)).toEqual(['files.import-read-failed']);
+  });
+
+  it('passes not found on when the ids asked for are gone, writing nothing', async () => {
+    const { deps, kinds, actions } = setup();
+    vi.mocked(kinds.profiles.exportFile).mockResolvedValue(err({ kind: 'not-found' }));
+    expect(await actions.exportLibrary({ kind: 'profiles', ids: ['gone'] }, WINDOW)).toEqual(
+      err({ kind: 'not-found' }),
+    );
+    expect(deps.writeText).not.toHaveBeenCalled();
+  });
+
+  it('refuses a file over 50 MB without reading it', async () => {
+    const { deps, kinds, actions } = setup({ sizeOf: () => Promise.resolve(60 * 1024 * 1024) });
+    expect(await actions.importLibrary('beans', WINDOW)).toEqual(err({ kind: 'too-big' }));
+    expect(deps.readText).not.toHaveBeenCalled();
+    expect(kinds.beans.importFile).not.toHaveBeenCalled();
+  });
+
+  it('runs two quick imports of a kind one after the other, dialog to write', async () => {
+    const { deps, kinds, actions } = setup();
+    let finishFirst: () => void = () => undefined;
+    vi.mocked(kinds.beans.importFile).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishFirst = () => {
+            resolve(ok({ added: 1, skipped: 0, archived: 0, newestId: 1 }));
+          };
+        }),
+    );
+    const first = actions.importLibrary('beans', WINDOW);
+    const second = actions.importLibrary('beans', WINDOW);
+    // Another kind doesn't wait.
+    await actions.importLibrary('roasters', WINDOW);
+    expect(deps.chooseImportPath).toHaveBeenCalledTimes(2);
+    expect(kinds.beans.importFile).toHaveBeenCalledTimes(1);
+    finishFirst();
+    await first;
+    await second;
+    expect(deps.chooseImportPath).toHaveBeenCalledTimes(3);
+    expect(kinds.beans.importFile).toHaveBeenCalledTimes(2);
+  });
+
+  it('a failed import lets the next one run', async () => {
+    const { kinds, actions } = setup();
+    vi.mocked(kinds.beans.importFile).mockRejectedValueOnce(new Error('bug'));
+    await expect(actions.importLibrary('beans', WINDOW)).rejects.toThrow('bug');
+    expect(await actions.importLibrary('beans', WINDOW)).toEqual(
+      ok({ status: 'imported', added: 3, skipped: 1, archived: 0, newestId: 9 }),
+    );
   });
 });

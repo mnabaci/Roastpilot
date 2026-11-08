@@ -17,16 +17,18 @@ const MINE: AutoProfile = {
 const [SKYWALKER] = BUILT_IN_ROASTERS as [Roaster];
 
 /** A real ProfileService on an in-memory store, on roaster 1 with `limits`. */
-function setup(own: AutoProfile[] = [], limits: Partial<Roaster> = {}) {
+function setup(own: AutoProfile[] = [], limits: Partial<Roaster> = {}, saveFails = false) {
   let stored = own.map((profile) => ({ profile, roasterId: 1 }));
+  let active: Partial<Roaster> = limits;
   const store: ProfileRepository = {
     list: () => Promise.resolve(ok(stored)),
     save: () => Promise.resolve(ok(undefined)),
     saveAll: (list, roasterId) => {
+      if (saveFails) return Promise.resolve(err({ kind: 'storage-failed', message: 'full' }));
       stored = [...stored, ...list.map((profile) => ({ profile, roasterId }))];
       return Promise.resolve(ok(undefined));
     },
-    delete: () => Promise.resolve(ok(false)),
+    deleteMany: () => Promise.resolve(ok(0)),
   };
   const profiles = new ProfileService({
     store,
@@ -39,10 +41,13 @@ function setup(own: AutoProfile[] = [], limits: Partial<Roaster> = {}) {
   let n = 0;
   const codec = profileCodec({
     profiles,
-    activeRoaster: () => ({ ...SKYWALKER, ...limits }),
+    activeRoaster: () => ({ ...SKYWALKER, ...active }),
     newId: () => `custom-new-${String(++n)}`,
   });
-  return { codec, stored: () => stored.map((s) => s.profile) };
+  const switchTo = (roaster: Partial<Roaster>) => {
+    active = roaster;
+  };
+  return { codec, stored: () => stored.map((s) => s.profile), switchTo };
 }
 
 const fileOf = (profiles: unknown[]) =>
@@ -72,7 +77,7 @@ describe('profile files', () => {
     const text = await exported('profiles', setup([MINE]).codec, ['custom-mine']);
     const { codec, stored } = setup();
     expect(await filesOf('profiles', codec).importFile(text)).toEqual(
-      ok({ added: 1, skipped: 0, newestId: 'custom-new-1' }),
+      ok({ added: 1, skipped: 0, archived: 0, newestId: 'custom-new-1' }),
     );
     const rest = without(MINE, 'source');
     expect(stored()).toEqual([{ ...rest, id: 'custom-new-1', needsCalibration: true }]);
@@ -83,14 +88,14 @@ describe('profile files', () => {
     const { codec } = setup();
     await filesOf('profiles', codec).importFile(text);
     expect(await filesOf('profiles', codec).importFile(text)).toEqual(
-      ok({ added: 0, skipped: 1, newestId: null }),
+      ok({ added: 0, skipped: 1, archived: 0, newestId: null }),
     );
   });
 
   it('a built-in from the file is already here', async () => {
     const text = await exported('profiles', setup().codec, ['light-steps']);
     expect(await filesOf('profiles', setup().codec).importFile(text)).toEqual(
-      ok({ added: 0, skipped: 1, newestId: null }),
+      ok({ added: 0, skipped: 1, archived: 0, newestId: null }),
     );
   });
 
@@ -125,5 +130,30 @@ describe('profile files', () => {
       err({ kind: 'bad-item', name: 'Mine', reason: "Runs past this roaster's 5 min limit" }),
     );
     expect(low.stored()).toEqual([]);
+  });
+
+  it('checks against the roaster active at import time, after a switch', async () => {
+    const text = await exported('profiles', setup([MINE]).codec, ['custom-mine']);
+    const here = setup();
+    here.switchTo({ maxTempC: MINE.capC - 5 });
+    const refused = await filesOf('profiles', here.codec).importFile(text);
+    expect(refused.ok ? undefined : refused.error.kind).toBe('bad-item');
+    here.switchTo({});
+    expect((await filesOf('profiles', here.codec).importFile(text)).ok).toBe(true);
+  });
+
+  it('says storage failed when the profiles cannot be saved, adding none', async () => {
+    const text = await exported('profiles', setup([MINE]).codec, ['custom-mine']);
+    const failing = setup([], {}, true);
+    expect(await filesOf('profiles', failing.codec).importFile(text)).toEqual(
+      err({ kind: 'storage-failed', message: 'full' }),
+    );
+    expect(failing.stored()).toEqual([]);
+  });
+
+  it("exports a stored profile that breaks today's rules, rather than throw", async () => {
+    const old: AutoProfile = { ...MINE, capC: 250 };
+    const text = await exported('profiles', setup([old]).codec, ['custom-mine']);
+    expect(JSON.parse(text)).toMatchObject({ profiles: [{ name: 'Mine', capC: 250 }] });
   });
 });

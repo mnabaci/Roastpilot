@@ -55,14 +55,14 @@ export function savedRoastChart(
   return { layers: [ghost, ...chart.layers], markers: chart.markers };
 }
 
-/** −0:30 to a saved roast's cool end (or End roast, or else drop) + 0:30; none without an end. */
+/** −0:30 to a saved roast's cool end (or Stop roast, or else drop) + 0:30; none without an end. */
 function focusOf(detail: RoastDetail): TimeWindow | undefined {
   const endEvent = detail.events.find((e) => e.kind === 'cool-end' || e.kind === 'end');
   return savedRoastWindow({ coolEndS: endEvent?.tS, dropS: detail.dropTimeS ?? undefined });
 }
 
 /**
- * History's focused view of a saved roast: −0:30 to its cool end (or End roast, or else drop)
+ * History's focused view of a saved roast: −0:30 to its cool end (or Stop roast, or else drop)
  * + 0:30, reaching the compared roast's end too, so a longer roast's crack and drop stay in view
  * (docs/spec/ui.md, History). Undefined when that would hide nothing: the roast has no end to
  * focus on, or no reading of either roast outside it, so Show preheat would change nothing.

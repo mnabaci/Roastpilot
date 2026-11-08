@@ -31,22 +31,27 @@ function setup(start: AutoProfile[] = []) {
       stored = [...stored.filter((p) => !ids.has(p.id)), ...list];
       return Promise.resolve(ok(undefined));
     },
-    delete: (id) => {
-      const had = stored.some((p) => p.id === id);
-      stored = stored.filter((p) => p.id !== id);
+    deleteMany: (ids) => {
+      const had = stored.filter((p) => ids.includes(p.id)).length;
+      stored = stored.filter((p) => !ids.includes(p.id));
       return Promise.resolve(ok(had));
     },
   };
+  let deleted = 0;
   const service = new ProfileService({
     store,
     newId: () => 'custom-new',
     chosenId: () => chosen,
     activeRoaster: () => ({ id: roasterId, model: 'skywalker' }),
     roaster: (id) => ROASTERS.get(id),
+    onDeleted: () => {
+      deleted += 1;
+    },
     logger: silentLogger,
   });
   return {
     service,
+    deletions: () => deleted,
     stored: () => stored,
     useRoaster: (id: number) => {
       roasterId = id;
@@ -74,7 +79,7 @@ describe('ProfileService', () => {
       list: () => Promise.resolve(ok([])),
       save: () => Promise.resolve(ok(undefined)),
       saveAll: () => Promise.resolve(err({ kind: 'storage-failed', message: 'full' })),
-      delete: () => Promise.resolve(ok(false)),
+      deleteMany: () => Promise.resolve(ok(0)),
     };
     const service = new ProfileService({
       store: failing,
@@ -86,13 +91,6 @@ describe('ProfileService', () => {
     });
     expect(await service.addAll([MINE])).toEqual(err({ kind: 'storage-failed', message: 'full' }));
     expect((await service.list()).filter((e) => !e.builtIn)).toEqual([]);
-  });
-
-  it('names every profile by id: the built-ins of every model, your own on any roaster', async () => {
-    const { service } = setup([MINE]);
-    const names = await service.allNames();
-    expect(names.get('custom-a')).toBe('Mine');
-    expect(names.get('light-steps')).toBe(SKYWALKER_PROFILES['light-steps'].name);
   });
 
   it('lists the built-ins first, then your own', async () => {
@@ -110,7 +108,7 @@ describe('ProfileService', () => {
       list: () => Promise.resolve(err({ kind: 'storage-failed', message: 'gone' })),
       save: () => Promise.resolve(err({ kind: 'storage-failed', message: 'gone' })),
       saveAll: () => Promise.resolve(err({ kind: 'storage-failed', message: 'gone' })),
-      delete: () => Promise.resolve(err({ kind: 'storage-failed', message: 'gone' })),
+      deleteMany: () => Promise.resolve(err({ kind: 'storage-failed', message: 'gone' })),
     };
     const service = new ProfileService({
       store: failing,
@@ -187,15 +185,82 @@ describe('ProfileService', () => {
     expect(stored()).toEqual([]);
   });
 
-  it('runs the chosen profile, and the default once it is deleted', async () => {
-    const { service, choose } = setup([MINE]);
+  it("runs the chosen profile, and the default when this roaster hasn't got it", async () => {
+    const { service, choose, useRoaster } = setup([MINE]);
     await service.list();
     choose('custom-a');
     expect(service.active().name).toBe('Mine');
     await service.save({ ...MINE, name: 'Edited' });
     expect(service.active().name).toBe('Edited');
-    await service.delete('custom-a');
+    // Once the chosen one isn't on this roaster, the first built-in.
+    useRoaster(2);
     expect(service.active().id).toBe('light-steps');
+  });
+
+  it('deletes several of your own at once', async () => {
+    const two: AutoProfile = { ...MINE, id: 'custom-b', name: 'Two' };
+    const three: AutoProfile = { ...MINE, id: 'custom-c', name: 'Three' };
+    const { service, stored } = setup([MINE, two, three]);
+    await service.list();
+    expect(await service.deleteMany(['custom-a', 'custom-b'])).toEqual(ok(undefined));
+    expect(stored()).toEqual([three]);
+    const own = (await service.list()).filter((e) => !e.builtIn).map((e) => e.profile.id);
+    expect(own).toEqual(['custom-c']);
+  });
+
+  it('refuses to delete the profile Auto uses or is running, alone or among others', async () => {
+    const two: AutoProfile = { ...MINE, id: 'custom-b', name: 'Two' };
+    const { service, stored, choose } = setup([MINE, two]);
+    await service.list();
+    choose('custom-a');
+    // The one Auto uses is the one it runs, from Preheat until Drop.
+    expect(service.active().id).toBe('custom-a');
+    expect(await service.delete('custom-a')).toEqual(err({ kind: 'in-use', id: 'custom-a' }));
+    expect(await service.deleteMany(['custom-b', 'custom-a'])).toEqual(
+      err({ kind: 'in-use', id: 'custom-a' }),
+    );
+    expect(stored()).toEqual([MINE, two]);
+    expect(await service.delete('custom-b')).toEqual(ok(undefined));
+  });
+
+  it('says once a delete has gone through, so the beans it unlinked are read again', async () => {
+    const { service, deletions } = setup([MINE]);
+    await service.list();
+    await service.delete('custom-a');
+    expect(deletions()).toBe(1);
+    await service.delete('custom-a');
+    expect(deletions()).toBe(1);
+  });
+
+  it('deletes none when one is a built-in', async () => {
+    const { service, stored } = setup([MINE]);
+    expect(await service.deleteMany(['custom-a', 'light-steps'])).toEqual(
+      err({ kind: 'built-in', id: 'light-steps' }),
+    );
+    expect(stored()).toEqual([MINE]);
+  });
+
+  it('keeps them all, listed, when storage fails', async () => {
+    const failing: ProfileRepository = {
+      list: () => Promise.resolve(ok([{ profile: MINE, roasterId: 1 }])),
+      save: () => Promise.resolve(ok(undefined)),
+      saveAll: () => Promise.resolve(ok(undefined)),
+      deleteMany: () => Promise.resolve(err({ kind: 'storage-failed', message: 'locked' })),
+    };
+    const service = new ProfileService({
+      store: failing,
+      newId: () => 'x',
+      chosenId: () => 'light-steps',
+      activeRoaster: () => ({ id: 1, model: 'skywalker' }),
+      roaster: (id) => ROASTERS.get(id),
+      logger: silentLogger,
+    });
+    await service.list();
+    expect(await service.deleteMany(['custom-a'])).toEqual(
+      err({ kind: 'storage-failed', message: 'locked' }),
+    );
+    expect(service.active().id).toBe('light-steps');
+    expect((await service.list()).map((e) => e.profile.id)).toContain('custom-a');
   });
 
   it('says when there was nothing to delete', async () => {
@@ -269,50 +334,5 @@ describe('ProfileService', () => {
     useRoaster(2);
     await service.save({ ...MINE, name: 'Edited' });
     expect((await service.list()).map((e) => e.profile.id)).not.toContain('custom-a');
-  });
-
-  describe('setOwnSoaks', () => {
-    const NO_SOAK: AutoProfile = { ...MINE, id: 'custom-b', phases: MINE.phases.slice(1) };
-    const soakOf = (profile: AutoProfile | undefined) => profile?.phases[0]?.next;
-
-    it('sets the soak of your own profiles that soak, on every roaster', async () => {
-      const { service, stored, useRoaster } = setup([MINE, NO_SOAK]);
-      useRoaster(2);
-      await service.duplicate('light-steps', 'Other roaster');
-      expect(await service.setOwnSoaks(90)).toEqual({ ok: true, value: 2 });
-      const byId = (id: string) => stored().find((p) => p.id === id);
-      expect(soakOf(byId('custom-a'))).toEqual({ on: 'time', afterS: 90 });
-      expect(soakOf(byId('custom-new'))).toEqual({ on: 'time', afterS: 90 });
-      expect(await service.list()).toContainEqual({ profile: byId('custom-new'), builtIn: false });
-    });
-
-    it('leaves the built-ins and a profile without a soak alone', async () => {
-      const { service, stored } = setup([NO_SOAK]);
-      expect(await service.setOwnSoaks(90)).toEqual({ ok: true, value: 0 });
-      expect(stored()).toEqual([NO_SOAK]);
-      const builtIn = (await service.list()).find((e) => e.profile.id === 'light-steps');
-      expect(soakOf(builtIn?.profile)).toEqual({ on: 'time', afterS: 60 });
-    });
-
-    it('says so when storage fails', async () => {
-      const failing: ProfileRepository = {
-        list: () => Promise.resolve(ok([{ profile: MINE, roasterId: 1 }])),
-        save: () => Promise.resolve(err({ kind: 'storage-failed', message: 'full' })),
-        saveAll: () => Promise.resolve(err({ kind: 'storage-failed', message: 'full' })),
-        delete: () => Promise.resolve(ok(false)),
-      };
-      const service = new ProfileService({
-        store: failing,
-        newId: () => 'x',
-        chosenId: () => 'light-steps',
-        activeRoaster: () => ({ id: 1, model: 'skywalker' }),
-        roaster: (id) => ROASTERS.get(id),
-        logger: silentLogger,
-      });
-      expect(await service.setOwnSoaks(90)).toEqual({
-        ok: false,
-        error: { kind: 'storage-failed', message: 'full' },
-      });
-    });
   });
 });

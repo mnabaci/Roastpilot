@@ -29,6 +29,7 @@ export const fakeProfilesApi = (): ProfilesApi => ({
   duplicateProfile: (id) => Promise.resolve(err({ kind: 'not-found' as const, id })),
   saveProfile: (profile: AutoProfile) => Promise.resolve(ok({ profile, builtIn: false })),
   deleteProfile: accepted,
+  deleteProfiles: accepted,
   copyProfile: (request) => Promise.resolve(err({ kind: 'not-found' as const, id: request.id })),
   makeProfileFromMilestones: () =>
     Promise.resolve(err({ kind: 'storage-failed' as const, message: 'not in this test' })),

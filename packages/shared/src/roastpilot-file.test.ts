@@ -42,6 +42,9 @@ describe('Roastpilot file envelope', () => {
     ['items that are not a list', file({ beans: { name: 'Guji' } })],
     ['no exportedAt', file({ exportedAt: undefined })],
     ['a version that is not a whole number', file({ version: 0.5 })],
+    ['a version above this one that is not a whole number', file({ version: 1.5 })],
+    ['version 0', file({ version: 0 })],
+    ['a version that is not a number', file({ version: '1' })],
   ])('refuses %s', (_, text) => {
     expect(readEnvelope(text, 'beans')).toEqual({ ok: false, error: { kind: 'not-roastpilot' } });
   });

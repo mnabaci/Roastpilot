@@ -8,7 +8,7 @@ Compact, tonal buttons with an icon: one ember primary per phase, quiet tonal se
 - **Secondary (tonal)**: `surface-raised` fill, no border, `ink` text. Hover `surface-hover`. Drop now, Duplicate, Export CSV.
 - **Outline**: `surface-raised` fill, 1px `border-strong` border, `ink` text; hover `surface-hover`. For anything that closes or acknowledges: the coach's Dismiss, the finished-roast card's Done, History's select-mode Done, AlertBanner's Acknowledge. A ghost would be too easy to miss on a tint or a banner.
 - **Ghost**: transparent, `ink` text (`ink-muted` read as disabled on the dark ground); hover `surface-hover`. Quieter than secondary because it has no fill, never because of dim text. Cancel in dialogs and forms, Clear, Resume auto.
-- **End roast**: a secondary, full width at the bottom of the flow panel, set apart by a thin `border` divider, Lucide `CircleStop` icon and `warning` (amber) text, never red. A normal stop must be easy to find but never look like Emergency stop; red fill is only for that.
+- **Stop roast / Stop preheat** (the normal stop): a secondary, full width at the bottom of the flow panel, set apart by a thin `border` divider, Lucide `CircleStop` icon and `warning` (amber) text, never red. A normal stop must be easy to find but never look like Emergency stop; red fill is only for that.
 - **Danger**: `critical` fill, `on-critical` text and icon; hover brightens it 10%. Emergency stop only.
 - **Delete**: a ghost (or the confirm's secondary) with `critical-text` text and icon, never a `critical` fill. Delete always asks once, inline: "Delete this roast? · can't be undone", both buttons in `critical-text`.
 - **Disabled**: 50% opacity and no pointer events (no hover, no press); keep the label so the user sees what comes next ("Heating to 150 °C").
@@ -29,4 +29,4 @@ Lucide, 20px, 2px stroke, left of the label with an 8px gap: Flame for Preheat, 
 - A real `<button>`; never a clickable div.
 - No outlines as a style, except the Outline variant for closing buttons; otherwise borders only for focus (2px `focus` ring, 2px offset).
 - One primary per screen state.
-- **Choice buttons** (dialogs, the coach card, an editor's Save / Discard, a form's Save / Cancel): at the right end, the quiet choice first (Cancel, Discard, Dismiss, Keep roasting) and the action last (Save, Apply, End roast), as macOS and Windows dialogs do. One alone also sits at the right.
+- **Choice buttons** (dialogs, the coach card, an editor's Save / Discard, a form's Save / Cancel): at the right end, the quiet choice first (Cancel, Discard, Dismiss, Keep roasting) and the action last (Save, Apply, Stop roast), as macOS and Windows dialogs do. One alone also sits at the right.

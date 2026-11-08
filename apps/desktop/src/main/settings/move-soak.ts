@@ -1,4 +1,5 @@
-import type { Logger } from '@roastpilot/core';
+import type { Logger, ProfileRepository } from '@roastpilot/core';
+import { setOwnSoaks } from '../profiles/own-soaks';
 import type { ProfileService } from '../profiles/profile-service';
 import type { SettingsService } from './settings-service';
 
@@ -24,18 +25,21 @@ export async function moveRetiredSoak({
   retired,
   settings,
   profiles,
+  profileStore,
   logger,
 }: {
   retired: RetiredSoakSetting;
   settings: Pick<SettingsService, 'latest' | 'set'>;
-  profiles: Pick<ProfileService, 'setOwnSoaks'>;
+  profiles: Pick<ProfileService, 'addOn'>;
+  /** Read for your own profiles on every roaster. */
+  profileStore: Pick<ProfileRepository, 'list'>;
   logger: Logger;
 }): Promise<void> {
   const soakS = retired.retiredSoakS();
   if (soakS === undefined) return;
   let count = 0;
   if (soakS !== BUILT_IN_SOAK_S) {
-    const moved = await profiles.setOwnSoaks(soakS);
+    const moved = await setOwnSoaks(soakS, { store: profileStore, profiles });
     if (!moved.ok) {
       logger.warn('settings.soak-not-moved', { soakS, error: moved.error });
       return;

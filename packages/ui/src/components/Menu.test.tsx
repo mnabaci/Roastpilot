@@ -52,6 +52,30 @@ describe('Menu', () => {
     );
   });
 
+  it("says under a disabled item why it can't be picked now", async () => {
+    render(
+      <Menu
+        label="More"
+        items={[
+          {
+            label: 'Use this roaster',
+            onSelect: vi.fn(),
+            disabled: true,
+            hint: 'Disconnect first',
+          },
+          { label: 'Export this roaster', onSelect: vi.fn() },
+        ]}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'More' }));
+    const item = screen.getByRole('menuitem', { name: 'Use this roaster' });
+    expect(item).toHaveAttribute('aria-disabled', 'true');
+    expect(item).toHaveAccessibleDescription('Disconnect first');
+    expect(screen.getByRole('menuitem', { name: 'Export this roaster' })).not.toHaveAttribute(
+      'aria-describedby',
+    );
+  });
+
   it('can be a worded button with a chevron', async () => {
     const onDuplicate = vi.fn();
     render(<Menu label="Make profile" text="Make profile" items={items(onDuplicate)} />);

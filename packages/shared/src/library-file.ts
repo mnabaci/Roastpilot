@@ -22,17 +22,27 @@ export const FileBeanSchema = BeanFieldsSchema.extend({
  * A profile in full, without its id, roaster or what it was made from (ids mean nothing on
  * another computer). The same rules as Save.
  */
-export const FileProfileSchema = AutoProfileObjectSchema.omit({
-  id: true,
-  source: true,
-}).superRefine(checkProfile);
+export const FileProfileFieldsSchema = AutoProfileObjectSchema.omit({ id: true, source: true });
+export const FileProfileSchema = FileProfileFieldsSchema.superRefine(checkProfile);
 
 /** A roaster record without its id, its port (one computer's) or being the active one. */
-export const FileRoasterSchema = RoasterObjectSchema.omit({
+export const FileRoasterFieldsSchema = RoasterObjectSchema.omit({
   id: true,
   connection: true,
   active: true,
-}).superRefine(checkRoaster);
+});
+export const FileRoasterSchema = FileRoasterFieldsSchema.superRefine(checkRoaster);
+
+/**
+ * What a file carries of something already stored: only the keys `schema` names, unchecked. It
+ * passed its checks when it was saved, and today's rules (a lower model limit) must never stop an
+ * export; incoming items are checked with the full schemas instead.
+ */
+export function fileFieldsOf<S extends z.ZodObject>(schema: S, stored: z.output<S>): z.output<S> {
+  const keys = Object.keys(schema.shape);
+  const kept = Object.entries(stored).filter(([key]) => keys.includes(key));
+  return Object.fromEntries(kept) as z.output<S>;
+}
 
 /** Every item of the kind, or the ones named. */
 export const ExportLibraryRequestSchema = z.discriminatedUnion('kind', [
@@ -47,12 +57,24 @@ export const ImportLibraryRequestSchema = z.object({ kind: LibraryKindSchema });
 export type LibraryItemId = number | string;
 
 export type ExportLibraryResult = { status: 'cancelled' } | { status: 'saved'; fileName: string };
-export type ExportLibraryError = StorageError | { kind: 'write-failed' };
+export type ExportLibraryError =
+  | StorageError
+  | { kind: 'write-failed' }
+  /** None of the ids asked for is here any more. */
+  | { kind: 'not-found' };
 
 export type ImportLibraryResult =
   | { status: 'cancelled' }
   /** `newestId`: the last one added, for the screen to open; null when all were already here. */
-  | { status: 'imported'; added: number; skipped: number; newestId: LibraryItemId | null };
+  | {
+      status: 'imported';
+      added: number;
+      /** Already here and shown. */
+      skipped: number;
+      /** Already here, but archived, so hidden. */
+      archived: number;
+      newestId: LibraryItemId | null;
+    };
 
 /** One item that doesn't pass its checks: its name (or place in the file) and why. */
 export interface BadItem {
@@ -61,7 +83,14 @@ export interface BadItem {
   reason: string;
 }
 
-export type ImportLibraryError = StorageError | { kind: 'read-failed' } | EnvelopeProblem | BadItem;
+export type ImportLibraryError =
+  | StorageError
+  | { kind: 'read-failed' }
+  | { kind: 'too-big' }
+  /** A file with no items: nothing to import. */
+  | { kind: 'empty' }
+  | EnvelopeProblem
+  | BadItem;
 
 export type FileBean = z.infer<typeof FileBeanSchema>;
 export type FileProfile = z.infer<typeof FileProfileSchema>;

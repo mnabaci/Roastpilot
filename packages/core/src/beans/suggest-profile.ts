@@ -2,7 +2,7 @@ import type { Bean, RoastSummary } from '@roastpilot/shared';
 
 export interface ProfileSuggestion {
   profileId: string;
-  /** One line on why, e.g. "Your favourite roast of this bean". */
+  /** One plain line on why, e.g. "Your best starred roast of this bean". */
   reason: string;
   /** The favourite it came from; undefined for a bean's own profile or the fallback. */
   roastId?: number;
@@ -34,11 +34,6 @@ function bySimilarity(bean: Bean, others: readonly Bean[]): Bean[] {
     );
 }
 
-const beanLabel = (bean: Bean): string =>
-  bean.densityGL === null
-    ? `${bean.origin} ${bean.process}`
-    : `${bean.origin} ${bean.process}, ${String(bean.densityGL)} g/L`;
-
 /**
  * The profile to start from (docs/spec/beans-favourites-ghost.md, Profile suggestion), among the
  * ones the active roaster has. Favourites on Manual or with a profile that is gone are skipped.
@@ -64,17 +59,17 @@ export function suggestProfile(input: {
       return { profileId: bean.profileId, reason: "This bean's own profile" };
     }
     const own = favouriteOf(bean.id);
-    if (own) return from(own, 'Your favourite roast of this bean');
+    if (own) return from(own, 'Your best starred roast of this bean');
     for (const similar of bySimilarity(bean, beans)) {
       const favourite = favouriteOf(similar.id);
-      if (favourite) return from(favourite, `Closest bean you've starred: ${beanLabel(similar)}`);
+      if (favourite) return from(favourite, `From a similar bean: ${similar.name}`);
     }
     const sameKind = beans.filter((b) => b.id !== bean.id && b.decaf === bean.decaf);
     const ids = new Set(sameKind.map((b) => b.id));
     const broad = bestFavourite(usable.filter((r) => r.beanId !== null && ids.has(r.beanId)));
-    if (broad) return from(broad, 'Your best favourite of a similar bean');
+    if (broad) return from(broad, 'Your best starred roast of another bean');
   }
-  return { profileId: fallback, reason: 'Nothing starred to go on yet' };
+  return { profileId: fallback, reason: 'The default · star a roast of this bean to improve it' };
 }
 
 /**

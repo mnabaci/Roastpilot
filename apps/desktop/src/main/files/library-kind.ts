@@ -2,8 +2,6 @@ import type { Logger } from '@roastpilot/core';
 import {
   err,
   ok,
-  readEnvelope,
-  sayInUnit,
   toEnvelope,
   type ImportLibraryError,
   type LibraryItemId,
@@ -11,7 +9,7 @@ import {
   type Result,
   type StorageError,
 } from '@roastpilot/shared';
-import { planImport } from './import-plan';
+import { importFile } from './library-import';
 
 /**
  * One kind of item as Roastpilot files carry it (the `Exporter` / `Importer` extension point,
@@ -22,8 +20,8 @@ export interface LibraryCodec<Item> {
   exportItems(ids?: readonly LibraryItemId[]): Promise<Result<Item[], StorageError>>;
   /** One item from a file, checked as Save checks it; why it is refused otherwise. */
   readItem(item: unknown): Result<Item, string>;
-  /** What is here now, as files carry it, to compare with. */
-  here(): Promise<Result<Item[], StorageError>>;
+  /** What is here now, as files carry it, to compare with; archived ones apart. */
+  here(): Promise<Result<Here<Item>, StorageError>>;
   /** What counts as the same: the item without what an import sets anyway. */
   contentOf: (item: Item) => unknown;
   nameOf: (item: Item) => string;
@@ -34,16 +32,28 @@ export interface LibraryCodec<Item> {
   addAll(items: readonly Item[]): Promise<Result<LibraryItemId[], StorageError>>;
 }
 
+/** What is here, as files carry it: shown, and archived (only beans archive). */
+export interface Here<Item> {
+  items: Item[];
+  archived: Item[];
+}
+
 export interface LibraryImported {
   added: number;
+  /** Already here and shown. */
   skipped: number;
+  /** Already here, but archived. */
+  archived: number;
   /** The last one added, for the screen to open; null when all were already here. */
   newestId: LibraryItemId | null;
 }
 
 /** A kind's files: written as text, and read back into the library. */
 export interface LibraryFiles {
-  exportFile(ids?: readonly LibraryItemId[]): Promise<Result<string, StorageError>>;
+  /** The file's text; `not-found` when ids are given and none of them is here any more. */
+  exportFile(
+    ids?: readonly LibraryItemId[],
+  ): Promise<Result<string, StorageError | { kind: 'not-found' }>>;
   importFile(text: string): Promise<Result<LibraryImported, ImportLibraryError>>;
 }
 
@@ -53,29 +63,9 @@ export const asStorageError = (error: { kind: string; message?: string }): Stora
   message: error.message ?? error.kind,
 });
 
-/** The name an item goes by in a refusal: its own, or its place in the file. */
-const itemName = (item: unknown, index: number): string => {
-  const name = (item as { name?: unknown } | null)?.name;
-  return typeof name === 'string' && name.trim() !== '' ? name : `#${String(index + 1)}`;
-};
-
-/** Every item checked; the first that fails refuses the whole file. */
-function readItems<Item>(
-  codec: LibraryCodec<Item>,
-  items: readonly unknown[],
-): Result<Item[], ImportLibraryError> {
-  const read: Item[] = [];
-  for (const [index, item] of items.entries()) {
-    const one = codec.readItem(item);
-    if (!one.ok) return err({ kind: 'bad-item', name: itemName(item, index), reason: one.error });
-    read.push(one.value);
-  }
-  return ok(read);
-}
-
 /**
- * Export and import for one kind, the same flow for each (ADR 0021): the envelope first, then
- * every item checked, then the skip-or-rename plan, then one all-or-nothing write.
+ * Export and import for one kind, the same flow for each (ADR 0021): export writes every item
+ * as the file carries it; import is `importFile`.
  */
 export function libraryFiles<Item>(
   kind: LibraryKind,
@@ -89,47 +79,15 @@ export function libraryFiles<Item>(
         logger.warn('files.export-failed', { kind, error: items.error });
         return items;
       }
+      // Gone since the screen asked: an empty file would only look like it worked.
+      if (ids && items.value.length === 0) {
+        logger.warn('files.export-not-found', { kind, ids });
+        return err({ kind: 'not-found' });
+      }
       logger.info('files.exported', { kind, items: items.value.length });
       // No indentation, as roast files: a file is for Roastpilot to read back.
       return ok(JSON.stringify(toEnvelope(kind, items.value, now())));
     },
-    importFile: async (text) => {
-      const envelope = readEnvelope(text, kind);
-      const items = envelope.ok ? readItems(codec, envelope.value.items) : envelope;
-      if (!items.ok) {
-        // A refused item's reason carries temperature tokens: the log says them in °C.
-        const reason =
-          'reason' in items.error
-            ? { ...items.error, reason: sayInUnit(items.error.reason, 'c') }
-            : items.error;
-        logger.warn('files.import-refused', { kind, reason });
-        return items;
-      }
-      const here = await codec.here();
-      if (!here.ok) {
-        logger.warn('files.import-failed', { kind, error: here.error });
-        return here;
-      }
-      const { nameOf, withName, contentOf, maxName } = codec;
-      const plan = planImport({
-        items: items.value,
-        here: here.value,
-        nameOf,
-        withName,
-        contentOf,
-        maxName,
-      });
-      const added = plan.add.length > 0 ? await codec.addAll(plan.add) : ok([]);
-      if (!added.ok) {
-        logger.warn('files.import-failed', { kind, error: added.error });
-        return added;
-      }
-      logger.info('files.imported', { kind, added: added.value.length, skipped: plan.skipped });
-      return ok({
-        added: added.value.length,
-        skipped: plan.skipped,
-        newestId: added.value.at(-1) ?? null,
-      });
-    },
+    importFile: (text) => importFile(kind, codec, text, logger),
   };
 }

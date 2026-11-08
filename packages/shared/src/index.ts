@@ -60,6 +60,8 @@ export {
   type IpcEventPayloads,
   SetOutputRequestSchema,
   type SetOutputRequest,
+  PreheatHoldRequestSchema,
+  type PreheatHoldRequest,
 } from './ipc';
 export type {
   AppApi,
@@ -107,6 +109,9 @@ export {
   AutoProfileObjectSchema,
   AutoProfileSchema,
   AutoTuningSchema,
+  HoldBatchSchema,
+  PREHEAT_HOLD,
+  type HoldBatch,
   CURVE_FOLLOW_DEFAULTS,
   CurveFollowSchema,
   CurvePointSchema,
@@ -117,6 +122,7 @@ export {
   ProfileEntrySchema,
   ProfileErrorSchema,
   ProfileIdSchema,
+  DeleteProfilesRequestSchema,
   PROFILE_LIMITS,
   SOAK_LENGTHS_S,
   ProfilePhaseSchema,
@@ -136,8 +142,11 @@ export {
 export { overRoasterLimits, type RoasterLimits } from './profile-rules';
 export {
   ExportLibraryRequestSchema,
+  fileFieldsOf,
   FileBeanSchema,
+  FileProfileFieldsSchema,
   FileProfileSchema,
+  FileRoasterFieldsSchema,
   FileRoasterSchema,
   ImportLibraryRequestSchema,
   LibraryKindSchema,
@@ -286,6 +295,7 @@ export {
 export {
   MILESTONE_BACKUP_MARGIN_S,
   MILESTONE_CAP_MARGIN_C,
+  MILESTONE_MAX_DROP_C,
   MilestonesSchema,
   type Milestones,
 } from './milestones';

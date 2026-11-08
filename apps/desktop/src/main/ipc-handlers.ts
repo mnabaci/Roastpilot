@@ -6,6 +6,7 @@ import {
   MakeBeanProfileRequestSchema,
   MakeProfileRequestSchema,
   RoastResultSchema,
+  PreheatHoldRequestSchema,
   RoastSetupSchema,
   SetArchivedSchema,
   UpdateBeanSchema,
@@ -16,6 +17,7 @@ import {
   LogDaySchema,
   NewRoasterSchema,
   ProfileIdSchema,
+  DeleteProfilesRequestSchema,
   RoasterIdSchema,
   RoasterSchema,
   RoastActionSchema,
@@ -109,6 +111,9 @@ export function createIpcHandlers({
     ),
     [IPC_CHANNELS.autoChargeSoon]: handler(() => pilot.chargeSoon(nowMs())),
     [IPC_CHANNELS.autoResume]: handler(() => pilot.resume()),
+    [IPC_CHANNELS.autoSetPreheatHold]: handler((payload) => {
+      pilot.choosePreheatHold(PreheatHoldRequestSchema.parse(payload).holdS);
+    }),
     [IPC_CHANNELS.coachApply]: handler((payload) =>
       coach.apply(CoachRequestSchema.parse(payload).id),
     ),
@@ -124,6 +129,9 @@ export function createIpcHandlers({
     ),
     [IPC_CHANNELS.deleteProfile]: handler((payload) =>
       profiles.delete(ProfileIdSchema.parse(payload)),
+    ),
+    [IPC_CHANNELS.deleteProfiles]: handler((payload) =>
+      profiles.deleteMany(DeleteProfilesRequestSchema.parse(payload)),
     ),
     [IPC_CHANNELS.copyProfile]: handler((payload) => {
       const { id, roasterId } = CopyProfileRequestSchema.parse(payload);

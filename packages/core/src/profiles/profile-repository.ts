@@ -10,6 +10,9 @@ export interface ProfileRepository {
     profiles: readonly AutoProfile[],
     roasterId: RoasterId,
   ): Promise<Result<void, StorageError>>;
-  /** Whether it was there to remove. */
-  delete(id: ProfileId): Promise<Result<boolean, StorageError>>;
+  /**
+   * Removes them all at once, all or nothing, unlinking every bean that pointed at one; how many
+   * were there to remove.
+   */
+  deleteMany(ids: readonly ProfileId[]): Promise<Result<number, StorageError>>;
 }

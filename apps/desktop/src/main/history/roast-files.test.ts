@@ -21,6 +21,9 @@ function setup(over: Partial<RoastFilesDeps> = {}) {
     chooseImportPath: vi.fn(() => Promise.resolve('/tmp/roasts.json')),
     readText: vi.fn(() => Promise.resolve('{}')),
     writeText: vi.fn(() => Promise.resolve()),
+    sizeOf: () => Promise.resolve(100),
+    rename: () => Promise.resolve(),
+    remove: () => Promise.resolve(),
     logger: createLogger({ write: () => undefined }, 'history'),
     ...over,
   };
@@ -35,7 +38,7 @@ describe('roast files', () => {
     );
     expect(deps.chooseExportPath).toHaveBeenCalledWith('roasts', 'roastpilot', 2, WINDOW);
     expect(deps.files.exportFile).toHaveBeenCalledWith([3, 4]);
-    expect(deps.writeText).toHaveBeenCalledWith('/tmp/roasts.json', '{}');
+    expect(deps.writeText).toHaveBeenCalledWith('/tmp/roasts.json.tmp', '{}');
   });
 
   it('writes every roast as CSV when none are named', async () => {
@@ -71,6 +74,13 @@ describe('roast files', () => {
     const { files } = setup({ readText: () => Promise.reject(new Error('gone')) });
     expect(await files.importRoasts(WINDOW)).toEqual(err({ kind: 'read-failed' }));
     expect(await files.importArtisan(WINDOW)).toEqual(err({ kind: 'read-failed' }));
+  });
+
+  it('refuses a roast or Artisan file over 50 MB without reading it', async () => {
+    const { deps, files } = setup({ sizeOf: () => Promise.resolve(51 * 1024 * 1024) });
+    expect(await files.importRoasts(WINDOW)).toEqual(err({ kind: 'too-big' }));
+    expect(await files.importArtisan(WINDOW)).toEqual(err({ kind: 'too-big' }));
+    expect(deps.readText).not.toHaveBeenCalled();
   });
 
   it('asks for the right kind of file to import, on the window that asked', async () => {

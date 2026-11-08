@@ -6,7 +6,7 @@ export interface FlowButton {
   label: string;
 }
 
-/** A normal stop, asked once inline (docs/spec/manual-mode.md, End roast). */
+/** A normal stop, asked once inline (docs/spec/manual-mode.md, Stop roast). */
 export interface FlowStop {
   label: string;
   question: string;
@@ -26,17 +26,40 @@ export interface FlowStep {
   hint: string;
 }
 
+/** The normal stop before cooling; its words follow the phase (`stopCopy`). */
 export const END_ROAST: FlowStop = {
-  label: 'End roast',
-  question: 'End the roast? · everything turns off',
+  label: 'Stop roast',
+  question: 'Stop the roast?',
 };
 
-/** What End roast does, in the dialog's words (docs/spec/manual-mode.md, End roast). */
-export function endConsequences(phase: RoastPhase): readonly string[] {
+/**
+ * The normal stop's words by phase (docs/spec/manual-mode.md, Stop): "Stop preheat" while
+ * preheating (nothing is saved), else "Stop roast" (the roast is saved as stopped).
+ */
+export function stopCopy(phase: RoastPhase): {
+  label: string;
+  question: string;
+  keep: string;
+  consequences: readonly string[];
+} {
   const off = 'Heater, fan, drum and filter off now';
   return phase === 'preheat'
-    ? [off, "Back to Ready · the preheat isn't saved"]
-    : [off, 'No bean cooling · dump the beans yourself', 'The roast is saved as it is'];
+    ? {
+        label: 'Stop preheat',
+        question: 'Stop the preheat?',
+        keep: 'Keep preheating',
+        consequences: [off, 'Back to Ready · nothing is saved'],
+      }
+    : {
+        label: END_ROAST.label,
+        question: END_ROAST.question,
+        keep: 'Keep roasting',
+        consequences: [
+          off,
+          'No bean cooling · dump the beans yourself',
+          'The roast is saved as stopped',
+        ],
+      };
 }
 
 /** The Guided flow from docs/spec/manual-mode.md: Connect → Preheat → Start → First crack → Drop. */

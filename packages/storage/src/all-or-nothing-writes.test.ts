@@ -163,6 +163,19 @@ describe('all-or-nothing writes', () => {
     expect(env.snapshot()).toEqual(before);
   });
 
+  it('profiles deleteMany: none goes, and no bean loses its link, when a later one fails', async () => {
+    const env = setup();
+    await env.profiles.saveAll([TEST_PROFILE, { ...TEST_PROFILE, id: 'custom-2' }], 1);
+    env.sqlite.exec(`UPDATE beans SET profile_id = '${TEST_PROFILE.id}' WHERE id = 1`);
+    const links = () => env.sqlite.prepare('SELECT id, profile_id FROM beans ORDER BY id').all();
+    const linked = links();
+    const before = env.snapshot();
+    env.failOn('DELETE', 'profiles', "OLD.id = 'custom-2'");
+    expect(await env.profiles.deleteMany([TEST_PROFILE.id, 'custom-2'])).toMatchObject(failed);
+    expect(env.snapshot()).toEqual(before);
+    expect(links()).toEqual(linked);
+  });
+
   it('roasters addAll: no roaster comes in when a later one fails', async () => {
     const env = setup();
     const listed = await env.roasters.list();

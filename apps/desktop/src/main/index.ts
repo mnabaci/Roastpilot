@@ -15,7 +15,7 @@ import {
   systemPreferences,
 } from 'electron';
 import { randomUUID } from 'node:crypto';
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { buildAppMenu, hideMacEditExtras } from './app-menu';
 import { createAppServices } from './app-services';
@@ -217,8 +217,14 @@ app
     const filesLogger = logger.child('files');
     // One file dialog at a time, whichever screen asks.
     const choosers = pathChoosers({ dialogs: dialog, now: () => new Date(), logger: filesLogger });
-    const readText = (path: string) => readFile(path, 'utf8');
-    const writeText = (path: string, text: string) => writeFile(path, text, 'utf8');
+    // The file you picked, as files/picked-file.ts reads and writes it.
+    const pickedFiles = {
+      readText: (path: string) => readFile(path, 'utf8'),
+      writeText: (path: string, text: string) => writeFile(path, text, 'utf8'),
+      sizeOf: async (path: string) => (await stat(path)).size,
+      rename,
+      remove: (path: string) => rm(path, { force: true }),
+    };
     registerIpcHandlers(
       withErrorLogging(
         createIpcHandlers({
@@ -232,22 +238,21 @@ app
             history,
             files: roastFileService,
             ...choosers,
-            readText,
-            writeText,
+            ...pickedFiles,
             logger: historyLogger,
           }),
           libraryFiles: createLibraryFileActions({
             kinds: createLibraryKinds({
               beans,
               profiles,
+              profileStore: stores.profileStore,
               roasters,
               newProfileId: () => `custom-${randomUUID()}`,
               now: () => new Date(),
               logger: filesLogger,
             }),
             ...choosers,
-            readText,
-            writeText,
+            ...pickedFiles,
             logger: filesLogger,
           }),
           pilot,

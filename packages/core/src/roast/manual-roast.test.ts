@@ -93,7 +93,7 @@ describe('ManualRoast', () => {
     expect(sent).toEqual(['drum=1', 'filter=1']);
   });
 
-  it('End roast in Preheat turns everything off and goes back to Ready, the preheat still shown', async () => {
+  it('Stop roast in Preheat turns everything off and goes back to Ready, the preheat still shown', async () => {
     const { clock, roast, sent, signals, act } = setup();
     clock.advance(5_000);
     await act('preheat');
@@ -138,7 +138,7 @@ describe('ManualRoast', () => {
   );
 
   it.each(['roasting', 'development'] as const)(
-    'End roast from %s turns everything off, records the end and goes to Done',
+    'Stop roast from %s turns everything off, records the end and goes to Done',
     async (phase) => {
       const { clock, roast, sent, signals, act } = setup();
       await act(

@@ -26,7 +26,14 @@ export const everydayFields = (unit: TemperatureUnit): readonly FieldGroup[] => 
       { key: 'tempOffsetC', label: 'Temp offset', unit: tempSymbol(unit) },
     ],
   },
-  { title: 'Preheat', cells: [{ key: 'hold', label: 'Hold' }] },
+  {
+    title: 'Preheat hold',
+    hint: 'Next batch: within 20 min of the last roast',
+    cells: [
+      { key: 'hold', label: 'First batch' },
+      { key: 'nextHold', label: 'Next batch' },
+    ],
+  },
 ];
 
 /** Only on a roaster whose drum has a speed (docs/spec/roasters.md, Drum speed). */

@@ -34,7 +34,7 @@ async function launch(file: object, { saveFails = false } = {}) {
       return Promise.resolve(ok(undefined));
     },
     saveAll: () => Promise.resolve(ok(undefined)),
-    delete: () => Promise.resolve(ok(false)),
+    deleteMany: () => Promise.resolve(ok(0)),
   };
   const entries: LogEntry[] = [];
   const logger = createLogger({ write: (e) => entries.push(e) }, 'app');
@@ -49,7 +49,7 @@ async function launch(file: object, { saveFails = false } = {}) {
     roaster: () => ({ name: 'Skywalker', model: 'skywalker' }),
     logger: silentLogger,
   });
-  const move = () => moveRetiredSoak({ retired, settings, profiles, logger });
+  const move = () => moveRetiredSoak({ retired, settings, profiles, profileStore: store, logger });
   const fileNow = async () => JSON.parse(await readFile(path, 'utf8')) as Record<string, unknown>;
   const soak = () => stored[0]?.phases[0]?.next;
   const events = () => entries.map((e) => [e.event, e.context]);

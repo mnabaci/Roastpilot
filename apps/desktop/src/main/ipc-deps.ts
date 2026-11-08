@@ -36,10 +36,10 @@ export interface IpcDeps {
   roastFiles: RoastFiles;
   /** Beans, profiles and roasters as Roastpilot files. */
   libraryFiles: LibraryFileActions;
-  pilot: Pick<AutoPilot, 'chargeSoon' | 'resume'>;
+  pilot: Pick<AutoPilot, 'chargeSoon' | 'resume' | 'choosePreheatHold'>;
   profiles: Pick<
     ProfileService,
-    'list' | 'duplicate' | 'copyTo' | 'save' | 'delete' | 'fromMilestones'
+    'list' | 'duplicate' | 'copyTo' | 'save' | 'delete' | 'deleteMany' | 'fromMilestones'
   >;
   roasters: Pick<
     RoasterService,

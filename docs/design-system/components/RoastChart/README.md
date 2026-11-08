@@ -42,7 +42,8 @@ Drawn faint, so they never compete with the curves; none has a legend entry or a
 ## Hover
 
 - Pointing at the chart or the strip draws one 1px dashed `ink-muted` line through both.
-- The legends show the values there: the time first (`label`, semibold, `ink`), then each layer's value after its name in semibold `ink` (`Temperature 198.4 °C`); a dash where a layer has no value. Leaving brings the names back.
+- The legends show the values there: the time first (`label`, semibold, `ink`), then each layer's value after its name in semibold `ink` (`Temperature 198.4 °C`); a dash where a layer has no value. Leaving brings back what it showed before.
+- **Latest values** (`showLatest`, the live Roast screen from Preheat to Cooling): when not hovering, the legends show each layer's value at the live temperature's last reading, without a time (it's now), in the same style; a layer that has ended (RoR after drop, a ghost past its drop) or has no point yet shows a dash. They change with each reading, not each frame. Without it (History, the profile editor), names only.
 
 ## Rules
 

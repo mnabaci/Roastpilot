@@ -5,7 +5,9 @@ import { useAuto, useSettings } from '../../stores/use-stores';
 import { activeEntry } from '../roast/use-active-profile';
 import { MilestoneBuilder } from './MilestoneBuilder';
 import { ProfileEditor } from './ProfileEditor';
+import { ProfileSelectionBar } from './ProfileSelectionBar';
 import { useProfileFiles } from './use-profile-files';
+import { useProfileSelect } from './use-profile-select';
 
 /** Your profiles and the built-ins, with one open to edit (docs/spec/ui.md, Profiles screen). */
 export function ProfilesScreen({ openFirst }: { openFirst?: string | undefined }) {
@@ -21,6 +23,10 @@ export function ProfilesScreen({ openFirst }: { openFirst?: string | undefined }
   const files = useProfileFiles((id) => {
     setBuilding(false);
     setOpenId(id);
+  });
+  // After a delete, the profile Auto uses opens.
+  const select = useProfileSelect(profiles, autoId, () => {
+    setOpenId(undefined);
   });
   return (
     <SidebarLayout
@@ -47,29 +53,46 @@ export function ProfilesScreen({ openFirst }: { openFirst?: string | undefined }
               },
             },
             { label: 'Import a Roastpilot file', onSelect: files.importFile },
+            { label: 'Select', onSelect: select.start },
           ]}
         />
       }
       sidebar={
-        <NavList
-          label="Profiles"
-          items={profiles.map(({ profile }) => ({
-            id: profile.id,
-            label: profile.name,
-            badge:
-              drafts[profile.id] || profile.id === autoId ? (
-                <span className="flex shrink-0 gap-1">
-                  {profile.id === autoId ? <Badge tone="air">Auto</Badge> : null}
-                  {drafts[profile.id] ? <Badge tone="heat">Edited</Badge> : null}
-                </span>
-              ) : undefined,
-          }))}
-          openId={building ? undefined : open?.profile.id}
-          onOpen={(id) => {
-            setBuilding(false);
-            setOpenId(id);
-          }}
-        />
+        <>
+          {select.selecting ? (
+            <ProfileSelectionBar
+              count={select.checked.size}
+              onExport={select.exportTicked}
+              onDelete={select.remove}
+              onDone={select.done}
+            />
+          ) : null}
+          <NavList
+            label="Profiles"
+            items={profiles.map((entry) => {
+              const { profile } = entry;
+              const reason = select.selecting ? select.reasonOf(entry) : undefined;
+              return {
+                id: profile.id,
+                label: profile.name,
+                ...(reason !== undefined && { detail: reason, locked: true }),
+                badge:
+                  drafts[profile.id] || profile.id === autoId ? (
+                    <span className="flex shrink-0 gap-1">
+                      {profile.id === autoId ? <Badge tone="air">Auto</Badge> : null}
+                      {drafts[profile.id] ? <Badge tone="heat">Edited</Badge> : null}
+                    </span>
+                  ) : undefined,
+              };
+            })}
+            openId={building ? undefined : open?.profile.id}
+            onOpen={(id) => {
+              setBuilding(false);
+              setOpenId(id);
+            }}
+            {...(select.selecting ? { checked: select.checked, onCheck: select.check } : {})}
+          />
+        </>
       }
     >
       {building && base ? (

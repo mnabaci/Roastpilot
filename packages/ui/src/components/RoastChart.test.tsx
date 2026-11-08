@@ -127,6 +127,105 @@ describe('RoastChart', () => {
     expect(legend).toHaveTextContent('TemperatureRoR');
   });
 
+  describe('a live roast (showLatest)', () => {
+    const hover = (left: number, t: number) => {
+      act(() => {
+        for (const hook of created[0]?.opts.hooks.setCursor ?? [])
+          hook({ cursor: { left }, posToVal: () => t });
+      });
+    };
+    const ghost: LineLayer = {
+      id: 'ghost',
+      label: 'Ghost',
+      axis: 'temperature',
+      tone: 'ghost',
+      width: 2,
+      points: [
+        { t: 0, v: 170 },
+        { t: 60, v: 150 },
+      ],
+    };
+    const planEnded: LineLayer = {
+      id: 'plan',
+      label: 'Plan',
+      axis: 'temperature',
+      tone: 'target',
+      width: 2,
+      dash: [6, 6],
+      points: [{ t: 10, v: 160 }],
+    };
+    const heater: LineLayer = {
+      id: 'heater',
+      label: 'Heater',
+      axis: 'output',
+      tone: 'heat',
+      width: 2,
+      step: true,
+      points: [
+        { t: 0, v: 100 },
+        { t: 30, v: 40 },
+      ],
+    };
+    const live = [
+      ghost,
+      planEnded,
+      bt([
+        [0, 180],
+        [30, 184],
+      ]),
+      { ...ror, points: [{ t: 30, v: 7.4 }] },
+      heater,
+    ];
+
+    it('shows the latest values without hovering, with no time, and a dash for an ended line', () => {
+      draw(<RoastChart title="Roast curve" layers={live} showLatest />);
+      expect(screen.getByRole('list', { name: 'Legend' })).toHaveTextContent(
+        'Ghost170.0 °C' + 'Plan–' + 'Temperature184.0 °C' + 'RoR7.4 °C/min',
+      );
+      expect(screen.getByRole('list', { name: 'Outputs legend' })).toHaveTextContent('Heater40%');
+      expect(screen.queryByText('0:30')).not.toBeInTheDocument();
+    });
+
+    it('hovering still shows the hovered time and its values; leaving goes back to the latest', () => {
+      draw(<RoastChart title="Roast curve" layers={live} showLatest />);
+      const legend = screen.getByRole('list', { name: 'Legend' });
+      hover(120, 12);
+      expect(screen.getByText('0:12')).toBeInTheDocument();
+      expect(legend).toHaveTextContent('Temperature180.0 °C');
+      expect(screen.getByRole('list', { name: 'Outputs legend' })).toHaveTextContent('Heater100%');
+      hover(-10, 0);
+      expect(legend).toHaveTextContent('Temperature184.0 °C');
+    });
+
+    it('follows new readings and the °F setting', () => {
+      const { rerender } = draw(
+        <RoastChart title="Roast curve" layers={live} showLatest temperatureUnit="f" />,
+      );
+      const legend = screen.getByRole('list', { name: 'Legend' });
+      // 184 °C is 363 °F; RoR 7.4 °C/min is a difference: 13.3 °F/min, no + 32.
+      expect(legend).toHaveTextContent('Temperature363 °FRoR13.3 °F/min');
+      rerender(
+        <RoastChart
+          title="Roast curve"
+          layers={[
+            bt([
+              [0, 180],
+              [30, 184],
+              [31, 185],
+            ]),
+          ]}
+          showLatest
+        />,
+      );
+      expect(legend).toHaveTextContent('Temperature185.0 °C');
+    });
+
+    it('shows names only without a reading yet', () => {
+      draw(<RoastChart title="Roast curve" layers={[bt([]), ror]} showLatest />);
+      expect(screen.getByRole('list', { name: 'Legend' })).toHaveTextContent(/^TemperatureRoR$/);
+    });
+  });
+
   it('shows °F when asked: data in °F, the axis grown in 100 °F steps, hover and text in °F', () => {
     draw(
       <RoastChart

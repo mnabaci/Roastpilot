@@ -19,6 +19,7 @@ import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { useConnection, useRoast, useSettings } from '../../stores/use-stores';
 import { isConnected } from './flow-step';
 import { ClearRoast } from './ClearRoast';
+import { StayClose } from './StayClose';
 
 const STEPS = ['Preheat', 'Roast', 'First crack', 'Drop', 'Cool'] as const;
 
@@ -106,10 +107,16 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
           timeWindow={view.timeWindow}
           temperatureFloorC={view.temperatureFloorC}
           temperatureUnit={unit}
+          // Preheat to Cooling, the legends say the latest values; never stale ones off a roaster.
+          showLatest={connected && !idle}
         />
       </div>
       {/* The panel shows what the moment needs (docs/spec/ui.md, Side panel follows the roast). */}
-      <aside aria-label="Controls" className="flex min-h-0 w-80 flex-col gap-4 overflow-y-auto">
+      {/* Relative, so a screen-reader-only label low in the panel never stretches the page. */}
+      <aside
+        aria-label="Controls"
+        className="relative flex min-h-0 w-80 flex-col gap-4 overflow-y-auto"
+      >
         {!hasRoaster ? (
           <>
             {flow}
@@ -129,9 +136,7 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
             <CoachPanel />
             <OutputsPanel />
             {setupPanel}
-            {roast.phase === 'done' ? null : (
-              <p className="text-label text-ink-muted">Stay with the roaster while it runs.</p>
-            )}
+            {roast.phase === 'done' ? null : <StayClose />}
           </>
         )}
       </aside>

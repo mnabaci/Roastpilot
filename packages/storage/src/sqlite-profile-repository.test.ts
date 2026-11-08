@@ -50,12 +50,33 @@ describe('SqliteProfileRepository', () => {
     });
   });
 
-  it('says whether there was one to delete', async () => {
+  it('unlinks the beans of a deleted profile in the same write, and no others', async () => {
+    const { repository, sqlite } = setup();
+    await repository.save(MINE, 1);
+    await repository.save({ ...MINE, id: 'custom-2' }, 1);
+    sqlite.exec(`INSERT INTO beans (name, origin, process, profile_id) VALUES
+      ('Guji', 'Ethiopia', 'washed', '${MINE.id}'), ('Huila', 'Colombia', 'washed', 'custom-2'),
+      ('Kenya', 'Kenya', 'washed', '${MINE.id}')`);
+    expect(await repository.deleteMany([MINE.id])).toEqual({ ok: true, value: 1 });
+    expect(sqlite.prepare('SELECT name, profile_id AS p FROM beans ORDER BY id').all()).toEqual([
+      { name: 'Guji', p: null },
+      { name: 'Huila', p: 'custom-2' },
+      { name: 'Kenya', p: null },
+    ]);
+  });
+
+  it('deletes several at once and says how many were there to delete', async () => {
     const { repository } = setup();
     await repository.save(MINE, 1);
-    expect(await repository.delete(MINE.id)).toEqual({ ok: true, value: true });
-    expect(await repository.delete(MINE.id)).toEqual({ ok: true, value: false });
-    expect(await repository.list()).toEqual({ ok: true, value: [] });
+    await repository.save({ ...MINE, id: 'custom-2' }, 1);
+    await repository.save({ ...MINE, id: 'custom-3' }, 1);
+    expect(await repository.deleteMany([MINE.id, 'custom-2', 'gone'])).toEqual({
+      ok: true,
+      value: 2,
+    });
+    expect(await repository.deleteMany([MINE.id])).toEqual({ ok: true, value: 0 });
+    const left = await repository.list();
+    expect(left.ok && left.value.map((own) => own.profile.id)).toEqual(['custom-3']);
   });
 
   it('skips and logs a row it can no longer read, and keeps the rest', async () => {

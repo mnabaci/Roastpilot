@@ -34,22 +34,22 @@ describe('ConfirmDialog', () => {
       <ConfirmDialog
         open
         onOpenChange={vi.fn()}
-        question="End the roast?"
-        consequences={['Heater, fan, drum and filter off now', 'The roast is saved as it is']}
+        question="Stop the roast?"
+        consequences={['Heater, fan, drum and filter off now', 'The roast is saved as stopped']}
         cancelLabel="Keep roasting"
-        confirmLabel="End roast"
+        confirmLabel="Stop roast"
         caution
         icon={<svg />}
         onConfirm={onConfirm}
       />,
     );
-    const dialog = screen.getByRole('alertdialog', { name: 'End the roast?' });
+    const dialog = screen.getByRole('alertdialog', { name: 'Stop the roast?' });
     expect(dialog).toHaveAccessibleDescription(
-      'Heater, fan, drum and filter off now The roast is saved as it is',
+      'Heater, fan, drum and filter off now The roast is saved as stopped',
     );
     expect(screen.getAllByRole('listitem')).toHaveLength(2);
     expect(screen.getByRole('button', { name: 'Keep roasting' })).toHaveFocus();
-    await userEvent.click(screen.getByRole('button', { name: 'End roast' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Stop roast' }));
     expect(onConfirm).toHaveBeenCalledOnce();
   });
 

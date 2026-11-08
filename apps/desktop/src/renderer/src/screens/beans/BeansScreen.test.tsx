@@ -44,7 +44,9 @@ describe('BeansScreen', () => {
     expect(nav.getByText('300 g · Ethiopia · washed')).toBeTruthy();
     expect(nav.getByText('Low')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Yirgacheffe' })).toBeTruthy();
-    expect(screen.getByText(/Dense beans often take heat slowly/)).toBeTruthy();
+    expect(
+      screen.getByText(/^Dense beans \(830 g\/L\): these often take heat slowly/),
+    ).toBeTruthy();
   });
 
   it('adds a bean once name and origin are in', async () => {
@@ -298,7 +300,9 @@ describe('BeansScreen', () => {
       const second = { ...BEAN, id: 2, name: 'Huila' };
       const api = fakeApi({
         importLibrary: vi.fn(() =>
-          Promise.resolve(ok({ status: 'imported' as const, added: 3, skipped: 1, newestId: 2 })),
+          Promise.resolve(
+            ok({ status: 'imported' as const, added: 3, skipped: 1, archived: 0, newestId: 2 }),
+          ),
         ),
       });
       const { stores } = show(api, [BEAN, second]);

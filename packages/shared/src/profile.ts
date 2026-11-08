@@ -48,6 +48,9 @@ export const CurvePointSchema = z.object({ tS: z.number().nonnegative(), c: z.nu
 /** Built-ins have fixed ids; your own get a generated one. */
 export const ProfileIdSchema = z.string().min(1).max(64);
 
+/** Several of your own, deleted at once (Profiles › Select). */
+export const DeleteProfilesRequestSchema = z.array(ProfileIdSchema).min(1).max(1000);
+
 /**
  * How long a profile's soak can run, in seconds; no soak at all is the other choice
  * (docs/spec/roast-control.md, The soak is part of each profile).
@@ -117,6 +120,19 @@ export const CURVE_FOLLOW_DEFAULTS: CurveFollow = {
   slewPctPer10s: 5,
 };
 
+/** The preheat hold's range and defaults, in seconds (docs/spec/roast-control.md, Roast phases 1.3). */
+export const PREHEAT_HOLD = {
+  minS: 90,
+  maxS: 180,
+  stepS: 15,
+  firstDefaultS: 150,
+  nextDefaultS: 120,
+} as const;
+
+/** Which hold a preheat runs: the first batch's, or a back-to-back next batch's. */
+export const HoldBatchSchema = z.enum(['first', 'next']);
+export type HoldBatch = z.infer<typeof HoldBatchSchema>;
+
 /**
  * What Auto needs to know about the roaster beyond its profiles; moves to the roaster record in
  * milestone 5 (docs/adr/0011-built-in-profile-as-data.md).
@@ -131,8 +147,16 @@ export const AutoTuningSchema = z.object({
   /** On temperature error (°C), for the preheat climb and hold. */
   preheat: PidGainsSchema,
   preheatFanPct: PercentSchema,
-  /** How long the preheat holds at charge temperature before "Add beans". */
+  /** How long the preheat holds at charge temperature before "Add beans": the first batch. */
   holdS: z.number().positive(),
+  /**
+   * The hold for a back-to-back batch, the drum still heat-soaked from the last roast; a record
+   * from before it had one reads the default (docs/spec/roast-control.md, Roast phases 1.3).
+   */
+  nextHoldS: z
+    .number()
+    .positive()
+    .default(() => PREHEAT_HOLD.nextDefaultS),
   /** The countdown between Charge soon and "Beans in", with the heater at 0. */
   chargeCutS: z.number().nonnegative(),
 });
@@ -156,6 +180,8 @@ export const ProfileEntrySchema = z.object({
 export const ProfileErrorSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('built-in'), id: ProfileIdSchema }),
   z.object({ kind: z.literal('not-found'), id: ProfileIdSchema }),
+  /** Auto uses it, or is running it until Drop: pick another for Auto first. */
+  z.object({ kind: z.literal('in-use'), id: ProfileIdSchema }),
   z.object({ kind: z.literal('storage-failed'), message: z.string() }),
   /** That roaster already has a copy of this profile: `id` and `name` are the copy's. */
   z.object({ kind: z.literal('already-copied'), id: ProfileIdSchema, name: z.string() }),

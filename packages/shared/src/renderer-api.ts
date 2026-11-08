@@ -12,7 +12,7 @@ import type { Reading } from './channels';
 import type { CoachApplyError, CoachRequest, CoachStatus } from './coach';
 import type { ConnectionState, ConnectTarget, SerialPortInfo } from './connection';
 import type { DriverError } from './driver-error';
-import type { RoastsChange, SetOutputRequest, Snapshot } from './ipc';
+import type { PreheatHoldRequest, RoastsChange, SetOutputRequest, Snapshot } from './ipc';
 import type { RendererLogEntry } from './log-entry';
 import type { LogDay, LogDayRead, LogRecord } from './log-record';
 import type {
@@ -106,12 +106,14 @@ export interface LogsApi {
 export type ExportRoastsResult = { status: 'cancelled' } | { status: 'saved'; fileName: string };
 export type ExportRoastsError = StorageError | { kind: 'write-failed' };
 export type ImportArtisanResult = { status: 'cancelled' } | { status: 'imported'; id: RoastId };
-export type ImportArtisanError = StorageError | { kind: 'read-failed' } | { kind: 'not-artisan' };
+export type ImportArtisanError =
+  StorageError | { kind: 'read-failed' } | { kind: 'too-big' } | { kind: 'not-artisan' };
 export type ImportRoastsResult =
   | { status: 'cancelled' }
   /** `newestId`: the newest roast added, for History to open; null when all were already here. */
   | { status: 'imported'; added: number; skipped: number; newestId: RoastId | null };
-export type ImportRoastsError = StorageError | { kind: 'read-failed' } | EnvelopeProblem;
+export type ImportRoastsError =
+  StorageError | { kind: 'read-failed' } | { kind: 'too-big' } | EnvelopeProblem;
 
 /** Saved roasts (docs/spec/ui.md, History screen). */
 export interface HistoryApi {
@@ -140,6 +142,8 @@ export interface AutoApi {
   autoChargeSoon(): Promise<Result<void, AutoChargeSoonError>>;
   /** Hands heater and fan back to Auto; refused while the heater is locked. */
   autoResume(): Promise<Result<void, AutoResumeError>>;
+  /** This roast's preheat hold, or null for the one picked for the batch; a running hold follows. */
+  autoSetPreheatHold(request: PreheatHoldRequest): Promise<void>;
   onAutoStatus(listener: (status: AutoStatus) => void): Unsubscribe;
 }
 
@@ -162,6 +166,8 @@ export interface ProfilesApi {
   saveProfile(profile: AutoProfile): Promise<Result<ProfileEntry, ProfileError>>;
   /** Refuses a built-in. */
   deleteProfile(id: ProfileId): Promise<Result<void, ProfileError>>;
+  /** Several of your own in one write, all or nothing; refuses them all if one is a built-in. */
+  deleteProfiles(ids: readonly ProfileId[]): Promise<Result<void, ProfileError>>;
   /** A copy on another roaster, marked "needs calibration". */
   copyProfile(request: {
     id: ProfileId;

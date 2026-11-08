@@ -16,11 +16,12 @@ const MINE: Roaster = {
 };
 
 /** A real RoasterService on an in-memory store holding `start`. */
-async function setup(start: readonly Roaster[] = BUILT_IN_ROASTERS) {
+async function setup(start: readonly Roaster[] = BUILT_IN_ROASTERS, addFails = false) {
   let stored = [...start];
   const repository = {
     list: () => Promise.resolve(ok(stored)),
     addAll: (list) => {
+      if (addFails) return Promise.resolve(err({ kind: 'storage-failed', message: 'full' }));
       const added = list.map((r, i) => ({ ...r, id: stored.length + 1 + i }));
       stored = [...stored, ...added];
       return Promise.resolve(ok(added));
@@ -49,7 +50,7 @@ describe('roaster files', () => {
     const text = await exported('roasters', (await setup([MINE])).codec);
     const { codec, roasters } = await setup();
     expect(await filesOf('roasters', codec).importFile(text)).toEqual(
-      ok({ added: 1, skipped: 0, newestId: 3 }),
+      ok({ added: 1, skipped: 0, archived: 0, newestId: 3 }),
     );
     expect(roasters.all.at(-1)).toEqual({ ...MINE, id: 3, connection: null, active: false });
     expect(roasters.active().name).toBe('Skywalker');
@@ -59,7 +60,7 @@ describe('roaster files', () => {
     const text = await exported('roasters', (await setup()).codec);
     const { codec, roasters } = await setup([SKYWALKER, { ...SIMULATOR, maxTempC: 200 }]);
     expect(await filesOf('roasters', codec).importFile(text)).toEqual(
-      ok({ added: 1, skipped: 1, newestId: 3 }),
+      ok({ added: 1, skipped: 1, archived: 0, newestId: 3 }),
     );
     expect(roasters.all.map((r) => r.name)).toEqual([
       'Skywalker',
@@ -91,5 +92,38 @@ describe('roaster files', () => {
       fileOf({ ...record, model: 'behmor' }),
     );
     expect(unknown.ok ? undefined : unknown.error.kind).toBe('bad-item');
+  });
+
+  it("exports and compares a stored record that breaks today's rules, rather than throw", async () => {
+    // Saved under older, looser limits: above what the model allows now.
+    const old: Roaster = { ...SKYWALKER, id: 3, name: 'Old', active: false, maxTempC: 260 };
+    const { codec } = await setup([...BUILT_IN_ROASTERS, old]);
+    const text = await exported('roasters', codec, [3]);
+    expect(JSON.parse(text)).toMatchObject({ roasters: [{ name: 'Old', maxTempC: 260 }] });
+    const record = without(SKYWALKER, 'id', 'connection', 'active');
+    const file = JSON.stringify({
+      format: 'roastpilot-roasters',
+      version: 1,
+      exportedAt: '',
+      roasters: [{ ...record, name: 'New' }],
+    });
+    expect(await filesOf('roasters', codec).importFile(file)).toEqual(
+      ok({ added: 1, skipped: 0, archived: 0, newestId: 4 }),
+    );
+  });
+
+  it('says storage failed when the records cannot be added', async () => {
+    const { codec, roasters } = await setup(BUILT_IN_ROASTERS, true);
+    const record = without(SKYWALKER, 'id', 'connection', 'active');
+    const file = JSON.stringify({
+      format: 'roastpilot-roasters',
+      version: 1,
+      exportedAt: '',
+      roasters: [{ ...record, name: 'New' }],
+    });
+    expect(await filesOf('roasters', codec).importFile(file)).toEqual(
+      err({ kind: 'storage-failed', message: 'full' }),
+    );
+    expect(roasters.all).toHaveLength(BUILT_IN_ROASTERS.length);
   });
 });

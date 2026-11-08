@@ -1,10 +1,10 @@
 import type { ProfileEntry } from '@roastpilot/shared';
-import { Badge } from '@roastpilot/ui';
+import { AlertBanner, Badge } from '@roastpilot/ui';
 import { useState } from 'react';
 import { ProfileActions } from './ProfileActions';
 import type { ProfileDraftState } from './use-profile-draft';
 
-/** The name as the title with its badges and actions, then a line on what holds it back. */
+/** The name as the title with its badges and actions, then what holds it back: a banner while Auto runs. */
 export function ProfileHeader({
   entry,
   state,
@@ -53,15 +53,17 @@ export function ProfileHeader({
           onCopied={setCopied}
         />
       </header>
-      {readOnly || (active && locked) || copied ? (
+      {/* Why Save (or Use for Auto) waits, plainly, right under the title: it goes at Drop. */}
+      {locked ? (
+        <AlertBanner kind="info">
+          {active
+            ? 'Auto is running this profile · edits save after Drop'
+            : 'Auto is running another profile · Use for Auto after Drop'}
+        </AlertBanner>
+      ) : null}
+      {readOnly || copied ? (
         <p className="text-label text-ink-muted">
-          {[
-            readOnly ? 'Duplicate it to change it' : undefined,
-            active && locked ? 'Save waits until Drop: Auto is running this one' : undefined,
-            copied,
-          ]
-            .filter(Boolean)
-            .join(' · ')}
+          {[readOnly ? 'Duplicate it to change it' : undefined, copied].filter(Boolean).join(' · ')}
         </p>
       ) : null}
       {errors.name ? (

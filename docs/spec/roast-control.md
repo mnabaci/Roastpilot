@@ -19,14 +19,14 @@ roaster's sensor, and heat percentages from its heater. So every profile has a `
 
 ## Profile format
 
-| Field            | Meaning                                                                                  |
-| ---------------- | ---------------------------------------------------------------------------------------- |
-| Batch size (g)   | The batch the profile was written for (Skywalker Light: 385 g)                           |
-| Charge temp (°C) | BT to charge at, reached and held by the preheat routine                                 |
-| Phases           | Ordered list, see below                                                                  |
-| End rule         | Drop at development time after first crack, with a BT cap                                |
-| Curve points     | `(time, BT)` points: the dashed target on the chart, and the RoR `follow` phases aim for |
-| Dry-end temp     | BT where Drying becomes Maillard (marker on the chart)                                   |
+| Field            | Meaning                                                                                                                                                                                                                       |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Batch size (g)   | "Tuned for" in the editor: the batch the profile was tuned for (Skywalker Light: 385 g); the Roast screen starts there without a bean's plan, and notes a batch more than 10 % off ([batch-and-stock.md](batch-and-stock.md)) |
+| Charge temp (°C) | BT to charge at, reached and held by the preheat routine                                                                                                                                                                      |
+| Phases           | Ordered list, see below                                                                                                                                                                                                       |
+| End rule         | Drop at development time after first crack, with a BT cap                                                                                                                                                                     |
+| Curve points     | `(time, BT)` points: the dashed target on the chart, and the RoR `follow` phases aim for                                                                                                                                      |
+| Dry-end temp     | BT where Drying becomes Maillard (marker on the chart)                                                                                                                                                                        |
 
 Each phase:
 
@@ -138,11 +138,12 @@ A curve profile is usually: a fixed soak phase, then one `follow` phase until dr
 ## Roast phases end to end
 
 1. **Preheat (between-batch protocol), every batch:**
-   1. If BT is above charge temp − 10 °C (a hot roaster), cool first: heat 0%, fan 100%, drum on, until BT is 20 °C below charge temp (Skywalker Light: 160 °C).
+   1. If BT is above charge temp − 10 °C (a hot roaster), cool first: heat 0%, fan 100%, drum on, until BT is 20 °C below charge temp (Skywalker Light: 160 °C). The flow panel says what it is doing in calm words, never the safety trip's: "Cooling to 160 °C first · then climbs to 180 °C for an even start" (both from the profile, in the unit shown).
    2. Climb: fan 30%, heat on, PID brings BT to charge temp smoothly.
-   3. Hold at charge temp for 2:30 (per-roaster setting, 2–3 min), then show "Add beans". The PID keeps holding until you press Start, for at most 10 min after "Add beans".
+   - No Start during the cool step or the climb (nor while the preheat is starting): the drum is neither at charge temperature nor soaked, so beans charged then roast unevenly. Start is offered from the hold on.
+   3. Hold at charge temp, then show "Add beans". Each roaster has two holds, 1:30–3:00 each: "first batch" (Skywalker 2:30) and "next batch" (2:00), as a drum still heat-soaked from the last roast needs less time to settle. At Preheat the app picks "next batch" when a roast on this roaster reached Drop or was stopped within the last 20 min (that moment included; read from the saved roasts, so it holds after a restart), else "first batch"; a stopped preheat doesn't count. The setup card shows it before Start and during the preheat ("Preheat hold", "First batch" under it, 2:30), with a small select to change it for this roast only, 1:30–3:00 in 0:15 steps; it is never saved to the roaster and goes with the preheat. A change mid-hold applies to what is left, counting what it has already held: a shorter one than that ends the hold at once. The flow panel counts the hold down ("Holding · 1:42 left"). Nothing else changes: the PID, the 10-min wait after "Add beans" and the safety paths are as before. The PID keeps holding until you press Start, for at most 10 min after "Add beans".
    4. Heater off before charge, so the beans don't scorch on landing: at "Add beans" you press Charge soon. The heater goes to 0 at once (not on the next reading), whichever way the phases will control heat, and a per-roaster countdown runs (Skywalker: 5 s), then the flow panel says "Beans in". You charge and press Start, and the heater stays at 0 through the soak. With no Start within 30 s of the countdown ending, the hold resumes and Charge soon is offered again. Start without Charge soon also works, as a heater cut at that moment. A heater you set by hand stays yours.
-   5. Limits: the cool step and the climb each give up after 15 min, and when the hold's 10 min run out the heater goes to 0 and Auto hands the outputs to you. Both are logged, so a stuck probe or a forgotten roaster can't keep running. The flow panel then says "Preheat ran out · heater off · end, then Preheat again" and offers no Start: the drum is cooling.
+   5. Limits: the cool step and the climb each give up after 15 min, and when the hold's 10 min run out the heater goes to 0 and Auto hands the outputs to you. Both are logged, so a stuck probe or a forgotten roaster can't keep running. The flow panel then says "Preheat ran out · heater off · stop, then Preheat again" and offers no Start: the drum is cooling.
 2. **Charge:** you press Start (beans in). The clock starts at 0 and the first phase begins.
 3. **Phases:** the controller runs each phase and moves on when its trigger fires (or its backup time passes). Dry end is marked automatically at the dry-end temp. BT comes in hot at charge and falls through these temperatures, so a temperature trigger or dry end counts only once BT has been below it (and dry end never in the soak): a profile without a soak skips no step at charge.
 4. **First crack:** you press First crack; the app records time and BT and starts the development timer. Only your tap starts the timer: the Development heat and fan step can begin earlier, on its BT trigger, but it never counts as a crack. With no tap, the BT cap ends the roast.

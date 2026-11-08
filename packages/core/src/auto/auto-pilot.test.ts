@@ -53,6 +53,7 @@ const TUNING: AutoTuning = {
   preheat: { kp: 2, ki: 0, kd: 0 },
   preheatFanPct: 30,
   holdS: 150,
+  nextHoldS: 120,
   chargeCutS: 5,
 };
 
@@ -104,6 +105,7 @@ function setup(initial: Partial<RoastState> = {}, profile: AutoProfile = PROFILE
     drop,
     profile: () => profile,
     tuning: () => TUNING,
+    preheatHold: () => ({ s: TUNING.holdS, batch: 'first' }),
     onEvent: (event) => events.push(event),
     onChange,
     logger,
@@ -614,5 +616,47 @@ describe('AutoPilot', () => {
     const calls = onChange.mock.calls.length;
     await feed(2_000, 170);
     expect(onChange.mock.calls.length).toBe(calls);
+  });
+
+  describe('preheat hold', () => {
+    it('starts the preheat with the hold you chose before it, and says so', async () => {
+      const { pilot, feed, setState } = setup({ phase: 'ready' });
+      pilot.setEnabled(true);
+      pilot.choosePreheatHold(180);
+      setState({ phase: 'preheat' });
+      await feed(0, 150);
+      expect(pilot.status.preheatHold).toEqual({ s: 180, batch: 'first', chosen: true });
+    });
+
+    it('forgets the choice once the preheat is over', async () => {
+      const { pilot, feed, setState } = setup({ phase: 'preheat' });
+      pilot.setEnabled(true);
+      pilot.choosePreheatHold(180);
+      await feed(0, 150);
+      setState({ phase: 'ready' });
+      await feed(1_000, 150);
+      setState({ phase: 'preheat' });
+      await feed(2_000, 150);
+      expect(pilot.status.preheatHold).toEqual({ s: TUNING.holdS, batch: 'first', chosen: false });
+    });
+
+    it('a choice mid-preheat changes the running hold at once', async () => {
+      const { pilot, feed, onChange } = setup({ phase: 'preheat' });
+      pilot.setEnabled(true);
+      await feed(0, 150);
+      expect(pilot.status.preheatHold).toEqual({ s: TUNING.holdS, batch: 'first', chosen: false });
+      onChange.mockClear();
+      pilot.choosePreheatHold(105);
+      expect(pilot.status.preheatHold?.s).toBe(105);
+      expect(onChange).toHaveBeenCalled();
+    });
+
+    it('has no hold outside a preheat', async () => {
+      const { pilot, feed } = setup({ phase: 'ready' });
+      pilot.setEnabled(true);
+      await feed(0, 150);
+      pilot.choosePreheatHold(105);
+      expect(pilot.status.preheatHold).toBeNull();
+    });
   });
 });

@@ -1,6 +1,6 @@
 # ConfirmDialog
 
-Asks once before something that can't be undone or ends something: Delete, Clear, End roast, Stop.
+Asks once before something that can't be undone or ends something: Delete, Clear, Stop roast, Stop preheat, Stop.
 
 ## Anatomy
 
@@ -14,22 +14,22 @@ Asks once before something that can't be undone or ends something: Delete, Clear
 ## Tones
 
 - **Destructive** (default): the verb and icon in `critical-text`, text only. For deleting.
-- **Caution**: the verb and icon in `warning` (amber), text only, never a fill. For a normal stop that ends something but is not an emergency: End roast.
+- **Caution**: the verb and icon in `warning` (amber), text only, never a fill. For a normal stop that ends something but is not an emergency: Stop roast.
 - Red fill (`critical`) stays only for Emergency stop, so a red block always means safety.
 
 ## Copy
 
 - `cancelLabel`: for a stop, the keep-going verb ("Keep roasting"); otherwise "Cancel".
 - Consequences say what happens now, not what might: "No bean cooling · dump the beans yourself". At most 3, one line each, no full stops.
-- The verb names the action ("End roast", "Delete"), never "OK" or "Yes".
+- The verb names the action ("Stop roast", "Delete"), never "OK" or "Yes".
 
-## End roast
+## Stop roast and Stop preheat
 
-Opened by the End roast button at the bottom of the Roast screen's flow panel: full width, set apart by a thin `border` divider, Lucide `CircleStop` icon, `warning` text on the secondary grey button. A normal stop must be easy to find but never look like the red Emergency stop.
+Opened by the normal stop button at the bottom of the Roast screen's flow panel: full width, set apart by a thin `border` divider, Lucide `CircleStop` icon, `warning` text on the secondary grey button. A normal stop must be easy to find but never look like the red Emergency stop.
 
-- Icon `CircleStop`, question "End the roast?", buttons "Keep roasting" / "End roast" (caution).
-- Preheat: "Heater, fan and drum off now" · "Back to Ready · the preheat isn't saved".
-- Roasting and Development: "Heater, fan and drum off now" · "No bean cooling · dump the beans yourself" · "The roast is saved as it is".
+- Icon `CircleStop`; the words follow the phase.
+- Preheat: "Stop preheat" opens "Stop the preheat?" · "Heater, fan, drum and filter off now" · "Back to Ready · nothing is saved", buttons "Keep preheating" / "Stop preheat" (caution).
+- Roasting and Development: "Stop roast" opens "Stop the roast?" · "Heater, fan, drum and filter off now" · "No bean cooling · dump the beans yourself" · "The roast is saved as stopped", buttons "Keep roasting" / "Stop roast" (caution).
 
 ## Do / don't
 

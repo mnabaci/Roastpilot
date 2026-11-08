@@ -54,7 +54,11 @@ export function readEnvelope(text: string, kind: FileKind): Result<Envelope, Env
   if (fileKind === undefined) return err({ kind: 'not-roastpilot' });
   if (fileKind !== kind) return err({ kind: 'wrong-kind', fileKind });
   const version = (json as { version?: unknown }).version;
-  if (typeof version === 'number' && version > FILE_KINDS[kind].version) {
+  if (
+    typeof version === 'number' &&
+    Number.isInteger(version) &&
+    version > FILE_KINDS[kind].version
+  ) {
     return err({ kind: 'newer-version' });
   }
   const head = EnvelopeSchema.safeParse(json);

@@ -20,6 +20,7 @@ export const fakeRoastApi = (): RoastApi & AutoApi & CoachApi => ({
   onRoast: listening,
   autoChargeSoon: accepted,
   autoResume: accepted,
+  autoSetPreheatHold: done,
   onAutoStatus: listening,
   coachApply: accepted,
   coachDismiss: done,

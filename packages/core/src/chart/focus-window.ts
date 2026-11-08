@@ -30,7 +30,7 @@ export function focusWindow(
 export const HISTORY_AFTER_END_S = 30;
 
 /**
- * A saved roast's focused view: −0:30 to its cool end (or End roast, or else drop) + 0:30.
+ * A saved roast's focused view: −0:30 to its cool end (or Stop roast, or else drop) + 0:30.
  * Undefined when it has none of them: the whole recording is shown.
  */
 export function savedRoastWindow({

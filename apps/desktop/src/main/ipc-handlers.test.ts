@@ -136,6 +136,9 @@ function setup() {
         calls.push(['chargeSoon', nowMs]);
         return ok(undefined);
       },
+      choosePreheatHold: (holdS) => {
+        calls.push(['choosePreheatHold', holdS]);
+      },
       resume: () => {
         calls.push(['resume']);
         return err({ kind: 'safety-locked' });
@@ -220,6 +223,10 @@ function setup() {
         calls.push(['delete', id]);
         return Promise.resolve(ok(undefined));
       },
+      deleteMany: (ids) => {
+        calls.push(['deleteMany', ids]);
+        return Promise.resolve(ok(undefined));
+      },
     },
     nowMs: () => 42,
     snapshot: () => SNAPSHOT,
@@ -295,10 +302,12 @@ describe('createIpcHandlers', () => {
         IPC_CHANNELS.importLibrary,
         IPC_CHANNELS.autoChargeSoon,
         IPC_CHANNELS.autoResume,
+        IPC_CHANNELS.autoSetPreheatHold,
         IPC_CHANNELS.listProfiles,
         IPC_CHANNELS.duplicateProfile,
         IPC_CHANNELS.saveProfile,
         IPC_CHANNELS.deleteProfile,
+        IPC_CHANNELS.deleteProfiles,
         IPC_CHANNELS.copyProfile,
         IPC_CHANNELS.makeProfileFromMilestones,
         IPC_CHANNELS.listRoasters,
@@ -484,6 +493,19 @@ describe('roast, snapshot and settings handlers', () => {
     expect(calls).toEqual([['chargeSoon', 42], ['resume']]);
   });
 
+  it('passes a preheat hold for this roast on, checked: 1:30–3:00 in 0:15 steps, or null', async () => {
+    const { handlers, calls } = setup();
+    await handlers[IPC_CHANNELS.autoSetPreheatHold]?.({ holdS: 165 });
+    await handlers[IPC_CHANNELS.autoSetPreheatHold]?.({ holdS: null });
+    for (const holdS of [75, 195, 100]) {
+      await expect(handlers[IPC_CHANNELS.autoSetPreheatHold]?.({ holdS })).rejects.toThrow();
+    }
+    expect(calls).toEqual([
+      ['choosePreheatHold', 165],
+      ['choosePreheatHold', null],
+    ]);
+  });
+
   it('checks a profile at the boundary before saving it', async () => {
     const { handlers, calls } = setup();
     await expect(
@@ -499,6 +521,16 @@ describe('roast, snapshot and settings handlers', () => {
       ['delete', 'custom-1'],
     ]);
     await expect(handlers[IPC_CHANNELS.deleteProfile]?.('')).rejects.toThrow();
+  });
+
+  it('deletes several profiles by valid ids, and refuses an empty or bad list', async () => {
+    const { handlers, calls } = setup();
+    await handlers[IPC_CHANNELS.deleteProfiles]?.(['custom-1', 'custom-2']);
+    expect(calls).toEqual([['deleteMany', ['custom-1', 'custom-2']]]);
+    await expect(handlers[IPC_CHANNELS.deleteProfiles]?.([])).rejects.toThrow();
+    await expect(handlers[IPC_CHANNELS.deleteProfiles]?.('custom-1')).rejects.toThrow();
+    await expect(handlers[IPC_CHANNELS.deleteProfiles]?.([''])).rejects.toThrow();
+    expect(calls).toHaveLength(1);
   });
 
   it('passes a valid roast action on', async () => {

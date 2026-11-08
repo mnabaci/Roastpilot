@@ -11,9 +11,9 @@ describe('library kinds', () => {
       beans: { read: () => Promise.resolve(ok([])), addAll: () => Promise.resolve(ok([])) },
       profiles: {
         list: () => Promise.resolve([]),
-        allNames: () => Promise.resolve(new Map()),
         addAll: () => Promise.resolve(ok(undefined)),
       },
+      profileStore: { list: () => Promise.resolve(ok([])) },
       roasters: {
         all: [skywalker],
         addAll: () => Promise.resolve(ok([])),
