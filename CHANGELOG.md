@@ -6,6 +6,8 @@ All notable changes to Roastpilot are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-08
+
 ### Added
 
 - **Roast chart aids:** while roasting, a faint projection of where the temperature is heading at
@@ -22,6 +24,14 @@ All notable changes to Roastpilot are listed here. The format follows
   the expected drop, growing smoothly if the roast runs long; the preheat is still saved.
 - **History opens each roast's chart on the roast**, with Show preheat to see everything recorded.
 - **Each profile sets its own soak**, or none; the Soak time setting moved into profiles.
+- **A calmer, more consistent look on every screen:** matching sizes and spacing, buttons for a
+  choice at the right with the quiet one first, and clearer Dismiss and Done buttons.
+
+### Fixed
+
+- The Simulator no longer jumps to the hot drum's temperature at Drop, which tripped Too hot.
+- The Drop label no longer sits on the chart's current point.
+- A fresh install no longer logs a warning about the roaster's connection.
 
 ## [0.1.1] - 2026-11-07
 
