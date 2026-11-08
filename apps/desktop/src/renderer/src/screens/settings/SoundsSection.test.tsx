@@ -118,27 +118,36 @@ describe('SoundsSection', () => {
       expect(vi.getTimerCount()).toBe(0);
     });
 
-    it('Stop cancels the plays still to come', () => {
+    it('Until done plays once: a preview needs no minute of chimes', () => {
       vi.useFakeTimers();
       const { chime } = setup();
       fireEvent.click(screen.getByRole('button', { name: 'Play Charge soon' }));
       act(() => {
-        vi.advanceTimersByTime(10_000);
-      });
-      fireEvent.click(screen.getByRole('button', { name: 'Stop Charge soon' }));
-      act(() => {
         vi.advanceTimersByTime(60_000);
       });
-      expect(chime.play).toHaveBeenCalledTimes(2);
+      expect(chime.play).toHaveBeenCalledTimes(1);
       expect(screen.getByRole('button', { name: 'Play Charge soon' })).toBeVisible();
+      expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('Stop cancels the plays still to come', () => {
+      vi.useFakeTimers();
+      const { chime } = setup();
+      fireEvent.click(screen.getByRole('button', { name: 'Play Auto stopped' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Stop Auto stopped' }));
+      act(() => {
+        vi.advanceTimersByTime(2_000);
+      });
+      expect(chime.play).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('button', { name: 'Play Auto stopped' })).toBeVisible();
       expect(vi.getTimerCount()).toBe(0);
     });
 
     it('stops when the step changes or Settings closes', () => {
       vi.useFakeTimers();
       const { chime, unmount } = setup();
-      fireEvent.click(screen.getByRole('button', { name: 'Play Charge soon' }));
-      const volume = row('Charge soon').getByRole('slider', { name: 'Volume' });
+      fireEvent.click(screen.getByRole('button', { name: 'Play Auto stopped' }));
+      const volume = row('Auto stopped').getByRole('slider', { name: 'Volume' });
       fireEvent.change(volume, { target: { value: '45' } });
       fireEvent.blur(volume);
       act(() => {

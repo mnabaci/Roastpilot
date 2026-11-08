@@ -168,6 +168,17 @@ describe('ProfilesScreen', () => {
     expect(screen.queryByRole('button', { name: 'Remove Development' })).toBeNull();
   });
 
+  it('an edit undone by hand is no edit: no Edited badge, no Save', async () => {
+    open();
+    await userEvent.click(screen.getByRole('button', { name: 'Add step' }));
+    const list = within(screen.getByRole('list', { name: 'Profiles' }));
+    expect(list.getByRole('button', { name: /Mine/ })).toHaveTextContent('Edited');
+    await userEvent.click(screen.getByRole('button', { name: 'Remove New step' }));
+    expect(list.getByRole('button', { name: /Mine/ })).not.toHaveTextContent('Edited');
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
+    expect(screen.queryByText('Not saved')).toBeNull();
+  });
+
   it('a curve profile has curve points and no durations', () => {
     const curve = { profile: { ...CURVE, id: 'custom-c', name: 'My curve' }, builtIn: false };
     open(fakeApi(), [...BUILT_INS, curve], 'custom-c');
