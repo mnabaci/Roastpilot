@@ -87,8 +87,8 @@ function canvasLines(u: uPlot, rightPx: number): CanvasLine[] {
 /**
  * Each band's name, once, at its left edge (just right of the Charge line when it is in view): at
  * the bottom of the band, or its top when a curve runs there (under the marker labels when they
- * sit there), on a chip of the band's own shade so the grid never cuts through it. A band with no
- * free spot has no name.
+ * sit there); when all of those are taken, at its right edge. On a chip of the band's own shade so
+ * the grid never cuts through it. A band with no free spot has no name.
  */
 export function drawBandLabels(
   u: uPlot,
@@ -108,19 +108,27 @@ export function drawBandLabels(
   ctx.font = `500 ${String(13 * ratio)}px ${colors.font}`;
   ctx.textBaseline = 'middle';
   const widths = boxes.map((box) => ctx.measureText(box.band.label).width);
-  const lines = canvasLines(u, left + Math.max(...widths) + inset);
+  const lines = canvasLines(u, Infinity);
+  const plotRight = bbox.left + bbox.width;
   boxes.forEach((box, i) => {
-    const right = left + (widths[i] ?? 0);
-    // Under the marker labels that reach across this name's span, for the top spot's second try.
-    const below = Math.max(
-      box.top,
-      ...taken.filter((t) => t.left <= right && t.right >= left).map((t) => t.bottom),
+    const width = widths[i] ?? 0;
+    const at = (x: number): Box[] => {
+      const right = x + width;
+      // Under the marker labels that reach across this name's span, for the top spot's second try.
+      const below = Math.max(
+        box.top,
+        ...taken.filter((t) => t.left <= right && t.right >= x).map((t) => t.bottom),
+      );
+      return [
+        { left: x, right, bottom: box.bottom - inset / 2, top: box.bottom - inset / 2 - height },
+        { left: x, right, top: box.top + inset / 2, bottom: box.top + inset / 2 + height },
+        { left: x, right, top: below + inset, bottom: below + inset + height },
+      ];
+    };
+    // The left edge first; the right edge, still empty mid-roast, when the left is crowded.
+    const spots = [...at(left), ...at(plotRight - inset - width)].filter(
+      (spot) => spot.top >= box.top && spot.bottom <= box.bottom,
     );
-    const spots: Box[] = [
-      { left, right, bottom: box.bottom - inset / 2, top: box.bottom - inset / 2 - height },
-      { left, right, top: box.top + inset / 2, bottom: box.top + inset / 2 + height },
-      { left, right, top: below + inset, bottom: below + inset + height },
-    ].filter((spot) => spot.top >= box.top && spot.bottom <= box.bottom);
     const spot = labelSpot(spots, lines, taken);
     if (!spot) return;
     const chip = { x: spot.left - inset / 2, w: spot.right - spot.left + inset };

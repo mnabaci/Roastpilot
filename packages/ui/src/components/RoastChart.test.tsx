@@ -458,6 +458,21 @@ describe('RoastChart', () => {
       expect(calls.filter((c) => c.name === 'arc')).toEqual([]);
     });
 
+    it("moves a band's name to its right edge when curves fill the left", () => {
+      const one: ChartAid = { kind: 'phase-bands', id: 'phases', bands: [{ label: 'Drying' }] };
+      draw(<RoastChart title="Roast curve" layers={[roasting, one]} />);
+      const { u, calls } = fakePlot();
+      // A line straight up the left edge, from the bottom of the axis to its top.
+      u.data = [
+        [10, 20],
+        [50, 250],
+      ];
+      for (const fn of created[0]?.opts.hooks.draw ?? []) fn(u);
+      expect(calls.filter((c) => c.name === 'fillText').map((c) => c.args)).toEqual([
+        ['Drying', 952, 237],
+      ]);
+    });
+
     it('leaves a band too thin for its name unnamed', () => {
       const thin: ChartAid = {
         kind: 'phase-bands',
