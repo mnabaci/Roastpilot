@@ -23,16 +23,16 @@ const pct = (value: number) => `${String(Math.round(value))}%`;
 
 /**
  * The suggested changes as aligned rows: name, now in a quiet outlined box, an arrow, the target in a box
- * in its output's colour. A real table, so the values line up and screen readers read each row
+ * in its output's colour, at the right edge like the slider values. A real table, so the values line up and screen readers read each row
  * as "Heater from 75% to 65%".
  */
 export function CoachChanges({ changes }: { changes: readonly CoachChange[] }) {
   return (
-    <table className="self-start border-separate border-spacing-y-1 tabular-nums">
+    <table className="w-full border-separate border-spacing-y-1 tabular-nums">
       <tbody>
         {changes.map((change) => (
           <tr key={change.name}>
-            <th scope="row" className="pr-4 text-left text-label font-normal text-ink-muted">
+            <th scope="row" className="w-full pr-4 text-left text-body font-semibold text-ink">
               {change.name}
             </th>
             <td className="text-right">
@@ -45,7 +45,7 @@ export function CoachChanges({ changes }: { changes: readonly CoachChange[] }) {
               <ArrowRight className="size-4" />
             </td>
             <td className="text-right">
-              <span className={cn(BOX, 'bg-surface text-body font-semibold', TONE[change.tone])}>
+              <span className={cn(BOX, 'bg-surface text-readout-lg', TONE[change.tone])}>
                 <span className="sr-only">to </span>
                 {pct(change.to)}
               </span>
