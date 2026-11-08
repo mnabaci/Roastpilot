@@ -42,6 +42,54 @@ describe('toDraft and fromDraft', () => {
   });
 });
 
+describe('the soak', () => {
+  const NO_SOAK = { ...STEPS, phases: STEPS.phases.slice(1) };
+
+  it('holds its length, or null for none', () => {
+    expect(steps().soakS).toBe(60);
+    expect(toDraft(NO_SOAK)).toMatchObject({ soakS: null, soakFan: '30' });
+    expect(toDraft(NO_SOAK).steps.map((s) => s.name)).toEqual(['Heat on', 'Development']);
+  });
+
+  it('sets the soak to the length chosen', () => {
+    const result = fromDraft({ ...steps(), soakS: 90 }, STEPS);
+    if (!result.ok) throw new Error('expected a profile');
+    expect(result.value.phases[0]?.next).toEqual({ on: 'time', afterS: 90 });
+  });
+
+  it('Off leaves the soak out, whatever its fan says', () => {
+    const result = fromDraft({ ...steps(), soakS: null, soakFan: 'x' }, STEPS);
+    expect(result).toEqual({ ok: true, value: NO_SOAK });
+  });
+
+  it('gives a profile without a soak back unchanged', () => {
+    expect(fromDraft(toDraft(NO_SOAK), NO_SOAK)).toEqual({ ok: true, value: NO_SOAK });
+  });
+
+  it('comes back as a fixed 0 % soak with the fan you had', () => {
+    const result = fromDraft({ ...toDraft(NO_SOAK), soakS: 45, soakFan: '35' }, NO_SOAK);
+    if (!result.ok) throw new Error('expected a profile');
+    expect(result.value.phases[0]).toEqual({
+      name: 'Soak',
+      heat: { mode: 'fixed', pct: 0 },
+      fanPct: 35,
+      next: { on: 'time', afterS: 45 },
+    });
+  });
+
+  it("needs the first step's backup after the soak", () => {
+    expect(errorsOf({ ...steps(), soakS: 120 }, STEPS)).toEqual({});
+    expect(errorsOf(withStep({ ...steps(), soakS: 120 }, 0, { backup: '2:00' }))).toEqual({
+      'steps.0.backup': 'Must be after the soak',
+    });
+  });
+
+  it('points a step problem at its cell without a soak', () => {
+    const draft = withStep(toDraft(NO_SOAK), 0, { heat: '120' });
+    expect(errorsOf(draft, NO_SOAK)).toHaveProperty('steps.0.heat');
+  });
+});
+
 describe('what the draft refuses', () => {
   it('names the cell with a half-typed number or time', () => {
     expect(errorsOf({ ...steps(), capC: '2x' })).toMatchObject({ capC: 'Enter a number' });

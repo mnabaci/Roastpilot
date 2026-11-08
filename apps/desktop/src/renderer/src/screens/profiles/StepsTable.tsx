@@ -1,8 +1,8 @@
 import { Plus } from 'lucide-react';
-import { Button, cn, formatClock, NumberField } from '@roastpilot/ui';
+import { Button } from '@roastpilot/ui';
 import type { ProfileDraft, StepDraft, DraftErrors } from './profile-draft';
 import { addStep, removeStep } from './draft-edits';
-import { CELL, FIXED } from './step-cells';
+import { SoakRow } from './SoakRow';
 import { StepRow } from './StepRow';
 
 const HEAD = 'px-1 pb-1 text-left text-label font-normal whitespace-nowrap text-ink-muted';
@@ -12,13 +12,12 @@ interface StepsTableProps {
   errors: DraftErrors;
   /** A step profile has a duration and RoR range per step; a curve profile doesn't. */
   steps: boolean;
-  soakS: number;
   readOnly: boolean;
   onChange: (next: ProfileDraft) => void;
 }
 
-/** One row per step (docs/spec/ui.md, Profiles screen). Soak first and the last step are fixed. */
-export function StepsTable({ draft, errors, steps, soakS, readOnly, onChange }: StepsTableProps) {
+/** One row per step (docs/spec/ui.md, Profiles screen). The Soak row and the last step stay. */
+export function StepsTable({ draft, errors, steps, readOnly, onChange }: StepsTableProps) {
   const columns = steps ? 9 : 6;
   const setStep = (index: number, change: Partial<StepDraft>) => {
     onChange({
@@ -46,47 +45,14 @@ export function StepsTable({ draft, errors, steps, soakS, readOnly, onChange }: 
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td className={cn(FIXED, 'text-ink')}>
-              <span>Soak</span>
-            </td>
-            <td className={FIXED}>
-              <span>–</span>
-            </td>
-            {steps ? (
-              <td className={FIXED}>
-                <span>{formatClock(soakS)}</span>
-              </td>
-            ) : null}
-            {steps ? <td className={CELL} /> : null}
-            {steps ? <td className={CELL} /> : null}
-            <td className={FIXED}>
-              <span>0</span>
-            </td>
-            <td className={CELL}>
-              <NumberField
-                label="Soak fan"
-                hideLabel
-                value={draft.soakFan}
-                disabled={readOnly}
-                invalid={Boolean(errors.soakFan)}
-                onChange={(soakFan) => {
-                  onChange({ ...draft, soakFan });
-                }}
-              />
-            </td>
-            <td className={CELL} />
-            <td className={CELL} />
-          </tr>
-          {errors.soakFan ? (
-            <tr>
-              <td colSpan={columns} className="px-1 pb-1">
-                <p role="alert" className="text-label text-critical-text">
-                  Soak: {errors.soakFan}
-                </p>
-              </td>
-            </tr>
-          ) : null}
+          <SoakRow
+            draft={draft}
+            errors={errors}
+            steps={steps}
+            columns={columns}
+            readOnly={readOnly}
+            onChange={onChange}
+          />
           {draft.steps.map((step, index) => (
             <StepRow
               key={String(index)}
@@ -120,9 +86,7 @@ export function StepsTable({ draft, errors, steps, soakS, readOnly, onChange }: 
           Add step
         </Button>
       )}
-      <p className="text-label text-ink-muted">
-        Soak time is in Settings · backup moves on if the temperature never comes.
-      </p>
+      <p className="text-label text-ink-muted">Backup moves on if the temperature never comes.</p>
     </section>
   );
 }
