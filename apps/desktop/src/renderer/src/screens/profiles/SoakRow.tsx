@@ -62,7 +62,7 @@ export function SoakRow({
             hideLabel
             value={draft.soakFan}
             disabled={readOnly || off}
-            invalid={!off && Boolean(errors.soakFan)}
+            invalid={Boolean(errors.soakFan)}
             onChange={(soakFan) => {
               onChange({ ...draft, soakFan });
             }}
