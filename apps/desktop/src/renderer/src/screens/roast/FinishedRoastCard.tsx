@@ -1,5 +1,7 @@
 import { Button } from '@roastpilot/ui';
-import { useState } from 'react';
+import { useEffect } from 'react';
+import { useStore } from 'zustand';
+import { useDeps } from '../../app/app-context';
 import { RoastResultForm } from '../../features/RoastResultForm';
 import { useBeans, useRoast } from '../../stores/use-stores';
 import { roastTitle } from '../history/history-format';
@@ -12,10 +14,18 @@ import { useRoastList } from '../history/use-roast-list';
 export function FinishedRoastCard() {
   const roast = useRoast((s) => s.roast);
   const currentId = useBeans((s) => s.currentRoastId);
-  const saved = useRoastList()?.find((r) => r.id === currentId);
-  // Dismissed per roast, so the next roast's card shows again.
-  const [dismissedId, setDismissedId] = useState<number>();
-  if (roast.phase !== 'done' || roast.chargedAtMs === null || !saved || dismissedId === saved.id)
+  const view = useDeps().stores.roastView;
+  const list = useRoastList();
+  const listed = list?.find((r) => r.id === currentId);
+  const cached = useStore(view, (s) => s.finished);
+  // Until the list loads again, the roast as last listed: leaving Roast doesn't blink the card.
+  const saved = list ? listed : cached?.id === currentId ? cached : undefined;
+  // Done is per roast and outlives the screen, so the next roast's card shows again.
+  const doneId = useStore(view, (s) => s.doneRoastId);
+  useEffect(() => {
+    if (listed) view.setState({ finished: listed });
+  }, [listed, view]);
+  if (roast.phase !== 'done' || roast.chargedAtMs === null || !saved || doneId === saved.id)
     return null;
   return (
     <section
@@ -31,7 +41,7 @@ export function FinishedRoastCard() {
           variant="outline"
           size="sm"
           onClick={() => {
-            setDismissedId(saved.id);
+            view.setState({ doneRoastId: saved.id });
           }}
         >
           Done
