@@ -15,7 +15,7 @@ The list of saved roasts on the History screen: one row per roast, newest first,
 - **Hover**: `surface-hover`.
 - **Selected**: `surface-raised` fill, as in NavList; `aria-current` on the row.
 - **Focus**: 2px `focus` ring, inset so it isn't clipped by the scroll area.
-- **Select mode** (History ⋯ → Select): each row is a checkbox (`role="checkbox"`), with a 20px box before the title: `border-strong` outline, ticked `heat-tint` with a `heat` check; a ticked row is `surface-raised`. Shift-click ticks the range from the last one. Over the list a bar says "3 selected" with Export ▾ (Roastpilot file, CSV) and Done; clicking a row ticks it instead of opening it until Done.
+- **Select mode** (History ⋯ → Select): each row is a checkbox (`role="checkbox"`), with a 20px box before the title: `border-strong` outline, ticked `heat-tint` with a `heat` check; a ticked row is `surface-raised`. Shift-click ticks the range from the last one. Over the list a bar says "3 selected" on its own line, with Export ▾ (Roastpilot file, CSV) and Done under it (Done at the end), so it fits the 256px sidebar; clicking a row ticks it instead of opening it until Done.
 
 ## Rules
 

@@ -16,12 +16,13 @@ export function SelectionBar({
   onDone: () => void;
 }) {
   return (
-    <div className="flex items-center gap-2" role="toolbar" aria-label={label}>
-      <span className="mr-auto text-label text-ink-muted" aria-live="polite">
+    // The count on its own line, the actions under it: they fit the 256px sidebar whatever they are.
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1" role="toolbar" aria-label={label}>
+      <span className="basis-full text-label text-ink-muted" aria-live="polite">
         {count} selected
       </span>
       {children}
-      <Button size="sm" variant="outline" onClick={onDone}>
+      <Button size="sm" variant="outline" className="ml-auto" onClick={onDone}>
         Done
       </Button>
     </div>

@@ -12,7 +12,7 @@ The list of things in a sidebar: profiles, beans, roasters, settings sections. O
 - **Open**: `surface-raised` fill and `ink` text; `aria-current="true"`. Grey, not ember: it shows where you are, not a choice that changes the roast.
 - **Other items**: `ink-muted` text, `surface-hover` and `ink` on hover.
 - **Focus**: 2px `focus` ring, inset so the scroll area doesn't clip it.
-- **Select mode** (Profiles ⋯ → Select): each item is a checkbox (`role="checkbox"`) with RoastList's 20px tick box before the name; a ticked item is `surface-raised`. Shift-click ticks the range from the last one; a click ticks instead of opening until Done. An item that can't be ticked is `aria-disabled`, its box at 50%, and its second line says why in one or two words ("Built-in", "Running now").
+- **Select mode** (Profiles ⋯ → Select): each item is a checkbox (`role="checkbox"`) with RoastList's 20px tick box before the name; a ticked item is `surface-raised`. Shift-click ticks the range from the last one; a click ticks instead of opening until Done. The bar over the list is RoastList's: the count on its own line, the actions and Done under it. An item that can't be ticked is `aria-disabled`, its box at 50%, and its second line says why in one or two words ("Built-in", "Running now").
 
 ## Rules
 

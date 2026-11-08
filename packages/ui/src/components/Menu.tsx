@@ -67,14 +67,16 @@ export function Menu({ label, text, items, className }: MenuProps) {
                 aria-describedby={hint}
                 className={cn(
                   DROPDOWN_ROW,
-                  'data-disabled:cursor-not-allowed data-disabled:opacity-50 [&_svg]:size-5',
+                  'data-disabled:cursor-not-allowed [&_svg]:size-5',
+                  // A hint stays readable: only the label dims.
+                  !hint && 'data-disabled:opacity-50',
                   item.destructive ? 'text-critical-text' : 'text-ink',
                 )}
               >
                 {item.icon}
                 {hint ? (
                   <span className="flex flex-col">
-                    <span>{item.label}</span>
+                    <span className={cn(item.disabled && 'opacity-50')}>{item.label}</span>
                     <span id={hint} className="text-label text-ink-muted">
                       {item.hint}
                     </span>
