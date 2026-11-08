@@ -1,4 +1,4 @@
-Roastpilot rules (full list: CLAUDE.md and the engineering-standards skill):
+Roastpilot rules (full list: AGENTS.md and the engineering-standards skill):
 
 1. Load the engineering-standards skill before writing or changing code; start features with plan-feature.
 2. Spec in docs/spec is the source of truth: change it first.
