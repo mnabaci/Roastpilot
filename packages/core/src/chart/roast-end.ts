@@ -9,6 +9,12 @@ export function plannedDropS(profile: AutoProfile): number | undefined {
   return plannedCurve(profile).at(-1)?.tS;
 }
 
+/** The lowest point of a profile's planned curve: its turning point, °C. */
+export function plannedTurningPointC(profile: AutoProfile): number | undefined {
+  const curve = plannedCurve(profile);
+  return curve.length === 0 ? undefined : Math.min(...curve.map((p) => p.c));
+}
+
 /**
  * When this roast is expected to end, in seconds since charge: the planned drop of the profile in
  * use, else the ghost's drop, else 12:00 (docs/spec/ui.md, Focus on the roast).

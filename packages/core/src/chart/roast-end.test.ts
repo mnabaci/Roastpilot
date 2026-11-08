@@ -1,6 +1,11 @@
 import { PROFILE_SCHEMA_VERSION, type AutoProfile } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_ROAST_END_S, expectedRoastEndS, plannedDropS } from './roast-end';
+import {
+  DEFAULT_ROAST_END_S,
+  expectedRoastEndS,
+  plannedDropS,
+  plannedTurningPointC,
+} from './roast-end';
 
 /** The built-in Light · Curve: roast 7, charge 180 °C, dropped at 11:03. */
 const CURVE_PROFILE: AutoProfile = {
@@ -63,5 +68,11 @@ describe('plannedDropS', () => {
     };
     // 1:00 soak, 4:05 to 150 °C, then 1:45 of development.
     expect(plannedDropS(steps)).toBe(60 + 245 + 105);
+  });
+});
+
+describe('plannedTurningPointC', () => {
+  it("is the planned curve's lowest point", () => {
+    expect(plannedTurningPointC(CURVE_PROFILE)).toBe(92);
   });
 });
