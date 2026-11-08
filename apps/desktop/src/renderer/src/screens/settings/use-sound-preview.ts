@@ -7,7 +7,7 @@ import { playStepSound } from '../../features/step-sound';
 export interface SoundPreview {
   /** Plays are still to come. */
   previewing: boolean;
-  /** Plays the step as set, repeats too. */
+  /** Plays the step as set, counted repeats too; Until done plays once. */
   start: () => void;
   stop: () => void;
 }
@@ -31,7 +31,8 @@ export function useSoundPreview(step: SoundStep, sound: StepSound): SoundPreview
         repeats,
         chime,
         step,
-        sound,
+        // Until done repeats for a minute while a step waits; a preview only needs to be heard.
+        sound.repeat === 'until-done' ? { ...sound, repeat: 'once' } : sound,
         () => true,
         () => {
           setPreviewing(false);
