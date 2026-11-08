@@ -185,4 +185,47 @@ describe('ProfileService', () => {
     await service.save({ ...MINE, name: 'Edited' });
     expect((await service.list()).map((e) => e.profile.id)).not.toContain('custom-a');
   });
+
+  describe('setOwnSoaks', () => {
+    const NO_SOAK: AutoProfile = { ...MINE, id: 'custom-b', phases: MINE.phases.slice(1) };
+    const soakOf = (profile: AutoProfile | undefined) => profile?.phases[0]?.next;
+
+    it('sets the soak of your own profiles that soak, on every roaster', async () => {
+      const { service, stored, useRoaster } = setup([MINE, NO_SOAK]);
+      useRoaster(2);
+      await service.duplicate('light-steps', 'Other roaster');
+      expect(await service.setOwnSoaks(90)).toEqual({ ok: true, value: 2 });
+      const byId = (id: string) => stored().find((p) => p.id === id);
+      expect(soakOf(byId('custom-a'))).toEqual({ on: 'time', afterS: 90 });
+      expect(soakOf(byId('custom-new'))).toEqual({ on: 'time', afterS: 90 });
+      expect(await service.list()).toContainEqual({ profile: byId('custom-new'), builtIn: false });
+    });
+
+    it('leaves the built-ins and a profile without a soak alone', async () => {
+      const { service, stored } = setup([NO_SOAK]);
+      expect(await service.setOwnSoaks(90)).toEqual({ ok: true, value: 0 });
+      expect(stored()).toEqual([NO_SOAK]);
+      const builtIn = (await service.list()).find((e) => e.profile.id === 'light-steps');
+      expect(soakOf(builtIn?.profile)).toEqual({ on: 'time', afterS: 60 });
+    });
+
+    it('says so when storage fails', async () => {
+      const failing: ProfileRepository = {
+        list: () => Promise.resolve(ok([{ profile: MINE, roasterId: 1 }])),
+        save: () => Promise.resolve(err({ kind: 'storage-failed', message: 'full' })),
+        delete: () => Promise.resolve(ok(false)),
+      };
+      const service = new ProfileService({
+        store: failing,
+        newId: () => 'x',
+        chosenId: () => 'light-steps',
+        activeRoaster: () => ({ id: 1, model: 'skywalker' }),
+        logger: silentLogger,
+      });
+      expect(await service.setOwnSoaks(90)).toEqual({
+        ok: false,
+        error: { kind: 'storage-failed', message: 'full' },
+      });
+    });
+  });
 });

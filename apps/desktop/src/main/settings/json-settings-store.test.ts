@@ -68,6 +68,35 @@ describe('JsonSettingsStore', () => {
     });
   });
 
+  describe('the old Soak time setting', () => {
+    it('keeps it in the file through saves until it is forgotten', async () => {
+      await writeFile(path, JSON.stringify({ roastMode: 'auto', soakTimeS: 90 }));
+      const settings = store();
+      expect(await settings.load()).toEqual({ ...DEFAULT_SETTINGS, roastMode: 'auto' });
+      expect(settings.retiredSoakS()).toBe(90);
+      await settings.save({ ...DEFAULT_SETTINGS, theme: 'light' });
+      expect(JSON.parse(await readFile(path, 'utf8'))).toMatchObject({ soakTimeS: 90 });
+      settings.forgetRetiredSoak();
+      await settings.save(DEFAULT_SETTINGS);
+      expect(JSON.parse(await readFile(path, 'utf8'))).not.toHaveProperty('soakTimeS');
+      expect(settings.retiredSoakS()).toBeUndefined();
+    });
+
+    it('counts a length it never offered as none', async () => {
+      await writeFile(path, JSON.stringify({ soakTimeS: 7 }));
+      const settings = store();
+      await settings.load();
+      expect(settings.retiredSoakS()).toBeUndefined();
+    });
+
+    it('is none in a file without it', async () => {
+      await writeFile(path, JSON.stringify({ theme: 'light' }));
+      const settings = store();
+      await settings.load();
+      expect(settings.retiredSoakS()).toBeUndefined();
+    });
+  });
+
   it('returns a typed error and logs when the folder is gone', async () => {
     await rm(dir, { recursive: true, force: true });
     const saved = await store().save(DEFAULT_SETTINGS);
