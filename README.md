@@ -48,7 +48,7 @@ Auto mid-roast on the Simulator: following the Light · Curve plan, with a 5★ 
 
 ![Roast screen in Auto, mid-roast, with the ghost and the plan](docs/images/roast-auto.png)
 
-Manual: you drive heater and fan; the numbers say how you compare with the ghost.
+Manual: you drive heater and fan; the coach suggests what Auto would do, with Apply.
 
 ![Roast screen in Manual](docs/images/roast-manual.png)
 
