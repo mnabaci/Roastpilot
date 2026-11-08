@@ -1,0 +1,53 @@
+<!-- @dsCard group="Feedback" height=110 subtitle="Air, heat and neutral" -->
+<!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
+<link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+  }
+  .wrap {
+    padding: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    line-height: 14px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .air {
+    background: var(--air-tint);
+    color: var(--air);
+  }
+  .heat {
+    background: var(--heat-tint);
+    color: var(--heat);
+  }
+  .neutral {
+    background: var(--surface-raised);
+    color: var(--ink-muted);
+  }
+</style>
+<div class="wrap">
+  <span class="badge air">Auto</span>
+  <span class="badge heat">Manual</span>
+  <span class="badge heat">Low stock</span>
+  <span class="badge neutral">Built-in</span>
+  <span class="badge neutral">Needs calibration</span>
+</div>
+<script></script>
