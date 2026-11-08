@@ -67,8 +67,7 @@ export function RoastSetupPanel() {
           }}
           className="flex min-h-control-sm min-w-0 flex-1 items-center gap-2 rounded-md px-3 text-left hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-focus"
         >
-          <span className="min-w-0 truncate text-body">{line}</span>
-          {needsCalibration ? <Badge className="shrink-0">Needs calibration</Badge> : null}
+          <span className="min-w-0 flex-1 truncate text-body">{line}</span>
           <ChevronDown
             aria-hidden="true"
             className={cn(
@@ -88,6 +87,12 @@ export function RoastSetupPanel() {
           }}
         />
       </div>
+      {/* Its own line under the row, so neither squeezes the other in the narrow panel. */}
+      {needsCalibration ? (
+        <div className="-mt-1 px-5 pb-2.5">
+          <Badge>Needs calibration</Badge>
+        </div>
+      ) : null}
       {open ? (
         <div className="flex flex-col gap-3 px-5 pb-4.5">
           {mode === 'auto' && !profileLocked ? <ProfilePicker /> : null}

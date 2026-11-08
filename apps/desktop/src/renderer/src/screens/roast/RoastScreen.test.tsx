@@ -779,18 +779,23 @@ describe('RoastScreen', () => {
       expect(screen.queryByText(/^Aim /)).toBeNull();
     });
 
-    it('says a profile needs calibration as a badge beside the folded setup line', () => {
+    it('says a profile needs calibration as a badge under the folded setup line', () => {
       renderApp(<RoastScreen onConnect={onConnect} />, auto('ready'));
       const row = screen.getByRole('button', { name: 'Change setup' });
-      expect(row).toHaveTextContent(/^Light · Steps · No bean/);
-      expect(within(row).getByText('Needs calibration')).not.toHaveClass('truncate');
+      expect(row).toHaveTextContent(/^Light · Steps · No bean$/);
+      expect(
+        within(screen.getByRole('region', { name: 'Setup' })).getByText('Needs calibration'),
+      ).toBeInTheDocument();
     });
 
-    it('shows Needs calibration as a badge in the profile picker, the name alone', async () => {
+    it('lists Needs calibration as a badge in the profile picker, the field the name alone', async () => {
       renderApp(<RoastScreen onConnect={onConnect} />, auto('ready'));
       await openSetup();
-      expect(screen.getByLabelText('Profile')).toHaveTextContent(
-        /^Light · StepsNeeds calibration$/,
+      const field = screen.getByLabelText('Profile');
+      expect(field).toHaveTextContent(/^Light · Steps$/);
+      await userEvent.click(field);
+      expect(screen.getByRole('option', { name: /^Light · Steps/ })).toHaveTextContent(
+        'Light · StepsBuilt-inNeeds calibration',
       );
     });
 
@@ -883,9 +888,7 @@ describe('RoastScreen', () => {
           roasters: [SKYWALKER],
         });
         await openSetup();
-        expect(screen.getByText('· first batch').parentElement).toHaveTextContent(
-          'Preheat hold · first batch',
-        );
+        expect(screen.getByText('First batch')).toBeInTheDocument();
         const hold = screen.getByLabelText('Preheat hold');
         expect(hold).toHaveTextContent('2:30');
         await pick(hold, '2:45');
@@ -917,7 +920,7 @@ describe('RoastScreen', () => {
           api,
         );
         await openSetup();
-        expect(await screen.findByText('· next batch')).toBeInTheDocument();
+        expect(await screen.findByText('Next batch · the drum is still hot')).toBeInTheDocument();
         expect(screen.getByLabelText('Preheat hold')).toHaveTextContent('2:00');
       });
 
@@ -932,9 +935,7 @@ describe('RoastScreen', () => {
         });
         expect(screen.getByText('Holding · 1:42 left')).toBeInTheDocument();
         await openSetup();
-        expect(screen.getByText('· next batch').parentElement).toHaveTextContent(
-          'Preheat hold · next batch',
-        );
+        expect(screen.getByText('Next batch · the drum is still hot')).toBeInTheDocument();
         const hold = screen.getByLabelText('Preheat hold');
         expect(hold).toHaveTextContent('2:00');
         await pick(hold, '1:45');

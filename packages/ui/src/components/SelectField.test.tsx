@@ -29,7 +29,7 @@ describe('SelectField', () => {
       />,
     );
     const field = screen.getByRole('button', { name: 'Profile' });
-    expect(field).toHaveTextContent('My lightNeeds calibration');
+    expect(field).toHaveTextContent(/^My light$/);
     await userEvent.click(field);
     expect(screen.getByRole('option', { name: /My light/ })).toHaveTextContent(
       'My lightNeeds calibration',

@@ -11,7 +11,7 @@ export interface SelectOption<V extends string> {
   label: string;
   /** One quieter line under the name that helps you choose: "300 g · Ethiopia · washed". */
   detail?: string;
-  /** A short state at the row's end, as a neutral Badge: "Needs calibration". Never truncated. */
+  /** A short state on the detail line, as a neutral Badge: "Needs calibration". Never truncated. */
   badge?: string;
   disabled?: boolean;
 }
@@ -148,11 +148,20 @@ export function Select<V extends string>({
                   />
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate text-ink">{option.label}</span>
-                    {option.detail ? (
-                      <span className="truncate text-label text-ink-muted">{option.detail}</span>
+                    {/* The badge sits on the detail line, so the name keeps the row's width. */}
+                    {option.detail || option.badge ? (
+                      <span className="flex min-w-0 items-center gap-2">
+                        {option.detail ? (
+                          <span className="truncate text-label text-ink-muted">
+                            {option.detail}
+                          </span>
+                        ) : null}
+                        {option.badge ? (
+                          <Badge className="shrink-0 py-0">{option.badge}</Badge>
+                        ) : null}
+                      </span>
                     ) : null}
                   </span>
-                  {option.badge ? <Badge className="shrink-0">{option.badge}</Badge> : null}
                 </Command.Item>
               ))}
             </Command.List>

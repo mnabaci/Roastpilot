@@ -11,7 +11,7 @@ const LENGTHS = Array.from(
   (_, i) => PREHEAT_HOLD.minS + i * PREHEAT_HOLD.stepS,
 );
 const OPTIONS = LENGTHS.map((s) => ({ value: String(s), label: formatClock(s) }));
-const BATCH = { first: 'first batch', next: 'next batch' } as const;
+const BATCH = { first: 'First batch', next: 'Next batch · the drum is still hot' } as const;
 
 /**
  * The preheat hold, before Start and during the preheat (docs/spec/roast-control.md, Roast phases
@@ -48,9 +48,11 @@ export function PreheatHoldField({
   };
   return (
     <div className="flex items-center justify-between gap-3">
-      <p className="min-w-0 text-body text-ink">
-        Preheat hold <span className="text-ink-muted">· {BATCH[batch]}</span>
-      </p>
+      {/* Two lines, so neither wraps beside the select in the narrow panel. */}
+      <div className="flex min-w-0 flex-col">
+        <p className="text-body text-ink">Preheat hold</p>
+        <p className="text-label text-ink-muted">{BATCH[batch]}</p>
+      </div>
       <SelectField
         label="Preheat hold"
         hideLabel

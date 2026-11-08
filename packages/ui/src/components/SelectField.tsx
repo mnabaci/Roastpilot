@@ -1,7 +1,6 @@
 import { ChevronDown } from 'lucide-react';
 import { useId } from 'react';
 import { cn } from '../lib/utils';
-import { Badge } from './Badge';
 import { Select, type SelectOption } from './Select';
 
 export interface SelectFieldProps<V extends string> {
@@ -47,9 +46,8 @@ export function SelectField<V extends string>({
           numeric ? 'gap-1 pr-2 pl-2.5 tabular-nums' : 'gap-2 pr-3 pl-3.5',
         )}
       >
+        {/* Only the name: a badge here would squeeze it in a narrow field; the list shows it. */}
         <span className="min-w-0 flex-1 truncate">{current?.label ?? ''}</span>
-        {/* The chosen option's state stays whole; the name truncates first. */}
-        {current?.badge ? <Badge className="shrink-0">{current.badge}</Badge> : null}
         <ChevronDown
           aria-hidden="true"
           className="size-5 shrink-0 text-ink-muted transition-transform group-data-[state=open]:rotate-180"
