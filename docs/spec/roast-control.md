@@ -166,7 +166,7 @@ Touching the heater or fan switches that output to manual; the other output stay
   - Each switch mid-roast is saved as a `mode` event.
 - **When Auto stops:** the flow panel and the roast strip say why, in a few words ("Safety stop", "Roaster disconnected", "Heater locked", "Auto failed", "Preheat ran out"), and what is yours now ("you drop").
 - **BT cap and the roaster's limit:** Auto drops at the profile's cap or 5 °C under the roaster's max temperature, whichever is lower, so Drop always comes before a safety stop. A profile's cap is above its charge temperature.
-- **Development countdown:** in Development the flow panel counts down: "Development · drops in 0:43 or at 200 °C".
+- **Development countdown:** in Development the flow panel counts down: "Step: Development · drops in 0:43 or at 200 °C" ("Step", so a profile step named Development isn't read as the roast's Development phase).
 - **What it drives:** heater and fan, from Preheat until Drop. The flow stays as in [manual-mode.md](manual-mode.md), with the same states, events, bean and drum cooling and saving; Auto presses Drop by itself. You still press Preheat, Start and First crack.
 - **Profiles:** two Skywalker Light styles to choose from, shipped as data with the Skywalker driver and marked "needs calibration", and your own copies from the Profiles screen ([ui.md](ui.md)). Making a profile from a roast comes in milestone 6; Medium and Dark in milestone 8, once Light is tuned.
   - **Light · Steps:** the table above: each step aims for its end temperature in its duration, inside its RoR range.

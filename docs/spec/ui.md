@@ -47,7 +47,7 @@ Visual language: the [Roastpilot design system](../design-system/README.md) (ADR
 
 - **Top bar:** connection (the Roasters tab's dot), active roaster, selected bean and profile, phase name.
 - **Milestone 2:** the manual flow from [manual-mode.md](manual-mode.md): top bar (connection status, state), phase stepper, big numbers (BT, RoR, time, development), live chart (BT and RoR, charge/FC/drop markers, heater and fan strip), heater and fan controls, drum and filter fan switches, flow buttons and the red Emergency stop. Safety trips show as one banner per event with Acknowledge on it ("Emergency stop · heater off, fan and bean cooler on"); a separate Heater locked banner only when the lock outlives every trip. The focus ring shows only for keyboard focus. Bean, profile, ghost and coach come later.
-- **Milestone 4:** adds the Auto / Manual switch, a choice of profile with "needs calibration", Auto badges and Resume auto on heater and fan, the current phase and next trigger as one line in the flow panel ("Yellowing · next at 165 °C"), Charge soon, the profile's dashed curve and the dry-end marker on the chart. Soak time lived in Settings under Auto (now each profile's Soak row). Bean, ghost, coach and the RoR band come later.
+- **Milestone 4:** adds the Auto / Manual switch, a choice of profile with "needs calibration", Auto badges and Resume auto on heater and fan, the current phase and next trigger as one line in the flow panel ("Step: Yellowing · next at 165 °C"), Charge soon, the profile's dashed curve and the dry-end marker on the chart. Soak time lived in Settings under Auto (now each profile's Soak row). Bean, ghost, coach and the RoR band come later.
 - **Preheat:** shows the between-batch protocol (cool, climb, hold countdown: "Holding · 1:42 left"), then "Add beans".
 - **Before preheat:** bean picker, batch weight (prefilled from the bean's batch plan, else the followed profile's tuned-for batch, else the roaster's ideal; a quiet line under it when it is more than 10 % off the profile's: "Profile tuned for 385 g · a 300 g batch runs hotter and faster", [batch-and-stock.md](batch-and-stock.md)), then the suggested profile as a labelled row ("Suggested profile", its name, Use this profile, and the reason in plain words on its own line; hidden when it is already the one picked, [beans-favourites-ghost.md](beans-favourites-ghost.md#profile-suggestion)), the bean's hints (each naming why: "Natural process: these often brown faster · …") and the ghost.
 - **Phase stepper:** Preheat, Roast, First crack, Drop, Cool; finished stages show their duration underneath (see [manual-mode.md](manual-mode.md)).
@@ -108,7 +108,7 @@ Visual language: the [Roastpilot design system](../design-system/README.md) (ADR
 - **Drag points:** on your own curve profile, drag a point on the preview chart; it stays between its neighbours and under the BT cap.
 - New profile from a roast: "Make step profile" (phases from its heat/fan changes) or "Make curve profile" (its BT curve).
 - Import an Artisan `.alog` as a curve profile.
-- "Copy to another roaster" makes a copy marked "needs calibration".
+- "Copy to another roaster" makes a copy marked "needs calibration" ([roasters.md](roasters.md)). The line under the header names it and where it went: `Copied to Skywalker as "Light · Steps (from Simulator)" · make Skywalker active to see it`, or `Skywalker already has it as "…"`.
 
 ## History screen
 

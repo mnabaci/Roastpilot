@@ -28,6 +28,7 @@ function setup(own: AutoProfile[], saveFails = false) {
     newId: () => 'x',
     chosenId: () => 'light-steps',
     activeRoaster: () => ({ id: 1, model: 'skywalker' }),
+    roaster: () => undefined,
     logger: silentLogger,
   });
   const byId = (id: string) => stored.find((s) => s.profile.id === id);

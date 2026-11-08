@@ -5,6 +5,10 @@ import { describe, expect, it } from 'vitest';
 import { ProfileService } from './profile-service';
 
 const MINE: AutoProfile = { ...SKYWALKER_PROFILES['light-steps'], id: 'custom-a', name: 'Mine' };
+const ROASTERS = new Map([
+  [1, { name: 'Skywalker', model: 'skywalker' as const }],
+  [2, { name: 'Simulator', model: 'simulator' as const }],
+]);
 
 function setup(start: AutoProfile[] = []) {
   let stored = [...start];
@@ -39,6 +43,7 @@ function setup(start: AutoProfile[] = []) {
     newId: () => 'custom-new',
     chosenId: () => chosen,
     activeRoaster: () => ({ id: roasterId, model: 'skywalker' }),
+    roaster: (id) => ROASTERS.get(id),
     onDeleted: () => {
       deleted += 1;
     },
@@ -81,6 +86,7 @@ describe('ProfileService', () => {
       newId: () => 'x',
       chosenId: () => 'light-steps',
       activeRoaster: () => ({ id: 1, model: 'skywalker' }),
+      roaster: (id) => ROASTERS.get(id),
       logger: silentLogger,
     });
     expect(await service.addAll([MINE])).toEqual(err({ kind: 'storage-failed', message: 'full' }));
@@ -109,6 +115,7 @@ describe('ProfileService', () => {
       newId: () => 'x',
       chosenId: () => 'light-steps',
       activeRoaster: () => ({ id: 1, model: 'skywalker' }),
+      roaster: (id) => ROASTERS.get(id),
       logger: silentLogger,
     });
     expect(await service.list()).toHaveLength(2);
@@ -245,6 +252,7 @@ describe('ProfileService', () => {
       newId: () => 'x',
       chosenId: () => 'light-steps',
       activeRoaster: () => ({ id: 1, model: 'skywalker' }),
+      roaster: (id) => ROASTERS.get(id),
       logger: silentLogger,
     });
     await service.list();
@@ -283,6 +291,41 @@ describe('ProfileService', () => {
       value: { profile: { id: 'custom-new', needsCalibration: true } },
     });
     expect((await service.list()).map((e) => e.profile.id)).not.toContain('custom-new');
+  });
+
+  it('names a copy after the roaster it came from, numbered when that is taken there', async () => {
+    const { service, useRoaster } = setup();
+    useRoaster(2);
+    await service.list();
+    await service.save({ ...MINE, id: 'custom-x', name: 'Light · Steps (from Skywalker)' });
+    useRoaster(1);
+    await service.list();
+    const copy = await service.copyTo('light-steps', 2);
+    expect(copy).toMatchObject({
+      ok: true,
+      value: { profile: { name: 'Light · Steps (from Skywalker) 2' } },
+    });
+  });
+
+  it('refuses a second copy of the same profile, naming the first', async () => {
+    const { service } = setup();
+    await service.list();
+    await service.copyTo('light-steps', 2);
+    expect(await service.copyTo('light-steps', 2)).toEqual(
+      err({ kind: 'already-copied', id: 'custom-new', name: 'Light · Steps (from Skywalker)' }),
+    );
+  });
+
+  it('makes one copy however fast the clicks come', async () => {
+    const { service, stored } = setup();
+    await service.list();
+    const results = await Promise.all([
+      service.copyTo('light-steps', 2),
+      service.copyTo('light-steps', 2),
+      service.copyTo('light-steps', 2),
+    ]);
+    expect(results.filter((r) => r.ok)).toHaveLength(1);
+    expect(stored()).toHaveLength(1);
   });
 
   it('saving your own keeps it on its roaster', async () => {

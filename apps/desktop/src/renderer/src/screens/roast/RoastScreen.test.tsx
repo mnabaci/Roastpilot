@@ -984,7 +984,7 @@ describe('RoastScreen', () => {
         <RoastScreen onConnect={onConnect} />,
         auto('roasting', { fan: 'manual', phaseName: 'Yellowing', nextPhaseAtC: 165 }),
       );
-      expect(screen.getByText('Yellowing · next at 165 °C')).toBeInTheDocument();
+      expect(screen.getByText('Step: Yellowing · next at 165 °C')).toBeInTheDocument();
       const outputs = within(screen.getByRole('region', { name: 'Outputs' }));
       expect(outputs.getByText('Auto', { selector: 'span' })).toBeInTheDocument();
       // getByRole fails on more than one: only the fan you took offers it.

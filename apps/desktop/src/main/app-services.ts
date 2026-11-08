@@ -83,6 +83,7 @@ export function createAppServices({
     newId: newProfileId,
     chosenId: () => settings.latest.autoProfile,
     activeRoaster: () => roasters.active(),
+    roaster: (id) => roasters.all.find((r) => r.id === id),
     // A deleted profile's beans lost their link: the Beans screen reads them again.
     onDeleted: refreshBeans,
     logger: logger.child('profiles'),

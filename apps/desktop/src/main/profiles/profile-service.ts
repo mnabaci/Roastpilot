@@ -25,6 +25,8 @@ export interface ProfileServiceDeps {
   chosenId: () => ProfileId;
   /** Profiles belong to a roaster: only the active one's are listed (docs/spec/roasters.md). */
   activeRoaster: () => Pick<Roaster, 'id' | 'model'>;
+  /** Any roaster by id, for copies: their names and the built-ins already there. */
+  roaster: (id: RoasterId) => Pick<Roaster, 'name' | 'model'> | undefined;
   /** After a delete: the beans it unlinked are read again. */
   onDeleted?: () => void;
   logger: Logger;
@@ -42,6 +44,8 @@ interface OwnProfile {
 export class ProfileService {
   readonly #deps: ProfileServiceDeps;
   #own: OwnProfile[] = [];
+  /** Copies run one after another, so a second click sees the first copy. */
+  #copies: Promise<unknown> = Promise.resolve();
 
   constructor(deps: ProfileServiceDeps) {
     this.#deps = deps;
@@ -109,14 +113,35 @@ export class ProfileService {
     return this.#store(profile, this.#deps.activeRoaster().id);
   }
 
-  /** A copy on another roaster, which hasn't been roasted there yet. */
-  async copyTo(id: ProfileId, roasterId: RoasterId): Promise<Result<ProfileEntry, ProfileError>> {
-    const source = this.#here().find((p) => p.id === id);
-    if (!source) return err({ kind: 'not-found', id });
+  /**
+   * A copy on another roaster, which hasn't been roasted there yet, named after the roaster it
+   * came from: "Light · Steps (from Simulator)". One copy of a profile per roaster.
+   */
+  copyTo(id: ProfileId, roasterId: RoasterId): Promise<Result<ProfileEntry, ProfileError>> {
+    const copied = this.#copies.then(() => this.#copyTo(id, roasterId));
+    this.#copies = copied.catch(() => undefined);
+    return copied;
+  }
+
+  async #copyTo(id: ProfileId, roasterId: RoasterId): Promise<Result<ProfileEntry, ProfileError>> {
+    const source = [...this.#builtIns(), ...this.#ownHere()].find((p) => p.id === id);
+    const target = this.#deps.roaster(roasterId);
+    if (!source || !target) return err({ kind: 'not-found', id });
+    const there = this.#own.filter((own) => own.roasterId === roasterId).map((own) => own.profile);
+    const earlier = there.find(
+      (p) => p.source?.kind === 'profile' && p.source.profileId === source.id,
+    );
+    if (earlier) return err({ kind: 'already-copied', id: earlier.id, name: earlier.name });
+    const from = this.#deps.roaster(this.#deps.activeRoaster().id)?.name;
+    const base = from ? `${source.name} (from ${from})` : source.name;
+    const taken = new Set([...ROASTER_MODELS[target.model].profiles, ...there].map((p) => p.name));
+    let name = base;
+    for (let n = 2; taken.has(name); n++) name = `${base} ${String(n)}`;
     return this.#store(
       {
         ...source,
         id: this.#deps.newId(),
+        name,
         needsCalibration: true,
         source: { kind: 'profile', profileId: source.id },
       },
