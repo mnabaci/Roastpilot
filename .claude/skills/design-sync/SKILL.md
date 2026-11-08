@@ -1,14 +1,28 @@
 ---
-name: sync-tokens
-description: Pull design tokens from the Roastpilot design system into packages/ui and regenerate CSS. Use when colours, type, spacing or radii change in the design system.
+name: design-sync
+description: Regenerate the claude.ai design-system page from the repo after a merge that changed packages/ui/tokens.json or docs/design-system. Use when a maintainer asks to sync the design system, or after such a merge.
 ---
 
-# Sync design tokens
+# Design sync
 
-The design system is the source of truth (ADR 0005). Link: `docs/spec/ui.md`.
+The repo is the design system's source of truth (ADR 0020, `docs/adr/0020-design-system-in-the-repo.md`). The claude.ai page is a read-only view of it: never edit it by hand.
 
-1. Get the design system's `project/tokens.json` (ask the user to export it, or read it with an artifacts tool if available).
-2. Replace `packages/ui/tokens.json` with it, unchanged.
-3. Run `pnpm --filter @roastpilot/ui tokens` to regenerate `src/styles/tokens.css` and `src/styles/theme.css`.
-4. If token names were added or removed, update `src/styles/globals.css` mappings and search the code for removed names.
-5. `pnpm check`, then commit as `chore(ui): sync design tokens`.
+| Part        | Source in the repo                                  |
+| ----------- | --------------------------------------------------- |
+| Tokens      | `packages/ui/tokens.json`                           |
+| Brand book  | `docs/design-system/README.md`                      |
+| Guidelines  | `docs/design-system/components/<Name>.md`           |
+| Previews    | `docs/design-system/components/<Name>/preview.html` |
+| Live states | Storybook (`pnpm storybook`)                        |
+
+## In a PR (any agent)
+
+1. Change tokens in `packages/ui/tokens.json`, then run `pnpm --filter @roastpilot/ui tokens` to regenerate `src/styles/tokens.css` and `src/styles/theme.css`. Never edit the generated CSS.
+2. If token names were added or removed, update `src/styles/globals.css` mappings and search the code for removed names.
+3. Update the guidelines and preview of every component the change touches (`add-component`).
+4. `pnpm check`.
+
+## After the merge (a maintainer with a Claude session)
+
+1. On an up-to-date `main`, run `/design-sync`: it regenerates the claude.ai page from the sources above.
+2. Open the page and check the changed components and tokens in both themes.
