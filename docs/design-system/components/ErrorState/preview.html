@@ -1,0 +1,83 @@
+<!-- @dsCard group="Feedback" height=260 subtitle="A screen that failed to draw" -->
+<!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
+<link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+  }
+  .w {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 32px 20px;
+  }
+  svg {
+    width: 32px;
+    height: 32px;
+    fill: none;
+    stroke: var(--warning);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  h2 {
+    margin: 0;
+    font-size: 17px;
+    line-height: 24px;
+    font-weight: 600;
+  }
+  p {
+    margin: 0;
+    font-size: 15px;
+    color: var(--ink-muted);
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .a {
+    display: flex;
+    gap: 8px;
+  }
+  button {
+    border: 0;
+    border-radius: var(--radius-md);
+    height: 48px;
+    padding: 0 16px;
+    font: 600 15px var(--font-sans);
+    cursor: pointer;
+  }
+  .p {
+    background: var(--heat-fill);
+    color: var(--on-heat);
+  }
+  .g {
+    background: transparent;
+    color: var(--ink);
+  }
+  .g:hover {
+    background: var(--surface-hover);
+  }
+</style>
+<div class="w">
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+    <path d="M12 9v4" />
+    <path d="M12 17h.01" />
+  </svg>
+  <h2>Settings hit a problem</h2>
+  <p>Cannot read properties of undefined (reading 'subscribe')</p>
+  <div class="a"><button class="p">Reload</button><button class="g">Open log folder</button></div>
+</div>
+<script></script>

@@ -1,5 +1,5 @@
 // Generates src/styles/tokens.css (CSS variables per theme) and src/styles/theme.css (the
-// Tailwind v4 theme) from tokens.json, which is synced from the Roastpilot design system.
+// Tailwind v4 theme) from tokens.json, the design system's tokens (docs/design-system, ADR 0020).
 // Run with `pnpm --filter @roastpilot/ui tokens`. Never edit the generated files by hand.
 import { readFileSync, writeFileSync } from 'node:fs';
 

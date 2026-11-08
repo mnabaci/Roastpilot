@@ -1,0 +1,153 @@
+<!-- @dsCard group="Feedback" height=230 subtitle="Error, success and info, stacked" -->
+<!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
+<link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+  }
+  .wrap {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .t {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 448px;
+    box-sizing: border-box;
+    padding: 4px 4px 4px 16px;
+    border-radius: var(--radius-lg);
+    background: var(--surface-raised);
+    border: 1px solid var(--border-strong);
+  }
+  .t.e {
+    border-color: var(--warning);
+  }
+  .t p {
+    flex: 1;
+    margin: 0;
+    font-size: 15px;
+    line-height: 22px;
+    color: var(--ink);
+  }
+  .x {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--ink-muted);
+    cursor: pointer;
+  }
+  .x:hover {
+    background: var(--surface-hover);
+    color: var(--ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+</style>
+<div class="wrap">
+  <div class="t" role="status">
+    <svg
+      aria-hidden="true"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="var(--good)"
+      stroke-width="2"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8 12 3 3 5-6" />
+    </svg>
+    <p>Copied</p>
+    <button class="x" aria-label="Dismiss">
+      <svg
+        aria-hidden="true"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path d="M18 6 6 18M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+  <div class="t" role="status">
+    <svg
+      aria-hidden="true"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="var(--ink-muted)"
+      stroke-width="2"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 16v-4" />
+      <path d="M12 8h.01" />
+    </svg>
+    <p>Settings kept for this session</p>
+    <button class="x" aria-label="Dismiss">
+      <svg
+        aria-hidden="true"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path d="M18 6 6 18M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+  <div class="t e" role="alert">
+    <svg
+      aria-hidden="true"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="var(--warning)"
+      stroke-width="2"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v6" />
+      <path d="M12 16v.5" />
+    </svg>
+    <p>Couldn't delete the roast · try again</p>
+    <button class="x" aria-label="Dismiss">
+      <svg
+        aria-hidden="true"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path d="M18 6 6 18M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+</div>
+<script></script>

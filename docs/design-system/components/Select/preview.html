@@ -1,0 +1,168 @@
+<!-- @dsCard group="Inputs" height=430 subtitle="Bean field open with details · Ghost with search" -->
+<!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
+<link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+  }
+  .w {
+    padding: 20px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .col {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 280px;
+  }
+  .lab {
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+  .f {
+    height: 44px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px 0 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    font-size: 15px;
+  }
+  .p {
+    margin-top: 4px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .o {
+    min-height: 44px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: var(--radius-md);
+  }
+  .o.h {
+    background: var(--surface-hover);
+  }
+  .n {
+    font-size: 15px;
+  }
+  .d {
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+  .ck {
+    width: 16px;
+    flex: none;
+  }
+  .s {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--border);
+    margin: -4px -4px 2px;
+    font-size: 15px;
+  }
+  .s .ph {
+    color: var(--ink);
+  }
+  svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+  }
+</style>
+<div class="w">
+  <div class="col">
+    <span class="lab">Bean</span>
+    <div class="f">
+      Ethiopia Guji<svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        style="color: var(--ink-muted); transform: rotate(180deg)"
+      >
+        <path d="m6 9 6 6 6-6" />
+      </svg>
+    </div>
+    <div class="p" role="listbox">
+      <div class="o" role="option">
+        <span class="ck"></span>
+        <div><div class="n">No bean</div></div>
+      </div>
+      <div class="o h" role="option" aria-selected="true">
+        <svg class="ck" width="16" height="16" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+        <div>
+          <div class="n">Ethiopia Guji</div>
+          <div class="d">300 g · Ethiopia · washed</div>
+        </div>
+      </div>
+      <div class="o" role="option">
+        <span class="ck"></span>
+        <div>
+          <div class="n">Colombia Huila</div>
+          <div class="d">1.2 kg · Colombia · natural</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <span class="lab">Ghost</span>
+    <div class="f">
+      None<svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        style="color: var(--ink-muted); transform: rotate(180deg)"
+      >
+        <path d="m6 9 6 6 6-6" />
+      </svg>
+    </div>
+    <div class="p" role="listbox">
+      <div class="s">
+        <svg width="16" height="16" viewBox="0 0 24 24" style="color: var(--ink-muted)">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.3-4.3" /></svg
+        ><span class="ph">gu</span>
+      </div>
+      <div class="o h" role="option">
+        <span class="ck"></span>
+        <div>
+          <div class="n">Wed 4 Nov · 10:00</div>
+          <div class="d">Ethiopia Guji · ★★★★★ · FC 9:12</div>
+        </div>
+      </div>
+      <div class="o" role="option">
+        <span class="ck"></span>
+        <div>
+          <div class="n">Mon 2 Nov · 18:20</div>
+          <div class="d">Ethiopia Guji · ★★★ · FC 9:40</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script></script>

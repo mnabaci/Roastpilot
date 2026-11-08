@@ -1,6 +1,6 @@
 # 0005: Design tokens flow one way from the design system
 
-Status: accepted
+Status: superseded by [0020](0020-design-system-in-the-repo.md)
 Date: 2026-11-02
 
 ## Context

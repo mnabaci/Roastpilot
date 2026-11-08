@@ -1,0 +1,106 @@
+<!-- @dsCard group="Inputs" height=150 subtitle="With a unit, a time, invalid" -->
+<!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
+<link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums;
+  }
+  .wrap {
+    padding: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .f {
+    width: 160px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  label,
+  .unit,
+  .hint {
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 500;
+    color: var(--ink-muted);
+  }
+  .box {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  input {
+    box-sizing: border-box;
+    width: 100%;
+    height: var(--control-sm);
+    padding: 0 10px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink);
+    font: 400 15px/22px var(--font-sans);
+    font-variant-numeric: tabular-nums;
+  }
+  input:hover {
+    border-color: var(--border-strong);
+  }
+  input:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .unit {
+    position: absolute;
+    right: 10px;
+    pointer-events: none;
+  }
+  .with-unit {
+    padding-right: 36px;
+  }
+  .bad {
+    border-color: var(--critical-text);
+  }
+  .hint.bad-text {
+    color: var(--critical-text);
+  }
+</style>
+<div class="wrap">
+  <div class="f">
+    <label for="a">Charge temp</label>
+    <div class="box">
+      <input id="a" class="with-unit" inputmode="decimal" value="180" /><span
+        class="unit"
+        aria-hidden="true"
+        >°C</span
+      >
+    </div>
+  </div>
+  <div class="f">
+    <label for="b">Duration</label>
+    <div class="box"><input id="b" inputmode="decimal" value="4:05" /></div>
+  </div>
+  <div class="f">
+    <label for="c">BT cap</label>
+    <div class="box">
+      <input
+        id="c"
+        class="with-unit bad"
+        inputmode="decimal"
+        value="300"
+        aria-invalid="true"
+        aria-describedby="ch"
+      /><span class="unit" aria-hidden="true">°C</span>
+    </div>
+    <p id="ch" class="hint bad-text" style="margin: 0">At most 235 °C</p>
+  </div>
+</div>
+<script></script>

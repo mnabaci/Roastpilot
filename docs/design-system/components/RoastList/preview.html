@@ -1,0 +1,105 @@
+<!-- @dsCard group="Data" height=250 subtitle="Saved roasts, one selected, one unfinished" -->
+<!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
+<link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums;
+  }
+  .wrap {
+    padding: 20px;
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    width: 300px;
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+  }
+  li + li {
+    border-top: 1px solid var(--border);
+  }
+  button {
+    all: unset;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 44px;
+    padding: 12px 16px;
+    gap: 2px;
+    cursor: pointer;
+  }
+  .r {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  button:hover {
+    background: var(--surface-hover);
+  }
+  button[aria-current='true'] {
+    background: var(--surface-raised);
+  }
+  button:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: -2px;
+  }
+  .t {
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .m {
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+  .b {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: var(--surface-raised);
+    color: var(--ink-muted);
+    border-radius: var(--radius-sm);
+    padding: 4px 8px;
+  }
+</style>
+<div class="wrap">
+  <ul aria-label="Saved roasts">
+    <li>
+      <button aria-current="true">
+        <span
+          ><div class="t">Wed 4 Nov · 14:32</div>
+          <div class="m">9:40 · FC 8:00 · 205.5 °C</div></span
+        >
+      </button>
+    </li>
+    <li>
+      <button>
+        <div class="r">
+          <span class="t">Wed 4 Nov · 11:05</span><span class="b">Unfinished</span>
+        </div>
+        <div class="m">4:12 · FC 3:50 · 196.0 °C</div>
+      </button>
+    </li>
+    <li>
+      <button>
+        <span
+          ><div class="t">Mon 2 Nov · 18:20</div>
+          <div class="m">10:18 · FC 8:41 · 208.0 °C</div></span
+        >
+      </button>
+    </li>
+  </ul>
+</div>
+<script></script>

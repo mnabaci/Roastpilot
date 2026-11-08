@@ -78,8 +78,9 @@ Open a "New roaster" issue with the protocol details.
 
 - Build from `@roastpilot/ui`; new components via the
   [`add-component`](.claude/skills/add-component/SKILL.md) skill.
-- Design tokens only: no hex colours or magic sizes. Tokens come from the design system linked in
-  [ui.md](docs/spec/ui.md), synced into `packages/ui/tokens.json`.
+- Design tokens only: no hex colours or magic sizes. Tokens live in `packages/ui/tokens.json`; the
+  guidelines in [docs/design-system](docs/design-system/README.md), changed in the same PR as the
+  component ([ADR 0020](docs/adr/0020-design-system-in-the-repo.md)).
 - One obvious next action per state, numbers before sentences, one-line hints, 44 px targets.
 - UI changes pass the [`design-review`](.claude/skills/design-review/SKILL.md) checklist.
 

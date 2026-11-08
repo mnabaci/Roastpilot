@@ -1,0 +1,82 @@
+<!-- @dsCard group="Navigation" height=170 subtitle="Quiet, and when something needs you" -->
+<!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
+<link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums;
+  }
+  .wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px 0;
+  }
+  button {
+    all: unset;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    height: 44px;
+    padding: 0 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  button:hover {
+    background: var(--surface-hover);
+  }
+  button.need {
+    background: var(--heat-tint);
+  }
+  button:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: -2px;
+  }
+  .lead {
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .need .lead {
+    color: var(--heat);
+  }
+  .n {
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+  .n b {
+    font-weight: 500;
+    color: var(--ink);
+    margin-left: 4px;
+  }
+  .go {
+    margin-left: auto;
+    color: var(--ink-muted);
+  }
+</style>
+<div class="wrap">
+  <button aria-label="Open Roast">
+    <span class="lead">Roasting · 7:42</span><span class="n">Temp<b>182.4 °C</b></span
+    ><span class="n">RoR<b>8.1</b></span
+    ><span class="n">Heater<b>60 %</b></span
+    ><span class="n">Fan<b>40 %</b></span
+    ><span class="go">›</span>
+  </button>
+  <button class="need" aria-label="Open Roast">
+    <span class="lead">Dump beans · Cooling beans 3:58 left</span
+    ><span class="n">Temp<b>196.2 °C</b></span
+    ><span class="go">›</span>
+  </button>
+</div>
+<script></script>

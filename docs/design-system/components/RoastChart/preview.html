@@ -1,0 +1,125 @@
+<!-- @dsCard group="Data" height=360 subtitle="Live, target, RoR and ghost" -->
+<!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
+<link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums;
+  }
+  .wrap {
+    padding: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  button {
+    font-family: inherit;
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+</style>
+<div class="wrap" style="display: block">
+  <div style="background: var(--surface); border-radius: var(--radius-xl); padding: 18px 20px">
+    <div
+      style="
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+      "
+    >
+      <div style="font-size: 15px; font-weight: 600">Roast curve · Medium</div>
+      <div class="label" style="display: flex; flex-wrap: wrap; gap: 16px; color: var(--ink-muted)">
+        <span style="display: flex; align-items: center; gap: 6px"
+          ><span style="width: 18px; height: 3px; background: var(--heat)"></span>Temperature</span
+        ><span style="display: flex; align-items: center; gap: 6px"
+          ><span style="width: 18px; border-top: 2px dashed var(--target)"></span>Target</span
+        ><span style="display: flex; align-items: center; gap: 6px"
+          ><span style="width: 18px; height: 2px; background: var(--air)"></span>RoR</span
+        ><span style="display: flex; align-items: center; gap: 6px"
+          ><span style="width: 18px; height: 2px; background: var(--ghost)"></span>Ghost · Oct
+          29</span
+        >
+      </div>
+    </div>
+    <svg
+      role="img"
+      aria-label="Live temperature tracking the target with the ghost roast behind"
+      viewBox="0 0 1020 260"
+      style="width: 100%; height: auto; display: block; font-family: var(--font-sans)"
+    >
+      <g stroke="var(--border)" stroke-width="1">
+        <line x1="50" y1="20" x2="960" y2="20" />
+        <line x1="50" y1="100" x2="960" y2="100" />
+        <line x1="50" y1="180" x2="960" y2="180" />
+        <line x1="50" y1="240" x2="960" y2="240" />
+      </g>
+      <g fill="var(--ink-muted)" font-size="13" text-anchor="end">
+        <text x="42" y="24">250</text>
+        <text x="42" y="104">200</text>
+        <text x="42" y="184">150</text>
+      </g>
+      <line x1="50" y1="81" x2="960" y2="81" stroke="var(--critical-text)" stroke-dasharray="2 6" />
+      <text x="58" y="75" fill="var(--critical-text)" font-size="12">Drop 212 °C</text>
+      <polyline
+        points="50,180 126,204 353,164 581,116 695,103 808,81 960,64"
+        fill="none"
+        stroke="var(--ghost)"
+        stroke-width="2"
+        transform="translate(14,4)"
+      />
+      <polyline
+        points="50,180 126,204 353,164 581,116 695,103 808,81 960,64"
+        fill="none"
+        stroke="var(--target)"
+        stroke-width="2"
+        stroke-dasharray="6 6"
+      />
+      <polyline
+        points="80,140 200,150 353,170 500,182 640,196 700,205"
+        fill="none"
+        stroke="var(--air)"
+        stroke-width="2"
+      />
+      <polyline
+        points="50,180 90,198 126,203 200,192 280,178 353,163 450,143 520,128 581,115 640,108 700,101"
+        fill="none"
+        stroke="var(--heat)"
+        stroke-width="3.5"
+        stroke-linejoin="round"
+      />
+      <circle cx="700" cy="101" r="6" fill="var(--heat)" stroke="var(--surface)" stroke-width="3" />
+      <line
+        x1="672"
+        y1="20"
+        x2="672"
+        y2="240"
+        stroke="var(--ink)"
+        stroke-width="1.5"
+        stroke-dasharray="4 4"
+      />
+      <text x="680" y="36" fill="var(--ink)" font-size="13" font-weight="600">First crack</text>
+      <line
+        x1="709"
+        y1="20"
+        x2="709"
+        y2="240"
+        stroke="var(--ghost)"
+        stroke-width="1.5"
+        stroke-dasharray="4 4"
+      />
+    </svg>
+  </div>
+</div>
+<script></script>

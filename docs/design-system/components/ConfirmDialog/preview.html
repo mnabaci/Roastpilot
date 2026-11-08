@@ -1,0 +1,129 @@
+<!-- @dsCard group="Feedback" height=470 subtitle="End roast (caution) and delete" -->
+<!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
+<link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+  }
+  .o {
+    padding: 24px;
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .d {
+    max-width: 400px;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-xl);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .t {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  h2 {
+    margin: 0;
+    font-size: 17px;
+    line-height: 24px;
+    font-weight: 600;
+  }
+  p {
+    margin: 4px 0 0;
+    font-size: 15px;
+    color: var(--ink-muted);
+  }
+  ul {
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 15px;
+    color: var(--ink-muted);
+  }
+  .a {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  button {
+    border: 0;
+    border-radius: var(--radius-md);
+    height: 48px;
+    padding: 0 16px;
+    font: 600 15px var(--font-sans);
+    cursor: pointer;
+  }
+  .g {
+    background: transparent;
+    color: var(--ink);
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .s {
+    background: var(--surface-raised);
+    color: var(--critical-text);
+  }
+  .w {
+    color: var(--warning);
+  }
+  svg {
+    flex: none;
+  }
+</style>
+<div class="o">
+  <div class="d" role="alertdialog" aria-labelledby="t1" aria-describedby="c1">
+    <div>
+      <div class="t w">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <rect x="9" y="9" width="6" height="6" rx="1" />
+        </svg>
+        <h2 id="t1" style="color: var(--ink)">End the roast?</h2>
+      </div>
+      <ul id="c1">
+        <li>Heater, fan and drum off now</li>
+        <li>No bean cooling · dump the beans yourself</li>
+        <li>The roast is saved as it is</li>
+      </ul>
+    </div>
+    <div class="a">
+      <button class="g">Keep roasting</button><button class="s w">End roast</button>
+    </div>
+  </div>
+  <div class="d" role="alertdialog" aria-label="Delete this roast?">
+    <div>
+      <h2>Delete this roast?</h2>
+      <p>can't be undone</p>
+    </div>
+    <div class="a"><button class="g">Cancel</button><button class="s">Delete</button></div>
+  </div>
+</div>
+<script></script>
