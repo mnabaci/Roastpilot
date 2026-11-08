@@ -13,6 +13,10 @@ All notable changes to Roastpilot are listed here. The format follows
 - **macOS updates install by themselves**, as on Windows: downloaded in the background, checked,
   and installed when you quit or press Restart to update, once Roastpilot is in Applications.
 
+### Changed
+
+- **Each profile sets its own soak**, or none; the Soak time setting moved into profiles.
+
 ## [0.1.1] - 2026-11-07
 
 ### Changed
