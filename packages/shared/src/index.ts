@@ -335,3 +335,22 @@ export {
   type UpdateStage,
   type UpdateStatus,
 } from './update-status';
+export {
+  diffFromUnit,
+  diffInText,
+  diffNumber,
+  diffPlain,
+  diffToUnit,
+  formatTemp,
+  fromUnit,
+  rateInText,
+  rorSymbol,
+  sayInUnit,
+  tempInText,
+  TemperatureUnitSchema,
+  tempNumber,
+  tempPlain,
+  tempSymbol,
+  toUnit,
+  type TemperatureUnit,
+} from './units';
