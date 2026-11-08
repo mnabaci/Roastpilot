@@ -6,6 +6,46 @@ All notable changes to Roastpilot are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-08
+
+### Added
+
+- **°F:** Settings › Appearance › Temperature shows and takes every temperature in °F; RoR and
+  offsets scale by 1.8 (10 °C/min reads 18 °F/min). Roastpilot files stay in °C.
+- **Export and import beans, profiles and roasters** as Roastpilot files, from each screen's "⋯",
+  like roasts. Nothing of yours is overwritten: a clash comes in as "(imported)".
+- **Select several profiles** to export or delete in one go.
+- **Move a step** in the profile editor by its handle, or with Alt+↑ / Alt+↓.
+- **Mark as calibrated** on your own profiles.
+- **Preheat hold by batch:** a shorter hold when a roast ended in the last 20 minutes, shown before
+  Start and changeable for that roast.
+- **A note when the batch is more than 10 % off** what the profile is tuned for.
+
+### Changed
+
+- **The built-in Skywalker Light profiles and Auto's default gains are retuned** from real Auto
+  roasts (356 g batch, new heat estimates, last step "To first crack"). Your own profiles and an
+  existing roaster's gains keep their values.
+- **The profile editor** shows the preview under the top values, with steps and curve points side
+  by side.
+- **During a roast** the chart legends show the latest values, the top bar names the roaster, and
+  "Stay with the roaster" shows above Preheat.
+- **"End roast" is "Stop preheat" or "Stop roast"**, and History marks a stopped roast.
+- **Start is offered from the preheat hold on**, not while the drum is still cooling or climbing.
+- **The setup card** labels the suggested profile and says why; bean hints name their cause.
+- **A copy to another roaster** is named after where it came from, and only one is made.
+- **An unplugged roaster's banner** offers Disconnect instead of an Acknowledge that can't work.
+
+### Fixed
+
+- A profile edit undone by hand no longer shows Edited with no Save.
+- Previewing an "Until done" sound plays it once.
+- The finished roast card's Done is remembered across tabs; Clear says the roast stays in History.
+- Profiles saved with a 1970 date now get the real one.
+- Switching °F back to °C no longer shifts profile values you didn't touch.
+- The now line breaks under a marker label instead of running through it.
+- Importing a file that's empty, too big or from a newer version says so clearly.
+
 ## [0.1.2] - 2026-11-08
 
 ### Added
