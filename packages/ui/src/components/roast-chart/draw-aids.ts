@@ -95,13 +95,14 @@ function canvasLines(u: uPlot, aids: readonly ChartAid[]): CanvasLine[] {
 
 /**
  * Each band's name, once, inside its own band (`placeBandNames`): just right of the Charge line
- * when it is in view, else at the plot's right edge; on a `surface` chip, so the grid never cuts
- * through it and the name keeps its 4.5:1 on every band. A band with no free spot has no name.
+ * when it is in view, else at the plot's right edge, else just right of another marker's line; on
+ * a `surface` chip, so the grid never cuts through it and the name keeps its 4.5:1 on every band.
+ * A band with no free spot has no name.
  */
 export function drawBandLabels(
   u: uPlot,
   aids: readonly ChartAid[],
-  taken: readonly Box[],
+  markers: { labels: readonly Box[]; lines: readonly Box[] },
   colors: ChartColors,
 ): void {
   const boxes = bandBoxes(u, aids, colors);
@@ -123,11 +124,14 @@ export function drawBandLabels(
       width: ctx.measureText(box.band.label).width + 2 * pad,
     })),
     {
-      lefts: (width) => [left, right - width],
+      lefts: (width) =>
+        [left, right - width, ...markers.lines.map((line) => line.right + inset)].filter(
+          (x) => x >= bbox.left && x + width <= right,
+        ),
       height: BAND_LABEL_HEIGHT_PX * ratio,
       pad,
       lines: canvasLines(u, aids),
-      taken,
+      taken: [...markers.labels, ...markers.lines],
     },
   );
   boxes.forEach((box, i) => {

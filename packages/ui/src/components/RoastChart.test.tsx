@@ -539,6 +539,30 @@ describe('RoastChart', () => {
       ]);
     });
 
+    it("puts a band's name just right of another marker when both edges are taken", () => {
+      const one: ChartAid = { kind: 'phase-bands', id: 'phases', bands: [{ label: 'Drying' }] };
+      draw(
+        <RoastChart
+          title="Roast curve"
+          layers={[roasting, one]}
+          markers={[
+            { id: 'turning-point', label: 'TP', t: 300, tone: 'ink' },
+            { id: 'drop', label: 'Drop', t: 970, tone: 'ink' },
+          ]}
+        />,
+      );
+      const { u, calls } = fakePlot();
+      // A line straight up the left edge; the Drop line runs through the right edge's spot.
+      u.data = [
+        [10, 20],
+        [50, 250],
+      ];
+      for (const fn of created[0]?.opts.hooks.draw ?? []) fn(u);
+      expect(
+        calls.filter((c) => c.name === 'fillText' && c.args[0] === 'Drying').map((c) => c.args),
+      ).toEqual([['Drying', 313, 150]]);
+    });
+
     it('leaves a band too thin for its name unnamed', () => {
       const thin: ChartAid = {
         kind: 'phase-bands',

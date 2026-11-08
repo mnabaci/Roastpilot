@@ -130,7 +130,7 @@ export function buildChartOptions({
           drawBandLabels(
             u,
             aids(),
-            [...markerLabelBoxes(u, shown, colors), ...markerLineBoxes(u, shown)],
+            { labels: markerLabelBoxes(u, shown, colors), lines: markerLineBoxes(u, shown) },
             colors,
           );
           drawMarkers(u, markers(), colors, { labels: true });
