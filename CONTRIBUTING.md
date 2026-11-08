@@ -24,6 +24,8 @@ pnpm check          # format check, lint, typecheck, test: run before every comm
 pnpm test:watch     # tests in watch mode
 pnpm test:coverage  # tests with coverage
 pnpm storybook      # component workshop at http://localhost:6006
+pnpm storybook:app  # the app's screens on sample data at http://localhost:6008
+pnpm screenshots    # regenerate the README screenshots (docs/images) in headless Chrome
 pnpm --filter @roastpilot/ui tokens   # regenerate CSS from tokens.json
 ```
 
