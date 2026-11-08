@@ -10,7 +10,7 @@ Read this before touching code. It is the checklist `code-review` holds you to.
 ## 1. Know where the change belongs
 
 - Read the relevant `docs/spec/*.md`. If behaviour changes, update the spec first (`plan-feature`).
-- Find the package by its job (root `CLAUDE.md` boundaries table) and read that package's `CLAUDE.md`.
+- Find the package by its job (root `AGENTS.md` boundaries table) and read that package's `AGENTS.md`.
 - Variation (new roaster, rule, layer, exporter)? It is an extension point: use `add-extension`.
 - Check the files you will touch against this checklist first. Anything that breaks it gets refactored in its own `refactor:` commit before or alongside your change.
 

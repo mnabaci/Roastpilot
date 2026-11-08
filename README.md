@@ -119,7 +119,7 @@ plug it in, pick its port on the Skywalker roaster's page, and Connect.
 | [docs/spec](docs/spec)             | What the app does and how it is built; the source of truth, changed first |
 | [docs/adr](docs/adr)               | Decisions that are hard to reverse, and why                               |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Setup, commands, how work flows, rules                                    |
-| [CLAUDE.md](CLAUDE.md)             | The project's rules in one page (also loaded by AI assistants)            |
+| [AGENTS.md](AGENTS.md)             | The project's rules in one page (read by every AI coding agent)           |
 
 ## Repository
 

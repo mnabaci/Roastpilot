@@ -13,6 +13,8 @@ Review the diff (`git diff main...HEAD`) against `engineering-standards`. Report
 4. **Types:** no `any`, no unexplained `!`, zod at IPC boundaries.
 5. **Errors and logging:** no hidden errors (empty `catch`, unhandled promise); every failure path returns a typed error or is logged with context; edge cases tested; nothing logged through `console`.
 6. **Tests:** every new rule, branch and state transition covered; tests use public APIs and a fake clock.
-7. **Docs:** spec, ADRs and skills updated when behaviour or workflow changed.
-8. **Touched files comply:** every file in the diff follows the rules and skills as a whole, not just the changed lines. A violation left in a touched file is a finding.
-9. Run `pnpm check` and include the result.
+7. **Roasting practice:** any change to what Auto or the coach does or suggests is checked against roasting practice (charge, soak, turning point, dry end, first crack, development, drop) and the roast numbers in `docs/spec/roast-control.md`, with the reasoning written in the PR. Example: Auto's heat-off soak must not become manual advice at charge ("Heater 70% → 0%" is wrong for a manual charge).
+8. **UI:** `design-review` passed; a changed component's look, sizes or rules are updated in `docs/design-system/components/<Name>/README.md` in the same PR (ADR 0020).
+9. **Docs:** spec, ADRs and skills updated when behaviour or workflow changed.
+10. **Touched files comply:** every file in the diff follows the rules and skills as a whole, not just the changed lines. A violation left in a touched file is a finding.
+11. Run `pnpm check` and include the result.

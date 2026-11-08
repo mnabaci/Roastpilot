@@ -45,7 +45,7 @@ For anything bigger than a fix, open an issue first so we can agree on the shape
 
 ## Code rules
 
-The short version is in [CLAUDE.md](CLAUDE.md); the full checklist is the
+The short version is in [AGENTS.md](AGENTS.md); the full checklist is the
 [`engineering-standards`](.claude/skills/engineering-standards/SKILL.md) skill. In brief:
 
 - TypeScript everywhere, `strict`; no new `.js` files.
@@ -100,8 +100,9 @@ Include the app version, your OS, the roaster, steps, and a log excerpt from the
 
 ## AI assistants
 
-[CLAUDE.md](CLAUDE.md), the package `CLAUDE.md` files and the skills in
-[`.claude/skills`](.claude/skills) keep AI coding assistants on the same rules as everyone else.
+[AGENTS.md](AGENTS.md), the package `AGENTS.md` files and the skills in
+[`.claude/skills`](.claude/skills) keep AI coding assistants (Claude Code, Copilot, Codex, Cursor)
+on the same rules as everyone else. Each `CLAUDE.md` only imports its `AGENTS.md`.
 Using one is fine; you are still responsible for what you submit, and the same review applies.
 
 ## Licence
