@@ -45,7 +45,7 @@ export function CoachChanges({ changes }: { changes: readonly CoachChange[] }) {
               <ArrowRight className="size-4" />
             </td>
             <td className="text-right">
-              <span className={cn(BOX, 'bg-surface text-readout-lg', TONE[change.tone])}>
+              <span className={cn(BOX, 'bg-surface text-body font-semibold', TONE[change.tone])}>
                 <span className="sr-only">to </span>
                 {pct(change.to)}
               </span>
