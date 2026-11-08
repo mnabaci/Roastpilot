@@ -69,6 +69,13 @@ describe('milestone draft', () => {
     expect(addMilestonePoint(draft).extras).toEqual([{ time: '7:19', c: '339' }]);
   });
 
+  it('takes the drop limit as shown in °F: 450 °F is the 232 °C limit, not over it', () => {
+    const draft = toMilestoneDraft(LIGHT, 'f');
+    const typed = { ...draft, rows: { ...draft.rows, drop: { time: '11:03', c: '450' } } };
+    const read = fromMilestoneDraft(typed);
+    expect(read.ok && read.value.drop.c).toBe(232);
+  });
+
   it('adds an empty point when there is nothing sensible to put it between', () => {
     const draft = toMilestoneDraft(LIGHT, 'c');
     const late = { ...draft, rows: { ...draft.rows, dryEnd: { time: '10:00', c: '150' } } };

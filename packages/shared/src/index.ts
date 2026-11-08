@@ -291,6 +291,7 @@ export {
 export {
   MILESTONE_BACKUP_MARGIN_S,
   MILESTONE_CAP_MARGIN_C,
+  MILESTONE_MAX_DROP_C,
   MilestonesSchema,
   type Milestones,
 } from './milestones';
