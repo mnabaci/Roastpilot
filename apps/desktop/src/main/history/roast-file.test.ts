@@ -47,6 +47,13 @@ describe('Roastpilot roast file', () => {
     expect(roast?.samples).toEqual({ tS: [0], values: { bt: [180] } });
   });
 
+  it('writes the same bytes as before: no indentation, the envelope first', () => {
+    const text = JSON.stringify(toRoastFile([], NAMES, new Date('2026-11-06T12:00:00.000Z')));
+    expect(text).toBe(
+      '{"format":"roastpilot-roasts","version":2,"exportedAt":"2026-11-06T12:00:00.000Z","roasts":[]}',
+    );
+  });
+
   it('still reads a version 1 file, samples as rows', () => {
     const { roasts, ...head } = toRoastFile([ROAST], NAMES, new Date());
     const v1 = {

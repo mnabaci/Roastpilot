@@ -267,6 +267,7 @@ export {
 export {
   ExportRoastsRequestSchema,
   FileRoastSchema,
+  FileRoastV2Schema,
   ROAST_FILE_FORMAT,
   ROAST_FILE_VERSION,
   RoastFileSchema,
@@ -280,6 +281,16 @@ export {
   type SampleColumns,
   type SetRoastBeanRequest,
 } from './roast-file';
+export {
+  FILE_KINDS,
+  FileKindSchema,
+  readEnvelope,
+  toEnvelope,
+  type Envelope,
+  type EnvelopeProblem,
+  type FileKind,
+  type FileOf,
+} from './roastpilot-file';
 export {
   AppInfoSchema,
   OpenReleasePageErrorSchema,
