@@ -11,14 +11,14 @@ import { z } from 'zod';
 import { parseJson } from './attempt';
 import { roastEvents, roasts } from './schema/roasts';
 
-/** BT at the roast's first crack, from its event's JSON detail; null when unreadable or missing. */
-const fcTemp = sql<number | null>`(
+/** BT at the roast's first event of `type`, from its JSON detail; null when unreadable or missing. */
+const eventTemp = (type: 'first-crack' | 'turning-point') => sql<number | null>`(
   SELECT CASE WHEN json_valid(${roastEvents.detail}) THEN
     CASE WHEN json_type(${roastEvents.detail}, '$.bt') IN ('integer', 'real')
       THEN json_extract(${roastEvents.detail}, '$.bt') END
   END
   FROM ${roastEvents}
-  WHERE ${roastEvents.roastId} = ${roasts.id} AND ${roastEvents.type} = 'first-crack'
+  WHERE ${roastEvents.roastId} = ${roasts.id} AND ${roastEvents.type} = ${type}
   ORDER BY ${roastEvents.tS}
   LIMIT 1
 )`;
@@ -29,7 +29,8 @@ export const summaryColumns = {
   startedAt: roasts.startedAt,
   endedAt: roasts.endedAt,
   fcTimeS: roasts.fcTimeS,
-  fcTemp,
+  fcTemp: eventTemp('first-crack'),
+  tpTemp: eventTemp('turning-point'),
   dropTimeS: roasts.dropTimeS,
   dropTemp: roasts.dropTemp,
   roasterId: roasts.roasterId,

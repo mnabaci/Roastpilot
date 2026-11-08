@@ -72,6 +72,7 @@ describe('SqliteRoastRepository', () => {
         endedAt: null,
         fcTimeS: null,
         fcTemp: null,
+        tpTemp: null,
         dropTimeS: 600,
         dropTemp: 205.5,
         samples: [
@@ -171,6 +172,18 @@ describe('SqliteRoastRepository', () => {
     expect(byId.get(unreadable)).toBeNull();
     const detail = await repository.get(cracked);
     expect(detail.ok && detail.value.fcTemp).toBe(196.4);
+  });
+
+  it('lists each roast with BT at its turning point, null without one', async () => {
+    const { repository } = setup();
+    const turned = await created(repository, '2026-11-01T09:00:00.000Z');
+    await repository.addEvent(turned, { kind: 'charge', tS: 0, bt: 180 });
+    await repository.addEvent(turned, { kind: 'turning-point', tS: 92, bt: 88.6 });
+    const none = await created(repository, '2026-11-02T09:00:00.000Z');
+    const list = await repository.list();
+    const byId = new Map(list.ok ? list.value.map((r) => [r.id, r.tpTemp]) : []);
+    expect(byId.get(turned)).toBe(88.6);
+    expect(byId.get(none)).toBeNull();
   });
 
   it('lists roasts newest first', async () => {
