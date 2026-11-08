@@ -41,6 +41,12 @@ function show(ref: string, path: string): string {
   return run.status === 0 ? run.stdout : '';
 }
 
+/** A file's blob id at a commit, or '' when it isn't there. */
+function blob(ref: string, path: string): string {
+  const run = spawnSync('git', ['rev-parse', `${ref}:${path}`], { encoding: 'utf8' });
+  return run.status === 0 ? run.stdout.trim() : '';
+}
+
 /** Lines a side added, per file, and every line it removed. */
 function diffLines(
   base: string,
@@ -87,7 +93,8 @@ const numstat = parseNumstat(git('diff', '--numstat', '-M', base, incoming));
 section(
   'Files both sides changed',
   paths(theirs)
-    .filter((path) => ourPaths.has(path))
+    // Same content on both sides (e.g. main's commits reached both): nothing to merge there.
+    .filter((path) => ourPaths.has(path) && blob('HEAD', path) !== blob(incoming, path))
     .map((path) => {
       const counts = numstat.get(path);
       return `- ${path}${counts ? `  (+${String(counts.added)} −${String(counts.removed)} incoming)` : ''}`;
