@@ -10,6 +10,7 @@ import { drizzleOn, openDatabase, SqliteRoastRepository } from '@roastpilot/stor
 import { DEFAULT_SETTINGS, err, IPC_CHANNELS, ok, type Settings } from '@roastpilot/shared';
 import { describe, expect, it, vi } from 'vitest';
 import { createAppServices } from './app-services';
+import type { RetiredSoakSetting } from './settings/move-soak';
 import {
   unavailableBeans,
   unavailableProfiles,
@@ -23,10 +24,12 @@ function setup(
 ) {
   const clock = new ManualClock();
   const published: [string, unknown][] = [];
-  const settingsStore: SettingsStore = {
+  const settingsStore = {
     load: () => Promise.resolve({ ...DEFAULT_SETTINGS, ...settings }),
     save: () => Promise.resolve(ok(undefined)),
-  };
+    retiredSoakS: () => undefined,
+    forgetRetiredSoak: () => undefined,
+  } satisfies SettingsStore & RetiredSoakSetting;
   const services = createAppServices({
     clock,
     logger: silentLogger,

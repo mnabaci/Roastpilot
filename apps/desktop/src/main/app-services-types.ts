@@ -27,13 +27,15 @@ import type { HistoryService } from './history/history-service';
 import type { RoastFileService } from './history/roast-file-service';
 import type { ProfileService } from './profiles/profile-service';
 import type { RoasterService } from './roasters/roaster-service';
+import type { RetiredSoakSetting } from './settings/move-soak';
 import type { SettingsService } from './settings/settings-service';
 
 /** What main's services are made from: the stores, time, logging and the app around them. */
 export interface AppServicesDeps {
   clock: Clock;
   logger: Logger;
-  settingsStore: SettingsStore;
+  /** Also keeps the old Soak time setting until it has moved into the profiles. */
+  settingsStore: SettingsStore & RetiredSoakSetting;
   roasts: RoastRepository;
   profileStore: ProfileRepository;
   roasterStore: RoasterRepository;
