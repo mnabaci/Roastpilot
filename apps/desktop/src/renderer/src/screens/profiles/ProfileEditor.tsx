@@ -33,7 +33,6 @@ export function ProfileEditor({
 }) {
   const state = useProfileDraft(entry);
   const { draft, errors, valid, change, edited } = state;
-  const soakS = useSettings((s) => s.settings.soakTimeS);
   const active = useSettings((s) => s.settings.autoProfile) === entry.profile.id;
   const locked = useProfileLocked();
   const readOnly = entry.builtIn;
@@ -41,7 +40,7 @@ export function ProfileEditor({
   // While a cell has a problem the chart keeps the last profile that worked.
   const [shown, setShown] = useState(valid ?? entry.profile);
   if (valid && valid !== shown) setShown(valid);
-  const preview = useMemo(() => profilePreview(shown, soakS), [shown, soakS]);
+  const preview = useMemo(() => profilePreview(shown), [shown]);
   const set = (part: Partial<ProfileDraft>) => {
     change({ ...draft, ...part });
   };
@@ -122,7 +121,6 @@ export function ProfileEditor({
         draft={draft}
         errors={errors}
         steps={isStepProfile(entry.profile)}
-        soakS={soakS}
         readOnly={readOnly}
         onChange={change}
       />
