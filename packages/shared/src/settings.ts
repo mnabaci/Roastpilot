@@ -34,16 +34,6 @@ export const RoasterCoolToSchema = z.union([
 /** Who drives heater and fan during a roast (docs/spec/roast-control.md, Auto mode). */
 export const RoastModeSchema = z.enum(['manual', 'auto']);
 
-/** How long Auto's soak keeps the heater at 0 after charge, in seconds. */
-export const SoakTimeSchema = z.union([
-  z.literal(30),
-  z.literal(45),
-  z.literal(60),
-  z.literal(75),
-  z.literal(90),
-  z.literal(120),
-]);
-
 /** Dark, Light, or whatever the computer is set to (docs/spec/ui.md, Settings). */
 export const ThemeSchema = z.enum(['dark', 'light', 'system']);
 
@@ -67,7 +57,6 @@ export const SettingsSchema = z.object({
   /** Manual unless you choose Auto, so an update never hands your roast to the controller. */
   roastMode: RoastModeSchema.catch('manual').default('manual'),
   autoProfile: ProfileIdSchema.catch(DEFAULT_PROFILE_ID).default(DEFAULT_PROFILE_ID),
-  soakTimeS: SoakTimeSchema.catch(60).default(60),
   /** Sounds when something needs you, and before first crack (docs/spec/ui.md, Sounds). */
   sounds: SoundsSchema.catch(DEFAULT_SOUNDS).default(DEFAULT_SOUNDS),
   /** Dark unless you choose otherwise, so an update never changes how the app looks. */
@@ -92,7 +81,6 @@ export type ChartSmoothing = z.infer<typeof ChartSmoothingSchema>;
 export type CoolingTime = z.infer<typeof CoolingTimeSchema>;
 export type RoasterCoolTo = z.infer<typeof RoasterCoolToSchema>;
 export type RoastMode = z.infer<typeof RoastModeSchema>;
-export type SoakTime = z.infer<typeof SoakTimeSchema>;
 export type Theme = z.infer<typeof ThemeSchema>;
 export type Settings = z.infer<typeof SettingsSchema>;
 export type SettingsWriteError = z.infer<typeof SettingsWriteErrorSchema>;

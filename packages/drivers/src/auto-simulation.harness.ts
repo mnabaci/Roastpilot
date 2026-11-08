@@ -15,7 +15,6 @@ import { SKYWALKER_CHANNELS } from './skywalker';
 export interface SimulationOptions {
   profile: AutoProfile;
   tuning: AutoTuning;
-  soakS?: number;
   /** Press First crack at this temperature; never when undefined. */
   firstCrackAtC?: number;
   ambientC?: number;
@@ -33,7 +32,7 @@ export interface SimulatedRow {
 type Rig = ReturnType<typeof buildRig>;
 
 /** The simulated Skywalker on a fake clock, wired to the same session, roast and pilot as the app. */
-function buildRig({ profile, tuning, soakS = 60, ambientC }: SimulationOptions) {
+function buildRig({ profile, tuning, ambientC }: SimulationOptions) {
   const clock = new ManualClock();
   const driver = new SimulatedDriver({
     clock,
@@ -93,7 +92,6 @@ function buildRig({ profile, tuning, soakS = 60, ambientC }: SimulationOptions) 
     },
     profile: () => profile,
     tuning: () => tuning,
-    soakS: () => soakS,
     onEvent: (event) => events.push(event),
     onChange: () => undefined,
   });

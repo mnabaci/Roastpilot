@@ -2,7 +2,6 @@ import {
   AutoPilot,
   quantize,
   withCapUnder,
-  withSoakTime,
   type AutoEvent,
   type Logger,
   type ManualRoast,
@@ -37,9 +36,8 @@ export function roastPlan(
   roasterId: RoasterId,
   setup: RoastSetup,
 ): RoastPlan {
-  const { roastMode, soakTimeS } = settings.latest;
-  return roastMode === 'auto'
-    ? { mode: 'auto', profile: withSoakTime(profile(), soakTimeS), roasterId, ...setup }
+  return settings.latest.roastMode === 'auto'
+    ? { mode: 'auto', profile: profile(), roasterId, ...setup }
     : { mode: 'manual', profile: null, roasterId, ...setup };
 }
 
@@ -79,11 +77,10 @@ export function noteAutoEvent(roast: Pick<ManualRoast, 'note'>, event: AutoEvent
   }
 }
 
-/** AutoPilot on the app's own session, flow and settings (docs/spec/roast-control.md, Auto mode). */
+/** AutoPilot on the app's own session, flow and profiles (docs/spec/roast-control.md, Auto mode). */
 export function createAutoPilot({
   session,
   roast,
-  settings,
   profiles,
   roasters,
   readings,
@@ -92,7 +89,6 @@ export function createAutoPilot({
 }: {
   session: RoasterSession;
   roast: ManualRoast;
-  settings: Pick<SettingsService, 'latest'>;
   profiles: Pick<ProfileService, 'active'>;
   roasters: Pick<RoasterService, 'active'>;
   readings: () => readonly Reading[];
@@ -112,7 +108,6 @@ export function createAutoPilot({
     },
     profile: () => autoProfile(profiles, roasters),
     tuning: () => roasters.active().tuning,
-    soakS: () => settings.latest.soakTimeS,
     onEvent: (event) => {
       // Only a roast has a timeline to put it on: preheat overrides stay in the log.
       if (roast.state.chargedAtMs !== null) noteAutoEvent(roast, event);

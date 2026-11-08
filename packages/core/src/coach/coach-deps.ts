@@ -9,7 +9,7 @@ export interface CoachDeps {
   roast: () => RoastState;
   /** Every reading kept, the newest last. */
   readings: () => readonly Reading[];
-  /** The profile picked for Auto, as Auto would run it (cap and soak applied). */
+  /** The profile picked for Auto, as Auto would run it (cap applied). */
   profile: () => AutoProfile;
   tuning: () => AutoTuning;
   /** A manual roast with "Coach in manual roasts" on. */

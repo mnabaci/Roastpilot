@@ -2,7 +2,6 @@
 export const SETTINGS_SECTIONS = [
   { id: 'controls', label: 'Controls' },
   { id: 'roast', label: 'Roast' },
-  { id: 'auto', label: 'Auto' },
   { id: 'sounds', label: 'Sounds' },
   { id: 'chart', label: 'Chart' },
   { id: 'appearance', label: 'Appearance' },

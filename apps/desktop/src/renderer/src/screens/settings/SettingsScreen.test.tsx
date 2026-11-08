@@ -25,7 +25,7 @@ describe('SettingsScreen', () => {
       within(sections)
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['Controls', 'Roast', 'Auto', 'Sounds', 'Chart', 'Appearance', 'About']);
+    ).toEqual(['Controls', 'Roast', 'Sounds', 'Chart', 'Appearance', 'About']);
     expect(within(sections).getByRole('button', { name: 'Controls' })).toHaveAttribute(
       'aria-current',
       'true',
@@ -97,13 +97,6 @@ describe('SettingsScreen', () => {
       controls: 'full',
       chartSmoothingS: 3,
     });
-  });
-
-  it('picks the soak time', async () => {
-    const { stores } = renderApp(<Settings first="auto" />);
-    expect(radio('1:00', 'Soak time')).toBeChecked();
-    await userEvent.click(radio('1:30', 'Soak time'));
-    expect(stores.settings.getState().settings.soakTimeS).toBe(90);
   });
 
   it('picks how much the temperature line is smoothed', async () => {
