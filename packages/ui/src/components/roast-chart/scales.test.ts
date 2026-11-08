@@ -1,6 +1,6 @@
 import type uPlot from 'uplot';
 import { describe, expect, it } from 'vitest';
-import { MIN_TIME_SPAN_S, ROR_RANGE, TEMPERATURE_RANGE, TIME_RANGE } from './scales';
+import { MIN_TIME_SPAN_S, ROR_RANGE, temperatureRange, TIME_RANGE } from './scales';
 
 const range = (min: number, max: number) => TIME_RANGE({} as uPlot, min, max, 'x');
 
@@ -19,7 +19,7 @@ describe('time axis', () => {
 });
 
 const temperature = (min: number, max: number) =>
-  TEMPERATURE_RANGE({} as uPlot, min, max, 'temperature');
+  temperatureRange(() => 0)({} as uPlot, min, max, 'temperature');
 
 describe('temperature axis', () => {
   it('stays at 0–250 °C, so sensor jitter is invisible', () => {
@@ -33,6 +33,15 @@ describe('temperature axis', () => {
 
   it('copes with no data yet', () => {
     expect(temperature(Number.NaN, Number.NaN)).toEqual([0, 250]);
+  });
+
+  it('starts at the floor it is given, read each time, still growing past 250 °C', () => {
+    let floorC = 50;
+    const focused = temperatureRange(() => floorC);
+    expect(focused({} as uPlot, 92, 210, 'temperature')).toEqual([50, 250]);
+    expect(focused({} as uPlot, 92, 262, 'temperature')).toEqual([50, 300]);
+    floorC = 0;
+    expect(focused({} as uPlot, 92, 210, 'temperature')).toEqual([0, 250]);
   });
 });
 

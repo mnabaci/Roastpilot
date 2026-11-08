@@ -1,6 +1,6 @@
-import { TONE_TOKEN, type ChartLayer, type ChartMarker } from './chart-layer';
+import { TONE_TOKEN, type LineLayer, type ChartMarker } from './chart-layer';
 
-export type ChartTone = ChartLayer['tone'] | ChartMarker['tone'];
+export type ChartTone = LineLayer['tone'] | ChartMarker['tone'];
 
 export interface ChartColors {
   tone: Readonly<Record<ChartTone, string>>;

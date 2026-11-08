@@ -1,7 +1,8 @@
 import type uPlot from 'uplot';
 import { formatClock } from '../../lib/format';
 import type { ChartColors } from './chart-colors';
-import type { ChartLayer, ChartMarker } from './chart-layer';
+import type { ChartAid, ChartMarker, LineLayer } from './chart-layer';
+import { drawNowLines, drawPhaseBands, drawProjections } from './draw-aids';
 import { attachDrag, drawDragHandles, type ChartDrag, type TimeRange } from './drag-handles';
 import { drawLatestDot, drawMarkers } from './draw-markers';
 import { hoverCursor } from './hover-cursor';
@@ -9,7 +10,7 @@ import {
   OUTPUT_RANGE,
   OUTPUT_TICKS,
   ROR_RANGE,
-  TEMPERATURE_RANGE,
+  temperatureRange,
   TIME_STEPS_S,
   xScale,
 } from './scales';
@@ -31,9 +32,11 @@ interface CommonInput {
   width: number;
   height: number;
   /** This plot's layers only. */
-  layers: readonly ChartLayer[];
+  layers: readonly LineLayer[];
   /** Read at draw time, so new markers need a redraw, not a rebuild. */
   markers: () => readonly ChartMarker[];
+  /** Read at draw time too: the now line, projection and phase bands. */
+  aids: () => readonly ChartAid[];
   colors: ChartColors;
   /** Whether the chart has a RoR axis on the right; the strip keeps the same gutter. */
   rightAxis: boolean;
@@ -46,6 +49,8 @@ interface CommonInput {
 export interface ChartOptionsInput extends CommonInput {
   /** Index of the layer that gets the current-point dot, if any. */
   latestDotLayer: number;
+  /** Where the temperature axis starts, °C, read at draw time. */
+  temperatureFloorC: () => number;
   /** Moves the chart's draggable points. */
   dragging?: {
     drag: () => ChartDrag | undefined;
@@ -77,7 +82,7 @@ function axisFactory(colors: ChartColors) {
 }
 
 function series(
-  layers: readonly ChartLayer[],
+  layers: readonly LineLayer[],
   colors: ChartColors,
   stepped?: uPlot.Series.PathBuilder,
 ): uPlot.Series[] {
@@ -108,7 +113,9 @@ export function buildChartOptions({
   height,
   layers,
   markers,
+  aids,
   latestDotLayer,
+  temperatureFloorC,
   colors,
   rightAxis,
   onHover,
@@ -125,7 +132,7 @@ export function buildChartOptions({
     ...noAxisGutter(rightAxis),
     scales: {
       x: xScale(adjustTimeRange),
-      temperature: { range: TEMPERATURE_RANGE },
+      temperature: { range: temperatureRange(temperatureFloorC) },
       ror: { range: ROR_RANGE },
     },
     axes: [
@@ -158,9 +165,17 @@ export function buildChartOptions({
             ],
           }
         : {}),
+      // Behind the grid and every line.
+      drawClear: [
+        (u) => {
+          drawPhaseBands(u, aids(), colors);
+        },
+      ],
       draw: [
         (u) => {
           drawMarkers(u, markers(), colors, { labels: true });
+          drawProjections(u, aids(), colors);
+          drawNowLines(u, aids(), colors);
           const layer = layers[latestDotLayer];
           if (layer) drawLatestDot(u, latestDotLayer + 1, layer, colors);
           drawDragHandles(u, dragging?.drag(), colors);
@@ -176,6 +191,7 @@ export function buildStripOptions({
   height,
   layers,
   markers,
+  aids,
   colors,
   rightAxis,
   stepped,
@@ -209,6 +225,7 @@ export function buildStripOptions({
       draw: [
         (u) => {
           drawMarkers(u, markers(), colors, { labels: false });
+          drawNowLines(u, aids(), colors);
         },
       ],
     },

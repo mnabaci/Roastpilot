@@ -4,13 +4,24 @@ The live roast chart: temperature against the target curve, rate of rise on a ri
 
 ## Layers (back to front)
 
-1. Grid: `border`, 1px.
-2. Drop temperature line: `critical-text`, 1px dotted, labelled "Drop 212 °C".
-3. Ghost temperature and RoR: `ghost`, 2px.
-4. Target curve: `target`, 2px dashed 6 6.
-5. RoR: `air`, 2px, right axis 0–30 °C/min.
-6. Live temperature: `heat`, 3.5px, round joins; current point as a 6px dot.
-7. Event markers (First crack, Drop): 1.5px dashed vertical in `ink`, ghost's in `ghost`, labelled at the top.
+1. Phase bands (an aid, below): behind the grid.
+2. Grid: `border`, 1px.
+3. Drop temperature line: `critical-text`, 1px dotted, labelled "Drop 212 °C".
+4. Ghost temperature and RoR: `ghost`, 2px.
+5. Target curve: `target`, 2px dashed 6 6.
+6. RoR: `air`, 2px, right axis 0–30 °C/min.
+7. Live temperature: `heat`, 3.5px, round joins; current point as a 6px dot.
+8. Event markers (First crack, Drop): 1.5px dashed vertical in `ink`, ghost's in `ghost`, labelled at the top.
+9. Projection and now line (aids, below), then the current-point dot on top.
+
+## Aids (during a roast)
+
+Drawn faint, so they never compete with the curves; none has a legend entry or a hover value. Each is a switch in Settings › Chart.
+
+- **Phase bands:** full-width fills of `ink` at 3 %, 6 % and 9 % for drying, Maillard and development, darker as the beans are. Each is named once at its bottom-left corner, `label` style in `ink-muted`, 8px in; a band too thin for its name has none.
+- **Projection:** a straight 2px line in the colour of the line it continues (`heat` for temperature), dashed 4 4 with round caps, at 55 % opacity: dotted-looking, so it never reads as the target's 6 6 dashes.
+- **Now line:** 1px solid `ink-muted` at 55 % opacity through the chart and the outputs strip; the hover line is the dashed one.
+- **Time window and temperature floor:** the chart can be given a time span and a lowest temperature (50 °C with Temperature focus); the axes don't move while you hover.
 
 ## Outputs strip
 
@@ -26,6 +37,6 @@ The live roast chart: temperature against the target curve, rate of rise on a ri
 
 ## Rules
 
-- Legend above the chart, always, listing every layer (strip layers too). Axis labels `label` in `ink-muted`; time in minutes.
-- Each layer is a pluggable ChartLayer; a roaster with extra probes adds layers, not chart code. A layer on the `output` axis goes to the strip.
+- Legend above the chart, always, listing every line (strip lines too; aids are not listed). Axis labels `label` in `ink-muted`; time in minutes.
+- Each layer is a pluggable ChartLayer: a line, or an aid (`now-line`, `projection`, `phase-bands`); a roaster with extra probes adds layers, not chart code. A line on the `output` axis goes to the strip.
 - Built with uPlot in the app; this preview is static SVG. Tests swap the drawing for a fake through `PlotEngineProvider` (jsdom has no canvas), never by mocking modules.

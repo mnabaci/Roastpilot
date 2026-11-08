@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { alignLayers } from './align-layers';
-import type { ChartLayer } from './chart-layer';
+import type { LineLayer } from './chart-layer';
 
-const layer = (id: string, points: [number, number | null][]): ChartLayer => ({
+const layer = (id: string, points: [number, number | null][]): LineLayer => ({
   id,
   label: id,
   axis: 'temperature',

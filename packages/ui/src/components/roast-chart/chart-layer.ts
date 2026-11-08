@@ -9,9 +9,11 @@ export interface ChartPoint {
 
 /**
  * One series on the RoastChart (design system: RoastChart). Live temperature, RoR, target and ghost
- * are all layers; a roaster with extra probes adds layers, not chart code.
+ * are all line layers; a roaster with extra probes adds layers, not chart code.
  */
-export interface ChartLayer {
+export interface LineLayer {
+  /** A layer without a kind is a line. */
+  kind?: 'line';
   id: string;
   label: string;
   /** Left axis in °C, the right axis in °C/min, or `output` (0–100 %) in the strip under the chart. */
@@ -27,6 +29,45 @@ export interface ChartLayer {
   points: readonly ChartPoint[];
 }
 
+/** A faint vertical line at the current time, through the chart and the outputs strip. */
+export interface NowLineLayer {
+  kind: 'now-line';
+  id: string;
+  t: number;
+}
+
+/** Where a line is heading: a faint dashed continuation, in that line's colour. */
+export interface ProjectionLayer {
+  kind: 'projection';
+  id: string;
+  axis: 'temperature' | 'ror';
+  tone: LineLayer['tone'];
+  points: readonly ChartPoint[];
+}
+
+/** One temperature band; a missing edge runs to the axis's end. */
+export interface PhaseBand {
+  label: string;
+  fromC?: number;
+  toC?: number;
+}
+
+/** Faint full-width bands behind the curves, coolest first, each named once at its left edge. */
+export interface PhaseBandsLayer {
+  kind: 'phase-bands';
+  id: string;
+  bands: readonly PhaseBand[];
+}
+
+/** What the chart draws over or behind the lines: no legend entry, no hover value. */
+export type ChartAid = NowLineLayer | ProjectionLayer | PhaseBandsLayer;
+
+/** Everything RoastChart draws from its `layers`: lines and aids (docs/spec/extensibility.md). */
+export type ChartLayer = LineLayer | ChartAid;
+
+export const isLineLayer = (layer: ChartLayer): layer is LineLayer =>
+  layer.kind === undefined || layer.kind === 'line';
+
 /** A labelled vertical line: Charge, First crack, Drop. */
 export interface ChartMarker {
   id: string;
@@ -36,7 +77,7 @@ export interface ChartMarker {
 }
 
 /** The token each tone draws with. */
-export const TONE_TOKEN: Readonly<Record<ChartLayer['tone'] | ChartMarker['tone'], string>> = {
+export const TONE_TOKEN: Readonly<Record<LineLayer['tone'] | ChartMarker['tone'], string>> = {
   heat: '--heat',
   air: '--air',
   neutral: '--ink-muted',

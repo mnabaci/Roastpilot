@@ -3,15 +3,20 @@ import type { ReactElement } from 'react';
 import type uPlot from 'uplot';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RoastChart } from './RoastChart';
-import type { ChartLayer } from './roast-chart/chart-layer';
+import type { ChartAid, ChartLayer, LineLayer } from './roast-chart/chart-layer';
 import { PlotEngineProvider, type PlotEngine } from './roast-chart/plot-engine';
 
+type Range = (u: unknown, min: number, max: number, scale: string) => [number, number];
 interface Created {
   opts: {
     height: number;
-    scales: { x: { range: unknown } };
+    scales: { x: { range: Range }; temperature?: { range: Range } };
     series: { stroke?: string; width?: number; paths?: unknown; scale?: string }[];
-    hooks: { setCursor?: ((u: unknown) => void)[] };
+    hooks: {
+      setCursor?: ((u: unknown) => void)[];
+      drawClear?: ((u: unknown) => void)[];
+      draw?: ((u: unknown) => void)[];
+    };
   };
   data: unknown[][];
 }
@@ -39,7 +44,7 @@ const draw = (ui: ReactElement) => {
   return { ...view, rerender };
 };
 
-const bt = (points: [number, number][]): ChartLayer => ({
+const bt = (points: [number, number][]): LineLayer => ({
   id: 'bt',
   label: 'Temperature',
   axis: 'temperature',
@@ -47,7 +52,7 @@ const bt = (points: [number, number][]): ChartLayer => ({
   width: 3.5,
   points: points.map(([t, v]) => ({ t, v })),
 });
-const ror: ChartLayer = {
+const ror: LineLayer = {
   id: 'ror',
   label: 'RoR',
   axis: 'ror',
@@ -239,6 +244,198 @@ describe('RoastChart', () => {
       draw(<RoastChart title="Roast curve" layers={[bt([[0, 180]])]} />);
       expect(created).toHaveLength(1);
       expect(screen.getAllByRole('img')).toHaveLength(1);
+    });
+  });
+
+  describe('during a roast', () => {
+    const roasting = bt([
+      [-30, 180],
+      [0, 179],
+      [420, 175],
+    ]);
+    const aids: ChartAid[] = [
+      {
+        kind: 'phase-bands',
+        id: 'phases',
+        bands: [
+          { label: 'Drying', toC: 150 },
+          { label: 'Maillard', fromC: 150, toC: 192 },
+          { label: 'Development', fromC: 192 },
+        ],
+      },
+      {
+        kind: 'projection',
+        id: 'projection',
+        axis: 'temperature',
+        tone: 'heat',
+        points: [
+          { t: 420, v: 175 },
+          { t: 540, v: 193 },
+        ],
+      },
+      { kind: 'now-line', id: 'now', t: 420 },
+    ];
+    const heater: LineLayer = {
+      id: 'heater',
+      label: 'Heater',
+      axis: 'output',
+      tone: 'heat',
+      width: 2,
+      step: true,
+      points: [{ t: 0, v: 80 }],
+    };
+
+    /** A plot that records what is drawn on it: x in seconds, y as 300 − °C. */
+    const fakePlot = () => {
+      const calls: { name: string; args: unknown[]; alpha: number }[] = [];
+      const state: Record<string, unknown> = { globalAlpha: 1 };
+      const ctx = new Proxy(state, {
+        get: (target, name: string) =>
+          name in target
+            ? target[name]
+            : name === 'measureText'
+              ? () => ({ width: 40 })
+              : (...args: unknown[]) => {
+                  calls.push({ name, args, alpha: Number(target.globalAlpha) });
+                },
+        set: (target, name: string, value) => {
+          target[name] = value;
+          return true;
+        },
+      });
+      const u = {
+        ctx,
+        bbox: { left: 0, top: 0, width: 1000, height: 300 },
+        scales: { temperature: { min: 50, max: 250 } },
+        data: [[]],
+        valToPos: (v: number, scale: string) => (scale === 'x' ? v : 300 - v),
+      };
+      return { u, calls };
+    };
+    const runHooks = (plot: Created | undefined, hook: 'drawClear' | 'draw') => {
+      const { u, calls } = fakePlot();
+      for (const fn of plot?.opts.hooks[hook] ?? []) fn(u);
+      return calls;
+    };
+
+    it('shows the time window it is given, whatever the data spans', () => {
+      draw(
+        <RoastChart
+          title="Roast curve"
+          layers={[roasting]}
+          timeWindow={{ fromS: -30, toS: 736 }}
+        />,
+      );
+      expect(created[0]?.opts.scales.x.range({}, -900, 420, 'x')).toEqual([-30, 736]);
+    });
+
+    it('starts the temperature axis at the floor it is given', () => {
+      draw(<RoastChart title="Roast curve" layers={[roasting]} temperatureFloorC={50} />);
+      expect(created[0]?.opts.scales.temperature?.range({}, 92, 210, 'temperature')).toEqual([
+        50, 250,
+      ]);
+    });
+
+    it('takes a new window or floor without rebuilding, working the scales out again', () => {
+      const { rerender } = draw(
+        <RoastChart
+          title="Roast curve"
+          layers={[roasting]}
+          timeWindow={{ fromS: -30, toS: 736 }}
+        />,
+      );
+      setData.mockClear();
+      rerender(
+        <RoastChart
+          title="Roast curve"
+          layers={[roasting]}
+          timeWindow={{ fromS: -30, toS: 737 }}
+          temperatureFloorC={50}
+        />,
+      );
+      expect(created).toHaveLength(1);
+      expect(setData).toHaveBeenCalled();
+      expect(created[0]?.opts.scales.x.range({}, -900, 420, 'x')).toEqual([-30, 737]);
+      expect(created[0]?.opts.scales.temperature?.range({}, 92, 210, 'temperature')).toEqual([
+        50, 250,
+      ]);
+    });
+
+    it('fits the data again without a window', () => {
+      draw(<RoastChart title="Roast curve" layers={[roasting]} />);
+      expect(created[0]?.opts.scales.x.range({}, -900, 420, 'x')).toEqual([-900, 420]);
+    });
+
+    it('keeps the aids out of the legend, the description and the lines', () => {
+      draw(<RoastChart title="Roast curve" layers={[roasting, ...aids]} />);
+      expect(screen.getByRole('list', { name: 'Legend' }).querySelectorAll('li')).toHaveLength(1);
+      expect(screen.getByRole('img', { name: 'Temperature 175.0 °C' })).toBeInTheDocument();
+      expect(created[0]?.opts.series).toHaveLength(2);
+    });
+
+    it('turns aids on and off with a redraw, not a rebuild', () => {
+      const { rerender } = draw(<RoastChart title="Roast curve" layers={[roasting]} />);
+      rerender(<RoastChart title="Roast curve" layers={[roasting, ...aids]} />);
+      expect(created).toHaveLength(1);
+    });
+
+    it('draws the phase bands behind everything, darker as they climb, each named once', () => {
+      draw(<RoastChart title="Roast curve" layers={[roasting, ...aids]} />);
+      const calls = runHooks(created[0], 'drawClear');
+      expect(calls.filter((c) => c.name === 'fillRect').map((c) => [c.args, c.alpha])).toEqual([
+        [[0, 150, 1000, 100], 0.03],
+        [[0, 108, 1000, 42], 0.06],
+        [[0, 50, 1000, 58], 0.09],
+      ]);
+      expect(calls.filter((c) => c.name === 'fillText').map((c) => c.args[0])).toEqual([
+        'Drying',
+        'Maillard',
+        'Development',
+      ]);
+    });
+
+    it('leaves a band too thin for its name unnamed', () => {
+      const thin: ChartAid = {
+        kind: 'phase-bands',
+        id: 'phases',
+        bands: [{ label: 'Maillard', fromC: 150, toC: 160 }],
+      };
+      draw(<RoastChart title="Roast curve" layers={[roasting, thin]} />);
+      const calls = runHooks(created[0], 'drawClear');
+      expect(calls.filter((c) => c.name === 'fillRect')).toHaveLength(1);
+      expect(calls.filter((c) => c.name === 'fillText')).toHaveLength(0);
+    });
+
+    it('draws the projection faint and dashed, from now to where it ends', () => {
+      draw(<RoastChart title="Roast curve" layers={[roasting, ...aids]} />);
+      const calls = runHooks(created[0], 'draw');
+      const dash = calls.find((c) => c.name === 'setLineDash');
+      expect(dash?.args).toEqual([[4, 4]]);
+      expect(dash?.alpha).toBe(0.55);
+      expect(calls.filter((c) => c.name === 'moveTo').map((c) => c.args)).toContainEqual([
+        420, 125,
+      ]);
+      expect(calls.filter((c) => c.name === 'lineTo').map((c) => c.args)).toContainEqual([
+        540, 107,
+      ]);
+    });
+
+    it('draws the now line through the chart and the outputs strip', () => {
+      draw(<RoastChart title="Roast curve" layers={[roasting, heater, ...aids]} />);
+      const [chart, strip] = created;
+      for (const plot of [chart, strip]) {
+        const calls = runHooks(plot, 'draw');
+        expect(calls.filter((c) => c.name === 'lineTo').map((c) => c.args)).toContainEqual([
+          420, 300,
+        ]);
+      }
+      // The strip has no bands or projection.
+      expect(runHooks(strip, 'drawClear')).toEqual([]);
+      expect(
+        runHooks(strip, 'draw')
+          .filter((c) => c.name === 'lineTo')
+          .map((c) => c.args),
+      ).not.toContainEqual([540, 107]);
     });
   });
 });

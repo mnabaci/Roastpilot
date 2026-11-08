@@ -1,6 +1,6 @@
 import { plannedCurve } from '@roastpilot/core';
 import { READY_ROAST, type Reading, type RoastDetail, type RoastState } from '@roastpilot/shared';
-import type { ChartLayer, ChartMarker } from '@roastpilot/ui';
+import type { LineLayer, ChartMarker } from '@roastpilot/ui';
 import { roastChartData } from '../roast/roast-chart-data';
 
 /** A saved roast in the live roast's shape, with charge at 0, so the Roast screen's chart code draws it. */
@@ -33,7 +33,7 @@ export function savedRoastChart(
   detail: RoastDetail,
   compare: { detail: RoastDetail; label: string } | undefined,
   smoothingS: number,
-): { layers: ChartLayer[]; markers: ChartMarker[] } {
+): { layers: LineLayer[]; markers: ChartMarker[] } {
   const own = savedAsLive(detail);
   const chart = roastChartData(own.roast, own.readings, {
     smoothingS,
@@ -45,7 +45,7 @@ export function savedRoastChart(
     (l) => l.id === 'bt',
   );
   if (!otherBt) return chart;
-  const ghost: ChartLayer = {
+  const ghost: LineLayer = {
     ...otherBt,
     id: 'compare-bt',
     label: compare.label,

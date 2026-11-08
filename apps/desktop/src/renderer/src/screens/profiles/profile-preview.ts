@@ -1,6 +1,6 @@
 import { plannedCurve, smoothCurve, timeAtC } from '@roastpilot/core';
 import type { AutoProfile, CurvePoint, ProfilePhase } from '@roastpilot/shared';
-import type { ChartLayer, ChartMarker, ChartPoint } from '@roastpilot/ui';
+import type { LineLayer, ChartMarker, ChartPoint } from '@roastpilot/ui';
 import { PLAN_STEP_S } from '../roast/roast-chart-data';
 
 /** The moment each phase is planned to end. */
@@ -18,7 +18,7 @@ const heatPct = (phase: ProfilePhase) => phase.heat.pct;
  * dry end and planned drop (docs/spec/ui.md, Profiles screen).
  */
 export function profilePreview(profile: AutoProfile): {
-  layers: ChartLayer[];
+  layers: LineLayer[];
   markers: ChartMarker[];
 } {
   // Drawn and timed along the same smooth curve Auto follows.

@@ -1,5 +1,5 @@
 import { cn } from '../../lib/utils';
-import type { ChartLayer } from './chart-layer';
+import type { LineLayer } from './chart-layer';
 import { formatLayerValue, valueAt } from './value-at';
 
 /**
@@ -13,7 +13,7 @@ export function Legend({
   className,
 }: {
   label: string;
-  layers: readonly ChartLayer[];
+  layers: readonly LineLayer[];
   at: number | undefined;
   className?: string;
 }) {
@@ -46,7 +46,7 @@ export function Legend({
   );
 }
 
-function LegendValue({ layer, at }: { layer: ChartLayer; at: number }) {
+function LegendValue({ layer, at }: { layer: LineLayer; at: number }) {
   const v = valueAt(layer, at);
   return (
     <span className="font-semibold text-ink">
@@ -56,7 +56,7 @@ function LegendValue({ layer, at }: { layer: ChartLayer; at: number }) {
 }
 
 /** A one-line text alternative: the latest value of each layer. */
-export function describeLayers(layers: readonly ChartLayer[]): string {
+export function describeLayers(layers: readonly LineLayer[]): string {
   const parts = layers.flatMap((layer) => {
     const v = layer.points.findLast((p) => p.v !== null)?.v ?? undefined;
     if (v === undefined) return [];

@@ -1,4 +1,4 @@
-<!-- @dsCard group="Data" height=360 subtitle="Live, target, RoR and ghost" -->
+<!-- @dsCard group="Data" height=360 subtitle="Live, target, RoR and ghost, with the roast aids" -->
 <!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
 <link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
 <link
@@ -59,6 +59,15 @@
       viewBox="0 0 1020 260"
       style="width: 100%; height: auto; display: block; font-family: var(--font-sans)"
     >
+      <!-- Phase bands, behind the grid: ink at 3, 6 and 9 %, named at the left edge. -->
+      <rect x="50" y="180" width="910" height="60" fill="var(--ink)" fill-opacity="0.03" />
+      <rect x="50" y="113" width="910" height="67" fill="var(--ink)" fill-opacity="0.06" />
+      <rect x="50" y="20" width="910" height="93" fill="var(--ink)" fill-opacity="0.09" />
+      <g fill="var(--ink-muted)" font-size="13" font-weight="500">
+        <text x="58" y="236">Drying</text>
+        <text x="58" y="176">Maillard</text>
+        <text x="58" y="109">Development</text>
+      </g>
       <g stroke="var(--border)" stroke-width="1">
         <line x1="50" y1="20" x2="960" y2="20" />
         <line x1="50" y1="100" x2="960" y2="100" />
@@ -99,6 +108,19 @@
         stroke-width="3.5"
         stroke-linejoin="round"
       />
+      <!-- Projection: faint dashed, 2:00 ahead at the current RoR. Now line: faint, solid. -->
+      <line
+        x1="700"
+        y1="101"
+        x2="840"
+        y2="82"
+        stroke="var(--heat)"
+        stroke-width="2"
+        stroke-dasharray="4 4"
+        stroke-linecap="round"
+        opacity="0.55"
+      />
+      <line x1="700" y1="20" x2="700" y2="240" stroke="var(--ink-muted)" opacity="0.55" />
       <circle cx="700" cy="101" r="6" fill="var(--heat)" stroke="var(--surface)" stroke-width="3" />
       <line
         x1="672"

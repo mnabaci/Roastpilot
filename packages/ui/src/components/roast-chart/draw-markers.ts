@@ -1,6 +1,6 @@
 import type uPlot from 'uplot';
 import type { ChartColors } from './chart-colors';
-import type { ChartLayer, ChartMarker } from './chart-layer';
+import type { LineLayer, ChartMarker } from './chart-layer';
 
 const LABEL_GAP = 8;
 const LINE_HEIGHT = 18;
@@ -72,7 +72,7 @@ export function drawMarkers(
 export function drawLatestDot(
   u: uPlot,
   seriesIndex: number,
-  layer: ChartLayer,
+  layer: LineLayer,
   colors: ChartColors,
 ): void {
   const values = u.data[seriesIndex];

@@ -5,18 +5,31 @@ import { formatClock } from '../lib/format';
 import { cn } from '../lib/utils';
 import { alignLayers } from './roast-chart/align-layers';
 import { readChartColors } from './roast-chart/chart-colors';
-import type { ChartLayer, ChartMarker } from './roast-chart/chart-layer';
+import {
+  isLineLayer,
+  type ChartAid,
+  type ChartLayer,
+  type ChartMarker,
+  type LineLayer,
+} from './roast-chart/chart-layer';
 import { describeLayers, Legend } from './roast-chart/chart-legend';
 import type { ChartDrag, TimeRange } from './roast-chart/drag-handles';
 import { usePlotEngine } from './roast-chart/plot-engine';
 import { buildChartOptions, buildStripOptions } from './roast-chart/uplot-options';
-import { useUplot } from './roast-chart/use-uplot';
+import { useUplot, type Overlay } from './roast-chart/use-uplot';
 
 export interface RoastChartProps {
   title: string;
-  /** Back to front. The first `heat` temperature layer gets the current-point dot; `output` layers go to the strip. */
+  /**
+   * Back to front. The first `heat` temperature line gets the current-point dot; `output` lines go
+   * to the strip. Aids (now line, projection, phase bands) have no legend entry.
+   */
   layers: readonly ChartLayer[];
   markers?: readonly ChartMarker[];
+  /** The time axis's span in seconds since charge; without it, the axis fits the data. */
+  timeWindow?: { fromS: number; toS: number } | undefined;
+  /** Where the temperature axis starts, °C (default 0). */
+  temperatureFloorC?: number;
   height?: number;
   className?: string;
   /** Points you can move with the pointer. */
@@ -29,7 +42,9 @@ const STRIP_HEIGHT = 96;
 const DRAG_ROOM = 0.15;
 const MIN_DRAG_ROOM_S = 30;
 
-const structureOf = (layers: readonly ChartLayer[]) =>
+const NO_MARKERS: readonly ChartMarker[] = [];
+
+const structureOf = (layers: readonly LineLayer[]) =>
   layers.map((l) => `${l.id}:${l.axis}:${l.tone}:${String(l.step ?? false)}`).join('|');
 
 /**
@@ -39,7 +54,9 @@ const structureOf = (layers: readonly ChartLayer[]) =>
 export function RoastChart({
   title,
   layers,
-  markers = [],
+  markers = NO_MARKERS,
+  timeWindow,
+  temperatureFloorC = 0,
   height = DEFAULT_HEIGHT,
   className,
   drag,
@@ -51,22 +68,33 @@ export function RoastChart({
   // The time under the pointer: the legends show the values there (docs/spec/ui.md, Hover).
   const [hoverT, setHoverT] = useState<number>();
   const dragRef = useRef(drag);
+  const windowRef = useRef(timeWindow);
+  const floorRef = useRef(temperatureFloorC);
   const heldTimeRange = useRef<TimeRange | undefined>(undefined);
   // Counts finished drags: fresh data lets the time axis fit the moved points again.
   const [dragsEnded, setDragsEnded] = useState(0);
+  // Before the plots' own effects, so a setData after a new window or floor reads them.
   useEffect(() => {
     dragRef.current = drag;
+    windowRef.current = timeWindow;
+    floorRef.current = temperatureFloorC;
   });
-  // Spare time after the last point: its handle stays clear of the edge, and it can move later.
-  const adjustTimeRange = ([from, to]: TimeRange): TimeRange =>
-    heldTimeRange.current ??
-    (dragRef.current
+  // A window is shown as given; otherwise the data's span, with spare time after the last point
+  // while dragging: its handle stays clear of the edge, and it can move later.
+  const adjustTimeRange = ([from, to]: TimeRange): TimeRange => {
+    const shown = windowRef.current;
+    if (heldTimeRange.current) return heldTimeRange.current;
+    if (shown) return [shown.fromS, shown.toS];
+    return dragRef.current
       ? [from, to + Math.max(MIN_DRAG_ROOM_S, (to - from) * DRAG_ROOM)]
-      : [from, to]);
+      : [from, to];
+  };
 
-  const { main, strip, mainData, stripData } = useMemo(() => {
-    const main = layers.filter((l) => l.axis !== 'output');
-    const strip = layers.filter((l) => l.axis === 'output');
+  const { main, strip, mainData, stripData, mainOverlay, stripOverlay } = useMemo(() => {
+    const lines = layers.filter(isLineLayer);
+    const aids = layers.filter((l): l is ChartAid => !isLineLayer(l));
+    const main = lines.filter((l) => l.axis !== 'output');
+    const strip = lines.filter((l) => l.axis === 'output');
     // One set of times for both plots, so they share a time range and line up.
     const { xs, series } = alignLayers([...main, ...strip]);
     return {
@@ -74,9 +102,16 @@ export function RoastChart({
       strip,
       mainData: [xs, ...series.slice(0, main.length)] as uPlot.AlignedData,
       stripData: [xs, ...series.slice(main.length)] as uPlot.AlignedData,
+      mainOverlay: { markers, aids } satisfies Overlay,
+      // The strip shares the now line, nothing else.
+      stripOverlay: {
+        markers,
+        aids: aids.filter((aid) => aid.kind === 'now-line'),
+      } satisfies Overlay,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- dragsEnded only asks for fresh arrays
-  }, [layers, dragsEnded]);
+  }, [layers, markers, dragsEnded]);
+  const scaleKey = `${String(timeWindow?.fromS)}:${String(timeWindow?.toS)}:${String(temperatureFloorC)}`;
   const rightAxis = main.some((l) => l.axis === 'ror');
 
   useEffect(() => {
@@ -98,12 +133,15 @@ export function RoastChart({
     width,
     height,
     data: mainData,
-    markers,
-    build: (size, readMarkers) =>
+    scaleKey,
+    overlay: mainOverlay,
+    build: (size, overlay) =>
       buildChartOptions({
         ...size,
         layers: main,
-        markers: readMarkers,
+        markers: () => overlay().markers,
+        aids: () => overlay().aids,
+        temperatureFloorC: () => floorRef.current,
         latestDotLayer: main.findIndex((l) => l.tone === 'heat' && l.axis === 'temperature'),
         // Element is mounted whenever a build runs.
         colors: readChartColors(plotRef.current ?? document.documentElement),
@@ -129,12 +167,14 @@ export function RoastChart({
     width,
     height: STRIP_HEIGHT,
     data: stripData,
-    markers,
-    build: (size, readMarkers) =>
+    scaleKey,
+    overlay: stripOverlay,
+    build: (size, overlay) =>
       buildStripOptions({
         ...size,
         layers: strip,
-        markers: readMarkers,
+        markers: () => overlay().markers,
+        aids: () => overlay().aids,
         colors: readChartColors(stripRef.current ?? document.documentElement),
         rightAxis,
         stepped: engine.stepped(),

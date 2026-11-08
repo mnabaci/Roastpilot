@@ -8,7 +8,18 @@ export { OutputControl, type OutputControlProps } from './components/OutputContr
 export { PhaseStepper, type PhaseStepperProps } from './components/PhaseStepper';
 export { StatCard, type StatCardProps } from './components/StatCard';
 export { RoastChart, type RoastChartProps } from './components/RoastChart';
-export type { ChartLayer, ChartMarker, ChartPoint } from './components/roast-chart/chart-layer';
+export {
+  isLineLayer,
+  type ChartAid,
+  type ChartLayer,
+  type ChartMarker,
+  type ChartPoint,
+  type LineLayer,
+  type NowLineLayer,
+  type PhaseBand,
+  type PhaseBandsLayer,
+  type ProjectionLayer,
+} from './components/roast-chart/chart-layer';
 export type { ChartDrag } from './components/roast-chart/drag-handles';
 export {
   PlotEngineProvider,

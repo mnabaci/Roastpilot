@@ -1,5 +1,5 @@
 import type { RoastState } from '@roastpilot/shared';
-import type { ChartLayer, ChartMarker } from '@roastpilot/ui';
+import type { LineLayer, ChartMarker } from '@roastpilot/ui';
 import { useMemo } from 'react';
 import { useBeans } from '../../stores/use-stores';
 import { useSavedRoast } from '../history/use-saved-roast';
@@ -16,7 +16,7 @@ export function useGhost(
     bt,
     smoothingS,
   }: { elapsedS: number | undefined; bt: number | undefined; smoothingS: number },
-): { layers: ChartLayer[]; markers: ChartMarker[]; line?: string } {
+): { layers: LineLayer[]; markers: ChartMarker[]; line?: string } {
   const ghostId = useBeans((s) => s.setup.ghostRoastId);
   const ghost = useSavedRoast(ghostId ?? undefined);
   const detail = ghost.status === 'loaded' ? ghost.detail : undefined;

@@ -12,7 +12,7 @@ import {
   type RoastEvent,
   type RoastState,
 } from '@roastpilot/shared';
-import type { ChartLayer, ChartMarker, ChartPoint } from '@roastpilot/ui';
+import type { LineLayer, ChartMarker, ChartPoint } from '@roastpilot/ui';
 
 /** Readings further apart than this are a break in every line (the lost-connection limit). */
 export const GAP_MS = 3_000;
@@ -127,12 +127,12 @@ export function roastChartData(
     tempName = DEFAULT_TEMP_NAMES.name,
     plan,
   }: { smoothingS: number; tempName?: string; plan?: readonly CurvePoint[] | undefined },
-): { layers: ChartLayer[]; markers: ChartMarker[] } {
+): { layers: LineLayer[]; markers: ChartMarker[] } {
   const readings = untilRoastEnd(roast, allReadings);
   const zeroMs = roast.chargedAtMs ?? readings[0]?.atMs ?? 0;
   const toT = (atMs: number) => (atMs - zeroMs) / 1000;
   const breaks = breakTimes(readings).map(toT);
-  const temperature: ChartLayer = {
+  const temperature: LineLayer = {
     id: 'bt',
     label: tempName,
     axis: 'temperature',
@@ -140,7 +140,7 @@ export function roastChartData(
     width: 3.5,
     points: smoothed(withBreaks(channelPoints(readings, 'bt', toT), breaks), smoothingS),
   };
-  const ror: ChartLayer = {
+  const ror: LineLayer = {
     id: 'ror',
     label: 'RoR',
     axis: 'ror',
@@ -149,7 +149,7 @@ export function roastChartData(
     points: withBreaks(rorPoints(roastingReadings(roast, readings), toT), breaks),
   };
   // The outputs strip (docs/spec/ui.md): what you set, as steps under the curve.
-  const output = (id: string, label: string, tone: 'heat' | 'air' | 'neutral'): ChartLayer => ({
+  const output = (id: string, label: string, tone: 'heat' | 'air' | 'neutral'): LineLayer => ({
     id,
     label,
     axis: 'output',
@@ -164,7 +164,7 @@ export function roastChartData(
     return label ? [{ id: event.kind, label, t: toT(event.atMs), tone: 'ink' }] : [];
   });
   // Only from charge on: the plan's clock starts there, and the preheat's doesn't.
-  const planned: ChartLayer[] =
+  const planned: LineLayer[] =
     plan && roast.chargedAtMs !== null
       ? [
           {
@@ -193,7 +193,7 @@ export function roastChartData(
 }
 
 /** An on/off output (every value 0 or 1) on the 0–100% axis; a speed in % stays as it is. */
-function onOffAsPercent(layer: ChartLayer): ChartLayer {
+function onOffAsPercent(layer: LineLayer): LineLayer {
   const onOff = layer.points.every((p) => p.v === null || p.v === 0 || p.v === 1);
   return onOff
     ? { ...layer, points: layer.points.map((p) => (p.v === null ? p : { ...p, v: p.v * 100 })) }

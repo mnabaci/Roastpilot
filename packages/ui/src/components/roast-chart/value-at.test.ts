@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { ChartLayer } from './chart-layer';
+import type { LineLayer } from './chart-layer';
 import { formatLayerValue, valueAt } from './value-at';
 
-const layer = (points: [number, number | null][]): ChartLayer => ({
+const layer = (points: [number, number | null][]): LineLayer => ({
   id: 'bt',
   label: 'Temperature',
   axis: 'temperature',
