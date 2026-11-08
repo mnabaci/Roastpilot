@@ -49,21 +49,42 @@ export function replayRoast(samples: readonly FitSample[], constants: ThermalCon
   return probe;
 }
 
-/** Root mean square of model minus reading, in °C, over every reading of every roast. */
+/**
+ * Readings with beans in count this many times more than preheat and cooling ones: the fit is for
+ * roasting, and a fit led by the long preheat and cooling ran fast early and stalled late in a
+ * closed-loop Auto roast (docs/spec/hardware.md, Simulator).
+ */
+export const BEANS_IN_WEIGHT = 20;
+
+/** How much a reading counts in `fitError`, with beans in and in preheat or cooling. */
+export interface ReadingWeights {
+  beansIn: number;
+  other: number;
+}
+
+const FIT_WEIGHTS: ReadingWeights = { beansIn: BEANS_IN_WEIGHT, other: 1 };
+/** Every reading the same. */
+export const EVERY_READING: ReadingWeights = { beansIn: 1, other: 1 };
+/** Charge to drop only. */
+export const BEANS_IN_ONLY: ReadingWeights = { beansIn: 1, other: 0 };
+
+/** Weighted root mean square of model minus reading, in °C, over every reading of every roast. */
 export function fitError(
   roasts: readonly (readonly FitSample[])[],
   constants: ThermalConstants,
+  weights: ReadingWeights = FIT_WEIGHTS,
 ): number {
   let sum = 0;
-  let count = 0;
+  let total = 0;
   for (const samples of roasts) {
     const probe = replayRoast(samples, constants);
     samples.forEach((sample, i) => {
-      sum += ((probe[i] ?? sample.bt) - sample.bt) ** 2;
-      count++;
+      const weight = sample.beans ? weights.beansIn : weights.other;
+      sum += weight * ((probe[i] ?? sample.bt) - sample.bt) ** 2;
+      total += weight;
     });
   }
-  return count === 0 ? 0 : Math.sqrt(sum / count);
+  return total === 0 ? 0 : Math.sqrt(sum / total);
 }
 
 export interface ThermalFit {

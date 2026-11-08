@@ -123,8 +123,8 @@ async function preheatAndCharge(rig: Rig) {
   pilot.chargeSoon(clock.now());
   await runUntil(rig, () => pilot.status.preheatStep === 'beans-in', 30_000);
   const btAtCharge = history.latest()?.values.bt;
+  // Start as the beans go in, as in the app: the real probe reads charge temperature at 0:00.
   driver.chargeBeans();
-  await clock.runFor(2_000);
   await roast.act('start');
   return { reachedAddBeans, preheatMs, btAtAddBeans, btAtCharge };
 }

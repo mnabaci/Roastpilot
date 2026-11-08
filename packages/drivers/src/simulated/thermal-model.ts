@@ -1,6 +1,10 @@
 /**
- * Fitted to roasts 6 and 7 of 2026-11-04 (375 g) by `pnpm fit:simulator 6 7`: RMS error 8.7 °C,
- * within about 5 °C from charge to drop (docs/spec/hardware.md, Simulator).
+ * Fitted by `pnpm fit:simulator 6 7 15 16` to manual roasts 6 and 7 of 2026-11-04 (375 g) and Auto
+ * roasts 15 and 16 of 2026-11-08 (356 g), readings with beans in counting 20 times: replayed
+ * open-loop, RMS error from charge to drop 4.5 → 2.9 °C (every reading 9.8 → 10.1 °C). A closed-loop
+ * Auto roast with roast 16's profile and gains is within 3 °C of it every 30 s from 1:00 to drop
+ * (RMS 4.0 → 1.6 °C; roast 15 6.8 → 2.7 °C), dry end within 15 s and first crack within 20 s
+ * (docs/spec/hardware.md, Simulator).
  */
 export interface ThermalConstants {
   ambientC: number;
@@ -20,13 +24,13 @@ export interface ThermalConstants {
 
 export const DEFAULT_THERMAL_CONSTANTS: ThermalConstants = {
   ambientC: 22,
-  heatGainCPerS: 0.59,
-  roomLossPerS: 0.00043,
-  fanLossFactor: 1.9,
-  coolingLossFactor: 5.6,
-  beanGainPerS: 0.0097,
-  drumToBeansPerS: 0.0056,
-  probeLagS: 45,
+  heatGainCPerS: 0.635,
+  roomLossPerS: 0.000183,
+  fanLossFactor: 3.86,
+  coolingLossFactor: 13.8,
+  beanGainPerS: 0.0107,
+  drumToBeansPerS: 0.0098,
+  probeLagS: 38,
 };
 
 export interface ThermalInputs {
