@@ -152,6 +152,8 @@ describe('RoastRun', () => {
     const heaterAfter = (gapS: number) => {
       const run = new RoastRun(steep, TUNING, 0);
       run.catchUp([
+        // Turned at 92 °C, so 150 °C is a climb to the trigger.
+        { atMs: 60_000, btC: 92 },
         { atMs: 100_000, btC: 150 },
         { atMs: 101_000, btC: 150 },
       ]);
@@ -184,6 +186,15 @@ describe('RoastRun', () => {
       const run = new RoastRun(NO_SOAK, TUNING, 0);
       expect(run.phaseName).toBe('Heat on');
       expect(curveTick(run)(1)).toBe(85);
+    });
+
+    it('skips no step at charge, though BT comes in above its trigger', () => {
+      const run = new RoastRun({ ...PROFILE, phases: PROFILE.phases.slice(1) }, TUNING, 0);
+      [1, 2, 3, 4].forEach((s) => tick(run, s, 180));
+      expect(run.phaseName).toBe('Heat on');
+      [5, 6, 7].forEach((s) => tick(run, s, 95));
+      [8, 9, 10].forEach((s) => tick(run, s, 150));
+      expect(run.phaseName).toBe('Follow');
     });
 
     it('records dry end once BT has dipped and climbed back, not at charge', () => {

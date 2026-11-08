@@ -5,13 +5,23 @@ export interface PhaseClock {
   elapsedS: number;
   /** The latest temperature; undefined when there is no valid reading. */
   btC: number | undefined;
+  /** The lowest temperature since charge; undefined before the first valid reading. */
+  lowestC: number | undefined;
+}
+
+/**
+ * Whether BT has climbed to `c`. It starts above most triggers at charge and falls through them,
+ * so a temperature only counts once BT has been below it: with or without a soak.
+ */
+function climbedTo({ btC, lowestC }: PhaseClock, c: number): boolean {
+  return btC !== undefined && lowestC !== undefined && lowestC < c && btC >= c;
 }
 
 /** Whether this phase's trigger or backup has fired (docs/spec/roast-control.md, Profile format). */
-function phaseIsOver(phase: ProfilePhase, { elapsedS, btC }: PhaseClock): boolean {
+function phaseIsOver(phase: ProfilePhase, clock: PhaseClock): boolean {
   const { next } = phase;
-  if (next.on === 'time') return elapsedS >= next.afterS;
-  if (next.on === 'bt') return elapsedS >= next.backupS || (btC !== undefined && btC >= next.c);
+  if (next.on === 'time') return clock.elapsedS >= next.afterS;
+  if (next.on === 'bt') return clock.elapsedS >= next.backupS || climbedTo(clock, next.c);
   return false;
 }
 
@@ -37,6 +47,15 @@ export function withCapUnder(profile: AutoProfile, maxTempC: number): AutoProfil
 /** The opening soak: a profile's first phase, when it holds the heater fixed after charge. */
 export function isSoak(profile: AutoProfile, phaseIndex: number): boolean {
   return phaseIndex === 0 && profile.phases[0]?.heat.mode === 'fixed';
+}
+
+/** Whether dry end has come: BT has climbed back to it after charge, and never in the soak. */
+export function dryEndReached(
+  profile: AutoProfile,
+  phaseIndex: number,
+  clock: PhaseClock,
+): boolean {
+  return !isSoak(profile, phaseIndex) && climbedTo(clock, profile.dryEndC);
 }
 
 /** How long the opening soak runs, in seconds; 0 for a profile that starts without one. */
