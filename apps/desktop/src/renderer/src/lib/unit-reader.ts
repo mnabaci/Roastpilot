@@ -29,8 +29,10 @@ export type UnitReader = Reader & {
 
 export function unitReader(unit: TemperatureUnit, exact: ExactValues = NO_EXACT): UnitReader {
   const read = reader();
+  // Two values that show the same (204.4 and 204.5 °C both as 400 °F): the first one wins, so a
+  // later one never takes the place of the value the cell came from.
   const shown = (values: readonly number[], say: (c: number) => string) =>
-    new Map(values.map((c) => [say(c), c]));
+    new Map(values.toReversed().map((c) => [say(c), c]));
   const temps = shown(exact.temps, (c) => tempPlain(c, unit));
   const rates = shown(exact.rates, (c) => diffPlain(c, unit));
   return {

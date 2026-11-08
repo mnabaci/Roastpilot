@@ -22,4 +22,10 @@ describe('unitReader', () => {
     read.temp('a', 'hot');
     expect(read.errors).toEqual({ a: 'Enter a number' });
   });
+
+  it('gives the first of two values that show the same back, never the other', () => {
+    // 204.4 and 204.5 °C both show as 400 °F.
+    const read = unitReader('f', { temps: [204.4, 204.5], rates: [] });
+    expect(read.temp('cap', '400')).toBe(204.4);
+  });
 });
