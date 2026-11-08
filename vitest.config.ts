@@ -25,6 +25,7 @@ export default defineConfig({
           include: [
             'packages/ui/src/**/*.test.{ts,tsx}',
             'apps/desktop/src/renderer/**/*.test.{ts,tsx}',
+            'apps/desktop/src/screenshots/**/*.test.{ts,tsx}',
           ],
         },
       },

@@ -13,9 +13,11 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "dist:mac": "electron-vite build && electron-builder --mac",
-    "typecheck": "tsc --noEmit --composite false -p tsconfig.node.json && tsc --noEmit --composite false -p tsconfig.web.json",
+    "typecheck": "tsc --noEmit --composite false -p tsconfig.node.json && tsc --noEmit --composite false -p tsconfig.web.json && tsc --noEmit --composite false -p tsconfig.screenshots.json",
     "dist:win": "electron-vite build && electron-builder --win",
-    "icon": "electron scripts/make-icon.ts"
+    "icon": "electron scripts/make-icon.ts",
+    "storybook": "storybook dev -p 6008",
+    "build-storybook": "storybook build -o storybook-static"
   },
   "dependencies": {
     "electron-updater": "^6.8.11",
@@ -31,6 +33,7 @@
     "@roastpilot/shared": "workspace:*",
     "@roastpilot/storage": "workspace:*",
     "@roastpilot/ui": "workspace:*",
+    "@storybook/react-vite": "^10.6.5",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
@@ -39,6 +42,7 @@
     "electron": "^45.2.1",
     "electron-builder": "^26.18.0",
     "electron-vite": "^6.0.0",
+    "storybook": "^10.6.5",
     "tailwindcss": "^4.3.3",
     "vite": "^8.3.5"
   },

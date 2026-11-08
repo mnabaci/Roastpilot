@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "types": ["node", "vite/client"]
+  },
+  "include": [
+    ".storybook/*.ts",
+    ".storybook/*.tsx",
+    "src/screenshots",
+    "../../packages/storage/src/sql-raw.d.ts",
+    "src/renderer/vitest-env.d.ts"
+  ]
+}
