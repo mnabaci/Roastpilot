@@ -127,6 +127,38 @@ describe('RoastChart', () => {
     expect(legend).toHaveTextContent('TemperatureRoR');
   });
 
+  it('shows °F when asked: data in °F, the axis grown in 100 °F steps, hover and text in °F', () => {
+    draw(
+      <RoastChart
+        title="Roast curve"
+        temperatureUnit="f"
+        temperatureFloorC={(150 - 32) / 1.8}
+        layers={[
+          bt([
+            [0, 180],
+            [30, 200],
+          ]),
+          ror,
+        ]}
+      />,
+    );
+    // 200 °C is 392 °F; RoR 9.4 °C/min is 16.9 °F/min, a difference with no + 32.
+    expect(
+      screen.getByRole('img', { name: 'Temperature 392 °F, RoR 16.9 °F/min' }),
+    ).toBeInTheDocument();
+    expect(created[0]?.data[1]).toEqual([356, 392]);
+    const temperature = created[0]?.opts.scales.temperature?.range;
+    expect(temperature?.({}, 300, 400, 'temperature')).toEqual([150, 482]);
+    expect(temperature?.({}, 300, 490, 'temperature')).toEqual([150, 500]);
+    act(() => {
+      for (const hook of created[0]?.opts.hooks.setCursor ?? [])
+        hook({ cursor: { left: 120 }, posToVal: () => 30 });
+    });
+    expect(screen.getByRole('list', { name: 'Legend' })).toHaveTextContent(
+      'Temperature392 °FRoR16.9 °F/min',
+    );
+  });
+
   it('shows a control beside its title', () => {
     draw(
       <RoastChart

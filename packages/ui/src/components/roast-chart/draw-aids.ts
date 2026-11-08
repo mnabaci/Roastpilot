@@ -145,8 +145,8 @@ export function drawBandLabels(
   ctx.restore();
 }
 
-/** The hottest point an aid draws on the temperature axis (the projection), °C. */
-export function aidsTopC(aids: readonly ChartAid[]): number | undefined {
+/** The hottest point an aid draws on the temperature axis (the projection), in the unit shown. */
+export function aidsTop(aids: readonly ChartAid[]): number | undefined {
   const values = projections(aids)
     .filter((layer) => layer.axis === 'temperature')
     .flatMap((layer) => layer.points.flatMap((p) => (p.v === null ? [] : [p.v])));

@@ -1,3 +1,5 @@
+import { rorSymbol, tempSymbol, type TemperatureUnit } from '@roastpilot/shared';
+import { formatNumber } from '../../lib/format';
 import type { LineLayer } from './chart-layer';
 
 /**
@@ -19,11 +21,15 @@ export function valueAt(layer: LineLayer, t: number): number | undefined {
   return points[found]?.v ?? undefined;
 }
 
-/** A value with its unit, as the legend and the text alternative show it. */
-export function formatLayerValue(axis: LineLayer['axis'], v: number): string {
-  return {
-    temperature: `${v.toFixed(1)} °C`,
-    ror: `${v.toFixed(1)} °C/min`,
-    output: `${String(Math.round(v))}%`,
-  }[axis];
+/** A value with its unit, as the legend and the text alternative show it; °F temperatures whole. */
+export function formatLayerValue(
+  axis: LineLayer['axis'],
+  v: number,
+  unit: TemperatureUnit,
+): string {
+  if (axis === 'temperature') {
+    return `${formatNumber(v, unit === 'f' ? 0 : 1) ?? '–'} ${tempSymbol(unit)}`;
+  }
+  if (axis === 'ror') return `${v.toFixed(1)} ${rorSymbol(unit)}`;
+  return `${String(Math.round(v))}%`;
 }
