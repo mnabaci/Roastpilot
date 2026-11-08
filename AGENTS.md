@@ -30,6 +30,7 @@ Claude Code runs these as skills; other agents open and follow the file. Skill `
 | tune PID gains from saved roasts                            | `pid-tune`              |
 | change tokens, or sync the design system page after a merge | `design-sync`           |
 | cut a release                                               | `release`               |
+| merge main, a stack parent or another branch into yours     | `merge`                 |
 
 ## Non-negotiables
 
@@ -72,6 +73,7 @@ pnpm storybook      # component workshop at http://localhost:6006 (dark/light sw
 pnpm ui <command>   # drive and screenshot the running app (ui-check skill)
 pnpm storybook:app  # the app's screens on sample data at http://localhost:6008
 pnpm screenshots    # regenerate the README screenshots (docs/images) in headless Chrome
+pnpm merge:scan <branch>  # what a merge brings that git won't flag (merge skill)
 pnpm --filter @roastpilot/ui tokens   # regenerate CSS from tokens.json
 ```
 
@@ -85,7 +87,7 @@ pnpm --filter @roastpilot/ui tokens   # regenerate CSS from tokens.json
 ## Workflow
 
 - Branch from `main` (`feat/…`, `fix/…`, `docs/…`), conventional commits (lowercase, checked by commitlint), open a PR with `.github/pull_request_template.md`. Never push to `main`.
-- **Stacked PRs:** a change that needs an open PR branches from it and targets it as base. To pick up the base's changes, merge the base into your branch: never rebase or force-push.
+- **Stacked PRs:** a change that needs an open PR branches from it and targets it as base. To pick up the base's changes, merge the base into your branch with the `merge` skill: never rebase or force-push.
 
 ## Parallel work
 

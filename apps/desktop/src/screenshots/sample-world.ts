@@ -127,7 +127,7 @@ async function autoMidRoast(): Promise<AppState> {
   await chooseMode(app, 'auto', 'light-curve');
   app.setWallClock('2026-11-08T10:00:00Z');
   await autoPreheatAndCharge(app, { beanId: guji, batchG: BATCH_G, ghostRoastId: best });
-  await autoRoastFor(app, 6 * 60);
+  await autoRoastFor(app, 6.5 * 60);
   return stateOf(app);
 }
 

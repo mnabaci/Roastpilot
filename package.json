@@ -19,6 +19,7 @@
     "storybook:app": "pnpm --filter @roastpilot/desktop storybook",
     "build-storybook:app": "pnpm --filter @roastpilot/desktop build-storybook",
     "screenshots": "node scripts/screenshots.ts",
+    "merge:scan": "node scripts/merge-scan.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json && pnpm -r --if-present typecheck",
     "lint": "node --max-old-space-size=4096 node_modules/eslint/bin/eslint.js . --max-warnings 0",
     "format": "prettier --write .",

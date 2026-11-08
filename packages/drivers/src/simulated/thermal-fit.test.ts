@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { fitError, fitThermalConstants, replayRoast, type FitSample } from './thermal-fit';
+import {
+  BEANS_IN_ONLY,
+  EVERY_READING,
+  fitError,
+  fitThermalConstants,
+  replayRoast,
+  type FitSample,
+} from './thermal-fit';
 import {
   DEFAULT_THERMAL_CONSTANTS,
   removeBeans,
@@ -42,6 +49,30 @@ describe('replayRoast', () => {
   it('returns nothing for no readings, and fitError is 0', () => {
     expect(replayRoast([], DEFAULT_THERMAL_CONSTANTS)).toEqual([]);
     expect(fitError([[]], DEFAULT_THERMAL_CONSTANTS)).toBe(0);
+  });
+});
+
+describe('fitError', () => {
+  // Off from the model by 10 °C in preheat and 2 °C with beans in. The first reading, where the
+  // replay starts, stays.
+  const made = syntheticRoast(DEFAULT_THERMAL_CONSTANTS);
+  const probe = replayRoast(made, DEFAULT_THERMAL_CONSTANTS);
+  const roast = made.map((sample, i) => ({
+    ...sample,
+    bt: (probe[i] ?? 0) + (i === 0 ? 0 : sample.tS < 0 ? 10 : sample.beans ? 2 : 0),
+  }));
+  const preheat = roast.filter((s) => s.tS < 0).length - 1;
+  const beansIn = roast.filter((s) => s.beans).length;
+
+  it('counts readings with beans in 20 times', () => {
+    const expected = Math.sqrt((preheat * 100 + 20 * beansIn * 4) / (roast.length + 19 * beansIn));
+    expect(fitError([roast], DEFAULT_THERMAL_CONSTANTS)).toBeCloseTo(expected, 1);
+  });
+
+  it('counts every reading the same, or only charge to drop, when asked', () => {
+    const every = Math.sqrt((preheat * 100 + beansIn * 4) / roast.length);
+    expect(fitError([roast], DEFAULT_THERMAL_CONSTANTS, EVERY_READING)).toBeCloseTo(every, 1);
+    expect(fitError([roast], DEFAULT_THERMAL_CONSTANTS, BEANS_IN_ONLY)).toBeCloseTo(2, 1);
   });
 });
 

@@ -10,6 +10,9 @@ import { DatabaseSync } from 'node:sqlite';
 import { parseArgs } from 'node:util';
 import { DEFAULT_THERMAL_CONSTANTS } from '../packages/drivers/src/simulated/thermal-model';
 import {
+  BEANS_IN_ONLY,
+  EVERY_READING,
+  fitError,
   fitThermalConstants,
   FITTED_KEYS,
   type FitSample,
@@ -78,8 +81,13 @@ const fit = fitThermalConstants(roasts, DEFAULT_THERMAL_CONSTANTS);
 const report = Object.fromEntries(
   FITTED_KEYS.map((key) => [key, Number(fit.constants[key].toPrecision(3))]),
 );
+const rms = (label: string, weights: typeof EVERY_READING) =>
+  `${label} ${fitError(roasts, DEFAULT_THERMAL_CONSTANTS, weights).toFixed(1)} °C → ` +
+  `${fitError(roasts, fit.constants, weights).toFixed(1)} °C\n`;
 process.stdout.write(
   `Roasts ${roastIds.join(', ')}: ${roasts.reduce((n, r) => n + r.length, 0)} readings\n` +
-    `RMS error ${fit.errorBefore.toFixed(1)} °C → ${fit.errorAfter.toFixed(1)} °C\n` +
+    `RMS error (fitted, beans in ×20) ${fit.errorBefore.toFixed(1)} °C → ${fit.errorAfter.toFixed(1)} °C\n` +
+    rms('RMS charge to drop', BEANS_IN_ONLY) +
+    rms('RMS every reading', EVERY_READING) +
     `${JSON.stringify(report, null, 2)}\n`,
 );
