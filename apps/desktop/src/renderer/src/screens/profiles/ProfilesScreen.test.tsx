@@ -100,6 +100,8 @@ describe('ProfilesScreen', () => {
       // BT cap 200 °C is 392 °F.
       expect(screen.getByRole('textbox', { name: 'BT cap' })).toHaveValue('392');
       expect(screen.getByRole('columnheader', { name: 'Ends °F' })).toBeInTheDocument();
+      // A rate is a difference: its unit follows too.
+      expect(screen.getByRole('columnheader', { name: 'RoR °F/min' })).toBeInTheDocument();
       await edit('Charge temp', '370');
       await userEvent.click(screen.getByRole('button', { name: 'Save' }));
       // Kept to 0.1 °C; the rest stays exactly as it was.
@@ -226,11 +228,21 @@ describe('ProfilesScreen', () => {
     expect(screen.queryByText('Not saved')).toBeNull();
   });
 
+  it('a step profile groups RoR min and max under one header with its unit', () => {
+    open();
+    expect(screen.getByRole('columnheader', { name: 'RoR °C/min' })).toHaveAttribute(
+      'colspan',
+      '2',
+    );
+    expect(screen.getByRole('columnheader', { name: 'Min' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Max' })).toBeInTheDocument();
+  });
+
   it('a curve profile has curve points and no durations', () => {
     const curve = { profile: { ...CURVE, id: 'custom-c', name: 'My curve' }, builtIn: false };
     open(fakeApi(), [...BUILT_INS, curve], 'custom-c');
     expect(screen.getByRole('heading', { name: 'Curve points' })).toBeInTheDocument();
-    expect(screen.queryByRole('columnheader', { name: 'RoR min' })).toBeNull();
+    expect(screen.queryByRole('columnheader', { name: /^RoR/ })).toBeNull();
   });
 
   describe('moving a step', () => {
