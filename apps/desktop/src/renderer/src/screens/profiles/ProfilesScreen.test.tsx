@@ -446,10 +446,29 @@ describe('ProfilesScreen', () => {
       expect(screen.getByRole('textbox', { name: 'BT cap' })).toHaveValue('205');
     });
 
+    it('says why Save waits in a banner right under the title, gone at Drop with the edit kept', async () => {
+      const { stores } = openRunning('custom-1');
+      await edit('BT cap', '205');
+      const banner = screen.getByRole('status');
+      expect(banner).toHaveTextContent('Auto is running this profile · edits save after Drop');
+      // Under the title, before the rest of the editor.
+      const title = screen.getByRole('textbox', { name: 'Name' });
+      expect(title.compareDocumentPosition(banner) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      act(() => {
+        stores.roast.setState({ roast: { ...READY_ROAST, phase: 'cooling' } });
+      });
+      expect(screen.queryByText(/Auto is running this profile/)).toBeNull();
+      expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+      expect(screen.getByRole('textbox', { name: 'BT cap' })).toHaveValue('205');
+    });
+
     it('holds Use for Auto, but other profiles can still be saved', async () => {
       openRunning('light-steps');
       await userEvent.click(screen.getByRole('button', { name: 'Mine' }));
       expect(screen.getByRole('button', { name: 'Use for Auto' })).toBeDisabled();
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Auto is running another profile · Use for Auto after Drop',
+      );
       await edit('BT cap', '205');
       expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
     });

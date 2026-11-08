@@ -37,4 +37,14 @@ describe('AlertBanner', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Acknowledge' }));
     expect(onDismiss).toHaveBeenCalledOnce();
   });
+
+  it('says why something waits as a polite status, never an alert', () => {
+    render(
+      <AlertBanner kind="info">Auto is running this profile · edits save after Drop</AlertBanner>,
+    );
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Auto is running this profile · edits save after Drop',
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
 });
