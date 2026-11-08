@@ -1,0 +1,77 @@
+<!-- @dsCard group="Inputs" height=150 subtitle="Five times; six times" -->
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums;
+  }
+  .wrap {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .sc {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 4px;
+    border-radius: var(--radius-md);
+    background: var(--surface-raised);
+  }
+  .sc button {
+    all: unset;
+    cursor: pointer;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: calc(var(--radius-md) - 4px);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink-muted);
+  }
+  .sc button:hover {
+    background: var(--surface-hover);
+    color: var(--ink);
+  }
+  .sc button[aria-checked='true'] {
+    background: var(--heat-tint);
+    color: var(--heat);
+  }
+  .sc button:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: -2px;
+  }
+</style>
+<div class="wrap">
+  <div class="sc" role="radiogroup" aria-label="Cool the beans for">
+    <button role="radio" aria-checked="false">2 min</button
+    ><button role="radio" aria-checked="false">3 min</button
+    ><button role="radio" aria-checked="true">4 min</button
+    ><button role="radio" aria-checked="false">5 min</button
+    ><button role="radio" aria-checked="false">6 min</button>
+  </div>
+  <div class="sc" role="radiogroup" aria-label="Soak time">
+    <button role="radio" aria-checked="false">0:30</button
+    ><button role="radio" aria-checked="false">0:45</button
+    ><button role="radio" aria-checked="true">1:00</button
+    ><button role="radio" aria-checked="false">1:15</button
+    ><button role="radio" aria-checked="false">1:30</button
+    ><button role="radio" aria-checked="false">2:00</button>
+  </div>
+</div>
+<script>
+  document.querySelectorAll('.sc').forEach((g) =>
+    g.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      g.querySelectorAll('button').forEach((x) => x.setAttribute('aria-checked', x === b));
+    }),
+  );
+</script>

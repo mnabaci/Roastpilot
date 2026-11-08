@@ -1,0 +1,91 @@
+<!-- @dsCard group="Navigation" height=230 subtitle="One open, one with a badge" -->
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+  }
+  .wrap {
+    padding: 20px;
+    width: 256px;
+    box-sizing: border-box;
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  button {
+    all: unset;
+    box-sizing: border-box;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    color: var(--ink-muted);
+  }
+  button:hover {
+    background: var(--surface-hover);
+    color: var(--ink);
+  }
+  button[aria-current='true'] {
+    background: var(--surface-raised);
+    color: var(--ink);
+  }
+  button:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: -2px;
+  }
+  .n {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .b {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: var(--air-tint);
+    color: var(--air);
+    border-radius: var(--radius-sm);
+    padding: 3px 6px;
+  }
+  .add {
+    margin-top: 8px;
+    color: var(--ink);
+    font-weight: 600;
+  }
+</style>
+<nav class="wrap" aria-label="Roasters">
+  <ul>
+    <li>
+      <button aria-current="true">
+        <span class="n">Skywalker</span><span class="b">Active</span>
+      </button>
+    </li>
+    <li>
+      <button><span class="n">Simulator</span></button>
+    </li>
+    <li>
+      <button><span class="n">Skywalker at the cabin, with a long name</span></button>
+    </li>
+  </ul>
+  <button class="add">+ Add roaster</button>
+</nav>
+<script></script>

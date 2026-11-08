@@ -1,0 +1,84 @@
+<!-- @dsCard group="Brand" height=200 subtitle="Top bar mark with wordmark, and the app icon" -->
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+  }
+  .wrap {
+    display: flex;
+    align-items: center;
+    gap: 48px;
+    padding: 28px;
+  }
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .tile {
+    fill: var(--heat-fill);
+  }
+  .bean {
+    fill: var(--bg);
+  }
+  .cut {
+    fill: none;
+    stroke: var(--heat-fill);
+    stroke-width: 4.2;
+    stroke-linecap: round;
+  }
+  .plate {
+    fill: var(--surface);
+  }
+</style>
+<div class="wrap">
+  <div class="bar">
+    <svg width="24" height="24" viewBox="0 0 64 64" aria-hidden="true">
+      <defs>
+        <clipPath id="b1">
+          <path
+            d="M32 8 C 47 8 52 21 52 32 C 52 44 45 56 32 56 C 17 56 12 44 12 32 C 12 20 18 8 32 8 Z"
+          />
+        </clipPath>
+      </defs>
+      <rect class="tile" width="64" height="64" rx="16" />
+      <g transform="rotate(-40 32 32)">
+        <path
+          class="bean"
+          d="M32 8 C 47 8 52 21 52 32 C 52 44 45 56 32 56 C 17 56 12 44 12 32 C 12 20 18 8 32 8 Z"
+        />
+        <path class="cut" clip-path="url(#b1)" d="M32 6 C 24 18 25 26 32 32 C 39 38 40 46 32 58" />
+      </g>
+    </svg>
+    <span>Roastpilot</span>
+  </div>
+  <svg width="128" height="128" viewBox="0 0 1024 1024" aria-label="App icon">
+    <rect class="plate" x="100" y="100" width="824" height="824" rx="185" />
+    <g transform="translate(256 256) scale(8)">
+      <defs>
+        <clipPath id="b2">
+          <path
+            d="M32 8 C 47 8 52 21 52 32 C 52 44 45 56 32 56 C 17 56 12 44 12 32 C 12 20 18 8 32 8 Z"
+          />
+        </clipPath>
+      </defs>
+      <rect class="tile" width="64" height="64" rx="16" />
+      <g transform="rotate(-40 32 32)">
+        <path
+          class="bean"
+          d="M32 8 C 47 8 52 21 52 32 C 52 44 45 56 32 56 C 17 56 12 44 12 32 C 12 20 18 8 32 8 Z"
+        />
+        <path class="cut" clip-path="url(#b2)" d="M32 6 C 24 18 25 26 32 32 C 39 38 40 46 32 58" />
+      </g>
+    </g>
+  </svg>
+</div>
+<script></script>

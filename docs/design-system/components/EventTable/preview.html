@@ -1,0 +1,102 @@
+<!-- @dsCard group="Data" height=250 subtitle="Events of a saved roast with their values" -->
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums;
+  }
+  .wrap {
+    padding: 20px;
+  }
+  .card {
+    width: 420px;
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    padding: 16px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th {
+    color: var(--ink-muted);
+    font-weight: 500;
+    text-align: right;
+    padding: 0 0 8px;
+  }
+  th:first-child,
+  td:first-child {
+    text-align: left;
+  }
+  td {
+    text-align: right;
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+  }
+</style>
+<div class="wrap">
+  <div class="card">
+    <table aria-label="Events">
+      <thead>
+        <tr>
+          <th>Event</th>
+          <th>Time</th>
+          <th>Temp</th>
+          <th>RoR</th>
+          <th>Heater</th>
+          <th>Fan</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Charge</td>
+          <td>0:00</td>
+          <td>181.0 °C</td>
+          <td>–</td>
+          <td>0 %</td>
+          <td>30 %</td>
+        </tr>
+        <tr>
+          <td>Turning point</td>
+          <td>1:04</td>
+          <td>92.2 °C</td>
+          <td>–</td>
+          <td>85 %</td>
+          <td>30 %</td>
+        </tr>
+        <tr>
+          <td>First crack</td>
+          <td>9:31</td>
+          <td>191.3 °C</td>
+          <td>7.6</td>
+          <td>30 %</td>
+          <td>100 %</td>
+        </tr>
+        <tr>
+          <td>Drop</td>
+          <td>11:03</td>
+          <td>196.6 °C</td>
+          <td>3.4</td>
+          <td>30 %</td>
+          <td>100 %</td>
+        </tr>
+        <tr>
+          <td>Cool end</td>
+          <td>15:03</td>
+          <td>110.5 °C</td>
+          <td>–</td>
+          <td>0 %</td>
+          <td>100 %</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<script></script>

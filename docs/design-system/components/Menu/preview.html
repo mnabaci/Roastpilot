@@ -1,0 +1,76 @@
+<!-- @dsCard group="Actions" height=220 subtitle="Open, with Delete in red text" -->
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+  }
+  .w {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    width: 260px;
+  }
+  .t {
+    all: unset;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-md);
+    background: var(--surface-hover);
+  }
+  svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+  }
+  .l {
+    min-width: 192px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .i {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    border-radius: var(--radius-md);
+    font-size: 15px;
+  }
+  .i.h {
+    background: var(--surface-hover);
+  }
+  .d {
+    color: var(--critical-text);
+  }
+</style>
+<div class="w">
+  <button class="t" aria-label="More for Light · Steps">
+    <svg viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="19" cy="12" r="1" />
+      <circle cx="5" cy="12" r="1" />
+    </svg>
+  </button>
+  <div class="l" role="menu">
+    <div class="i h" role="menuitem">Duplicate</div>
+    <div class="i" role="menuitem">Copy to Skywalker</div>
+    <div class="i d" role="menuitem">Delete</div>
+  </div>
+</div>
+<script></script>

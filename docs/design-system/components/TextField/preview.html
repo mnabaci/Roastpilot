@@ -1,0 +1,93 @@
+<!-- @dsCard group="Inputs" height=120 subtitle="Search, empty and filled" -->
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+  }
+  .wrap {
+    padding: 20px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--ink-muted);
+    width: 280px;
+  }
+  .f {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .f svg {
+    position: absolute;
+    left: 12px;
+  }
+  input {
+    height: 44px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0 14px 0 40px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-size: 15px;
+  }
+  input::placeholder {
+    color: var(--ink-muted);
+  }
+  input:hover {
+    border-color: var(--border-strong);
+  }
+  input:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+</style>
+<div class="wrap">
+  <label
+    >Search
+    <div class="f">
+      <svg
+        aria-hidden="true"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="var(--ink-muted)"
+        stroke-width="2"
+      >
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-3.5-3.5" /></svg
+      ><input type="search" placeholder="Event, scope or context" /></div
+  ></label>
+  <label
+    >Search
+    <div class="f">
+      <svg
+        aria-hidden="true"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="var(--ink-muted)"
+        stroke-width="2"
+      >
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-3.5-3.5" /></svg
+      ><input type="search" value="connect-failed" /></div
+  ></label>
+</div>
+<script></script>

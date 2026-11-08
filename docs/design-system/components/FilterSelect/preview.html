@@ -1,0 +1,63 @@
+<!-- @dsCard group="Inputs" height=110 subtitle="Quiet and filtering" -->
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+  }
+  .w {
+    padding: 20px;
+    display: flex;
+    gap: 8px;
+    width: 232px;
+  }
+  .c {
+    flex: 1;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 500;
+    background: var(--surface-raised);
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .c.f {
+    background: var(--heat-tint);
+    color: var(--heat);
+  }
+  .s {
+    width: 44px;
+    flex: none;
+  }
+  svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+  }
+</style>
+<div class="w">
+  <div class="c s">
+    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px">
+      <polygon points="12 2 15 9 22 9 16.5 13.5 18.5 21 12 16.5 5.5 21 7.5 13.5 2 9 9 9" />
+    </svg>
+  </div>
+  <div class="c f" title="Bean: Ethiopia Guji">
+    Ethiopia…<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg>
+  </div>
+  <div class="c" title="Profile: All">
+    Profile<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg>
+  </div>
+</div>
+<script></script>

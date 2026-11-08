@@ -1,0 +1,91 @@
+<!-- @dsCard group="Navigation" height=80 subtitle="Current step: First crack" -->
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums;
+  }
+  .wrap {
+    padding: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  button {
+    font-family: inherit;
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+</style>
+<div class="wrap">
+  <ol
+    aria-label="Roast progress"
+    style="list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 28px"
+  >
+    <li style="display: flex; align-items: center; gap: 8px">
+      <span
+        style="
+          width: 10px;
+          height: 10px;
+          border-radius: var(--radius-full);
+          background: var(--good);
+        "
+      ></span
+      ><span style="font-size: 14px">Preheat</span>
+    </li>
+    <li style="display: flex; align-items: center; gap: 8px">
+      <span
+        style="
+          width: 10px;
+          height: 10px;
+          border-radius: var(--radius-full);
+          background: var(--good);
+        "
+      ></span
+      ><span style="font-size: 14px">Roast</span>
+    </li>
+    <li style="display: flex; align-items: center; gap: 8px">
+      <span
+        style="
+          width: 10px;
+          height: 10px;
+          border-radius: var(--radius-full);
+          background: var(--heat-fill);
+        "
+      ></span
+      ><span style="font-size: 14px; font-weight: 600">First crack</span>
+    </li>
+    <li style="display: flex; align-items: center; gap: 8px">
+      <span
+        style="
+          width: 10px;
+          height: 10px;
+          border-radius: var(--radius-full);
+          background: var(--border-strong);
+        "
+      ></span
+      ><span style="font-size: 14px; color: var(--ink-muted)">Drop</span>
+    </li>
+    <li style="display: flex; align-items: center; gap: 8px">
+      <span
+        style="
+          width: 10px;
+          height: 10px;
+          border-radius: var(--radius-full);
+          background: var(--border-strong);
+        "
+      ></span
+      ><span style="font-size: 14px; color: var(--ink-muted)">Cool</span>
+    </li>
+  </ol>
+</div>
+<script></script>

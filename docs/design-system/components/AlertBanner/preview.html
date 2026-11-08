@@ -1,0 +1,115 @@
+<!-- @dsCard group="Feedback" height=170 subtitle="Critical and warning" -->
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums;
+  }
+  .wrap {
+    padding: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  button {
+    font-family: inherit;
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+</style>
+<div class="wrap" style="flex-direction: column; align-items: stretch">
+  <div
+    role="alert"
+    style="
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 18px;
+      border-radius: var(--radius-lg);
+      background: var(--critical-surface);
+      border: 1px solid var(--critical);
+    "
+  >
+    <div style="display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600">
+      <svg
+        aria-hidden="true"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="var(--critical-text)"
+        stroke-width="2"
+      >
+        <path d="M12 3 2 21h20L12 3z" />
+        <path d="M12 10v5" />
+        <path d="M12 18v.5" /></svg
+      >Emergency stop · heater off, fan and bean cooler on
+    </div>
+    <button
+      style="
+        height: 44px;
+        padding: 0 16px;
+        border-radius: var(--radius-md);
+        border: 0;
+        background: var(--surface-raised);
+        color: var(--ink);
+        font-size: 14px;
+      "
+    >
+      Dismiss
+    </button>
+  </div>
+  <div
+    role="status"
+    style="
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 18px;
+      border-radius: var(--radius-lg);
+      background: var(--surface-raised);
+      border: 1px solid var(--warning);
+    "
+  >
+    <div style="display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600">
+      <svg
+        aria-hidden="true"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="var(--warning)"
+        stroke-width="2"
+      >
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v6" />
+        <path d="M12 16v.5" /></svg
+      >Temperature stalled for 60 s · check the roaster
+    </div>
+    <button
+      style="
+        height: 44px;
+        padding: 0 16px;
+        border-radius: var(--radius-md);
+        border: 0;
+        background: var(--surface-raised);
+        color: var(--ink);
+        font-size: 14px;
+      "
+    >
+      Dismiss
+    </button>
+  </div>
+</div>
+<script></script>

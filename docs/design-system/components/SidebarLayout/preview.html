@@ -1,0 +1,132 @@
+<!-- @dsCard group="Navigation" height=300 width=720 subtitle="Settings: sections on the left, rows on the right" -->
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+  }
+  .f {
+    display: flex;
+    height: 300px;
+  }
+  .s {
+    width: 256px;
+    flex: none;
+    box-sizing: border-box;
+    padding: 24px 0 24px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  h1 {
+    margin: 0;
+    font-size: 28px;
+    line-height: 34px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow: auto;
+  }
+  li {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    border-radius: var(--radius-md);
+    color: var(--ink-muted);
+    font-size: 15px;
+  }
+  li.o {
+    background: var(--surface-raised);
+    color: var(--ink);
+  }
+  .c {
+    flex: 1;
+    padding: 24px;
+    overflow: auto;
+  }
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    padding: 4px 20px;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 64px;
+    border-top: 1px solid var(--border);
+  }
+  .row:first-child {
+    border-top: 0;
+  }
+  .n {
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .h {
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+  .t {
+    width: 44px;
+    height: 26px;
+    border-radius: var(--radius-full);
+    background: var(--heat-tint);
+    box-shadow: inset 0 0 0 1px var(--heat);
+    position: relative;
+  }
+  .t::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--heat);
+  }
+</style>
+<div class="f">
+  <div class="s">
+    <h1>Settings</h1>
+    <ul>
+      <li>Controls</li>
+      <li class="o">Roast</li>
+      <li>Auto</li>
+      <li>Chart</li>
+    </ul>
+  </div>
+  <div class="c">
+    <div class="card">
+      <div class="row">
+        <div>
+          <div class="n">Find the charge point</div>
+          <div class="h">Start pressed late? Charge moves back to the drop</div>
+        </div>
+        <span class="t"></span>
+      </div>
+      <div class="row">
+        <div>
+          <div class="n">Cool the roaster after each roast</div>
+          <div class="h">Fan and drum run until the drum is cool</div>
+        </div>
+        <span class="t"></span>
+      </div>
+    </div>
+  </div>
+</div>
+<script></script>
