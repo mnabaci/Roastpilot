@@ -122,7 +122,7 @@ describe('Light · Steps', () => {
   it('holds the fan back when the stall guard trips', async () => {
     const { rows, events } = await simulateAutoRoast({ profile, tuning, firstCrackAtC: 191 });
     expect(events.some((event) => event.kind === 'stall-guard' && event.tripped)).toBe(true);
-    const development = rows.filter((row) => row.phase === 'Development');
+    const development = rows.filter((row) => row.phase === 'To first crack');
     expect(development.some((row) => row.fan < 80)).toBe(true);
   });
 });

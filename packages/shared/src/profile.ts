@@ -113,9 +113,11 @@ export const CurveFollowSchema = z.object({
  * followed RoR reads with these.
  */
 export const CURVE_FOLLOW_DEFAULTS: CurveFollow = {
-  gains: { kp: 1.5, ki: 0.02, kd: 0 },
+  // From Auto roast 17: at ki 0.02 BT ran 2.5 °C ahead for 4 min, and with 30 s of look-ahead the
+  // heater was still coming down when RoR overshot the dry-end bend.
+  gains: { kp: 1.5, ki: 0.05, kd: 0 },
   limitPct: 20,
-  lookAheadS: 30,
+  lookAheadS: 45,
   pullPerC: 0.3,
   slewPctPer10s: 5,
 };
