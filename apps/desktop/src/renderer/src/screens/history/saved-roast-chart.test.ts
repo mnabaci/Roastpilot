@@ -101,7 +101,7 @@ describe('savedRoastFocus', () => {
     expect(savedRoastFocus(roast({}))).toEqual({ fromS: -30, toS: 930 });
   });
 
-  it('runs to End roast + 0:30 when the roast was ended there', () => {
+  it('runs to Stop roast + 0:30 when the roast was ended there', () => {
     const ended = roast({
       events: [
         { kind: 'charge', tS: 0, bt: 180 },

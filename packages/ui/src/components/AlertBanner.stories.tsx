@@ -22,3 +22,12 @@ export const Warning: Story = {
 export const LostConnection: Story = {
   args: { children: 'Roaster disconnected · heater off once it reconnects', onDismiss: undefined },
 };
+/** Why something waits, not a problem: cyan, as Auto is what runs. */
+export const Info: Story = {
+  args: {
+    kind: 'info',
+    children: 'Auto is running this profile · edits save after Drop',
+    onDismiss: undefined,
+  },
+};
+export const InfoLight: Story = { ...Info, globals: { theme: 'Light' } };

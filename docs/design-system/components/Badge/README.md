@@ -17,4 +17,4 @@ A short uppercase status label beside a name or a value: AUTO, MANUAL, BUILT-IN,
 - One or two words. A badge is a state, never an action: it is a `span`, not a button.
 - Next to the thing it describes (after a title, in a list row's end, before a value), never alone.
 - No `critical` or `warning` tones: safety lives in AlertBanner, and red text stays for Delete.
-- In a row that can be narrow, the badge keeps its size (`shrink-0`) and the name truncates first.
+- In a row that can be narrow, the badge keeps its size (`shrink-0`) and the name truncates first. It never wraps onto two lines (`whitespace-nowrap`).

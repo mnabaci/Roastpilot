@@ -4,6 +4,7 @@ import { CoachStatusSchema, type CoachStatus } from './coach';
 import { RoastSetupSchema, type Bean } from './bean';
 import { ReadingSchema, type Reading } from './channels';
 import { ConnectionStateSchema, type ConnectionState } from './connection';
+import { PREHEAT_HOLD } from './profile';
 import type { LogRecord } from './log-record';
 import type { Roaster } from './roaster';
 import { RoastStateSchema, type RoastState } from './roast';
@@ -55,6 +56,7 @@ export const IPC_CHANNELS = {
   autoStatus: 'auto:status',
   autoChargeSoon: 'auto:charge-soon',
   autoResume: 'auto:resume',
+  autoSetPreheatHold: 'auto:set-preheat-hold',
   coachStatus: 'coach:status',
   coachApply: 'coach:apply',
   coachDismiss: 'coach:dismiss',
@@ -128,3 +130,18 @@ export const SetOutputRequestSchema = z.object({
   value: z.number(),
 });
 export type SetOutputRequest = z.infer<typeof SetOutputRequestSchema>;
+
+/**
+ * This roast's preheat hold, chosen on the setup card (docs/spec/roast-control.md, Roast phases
+ * 1.3); null goes back to the one picked for the batch. Never saved to the roaster.
+ */
+export const PreheatHoldRequestSchema = z.object({
+  holdS: z
+    .number()
+    .int()
+    .min(PREHEAT_HOLD.minS)
+    .max(PREHEAT_HOLD.maxS)
+    .multipleOf(PREHEAT_HOLD.stepS)
+    .nullable(),
+});
+export type PreheatHoldRequest = z.infer<typeof PreheatHoldRequestSchema>;

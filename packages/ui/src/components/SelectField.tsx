@@ -28,7 +28,7 @@ export function SelectField<V extends string>({
   className,
 }: SelectFieldProps<V>) {
   const id = useId();
-  const current = options.find((o) => o.value === value)?.label ?? '';
+  const current = options.find((o) => o.value === value);
   return (
     <div className={cn('flex min-w-0 flex-col gap-1.5', className)}>
       <label htmlFor={id} className={hideLabel ? 'sr-only' : 'text-label text-ink-muted'}>
@@ -46,7 +46,8 @@ export function SelectField<V extends string>({
           numeric ? 'gap-1 pr-2 pl-2.5 tabular-nums' : 'gap-2 pr-3 pl-3.5',
         )}
       >
-        <span className="min-w-0 flex-1 truncate">{current}</span>
+        {/* Only the name: a badge here would squeeze it in a narrow field; the list shows it. */}
+        <span className="min-w-0 flex-1 truncate">{current?.label ?? ''}</span>
         <ChevronDown
           aria-hidden="true"
           className="size-5 shrink-0 text-ink-muted transition-transform group-data-[state=open]:rotate-180"

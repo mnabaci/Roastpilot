@@ -12,7 +12,7 @@ import type { Reading } from './channels';
 import type { CoachApplyError, CoachRequest, CoachStatus } from './coach';
 import type { ConnectionState, ConnectTarget, SerialPortInfo } from './connection';
 import type { DriverError } from './driver-error';
-import type { RoastsChange, SetOutputRequest, Snapshot } from './ipc';
+import type { PreheatHoldRequest, RoastsChange, SetOutputRequest, Snapshot } from './ipc';
 import type { RendererLogEntry } from './log-entry';
 import type { LogDay, LogDayRead, LogRecord } from './log-record';
 import type {
@@ -142,6 +142,8 @@ export interface AutoApi {
   autoChargeSoon(): Promise<Result<void, AutoChargeSoonError>>;
   /** Hands heater and fan back to Auto; refused while the heater is locked. */
   autoResume(): Promise<Result<void, AutoResumeError>>;
+  /** This roast's preheat hold, or null for the one picked for the batch; a running hold follows. */
+  autoSetPreheatHold(request: PreheatHoldRequest): Promise<void>;
   onAutoStatus(listener: (status: AutoStatus) => void): Unsubscribe;
 }
 

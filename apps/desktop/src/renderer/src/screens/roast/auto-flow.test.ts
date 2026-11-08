@@ -24,15 +24,30 @@ describe('autoFlowStep', () => {
   });
 
   it.each([
-    ['cool', null, 'Too hot · cooling before the climb to 180 °C.'],
-    ['climb', null, 'Heating to 180 °C.'],
-    ['hold', 90, 'Holding 180 °C · 1:30 left.'],
-  ] as const)('in %s keeps Start as the second button', (preheatStep, preheatLeftS, hint) => {
-    const step = autoFlowStep(PREHEAT, { ...ON, preheatStep, preheatLeftS }, PROFILE);
+    ['cool', 'Cooling to 160 °C first · then climbs to 180 °C for an even start'],
+    ['climb', 'Heating to 180 °C.'],
+  ] as const)('in %s offers no Start: the drum is not ready for beans', (preheatStep, hint) => {
+    const step = autoFlowStep(PREHEAT, { ...ON, preheatStep, preheatLeftS: null }, PROFILE);
     expect(step?.hint).toBe(hint);
     expect(step?.primary).toBeUndefined();
-    expect(step?.secondary?.action).toBe('start');
+    expect(step?.secondary).toBeUndefined();
     expect(step?.stop).toBeDefined();
+  });
+
+  it('says the cool step in °F, from the profile', () => {
+    const step = autoFlowStep(PREHEAT, { ...ON, preheatStep: 'cool' }, PROFILE, { unit: 'f' });
+    expect(step?.hint).toBe('Cooling to 320 °F first · then climbs to 356 °F for an even start');
+  });
+
+  it('offers no Start while the preheat is starting', () => {
+    expect(autoFlowStep(PREHEAT, { ...ON, preheatStep: null }, PROFILE)?.secondary).toBeUndefined();
+  });
+
+  it('from the hold keeps Start as the second button, so you can still go early', () => {
+    const step = autoFlowStep(PREHEAT, { ...ON, preheatStep: 'hold', preheatLeftS: 90 }, PROFILE);
+    expect(step?.hint).toBe('Holding · 1:30 left');
+    expect(step?.primary).toBeUndefined();
+    expect(step?.secondary?.action).toBe('start');
   });
 
   it('offers Charge soon once the hold is over, then Start as the one primary', () => {
@@ -85,7 +100,7 @@ describe('autoFlowStep', () => {
       const step = autoFlowStep(PREHEAT, { ...ON, stopReason: 'preheat-limit' }, PROFILE);
       expect(step).toEqual({
         stop: END_ROAST,
-        hint: 'Preheat ran out · heater off · end, then Preheat again.',
+        hint: 'Preheat ran out · heater off · stop, then Preheat again.',
       });
     });
 

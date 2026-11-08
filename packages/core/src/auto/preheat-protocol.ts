@@ -1,5 +1,6 @@
-import type { AutoProfile, AutoTuning, PreheatStep } from '@roastpilot/shared';
+import type { AutoProfile, AutoStatus, AutoTuning, PreheatStep } from '@roastpilot/shared';
 import { Pid } from './pid';
+import type { PreheatHold } from './preheat-hold';
 
 /** The numbers in docs/spec/roast-control.md, Roast phases end to end. */
 export const PREHEAT = {
@@ -29,11 +30,33 @@ export class PreheatProtocol {
   #waitingSinceMs = 0;
   #lastMs: number | undefined;
   #nowMs = 0;
+  readonly #hold: PreheatHold;
+  #chosenS: number | null;
 
-  constructor(profile: AutoProfile, tuning: AutoTuning) {
+  /** `hold`: picked for the batch; `chosenS`: this roast's own choice, if you made one. */
+  constructor(profile: AutoProfile, tuning: AutoTuning, hold: PreheatHold, chosenS: number | null) {
     this.#chargeC = profile.chargeC;
     this.#tuning = tuning;
     this.#pid = new Pid(tuning.preheat);
+    this.#hold = hold;
+    this.#chosenS = chosenS;
+  }
+
+  /** The hold this preheat runs, for the status. */
+  get hold(): NonNullable<AutoStatus['preheatHold']> {
+    return { s: this.#holdS, batch: this.#hold.batch, chosen: this.#chosenS !== null };
+  }
+
+  /**
+   * Your choice for this roast, or null for the batch's: a running hold counts what it has held
+   * already, so a shorter choice ends it now, never earlier than that.
+   */
+  choose(holdS: number | null): void {
+    this.#chosenS = holdS;
+  }
+
+  get #holdS(): number {
+    return this.#chosenS ?? this.#hold.s;
   }
 
   get step(): PreheatStep | null {
@@ -44,7 +67,7 @@ export class PreheatProtocol {
   get leftS(): number | null {
     const left = (seconds: number) =>
       Math.max(0, Math.ceil(seconds - (this.#nowMs - this.#stepStartedMs) / 1_000));
-    if (this.#step === 'hold') return left(this.#tuning.holdS);
+    if (this.#step === 'hold') return left(this.#holdS);
     if (this.#step === 'charge-cut') return left(this.#tuning.chargeCutS);
     return null;
   }
@@ -88,7 +111,7 @@ export class PreheatProtocol {
         this.#enter('hold', nowMs);
       }
     } else if (this.#step === 'hold') {
-      if (stepMs >= this.#tuning.holdS * 1_000) {
+      if (stepMs >= this.#holdS * 1_000) {
         this.#waitingSinceMs = nowMs;
         this.#enter('add-beans', nowMs);
       }

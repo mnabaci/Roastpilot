@@ -21,6 +21,15 @@ export function valueAt(layer: LineLayer, t: number): number | undefined {
   return points[found]?.v ?? undefined;
 }
 
+/**
+ * A layer's value now, at `t`: as `valueAt`, but undefined once the layer has ended (RoR after
+ * drop, a ghost past its drop, the plan past its end), so a finished line never reads as current.
+ */
+export function valueNow(layer: LineLayer, t: number): number | undefined {
+  const last = layer.points.at(-1);
+  return last === undefined || last.t < t ? undefined : valueAt(layer, t);
+}
+
 /** A value with its unit, as the legend and the text alternative show it; °F temperatures whole. */
 export function formatLayerValue(
   axis: LineLayer['axis'],

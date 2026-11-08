@@ -1,4 +1,4 @@
-import { tempSymbol } from '@roastpilot/shared';
+import { rorSymbol, tempSymbol } from '@roastpilot/shared';
 import { Plus } from 'lucide-react';
 import { Button, cn } from '@roastpilot/ui';
 import type { ProfileDraft, StepDraft, DraftErrors } from './profile-draft';
@@ -7,8 +7,9 @@ import { SoakRow } from './SoakRow';
 import { StepRow } from './StepRow';
 import { useStepMoves } from './use-step-moves';
 
-// A header wraps ("RoR / min") only when the window is too narrow for its column on one line.
-const HEAD = 'px-0.5 pb-1 text-left align-bottom text-label font-normal text-ink-muted xl:px-1';
+// Headers stay on one line at 960 px: RoR's unit sits once over its min and max (a group).
+const HEAD =
+  'px-0.5 pb-1 text-left align-bottom text-label font-normal whitespace-nowrap text-ink-muted xl:px-1';
 
 interface StepsTableProps {
   draft: ProfileDraft;
@@ -49,17 +50,44 @@ export function StepsTable({
       <table className="w-full border-collapse">
         <thead>
           <tr>
-            {readOnly ? null : <th aria-label="Move" />}
-            <th className={HEAD}>Step</th>
-            <th className={HEAD}>Ends {tempSymbol(draft.unit)}</th>
-            {steps ? <th className={HEAD}>Time</th> : null}
-            {steps ? <th className={HEAD}>RoR min</th> : null}
-            {steps ? <th className={HEAD}>RoR max</th> : null}
-            <th className={HEAD}>Heat %</th>
-            <th className={HEAD}>Fan %</th>
-            <th className={HEAD}>Backup</th>
-            <th aria-label="Remove" />
+            {readOnly ? null : <th rowSpan={steps ? 2 : 1} aria-label="Move" />}
+            <th rowSpan={steps ? 2 : 1} className={HEAD}>
+              Step
+            </th>
+            <th rowSpan={steps ? 2 : 1} className={HEAD}>
+              Ends {tempSymbol(draft.unit)}
+            </th>
+            {steps ? (
+              <th rowSpan={2} className={HEAD}>
+                Time
+              </th>
+            ) : null}
+            {steps ? (
+              <th colSpan={2} scope="colgroup" className={cn(HEAD, 'pb-0')}>
+                RoR {rorSymbol(draft.unit)}
+              </th>
+            ) : null}
+            <th rowSpan={steps ? 2 : 1} className={HEAD}>
+              Heat %
+            </th>
+            <th rowSpan={steps ? 2 : 1} className={HEAD}>
+              Fan %
+            </th>
+            <th rowSpan={steps ? 2 : 1} className={HEAD}>
+              Backup
+            </th>
+            <th rowSpan={steps ? 2 : 1} aria-label="Remove" />
           </tr>
+          {steps ? (
+            <tr>
+              <th scope="col" className={HEAD}>
+                Min
+              </th>
+              <th scope="col" className={HEAD}>
+                Max
+              </th>
+            </tr>
+          ) : null}
         </thead>
         <tbody>
           <SoakRow

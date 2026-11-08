@@ -47,7 +47,7 @@ describe('skippedSteps', () => {
     expect(skippedSteps({ ...base, phase: 'cooling', droppedAtMs: 2 })).toEqual([2]);
   });
 
-  it('End roast before drop skips the steps it never reached', () => {
+  it('Stop roast before drop skips the steps it never reached', () => {
     const end = [{ kind: 'end' as const, atMs: 3, bt: null }];
     expect(skippedSteps({ ...base, phase: 'done', events: end })).toEqual([2, 3, 4]);
     expect(skippedSteps({ ...base, phase: 'done', firstCrackAtMs: 1, events: end })).toEqual([

@@ -1,5 +1,6 @@
 import {
   diffPlain,
+  PREHEAT_HOLD,
   RoasterSchema,
   sayInUnit,
   tempPlain,
@@ -22,7 +23,9 @@ export interface RoasterDraft {
   maxTempC: string;
   maxTimeMin: string;
   tempOffsetC: string;
+  /** The preheat hold for a first batch, then for a back-to-back next batch, as m:ss. */
   hold: string;
+  nextHold: string;
   targetKp: string;
   targetKi: string;
   targetLimitPct: string;
@@ -59,6 +62,7 @@ export function toRoasterDraft(roaster: Roaster, unit: TemperatureUnit): Roaster
     // A difference: +2 °C is +3.6 °F, never +35.6.
     tempOffsetC: diffPlain(roaster.tempOffsetC, unit),
     hold: formatClock(tuning.holdS),
+    nextHold: formatClock(tuning.nextHoldS),
     targetKp: String(tuning.target.kp),
     targetKi: String(tuning.target.ki),
     targetLimitPct: String(tuning.targetLimitPct),
@@ -85,6 +89,7 @@ const CELL_OF: Readonly<Record<string, keyof RoasterDraft>> = {
   maxTimeS: 'maxTimeMin',
   tempOffsetC: 'tempOffsetC',
   'tuning.holdS': 'hold',
+  'tuning.nextHoldS': 'nextHold',
   'tuning.target.kp': 'targetKp',
   'tuning.target.ki': 'targetKi',
   'tuning.targetLimitPct': 'targetLimitPct',
@@ -98,6 +103,24 @@ const CELL_OF: Readonly<Record<string, keyof RoasterDraft>> = {
   'tuning.preheat.ki': 'preheatKi',
   drumSpeedPct: 'drumSpeedPct',
 };
+
+const holdRange = `Between ${formatClock(PREHEAT_HOLD.minS)} and ${formatClock(PREHEAT_HOLD.maxS)}`;
+
+/** A hold cell as seconds, or undefined with its message set (docs/spec/roasters.md). */
+function holdCell(
+  draft: RoasterDraft,
+  cell: 'hold' | 'nextHold',
+  errors: Partial<Record<keyof RoasterDraft, string>>,
+): number | undefined {
+  const clock = /^(\d+):([0-5]\d)$/.exec(draft[cell].trim());
+  if (!clock) {
+    errors[cell] = 'Enter a time like 2:30';
+    return undefined;
+  }
+  const seconds = Number(clock[1]) * 60 + Number(clock[2]);
+  if (seconds < PREHEAT_HOLD.minS || seconds > PREHEAT_HOLD.maxS) errors[cell] = holdRange;
+  return seconds;
+}
 
 /**
  * The record a draft typed in `unit` makes, or a message per cell in that unit. `base` keeps what
@@ -116,8 +139,8 @@ export function fromRoasterDraft(
     return value;
   };
   const read = unitReader(unit, { temps: [base.maxTempC], rates: [base.tempOffsetC] });
-  const clock = /^(\d+):([0-5]\d)$/.exec(draft.hold.trim());
-  if (!clock) errors.hold = 'Enter a time like 2:30';
+  const holdS = holdCell(draft, 'hold', errors);
+  const nextHoldS = holdCell(draft, 'nextHold', errors);
   const { tuning } = base;
   const candidate = {
     ...base,
@@ -132,7 +155,8 @@ export function fromRoasterDraft(
     drumSpeedPct: number('drumSpeedPct'),
     tuning: {
       ...tuning,
-      holdS: clock ? Number(clock[1]) * 60 + Number(clock[2]) : tuning.holdS,
+      holdS: holdS ?? tuning.holdS,
+      nextHoldS: nextHoldS ?? tuning.nextHoldS,
       target: { ...tuning.target, kp: number('targetKp'), ki: number('targetKi') },
       targetLimitPct: number('targetLimitPct'),
       curveFollow: {

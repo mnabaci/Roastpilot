@@ -8,6 +8,7 @@ import type {
   RoastState,
 } from '@roastpilot/shared';
 import type { Logger } from '../logging/logger';
+import type { PreheatHold } from './preheat-hold';
 import type { AutoEvent } from './roast-run';
 
 /** What AutoPilot needs from the app (docs/spec/roast-control.md, Auto mode). */
@@ -23,6 +24,11 @@ export interface AutoPilotDeps {
   drop: () => Promise<void>;
   profile: () => AutoProfile;
   tuning: () => AutoTuning;
+  /**
+   * The hold a preheat starting now runs, picked for the batch (`pickPreheatHold`,
+   * docs/spec/roast-control.md, Roast phases 1.3); your choice for the roast goes on top.
+   */
+  preheatHold: () => PreheatHold;
   onEvent: (event: AutoEvent) => void;
   onChange: (status: AutoStatus) => void;
   logger?: Logger;

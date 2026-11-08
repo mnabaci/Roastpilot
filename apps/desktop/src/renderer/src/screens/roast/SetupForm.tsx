@@ -5,7 +5,7 @@ import { beanDetail } from '../beans/bean-detail';
 import { useState } from 'react';
 import { useAuto, useSettings } from '../../stores/use-stores';
 import { useSaveSettings } from '../settings/use-save-settings';
-import { setupForBean, stockWarning } from './roast-setup';
+import { batchWarning, setupForBean, stockWarning, tunedForG } from './roast-setup';
 import { useActiveProfile } from './use-active-profile';
 
 const NONE = 'none';
@@ -25,6 +25,7 @@ export function SetupForm({
   onChange: (setup: RoastSetup) => void;
 }) {
   const mode = useSettings((s) => s.settings.roastMode);
+  const coach = useSettings((s) => s.settings.coachInManual);
   const profiles = useAuto((s) => s.profiles);
   const active = useActiveProfile();
   const saveSettings = useSaveSettings();
@@ -42,6 +43,8 @@ export function SetupForm({
   const suggested = profiles.find((e) => e.profile.id === suggestion?.profileId);
   const batch = batchText ?? (setup.batchG === null ? '' : String(setup.batchG));
   const warning = stockWarning(bean, setup.batchG);
+  const tunedFor = tunedForG({ roastMode: mode, coachInManual: coach }, active?.profile);
+  const batchNote = bean ? batchWarning(setup.batchG, tunedFor) : undefined;
   return (
     <>
       <SelectField
@@ -62,6 +65,7 @@ export function SetupForm({
               roaster,
               roasts,
               profileId: active?.profile.id ?? null,
+              tunedForG: tunedFor,
             }),
           );
         }}
@@ -78,13 +82,14 @@ export function SetupForm({
           }}
         />
       ) : null}
+      {batchNote ? <p className="text-label text-ink-muted">{batchNote}</p> : null}
       {warning ? <p className="text-label text-critical-text">{warning}</p> : null}
-      {bean && suggestion && suggested ? (
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-label text-ink-muted">
-            {suggested.profile.name} · {suggestion.reason}
-          </p>
-          {suggested.profile.id !== active?.profile.id ? (
+      {bean && suggestion && suggested && suggested.profile.id !== active?.profile.id ? (
+        // What it is, which one, and why; hidden once it is the one picked.
+        <section aria-label="Suggested profile" className="flex flex-col gap-1">
+          <p className="text-label text-ink-muted">Suggested profile</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="min-w-0 truncate text-body text-ink">{suggested.profile.name}</p>
             <Button
               size="sm"
               className="shrink-0"
@@ -92,10 +97,11 @@ export function SetupForm({
                 saveSettings({ autoProfile: suggested.profile.id });
               }}
             >
-              Use
+              Use this profile
             </Button>
-          ) : null}
-        </div>
+          </div>
+          <p className="text-label text-ink-muted">{suggestion.reason}</p>
+        </section>
       ) : null}
       {bean
         ? beanHints(bean).map((hint) => (

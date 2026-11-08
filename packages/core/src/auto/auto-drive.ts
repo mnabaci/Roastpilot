@@ -19,6 +19,10 @@ export interface AutoDriveHost {
   stop: (reason: AutoStopReason) => void;
   /** The roast is over: a stop or an override doesn't carry into the next one. */
   roastOver: () => void;
+  /** Your preheat hold for this roast, if you chose one. */
+  chosenHoldS: () => number | null;
+  /** The preheat is over: a chosen hold was for it only. */
+  preheatOver: () => void;
 }
 
 /**
@@ -56,12 +60,16 @@ export class AutoDrive {
     if (state.phase === 'preheat') {
       this.#run = undefined;
       if (!this.#preheat) {
-        this.#preheat = new PreheatProtocol(deps.profile(), deps.tuning());
+        const hold = deps.preheatHold();
+        const chosenS = this.#host.chosenHoldS();
+        this.#preheat = new PreheatProtocol(deps.profile(), deps.tuning(), hold, chosenS);
+        this.#host.logger.info('auto.preheat-hold', { ...this.#preheat.hold });
         // A new preheat sets the heater itself: an old cut must not land over it.
         heaterCut.forget();
       }
       return;
     }
+    if (this.#preheat) this.#host.preheatOver();
     this.#preheat = undefined;
     if (state.phase !== 'roasting' && state.phase !== 'development') {
       this.#run = undefined;

@@ -1,3 +1,4 @@
+import { PREHEAT } from '@roastpilot/core';
 import {
   formatPlainTemp,
   type AutoProfile,
@@ -39,7 +40,7 @@ function stoppedStep(roast: RoastState, reason: AutoStopReason): FlowStep | unde
   const why = STOP_REASON[reason];
   if (roast.phase === 'preheat') {
     return reason === 'preheat-limit'
-      ? { stop: END_ROAST, hint: `${why} · heater off · end, then Preheat again.` }
+      ? { stop: END_ROAST, hint: `${why} · heater off · stop, then Preheat again.` }
       : { secondary: START, stop: END_ROAST, hint: `${why} · heater and fan are yours.` };
   }
   if (roast.phase === 'roasting') {
@@ -63,21 +64,31 @@ function switchedOffStep(roast: RoastState, heaterPct: number | undefined): Flow
   return roast.phase === 'development' ? { primary: DROP, stop: END_ROAST, hint } : undefined;
 }
 
-/** What each preheat step asks of you; Start stays reachable, so you can always go early. */
-function preheatStep(step: PreheatStep, leftS: number | null, charge: string): FlowStep {
+/**
+ * What each preheat step asks of you (docs/spec/roast-control.md, Roast phases 1). Start comes
+ * with the hold, never before: charging a drum that is still cooling or climbing starts uneven.
+ */
+function preheatStep(
+  step: PreheatStep,
+  leftS: number | null,
+  chargeC: number,
+  unit: TemperatureUnit,
+): FlowStep {
+  const charge = formatPlainTemp(chargeC, unit);
   const left = leftS === null ? '' : ` ${formatClock(leftS)}`;
   const stop = { stop: END_ROAST };
   switch (step) {
-    case 'cool':
+    case 'cool': {
+      const coolTo = formatPlainTemp(chargeC - PREHEAT.coolToBelowChargeC, unit);
       return {
-        secondary: START,
         ...stop,
-        hint: `Too hot · cooling before the climb to ${charge}.`,
+        hint: `Cooling to ${coolTo} first · then climbs to ${charge} for an even start`,
       };
+    }
     case 'climb':
-      return { secondary: START, ...stop, hint: `Heating to ${charge}.` };
+      return { ...stop, hint: `Heating to ${charge}.` };
     case 'hold':
-      return { secondary: START, ...stop, hint: `Holding ${charge} ·${left} left.` };
+      return { secondary: START, ...stop, hint: `Holding ·${left} left` };
     case 'add-beans':
       return {
         chargeSoon: true,
@@ -135,12 +146,8 @@ export function autoFlowStep(
   }
   if (roast.phase === 'preheat') {
     return status.preheatStep === null
-      ? { secondary: START, stop: END_ROAST, hint: 'Starting the preheat…' }
-      : preheatStep(
-          status.preheatStep,
-          status.preheatLeftS,
-          formatPlainTemp(profile.chargeC, unit),
-        );
+      ? { stop: END_ROAST, hint: 'Starting the preheat…' }
+      : preheatStep(status.preheatStep, status.preheatLeftS, profile.chargeC, unit);
   }
   if (roast.phase === 'roasting') {
     return {

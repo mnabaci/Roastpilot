@@ -100,6 +100,8 @@ describe('ProfilesScreen', () => {
       // BT cap 200 °C is 392 °F.
       expect(screen.getByRole('textbox', { name: 'BT cap' })).toHaveValue('392');
       expect(screen.getByRole('columnheader', { name: 'Ends °F' })).toBeInTheDocument();
+      // A rate is a difference: its unit follows too.
+      expect(screen.getByRole('columnheader', { name: 'RoR °F/min' })).toBeInTheDocument();
       await edit('Charge temp', '370');
       await userEvent.click(screen.getByRole('button', { name: 'Save' }));
       // Kept to 0.1 °C; the rest stays exactly as it was.
@@ -226,11 +228,21 @@ describe('ProfilesScreen', () => {
     expect(screen.queryByText('Not saved')).toBeNull();
   });
 
+  it('a step profile groups RoR min and max under one header with its unit', () => {
+    open();
+    expect(screen.getByRole('columnheader', { name: 'RoR °C/min' })).toHaveAttribute(
+      'colspan',
+      '2',
+    );
+    expect(screen.getByRole('columnheader', { name: 'Min' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Max' })).toBeInTheDocument();
+  });
+
   it('a curve profile has curve points and no durations', () => {
     const curve = { profile: { ...CURVE, id: 'custom-c', name: 'My curve' }, builtIn: false };
     open(fakeApi(), [...BUILT_INS, curve], 'custom-c');
     expect(screen.getByRole('heading', { name: 'Curve points' })).toBeInTheDocument();
-    expect(screen.queryByRole('columnheader', { name: 'RoR min' })).toBeNull();
+    expect(screen.queryByRole('columnheader', { name: /^RoR/ })).toBeNull();
   });
 
   describe('moving a step', () => {
@@ -332,7 +344,8 @@ describe('ProfilesScreen', () => {
     open(fakeApi(), [...BUILT_INS, curve], 'custom-c');
     const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
     expect(headings).toEqual(['Preview', 'Steps', 'Curve points']);
-    const batch = screen.getByRole('textbox', { name: 'Batch' });
+    const batch = screen.getByRole('textbox', { name: 'Tuned for' });
+    expect(batch).toHaveAccessibleDescription('Batch size');
     const preview = screen.getByRole('heading', { name: 'Preview' });
     expect(batch.compareDocumentPosition(preview) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
@@ -477,10 +490,29 @@ describe('ProfilesScreen', () => {
       expect(screen.getByRole('textbox', { name: 'BT cap' })).toHaveValue('205');
     });
 
+    it('says why Save waits in a banner right under the title, gone at Drop with the edit kept', async () => {
+      const { stores } = openRunning('custom-1');
+      await edit('BT cap', '205');
+      const banner = screen.getByRole('status');
+      expect(banner).toHaveTextContent('Auto is running this profile · edits save after Drop');
+      // Under the title, before the rest of the editor.
+      const title = screen.getByRole('textbox', { name: 'Name' });
+      expect(title.compareDocumentPosition(banner) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      act(() => {
+        stores.roast.setState({ roast: { ...READY_ROAST, phase: 'cooling' } });
+      });
+      expect(screen.queryByText(/Auto is running this profile/)).toBeNull();
+      expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+      expect(screen.getByRole('textbox', { name: 'BT cap' })).toHaveValue('205');
+    });
+
     it('holds Use for Auto, but other profiles can still be saved', async () => {
       openRunning('light-steps');
       await userEvent.click(screen.getByRole('button', { name: 'Mine' }));
       expect(screen.getByRole('button', { name: 'Use for Auto' })).toBeDisabled();
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Auto is running another profile · Use for Auto after Drop',
+      );
       await edit('BT cap', '205');
       expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
     });

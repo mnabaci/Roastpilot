@@ -120,6 +120,19 @@ export const CURVE_FOLLOW_DEFAULTS: CurveFollow = {
   slewPctPer10s: 5,
 };
 
+/** The preheat hold's range and defaults, in seconds (docs/spec/roast-control.md, Roast phases 1.3). */
+export const PREHEAT_HOLD = {
+  minS: 90,
+  maxS: 180,
+  stepS: 15,
+  firstDefaultS: 150,
+  nextDefaultS: 120,
+} as const;
+
+/** Which hold a preheat runs: the first batch's, or a back-to-back next batch's. */
+export const HoldBatchSchema = z.enum(['first', 'next']);
+export type HoldBatch = z.infer<typeof HoldBatchSchema>;
+
 /**
  * What Auto needs to know about the roaster beyond its profiles; moves to the roaster record in
  * milestone 5 (docs/adr/0011-built-in-profile-as-data.md).
@@ -134,8 +147,16 @@ export const AutoTuningSchema = z.object({
   /** On temperature error (°C), for the preheat climb and hold. */
   preheat: PidGainsSchema,
   preheatFanPct: PercentSchema,
-  /** How long the preheat holds at charge temperature before "Add beans". */
+  /** How long the preheat holds at charge temperature before "Add beans": the first batch. */
   holdS: z.number().positive(),
+  /**
+   * The hold for a back-to-back batch, the drum still heat-soaked from the last roast; a record
+   * from before it had one reads the default (docs/spec/roast-control.md, Roast phases 1.3).
+   */
+  nextHoldS: z
+    .number()
+    .positive()
+    .default(() => PREHEAT_HOLD.nextDefaultS),
   /** The countdown between Charge soon and "Beans in", with the heater at 0. */
   chargeCutS: z.number().nonnegative(),
 });

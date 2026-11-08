@@ -6,6 +6,7 @@ import {
   MakeBeanProfileRequestSchema,
   MakeProfileRequestSchema,
   RoastResultSchema,
+  PreheatHoldRequestSchema,
   RoastSetupSchema,
   SetArchivedSchema,
   UpdateBeanSchema,
@@ -110,6 +111,9 @@ export function createIpcHandlers({
     ),
     [IPC_CHANNELS.autoChargeSoon]: handler(() => pilot.chargeSoon(nowMs())),
     [IPC_CHANNELS.autoResume]: handler(() => pilot.resume()),
+    [IPC_CHANNELS.autoSetPreheatHold]: handler((payload) => {
+      pilot.choosePreheatHold(PreheatHoldRequestSchema.parse(payload).holdS);
+    }),
     [IPC_CHANNELS.coachApply]: handler((payload) =>
       coach.apply(CoachRequestSchema.parse(payload).id),
     ),

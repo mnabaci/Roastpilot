@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { READY_ROAST, type Screen } from '@roastpilot/shared';
 import { CONNECTED, fakeApi, renderApp } from '../test/render-app';
+import { roastersWith } from '../test/roasters';
 import { App } from './App';
 
 const SIM = { kind: 'simulator' } as const;
@@ -66,7 +67,16 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Preheat' })).toBeInTheDocument();
   });
 
-  it('names the roaster it is connected to', () => {
+  it('names the roaster it is connected to by its record, not its port', () => {
+    renderApp(<App />, {
+      connection: CONNECTED,
+      roasters: roastersWith({ kind: 'serial', path: '/dev/cu.usbserial-0001' }),
+    });
+    expect(screen.getByText('Skywalker')).toBeInTheDocument();
+    expect(screen.queryByText('usbserial-0001')).not.toBeInTheDocument();
+  });
+
+  it('names the port when no roaster record is listed', () => {
     renderApp(<App />, { connection: CONNECTED });
     expect(screen.getByText('usbserial-0001')).toBeInTheDocument();
   });

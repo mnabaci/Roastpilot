@@ -22,14 +22,14 @@ type Story = StoryObj<typeof meta>;
 export const Delete: Story = {};
 export const EndRoast: Story = {
   args: {
-    question: 'End the roast?',
+    question: 'Stop the roast?',
     consequences: [
       'Heater, fan, drum and filter off now',
       'No bean cooling · dump the beans yourself',
-      'The roast is saved as it is',
+      'The roast is saved as stopped',
     ],
     cancelLabel: 'Keep roasting',
-    confirmLabel: 'End roast',
+    confirmLabel: 'Stop roast',
     icon: <CircleStop />,
     destructive: false,
     caution: true,

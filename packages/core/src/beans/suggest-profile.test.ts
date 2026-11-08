@@ -54,7 +54,7 @@ describe('suggestProfile', () => {
   it('falls back on the first available with no bean or no favourites', () => {
     expect(suggestProfile({ bean: undefined, beans: [], roasts: [], available })).toEqual({
       profileId: 'first',
-      reason: 'Nothing starred to go on yet',
+      reason: 'The default · star a roast of this bean to improve it',
     });
     expect(
       suggestProfile({ bean: bean(1), beans: [bean(1)], roasts: [], available })?.profileId,
@@ -88,7 +88,7 @@ describe('suggestProfile', () => {
     expect(suggestProfile({ bean: bean(1), beans: [bean(1), bean(2)], roasts, available })).toEqual(
       {
         profileId: 'a',
-        reason: 'Your favourite roast of this bean',
+        reason: 'Your best starred roast of this bean',
         roastId: 2,
       },
     );
@@ -109,7 +109,7 @@ describe('suggestProfile', () => {
     const beans = [me, far, near, natural, decaf];
     expect(suggestProfile({ bean: me, beans, roasts, available })).toEqual({
       profileId: 'b',
-      reason: "Closest bean you've starred: Ethiopia washed, 790 g/L",
+      reason: 'From a similar bean: Bean 3',
       roastId: 2,
     });
   });
@@ -147,7 +147,7 @@ describe('suggestProfile', () => {
     ];
     expect(suggestProfile({ bean: me, beans: [me, natural, decaf], roasts, available })).toEqual({
       profileId: 'b',
-      reason: 'Your best favourite of a similar bean',
+      reason: 'Your best starred roast of another bean',
       roastId: 2,
     });
   });

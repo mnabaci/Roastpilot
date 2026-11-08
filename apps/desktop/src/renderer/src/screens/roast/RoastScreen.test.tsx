@@ -1,4 +1,11 @@
-import { AUTO_OFF, DEFAULT_SETTINGS, err, READY_ROAST, type Reading } from '@roastpilot/shared';
+import {
+  AUTO_OFF,
+  DEFAULT_SETTINGS,
+  err,
+  READY_ROAST,
+  type Reading,
+  type RoastSummary,
+} from '@roastpilot/shared';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PlotEngineProvider, type PlotEngine } from '@roastpilot/ui';
@@ -6,6 +13,8 @@ import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { pick } from '../../test/pick';
 import { addReading } from '../../stores/roast-store';
+import { BEAN } from '../../test/beans';
+import { SKYWALKER } from '../../test/roasters';
 import { BUILT_INS as profiles } from '../../test/profiles';
 import { CONNECTED, fakeApi, renderApp } from '../../test/render-app';
 import { RoastScreen } from './RoastScreen';
@@ -196,17 +205,17 @@ describe('RoastScreen', () => {
   });
 
   const OFF = 'Heater, fan, drum and filter off now';
-  const ENDED = `${OFF} No bean cooling · dump the beans yourself The roast is saved as it is`;
+  const STOPPED = `${OFF} No bean cooling · dump the beans yourself The roast is saved as stopped`;
   it.each([
     [
       'preheat',
-      'End roast',
-      'End the roast?',
-      `${OFF} Back to Ready · the preheat isn't saved`,
-      'Keep roasting',
+      'Stop preheat',
+      'Stop the preheat?',
+      `${OFF} Back to Ready · nothing is saved`,
+      'Keep preheating',
     ],
-    ['roasting', 'End roast', 'End the roast?', ENDED, 'Keep roasting'],
-    ['development', 'End roast', 'End the roast?', ENDED, 'Keep roasting'],
+    ['roasting', 'Stop roast', 'Stop the roast?', STOPPED, 'Keep roasting'],
+    ['development', 'Stop roast', 'Stop the roast?', STOPPED, 'Keep roasting'],
     [
       'cooling',
       'Finish cooling now',
@@ -232,10 +241,10 @@ describe('RoastScreen', () => {
     expect(api.roastAction).toHaveBeenCalledWith('end');
   });
 
-  it.each(['ready', 'done'] as const)('%s has no End roast', (phase) => {
+  it.each(['ready', 'done'] as const)('%s has no stop', (phase) => {
     renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast(phase) });
     expect(
-      screen.queryByRole('button', { name: /End roast|Finish cooling/ }),
+      screen.queryByRole('button', { name: /^Stop (roast|preheat)|Finish cooling/ }),
     ).not.toBeInTheDocument();
   });
 
@@ -453,6 +462,56 @@ describe('RoastScreen', () => {
       readings: [reading({ bt: 40 })],
     });
     expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument();
+  });
+
+  it.each(['preheat', 'roasting', 'cooling'] as const)(
+    '%s: the legends show the latest values without hovering',
+    (phase) => {
+      renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...connected,
+        roast: { ...roast(phase), chargedAtMs: 0 },
+        readings: [reading({ bt: 184, heater: 40, fan: 80 })],
+      });
+      expect(screen.getByRole('list', { name: 'Legend' })).toHaveTextContent('Temperature184.0 °C');
+      expect(screen.getByRole('list', { name: 'Outputs legend' })).toHaveTextContent(
+        'Heater40%Fan80%',
+      );
+    },
+  );
+
+  it.each(['ready', 'done'] as const)('%s: the legends show names only', (phase) => {
+    renderApp(<RoastScreen onConnect={onConnect} />, {
+      ...connected,
+      roast: { ...roast(phase), chargedAtMs: 0 },
+      readings: [reading({ bt: 184, heater: 40, fan: 80 })],
+    });
+    expect(screen.getByRole('list', { name: 'Legend' })).not.toHaveTextContent('184');
+  });
+
+  it('before a roast, a caution to stay close sits right above the action', () => {
+    renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast('ready') });
+    const line = screen.getByText('Stay with the roaster while it runs');
+    // Amber caution, never the red of a safety trip.
+    expect(line).toHaveClass('text-warning');
+    expect(line.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    const action = screen.getByRole('button', { name: 'Preheat' });
+    expect(line.nextElementSibling).toBe(action);
+  });
+
+  it.each(['preheat', 'roasting', 'cooling'] as const)(
+    '%s: the same line, quiet, under the controls',
+    (phase) => {
+      renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast(phase) });
+      const line = screen.getByText('Stay with the roaster while it runs');
+      expect(line).toHaveClass('text-ink-muted');
+      const outputs = screen.getByRole('region', { name: 'Outputs' });
+      expect(outputs.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    },
+  );
+
+  it('says nothing about staying close once the roast is done', () => {
+    renderApp(<RoastScreen onConnect={onConnect} />, { ...connected, roast: roast('done') });
+    expect(screen.queryByText('Stay with the roaster while it runs')).toBeNull();
   });
 
   it('with no roaster, the last readings never show as live values', () => {
@@ -720,11 +779,168 @@ describe('RoastScreen', () => {
       expect(screen.queryByText(/^Aim /)).toBeNull();
     });
 
-    it('says a profile needs calibration in the folded setup line', () => {
+    it('says a profile needs calibration as a badge under the folded setup line', () => {
       renderApp(<RoastScreen onConnect={onConnect} />, auto('ready'));
-      expect(screen.getByRole('button', { name: 'Change setup' })).toHaveTextContent(
-        /^Light · Steps · needs calibration · /,
+      const row = screen.getByRole('button', { name: 'Change setup' });
+      expect(row).toHaveTextContent(/^Light · Steps · No bean$/);
+      expect(
+        within(screen.getByRole('region', { name: 'Setup' })).getByText('Needs calibration'),
+      ).toBeInTheDocument();
+    });
+
+    it('lists Needs calibration as a badge in the profile picker, the field the name alone', async () => {
+      renderApp(<RoastScreen onConnect={onConnect} />, auto('ready'));
+      await openSetup();
+      const field = screen.getByLabelText('Profile');
+      expect(field).toHaveTextContent(/^Light · Steps$/);
+      await userEvent.click(field);
+      expect(screen.getByRole('option', { name: /^Light · Steps/ })).toHaveTextContent(
+        'Light · StepsBuilt-inNeeds calibration',
       );
+    });
+
+    it('shows no badge for a calibrated profile', async () => {
+      renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...auto('ready'),
+        profiles: profiles.map((e) => ({
+          ...e,
+          profile: { ...e.profile, needsCalibration: false },
+        })),
+      });
+      expect(screen.queryByText('Needs calibration')).toBeNull();
+      await openSetup();
+      expect(screen.getByLabelText('Profile')).toHaveTextContent(/^Light · Steps$/);
+    });
+
+    it("starts the batch at the profile's tuned-for batch without a plan, and warns when far off", async () => {
+      const { stores } = renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...auto('ready'),
+        beans: [{ ...BEAN, batchPlan: null, greenG: 2000 }],
+        roasters: [SKYWALKER],
+      });
+      await openSetup();
+      await pick(screen.getByLabelText('Bean'), /^Yirgacheffe/);
+      expect(stores.beans.getState().setup.batchG).toBe(385);
+      expect(screen.queryByText(/^Profile tuned for/)).toBeNull();
+      const batch = screen.getByLabelText('Batch');
+      await userEvent.clear(batch);
+      await userEvent.type(batch, '300');
+      expect(
+        screen.getByText('Profile tuned for 385 g · a 300 g batch runs hotter and faster'),
+      ).toBeInTheDocument();
+      // A note, not a block: Preheat stays.
+      expect(screen.getByRole('button', { name: 'Preheat' })).toBeEnabled();
+    });
+
+    it("starts the batch at the bean's plan when it has one", async () => {
+      const { stores } = renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...auto('ready'),
+        beans: [{ ...BEAN, greenG: 2000 }],
+        roasters: [SKYWALKER],
+      });
+      await openSetup();
+      await pick(screen.getByLabelText('Bean'), /^Yirgacheffe/);
+      expect(stores.beans.getState().setup.batchG).toBe(375);
+    });
+
+    it('labels the suggested profile, says why, and Use this profile picks it', async () => {
+      const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...auto('ready'),
+        settings: { ...settings, autoProfile: 'light-curve' },
+        beans: [BEAN],
+        setup: { beanId: BEAN.id, batchG: 375, ghostRoastId: null },
+        roasters: [SKYWALKER],
+      });
+      await openSetup();
+      const row = screen.getByRole('region', { name: 'Suggested profile' });
+      expect(row).toHaveTextContent(
+        'Suggested profileLight · Steps' +
+          'Use this profile' +
+          'The default · star a roast of this bean to improve it',
+      );
+      // The bean hint says why it speaks.
+      expect(
+        screen.getByText(
+          'Dense beans (830 g/L): these often take heat slowly · consider more heat early',
+        ),
+      ).toBeInTheDocument();
+      await userEvent.click(within(row).getByRole('button', { name: 'Use this profile' }));
+      expect(api.setSettings).toHaveBeenCalledWith(
+        expect.objectContaining({ autoProfile: 'light-steps' }),
+      );
+    });
+
+    it('hides the suggestion when it is already the profile picked', async () => {
+      renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...auto('ready'),
+        beans: [BEAN],
+        setup: { beanId: BEAN.id, batchG: 375, ghostRoastId: null },
+        roasters: [SKYWALKER],
+      });
+      await openSetup();
+      expect(screen.queryByRole('region', { name: 'Suggested profile' })).toBeNull();
+    });
+
+    describe('preheat hold', () => {
+      it("before a preheat shows the first batch's hold; a choice is for this roast only", async () => {
+        const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
+          ...auto('ready'),
+          roasters: [SKYWALKER],
+        });
+        await openSetup();
+        expect(screen.getByText('First batch')).toBeInTheDocument();
+        const hold = screen.getByLabelText('Preheat hold');
+        expect(hold).toHaveTextContent('2:30');
+        await pick(hold, '2:45');
+        expect(api.autoSetPreheatHold).toHaveBeenLastCalledWith({ holdS: 165 });
+        expect(hold).toHaveTextContent('2:45');
+        await pick(hold, '2:30');
+        expect(api.autoSetPreheatHold).toHaveBeenLastCalledWith({ holdS: null });
+        expect(api.saveRoaster).not.toHaveBeenCalled();
+      });
+
+      it("within 20 min of the last roast, picks the next batch's shorter hold", async () => {
+        const ended = new Date(Date.now() - 5 * 60_000).toISOString();
+        const api = fakeApi({
+          listRoasts: vi.fn(() =>
+            Promise.resolve([
+              {
+                id: 9,
+                startedAt: ended,
+                endedAt: ended,
+                dropTimeS: 600,
+                roasterId: SKYWALKER.id,
+              } as RoastSummary,
+            ]),
+          ),
+        });
+        renderApp(
+          <RoastScreen onConnect={onConnect} />,
+          { ...auto('ready'), roasters: [SKYWALKER] },
+          api,
+        );
+        await openSetup();
+        expect(await screen.findByText('Next batch · the drum is still hot')).toBeInTheDocument();
+        expect(screen.getByLabelText('Preheat hold')).toHaveTextContent('2:00');
+      });
+
+      it('during the preheat shows the hold it runs, and a change goes to the running hold', async () => {
+        const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
+          ...auto('preheat', {
+            preheatStep: 'hold',
+            preheatLeftS: 102,
+            preheatHold: { s: 120, batch: 'next', chosen: false },
+          }),
+          roasters: [SKYWALKER],
+        });
+        expect(screen.getByText('Holding · 1:42 left')).toBeInTheDocument();
+        await openSetup();
+        expect(screen.getByText('Next batch · the drum is still hot')).toBeInTheDocument();
+        const hold = screen.getByLabelText('Preheat hold');
+        expect(hold).toHaveTextContent('2:00');
+        await pick(hold, '1:45');
+        expect(api.autoSetPreheatHold).toHaveBeenLastCalledWith({ holdS: 105 });
+      });
     });
 
     it('picks a profile', async () => {

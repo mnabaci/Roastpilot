@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { LineLayer } from './chart-layer';
-import { formatLayerValue, valueAt } from './value-at';
+import { formatLayerValue, valueAt, valueNow } from './value-at';
 
 const layer = (points: [number, number | null][]): LineLayer => ({
   id: 'bt',
@@ -29,6 +29,23 @@ describe('valueAt', () => {
     expect(valueAt(bt, -1)).toBeUndefined();
     expect(valueAt(bt, 3)).toBeUndefined();
     expect(valueAt(layer([]), 1)).toBeUndefined();
+  });
+});
+
+describe('valueNow', () => {
+  const ror = layer([
+    [0, 9],
+    [5, 7],
+  ]);
+
+  it("is the held value up to the layer's last point", () => {
+    expect(valueNow(ror, 3)).toBe(9);
+    expect(valueNow(ror, 5)).toBe(7);
+  });
+
+  it('is undefined once the layer has ended, and for an empty one', () => {
+    expect(valueNow(ror, 6)).toBeUndefined();
+    expect(valueNow(layer([]), 0)).toBeUndefined();
   });
 });
 

@@ -7,6 +7,7 @@ const TUNING = {
   preheat: { kp: 5, ki: 0.02, kd: 0 },
   preheatFanPct: 30,
   holdS: 150,
+  nextHoldS: 120,
   chargeCutS: 5,
 };
 
