@@ -1,22 +1,22 @@
 import type { TemperatureUnit } from '@roastpilot/shared';
 import { cn } from '../../lib/utils';
 import type { LineLayer } from './chart-layer';
-import { formatLayerValue, valueAt } from './value-at';
+import { formatLayerValue } from './value-at';
 
 /**
- * Each layer's line sample and name; the outputs strip has its own, under the chart. With `at`
- * (hovering), each name is followed by its value at that time.
+ * Each layer's line sample and name; the outputs strip has its own, under the chart. With `valueOf`
+ * (hovering, or now during a roast), each name is followed by that value, a dash where it has none.
  */
 export function Legend({
   label,
   layers,
-  at,
+  valueOf,
   unit,
   className,
 }: {
   label: string;
   layers: readonly LineLayer[];
-  at: number | undefined;
+  valueOf: ((layer: LineLayer) => number | undefined) | undefined;
   /** The unit the layers' values are already in. */
   unit: TemperatureUnit;
   className?: string;
@@ -43,15 +43,24 @@ export function Legend({
             )}
           />
           {layer.label}
-          {at === undefined ? null : <LegendValue layer={layer} at={at} unit={unit} />}
+          {valueOf === undefined ? null : (
+            <LegendValue layer={layer} value={valueOf(layer)} unit={unit} />
+          )}
         </li>
       ))}
     </ul>
   );
 }
 
-function LegendValue({ layer, at, unit }: { layer: LineLayer; at: number; unit: TemperatureUnit }) {
-  const v = valueAt(layer, at);
+function LegendValue({
+  layer,
+  value: v,
+  unit,
+}: {
+  layer: LineLayer;
+  value: number | undefined;
+  unit: TemperatureUnit;
+}) {
   return (
     <span className="font-semibold text-ink">
       {v === undefined ? '–' : formatLayerValue(layer.axis, v, unit)}

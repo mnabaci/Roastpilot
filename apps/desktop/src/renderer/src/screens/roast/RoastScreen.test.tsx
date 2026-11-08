@@ -455,6 +455,30 @@ describe('RoastScreen', () => {
     expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument();
   });
 
+  it.each(['preheat', 'roasting', 'cooling'] as const)(
+    '%s: the legends show the latest values without hovering',
+    (phase) => {
+      renderApp(<RoastScreen onConnect={onConnect} />, {
+        ...connected,
+        roast: { ...roast(phase), chargedAtMs: 0 },
+        readings: [reading({ bt: 184, heater: 40, fan: 80 })],
+      });
+      expect(screen.getByRole('list', { name: 'Legend' })).toHaveTextContent('Temperature184.0 °C');
+      expect(screen.getByRole('list', { name: 'Outputs legend' })).toHaveTextContent(
+        'Heater40%Fan80%',
+      );
+    },
+  );
+
+  it.each(['ready', 'done'] as const)('%s: the legends show names only', (phase) => {
+    renderApp(<RoastScreen onConnect={onConnect} />, {
+      ...connected,
+      roast: { ...roast(phase), chargedAtMs: 0 },
+      readings: [reading({ bt: 184, heater: 40, fan: 80 })],
+    });
+    expect(screen.getByRole('list', { name: 'Legend' })).not.toHaveTextContent('184');
+  });
+
   it('with no roaster, the last readings never show as live values', () => {
     renderApp(<RoastScreen onConnect={onConnect} />, {
       roast: roast('preheat'),

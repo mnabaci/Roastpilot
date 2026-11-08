@@ -106,6 +106,8 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
           timeWindow={view.timeWindow}
           temperatureFloorC={view.temperatureFloorC}
           temperatureUnit={unit}
+          // Preheat to Cooling, the legends say the latest values; never stale ones off a roaster.
+          showLatest={connected && !idle}
         />
       </div>
       {/* The panel shows what the moment needs (docs/spec/ui.md, Side panel follows the roast). */}

@@ -112,6 +112,14 @@ export const DuringARoastLight: Story = {
   ...DuringARoast,
   globals: { theme: 'Light' },
 };
+/** The live Roast screen: without hovering, the legends show the latest values (showLatest). */
+export const LatestValues: Story = {
+  args: { ...DuringARoast.args, showLatest: true },
+};
+export const LatestValuesLight: Story = { ...LatestValues, globals: { theme: 'Light' } };
+export const LatestValuesFahrenheit: Story = {
+  args: { ...LatestValues.args, temperatureUnit: 'f', temperatureFloorC: (150 - 32) / 1.8 },
+};
 export const PhaseBands: Story = {
   args: { ...roasting, layers: [phaseBands, temperature, ror] },
 };

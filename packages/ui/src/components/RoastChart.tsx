@@ -13,6 +13,7 @@ import { buildChartOptions, buildStripOptions } from './roast-chart/uplot-option
 import { splitLayers } from './roast-chart/split-layers';
 import { useThemeKey } from './roast-chart/use-theme-key';
 import { useUplot } from './roast-chart/use-uplot';
+import { valueAt, valueNow } from './roast-chart/value-at';
 
 export interface RoastChartProps {
   title: string;
@@ -37,6 +38,11 @@ export interface RoastChartProps {
   className?: string;
   /** Points you can move with the pointer, in °C; a move comes back in °C too. */
   drag?: ChartDrag | undefined;
+  /**
+   * A live roast: when not hovering, the legends show each line's latest value, at the live
+   * temperature's last reading, instead of names only (docs/spec/ui.md, Hover).
+   */
+  showLatest?: boolean;
 }
 
 const DEFAULT_HEIGHT = 320;
@@ -65,6 +71,7 @@ export function RoastChart({
   height = DEFAULT_HEIGHT,
   className,
   drag: dragC,
+  showLatest = false,
 }: RoastChartProps) {
   const unit = temperatureUnit;
   const drag = useMemo(() => dragInUnit(dragC, unit), [dragC, unit]);
@@ -103,6 +110,14 @@ export function RoastChart({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- dragsEnded only asks for fresh arrays
     [layers, markers, unit, dragsEnded],
   );
+  const latestDotLayer = main.findIndex((l) => l.tone === 'heat' && l.axis === 'temperature');
+  // Now: the live temperature's last reading, so every value shown is from the same moment.
+  const nowT = showLatest ? main[latestDotLayer]?.points.at(-1)?.t : undefined;
+  const legendValue = useMemo(() => {
+    if (hoverT !== undefined) return (layer: LineLayer) => valueAt(layer, hoverT);
+    if (nowT !== undefined) return (layer: LineLayer) => valueNow(layer, nowT);
+    return undefined;
+  }, [hoverT, nowT]);
   const scaleKey = `${String(timeWindow?.fromS)}:${String(timeWindow?.toS)}:${String(floor)}`;
   const rightAxis = main.some((l) => l.axis === 'ror');
   // Colours are read when a plot is built: a new theme rebuilds both.
@@ -137,7 +152,7 @@ export function RoastChart({
         aids: () => overlay().aids,
         temperatureFloor: () => floorRef.current,
         unit,
-        latestDotLayer: main.findIndex((l) => l.tone === 'heat' && l.axis === 'temperature'),
+        latestDotLayer,
         // Element is mounted whenever a build runs.
         colors: readChartColors(plotRef.current ?? document.documentElement),
         rightAxis,
@@ -194,7 +209,7 @@ export function RoastChart({
               {formatClock(hoverT)}
             </span>
           )}
-          <Legend label="Legend" layers={main} at={hoverT} unit={unit} />
+          <Legend label="Legend" layers={main} valueOf={legendValue} unit={unit} />
         </div>
       </div>
       <div ref={plotRef} role="img" aria-label={describeLayers(main, unit)} className="w-full" />
@@ -203,7 +218,7 @@ export function RoastChart({
           <Legend
             label="Outputs legend"
             layers={strip}
-            at={hoverT}
+            valueOf={legendValue}
             unit={unit}
             className="mt-1 self-end"
           />
