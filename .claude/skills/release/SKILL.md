@@ -13,7 +13,8 @@ Releases are built by GitHub Actions from a tag, never on a laptop
 3. On a branch, update `CHANGELOG.md`: move the release's lines from `[Unreleased]` into
    `## [X.Y.Z] - YYYY-MM-DD` (Added / Changed / Fixed, written for the user, one line each). This
    section becomes the GitHub release notes, word for word.
-4. Bump `apps/desktop/package.json` `version` to `X.Y.Z`. Commit `chore(release): vX.Y.Z` and open
+4. Run `pnpm screenshots`; if `docs/images` changed, commit `docs: readme screenshots regenerated with pnpm screenshots` first.
+   Bump `apps/desktop/package.json` `version` to `X.Y.Z`. Commit `chore(release): vX.Y.Z` and open
    a PR. Check locally: `node scripts/release-notes.ts --tag vX.Y.Z --out <scratch file>` passes.
 5. After merge, tag the merge commit on `main` and push the tag:
    `git tag vX.Y.Z && git push origin vX.Y.Z`.
