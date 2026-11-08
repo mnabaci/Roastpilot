@@ -10,6 +10,7 @@ import {
   type RoastResult,
   type RoastSummary,
   type StorageError,
+  type TemperatureUnit,
 } from '@roastpilot/shared';
 import { parseArtisan } from './artisan-import';
 import { fillOrRemove } from './fill-roast';
@@ -30,6 +31,8 @@ export interface HistoryServiceDeps {
   >;
   /** Bean names by id, for the CSV. */
   beanNames: () => Promise<ReadonlyMap<number, string>>;
+  /** The unit the CSV's temperatures are in: the one shown (Settings › Appearance). */
+  temperatureUnit: () => TemperatureUnit;
   /** The roast being saved right now can't be deleted. */
   isRecording: (id: RoastId) => boolean;
   /** A roast was deleted: tell the windows. */
@@ -95,7 +98,7 @@ export class HistoryService {
       return listed;
     }
     const chosen = ids ? listed.value.filter((r) => ids.includes(r.id)) : listed.value;
-    return ok(roastsToCsv(chosen, await this.#deps.beanNames()));
+    return ok(roastsToCsv(chosen, await this.#deps.beanNames(), this.#deps.temperatureUnit()));
   }
 
   /** Links a saved roast to a bean, or none; stock as the repository says. */

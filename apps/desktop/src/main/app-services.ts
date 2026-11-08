@@ -89,6 +89,7 @@ export function createAppServices({
     nowIso,
     refreshBeans,
     publish,
+    temperatureUnit: () => settings.latest.temperatureUnit,
     logger: historyLogger,
   });
   const roast = createManualRoast({
