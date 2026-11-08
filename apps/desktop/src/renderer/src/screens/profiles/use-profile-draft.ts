@@ -15,6 +15,8 @@ export interface ProfileDraftState {
   discard: () => void;
 }
 
+const sameDraft = (a: ProfileDraft, b: ProfileDraft) => JSON.stringify(a) === JSON.stringify(b);
+
 /** A profile's draft, kept in the store so it survives moving between screens and profiles. */
 export function useProfileDraft({ profile }: ProfileEntry): ProfileDraftState {
   const { stores } = useDeps();
@@ -30,10 +32,15 @@ export function useProfileDraft({ profile }: ProfileEntry): ProfileDraftState {
   };
   return {
     draft,
-    edited: JSON.stringify(draft) !== JSON.stringify(saved),
+    edited: !sameDraft(draft, saved),
     errors: checked.ok ? {} : checked.error,
     valid: checked.ok ? checked.value : undefined,
     change: (next) => {
+      // An edit undone by hand is no edit: the list's Edited badge reads the kept drafts.
+      if (sameDraft(next, saved)) {
+        forget();
+        return;
+      }
       stores.auto.setState((s) => ({ drafts: { ...s.drafts, [profile.id]: next } }));
     },
     discard: forget,
