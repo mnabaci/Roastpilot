@@ -17,12 +17,12 @@ export interface CoachChange {
 const TONE = { heat: 'border-heat text-heat', air: 'border-air text-air' } as const;
 
 /** A value in its own box, so now and target read as values, not words in a sentence. */
-const BOX = 'inline-block rounded-md border bg-surface px-2.5 py-0.5';
+const BOX = 'inline-block rounded-md border px-2.5';
 
 const pct = (value: number) => `${String(Math.round(value))}%`;
 
 /**
- * The suggested changes as aligned rows: name, now in a quiet box, an arrow, the target in a box
+ * The suggested changes as aligned rows: name, now in a quiet outlined box, an arrow, the target in a box
  * in its output's colour. A real table, so the values line up and screen readers read each row
  * as "Heater from 75% to 65%".
  */
@@ -36,7 +36,7 @@ export function CoachChanges({ changes }: { changes: readonly CoachChange[] }) {
               {change.name}
             </th>
             <td className="text-right">
-              <span className={cn(BOX, 'border-border text-body text-ink-muted')}>
+              <span className={cn(BOX, 'border-border-strong text-body text-ink-muted')}>
                 <span className="sr-only">from </span>
                 {pct(change.from)}
               </span>
@@ -45,7 +45,7 @@ export function CoachChanges({ changes }: { changes: readonly CoachChange[] }) {
               <ArrowRight className="size-4" />
             </td>
             <td className="text-right">
-              <span className={cn(BOX, 'text-readout-lg', TONE[change.tone])}>
+              <span className={cn(BOX, 'bg-surface text-readout-lg', TONE[change.tone])}>
                 <span className="sr-only">to </span>
                 {pct(change.to)}
               </span>
