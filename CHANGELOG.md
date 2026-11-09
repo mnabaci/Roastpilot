@@ -6,6 +6,27 @@ All notable changes to Roastpilot are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-09
+
+### Added
+
+- **Auto or Manual on every roast:** History says how each roast ran, with the profile's name for
+  Auto, in the list and as a badge on the open roast.
+- **Order link on a bean:** paste where you bought it, then Order again opens it in your browser.
+- **A roast table on the bean page:** each roast's time, first crack, drop, green → roasted weight,
+  loss and rating, and how it ran. Click a row to open that roast in History.
+
+### Changed
+
+- **A bean's details are a card of tiles**, with its hints underneath, using the width of the
+  window.
+
+### Fixed
+
+- **Auto's stall guard no longer trips at the start of Maillard**, when RoR falls fast after the
+  heater steps down but levels out well above a stall. It still trips on a roast that's really
+  stalling.
+
 ## [0.2.0] - 2026-11-08
 
 ### Added

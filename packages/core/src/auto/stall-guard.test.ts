@@ -72,6 +72,20 @@ describe('StallGuard', () => {
     expect(firstTrip).toBeLessThanOrEqual(4);
   });
 
+  it('does not trip on the planned fall at the start of Maillard', () => {
+    // 6:30 to 9:00, roasts 15–17 of 2026-11-08: the heater steps down and RoR falls from about 12
+    // at over 4 °C/min a minute, then levels out near 7 before first crack.
+    const rors = [12.4, 11.1, 9.9, 8.6, 7.9, 7.5, 7.3, 7.2, 7.2, 7.1];
+    const results = run(new StallGuard(), rors);
+    expect(results.some((r) => r.tripped)).toBe(false);
+  });
+
+  it('still trips on a fall that starts above 8 once RoR is below it', () => {
+    const results = run(new StallGuard(), [12, 10.5, 9, 7.5]);
+    expect(results.slice(0, 3).some((r) => r.tripped)).toBe(false);
+    expect(results.at(-1)?.tripped).toBe(true);
+  });
+
   it('clears only at 6 °C/min or more', () => {
     const results = run(new StallGuard(), [6, 4, 5.5, 6, 6, 6, 6]);
     expect(results[1]?.tripped).toBe(true);
