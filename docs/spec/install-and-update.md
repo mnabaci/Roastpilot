@@ -27,7 +27,8 @@ How Roastpilot gets onto a computer and stays current, without ever touching a r
 | Patch `0.0.x` | Everything else: settings, the beans library, export and import, looks and polish, bug fixes                                                                           | °F alone, a bean's order link, a fix to Auto's stall guard  |
 
 - **A fix is a patch,** in Auto too, when it makes something work as promised. A fix that changes how Auto or the coach behaves is a minor.
-- **Nothing for users** (docs, CI, refactors that change nothing users see) is no release on its own.
+- **Dependency updates** are a patch, a release of their own only for a security fix that reaches the app (Electron, a runtime library).
+- **Nothing for users** (docs, CI, dev tooling, refactors that change nothing users see) is no release on its own.
 
 ## Updates
 

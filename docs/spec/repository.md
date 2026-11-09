@@ -51,6 +51,7 @@ Enforced by ESLint (`eslint-plugin-boundaries`) and CI. Only `apps/desktop` may 
 | Skill                   | Does                                                                              |
 | ----------------------- | --------------------------------------------------------------------------------- |
 | `engineering-standards` | The rules checklist; loaded before any code change                                |
+| `challenge`             | Checks a user-facing request against who the app is for and what it isn't         |
 | `plan-feature`          | Spec first: updates `docs/spec`, writes an ADR if needed, then a task list        |
 | `add-extension`         | Adds and registers a new implementation of any extension point, drivers included  |
 | `add-component`         | Adds or changes a UI component, keeping `docs/design-system` in step              |
@@ -62,7 +63,8 @@ Enforced by ESLint (`eslint-plugin-boundaries`) and CI. Only `apps/desktop` may 
 | `code-review`           | Checks a change against the principles, boundaries and tests                      |
 | `design-review`         | Checks a screen against the design system                                         |
 | `ui-check`              | Runs the app on a throwaway data folder, drives it and screenshots it             |
-| `release`               | Version bump, changelog, tag; CI builds and publishes the release                 |
+| `release`               | Picks the version, changelog, tag; CI builds and publishes the release            |
+| `merge`                 | Merges main or a stack parent in, and checks what the incoming changes break      |
 
 ## Workflow
 
