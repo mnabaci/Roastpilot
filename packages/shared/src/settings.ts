@@ -69,6 +69,8 @@ export const SettingsSchema = z.object({
   temperatureUnit: TemperatureUnitSchema.catch('c').default('c'),
   /** Dark unless you choose otherwise, so an update never changes how the app looks. */
   theme: ThemeSchema.catch('dark').default('dark'),
+  /** History's Roast details card open or folded, for every roast (docs/spec/ui.md, History). */
+  historyDetailsOpen: z.boolean().catch(true).default(true),
   /** The safety notice version you accepted; 0 until you do (docs/spec/safety.md, Safety notice). */
   safetyNoticeAccepted: z.number().int().min(0).catch(0).default(0),
 });

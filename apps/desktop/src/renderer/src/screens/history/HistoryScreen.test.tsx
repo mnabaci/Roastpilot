@@ -173,6 +173,26 @@ describe('HistoryScreen', () => {
     });
   });
 
+  it('Compare adds a comparison table under the chart; None takes it away', async () => {
+    setup();
+    await screen.findByRole('region', { name: 'Roast curve' });
+    expect(screen.queryByRole('table', { name: 'Comparison' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Compare: None' }));
+    const [none, other] = screen.getAllByRole('option');
+    if (!none || !other) throw new Error('expected another roast to compare with');
+    await userEvent.click(other);
+    const table = await screen.findByRole('table', { name: 'Comparison' });
+    // This roast's 9:40 against the compared one's, which has the same total.
+    expect(within(table).getByRole('row', { name: /^Total/ })).toHaveTextContent(
+      'Total9:409:400:00',
+    );
+    await userEvent.click(screen.getByRole('button', { name: /^Compare: / }));
+    await userEvent.click(screen.getAllByRole('option')[0] ?? none);
+    await vi.waitFor(() => {
+      expect(screen.queryByRole('table', { name: 'Comparison' })).toBeNull();
+    });
+  });
+
   it('Delete asks once, then removes the roast and opens the next', async () => {
     const { api } = setup();
     await screen.findByRole('region', { name: 'Roast curve' });

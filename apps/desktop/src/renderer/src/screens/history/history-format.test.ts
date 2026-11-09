@@ -2,7 +2,7 @@ import type { RoastSummary } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import {
   inProgressId,
-  roastDetailLine,
+  roastDetailParts,
   roastNumbers,
   roastRows,
   roastTitle,
@@ -96,14 +96,15 @@ describe('wasStopped', () => {
   });
 });
 
-describe('roastDetailLine', () => {
+describe('roastDetailParts', () => {
+  // The bean comes first on its own, so the list can let it give way first.
   const beans = [{ id: 3, name: 'Yirgacheffe' }];
   it('says Auto before the profile an Auto roast ran', () => {
     const auto = summary(1, { beanId: 3, profileName: 'Light · Steps', rating: 4 });
-    expect(roastDetailLine(auto, beans)).toBe('Yirgacheffe · Auto · Light · Steps · 4/5');
+    expect(roastDetailParts(auto, beans)).toEqual(['Yirgacheffe', 'Auto · Light · Steps', '4/5']);
   });
 
   it('says Manual for a roast with no profile', () => {
-    expect(roastDetailLine(summary(1), beans)).toBe('No bean · Manual');
+    expect(roastDetailParts(summary(1), beans)).toEqual(['No bean', 'Manual']);
   });
 });

@@ -29,6 +29,14 @@ export interface LineLayer {
   dash?: readonly number[];
   /** Holds each value until the next point (outputs change in steps). */
   step?: boolean;
+  /** Drawn faded, 0–1 (a compared roast's outputs: 0.55, like the projection). */
+  opacity?: number;
+  /**
+   * Another roast's line drawn to compare with the layer of this id (History's Compare): the
+   * legend shows its value after that layer's ("Heater 45% · compared 50%") instead of its own
+   * entry. Listed on its own when that layer isn't there.
+   */
+  compareOf?: string;
   points: readonly ChartPoint[];
 }
 

@@ -1,6 +1,7 @@
 import type { RoastResult, RoastSummary } from '@roastpilot/shared';
-import { formatNumber, NumberField, TextField } from '@roastpilot/ui';
-import { useState } from 'react';
+import { formatNumber, NumberField, TextAreaField } from '@roastpilot/ui';
+import { ArrowRight } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
 import { useDeps } from '../app/app-context';
 import {
   lossHint,
@@ -22,7 +23,14 @@ const STATUS_TEXT = { idle: 'Saves as you go', saved: 'Saved', failed: 'Not save
  * Weights, rating, star and notes: all skippable, saved as you enter them (it says Saved when one
  * lands), changeable later (docs/spec/ui.md, After cooling). Key it by roast, as it keeps what you typed.
  */
-export function RoastResultForm({ roast }: { roast: RoastSummary }) {
+export function RoastResultForm({
+  roast,
+  lead,
+}: {
+  roast: RoastSummary;
+  /** First in the weights' row, such as History's Bean ▾. */
+  lead?: ReactNode;
+}) {
   const { api, logger } = useDeps();
   const run = useRun();
   const toast = useToast();
@@ -76,37 +84,39 @@ export function RoastResultForm({ roast }: { roast: RoastSummary }) {
   const loss = weightLossPct(result);
   const unusual = lossHint(loss);
   return (
-    <section aria-label="How it went" className="flex flex-col gap-2">
-      <div className="grid grid-cols-2 gap-2">
-        <NumberField
-          label="Green"
-          unit="g"
-          value={draft.batch}
-          invalid={Boolean(problems.batch)}
-          hint={problems.batch}
-          onChange={(batch) => {
-            type({ batch });
-          }}
-          onBlur={commit}
-        />
-        <NumberField
-          label="Roasted"
-          unit="g"
-          value={draft.roasted}
-          invalid={Boolean(problems.roasted)}
-          hint={problems.roasted}
-          onChange={(roasted) => {
-            type({ roasted });
-          }}
-          onBlur={commit}
-        />
+    <section aria-label="How it went" className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-start gap-x-6 gap-y-3">
+        {lead}
+        {/* Green and Roasted side by side, the loss between them as a quiet readout. */}
+        <div className="flex items-start gap-2">
+          <NumberField
+            label="Green"
+            unit="g"
+            className="w-32"
+            value={draft.batch}
+            invalid={Boolean(problems.batch)}
+            hint={problems.batch}
+            onChange={(batch) => {
+              type({ batch });
+            }}
+            onBlur={commit}
+          />
+          <LossReadout loss={loss} />
+          <NumberField
+            label="Roasted"
+            unit="g"
+            className="w-32"
+            value={draft.roasted}
+            invalid={Boolean(problems.roasted)}
+            hint={problems.roasted}
+            onChange={(roasted) => {
+              type({ roasted });
+            }}
+            onBlur={commit}
+          />
+        </div>
       </div>
-      {loss === undefined ? null : (
-        <p className="text-label text-ink-muted tabular-nums">
-          {formatNumber(loss, 1)}% weight loss
-          {unusual ? ` · ${unusual}` : null}
-        </p>
-      )}
+      {unusual ? <p className="text-label text-ink-muted">{unusual}</p> : null}
       <RatingRow
         rating={rating}
         isFavourite={isFavourite}
@@ -116,7 +126,7 @@ export function RoastResultForm({ roast }: { roast: RoastSummary }) {
           save(withSaved(next));
         }}
       />
-      <TextField
+      <TextAreaField
         label="Notes"
         value={draft.notes}
         onChange={(notes) => {
@@ -128,5 +138,26 @@ export function RoastResultForm({ roast }: { roast: RoastSummary }) {
         {STATUS_TEXT[saving]}
       </p>
     </section>
+  );
+}
+
+/** Between the weights: the loss once both are in ("14.3 %" over "loss"), else an arrow. */
+function LossReadout({ loss }: { loss: number | undefined }) {
+  return (
+    // An empty label line, so the readout sits level with the fields.
+    <div className="flex flex-col gap-1.5">
+      <span aria-hidden="true" className="invisible text-label">
+        –
+      </span>
+      <p className="flex h-control-sm min-w-12 flex-col items-center justify-center text-label text-ink-muted tabular-nums">
+        {loss === undefined ? (
+          <ArrowRight aria-hidden="true" className="size-4" />
+        ) : (
+          <>
+            <span className="text-ink">{formatNumber(loss, 1)} %</span> <span>loss</span>
+          </>
+        )}
+      </p>
+    </div>
   );
 }

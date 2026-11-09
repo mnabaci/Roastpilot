@@ -1,5 +1,6 @@
 import { updateWaiting, type ConnectionState, type Screen } from '@roastpilot/shared';
-import { Button, cn, Mark } from '@roastpilot/ui';
+import { Button, cn, Mark, Tooltip } from '@roastpilot/ui';
+import type { ReactElement } from 'react';
 import { OctagonX } from 'lucide-react';
 import { activeRoaster } from '../stores/roasters-store';
 import { useConnection, useRoast, useRoasters, useUpdates } from '../stores/use-stores';
@@ -47,36 +48,38 @@ export function TopBar({
       <Mark withName />
       <nav aria-label="Screens" className="flex gap-1">
         {SCREENS.map(({ id, label }) => (
-          <Button
+          <DotTip
             key={id}
-            variant="ghost"
-            size="sm"
-            aria-current={screen === id ? 'page' : undefined}
-            // Tabs, not actions: the other screens stay muted so the current one stands out.
-            className={
-              screen === id ? 'bg-surface-raised text-ink' : 'text-ink-muted hover:text-ink'
+            content={
+              id === 'roasters'
+                ? CONNECTION_LABEL[status]
+                : id === 'settings' && updateDot
+                  ? 'Update available'
+                  : undefined
             }
-            onClick={() => {
-              onNavigate(id);
-            }}
           >
-            {label}
-            {id === 'roasters' ? (
-              <span
-                aria-hidden="true"
-                title={CONNECTION_LABEL[status]}
-                className={cn('size-2 rounded-full', DOT[status])}
-              />
-            ) : null}
-            {id === 'settings' && updateDot ? (
-              // An update is ready or out: ember, like anything waiting for you.
-              <span
-                aria-hidden="true"
-                title="Update available"
-                className="size-2 rounded-full bg-heat"
-              />
-            ) : null}
-          </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-current={screen === id ? 'page' : undefined}
+              // Tabs, not actions: the other screens stay muted so the current one stands out.
+              className={
+                screen === id ? 'bg-surface-raised text-ink' : 'text-ink-muted hover:text-ink'
+              }
+              onClick={() => {
+                onNavigate(id);
+              }}
+            >
+              {label}
+              {id === 'roasters' ? (
+                <span aria-hidden="true" className={cn('size-2 rounded-full', DOT[status])} />
+              ) : null}
+              {id === 'settings' && updateDot ? (
+                // An update is ready or out: ember, like anything waiting for you.
+                <span aria-hidden="true" className="size-2 rounded-full bg-heat" />
+              ) : null}
+            </Button>
+          </DotTip>
         ))}
       </nav>
       {/* The dot is for the eye; this says it to screen readers. */}
@@ -106,4 +109,9 @@ export function TopBar({
       </Button>
     </header>
   );
+}
+
+/** A tab with a dot says what the dot means, on hover or focus, in the app's tooltip. */
+function DotTip({ content, children }: { content: string | undefined; children: ReactElement }) {
+  return content === undefined ? children : <Tooltip content={content}>{children}</Tooltip>;
 }

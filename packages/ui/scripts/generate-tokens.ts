@@ -25,6 +25,11 @@ interface Tokens {
   type: { families: Record<string, string>; groups: { styles: TypeStyle[] }[] };
   spacing?: { tokens: ScaleToken[] };
   radius: { tokens: ScaleToken[] };
+  /**
+   * Box shadows, themed like colours (a shadow needs more weight on a dark page). Used as
+   * `shadow-(--shadow-raised)`: a Tailwind `--shadow-*` theme entry would point at itself.
+   */
+  shadow?: { tokens: ColorToken[] };
   size?: { tokens: ScaleToken[] };
 }
 
@@ -36,7 +41,7 @@ if (!firstTheme) throw new Error('tokens.json defines no colour themes');
 const value = (v: string): string =>
   typeof v === 'string' ? v.replace(/^\{(.+)\}$/, 'var(--$1)') : v;
 const colorsFor = (theme: string): string =>
-  tokens.color.tokens
+  [...tokens.color.tokens, ...(tokens.shadow?.tokens ?? [])]
     .map((t) => {
       const raw =
         typeof t.value === 'string' ? t.value : (t.value[theme] ?? t.value[firstTheme] ?? '');

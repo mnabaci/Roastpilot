@@ -23,5 +23,6 @@ One file per decision: context, decision, consequences. Add one with the `plan-f
 - [The coach runs Auto in the background](0019-coach-runs-auto-in-the-background.md)
 - [The design system lives in the repo](0020-design-system-in-the-repo.md)
 - [One Roastpilot file shape for every kind](0021-one-roastpilot-file-shape.md)
+- [dnd-kit for reordering rows](0022-dnd-kit-for-reordering.md)
 
 Template: [template.md](template.md)

@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { FilterSelect } from './FilterSelect';
+import { TOOLTIP_DELAY_MS } from './Tooltip';
 
 const OPTIONS = [
   { value: 'all', label: 'All' },
@@ -38,5 +39,29 @@ describe('FilterSelect', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Bean: All' }));
     await userEvent.click(screen.getByRole('option', { name: 'Ethiopia Guji' }));
     expect(onChange).toHaveBeenCalledExactlyOnceWith('1');
+  });
+
+  it('shows the whole choice in a tooltip, for a chip that had to cut it short', () => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <FilterSelect
+          label="Compare"
+          value="1"
+          options={[
+            { value: 'none', label: 'None' },
+            { value: '1', label: 'Mon 2 Nov · 18:20' },
+          ]}
+          onChange={() => undefined}
+        />,
+      );
+      fireEvent.pointerOver(screen.getByText('Mon 2 Nov · 18:20'));
+      act(() => {
+        vi.advanceTimersByTime(TOOLTIP_DELAY_MS);
+      });
+      expect(screen.getByRole('tooltip')).toHaveTextContent('Compare: Mon 2 Nov · 18:20');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

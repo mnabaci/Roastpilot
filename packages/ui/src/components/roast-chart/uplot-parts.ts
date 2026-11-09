@@ -45,6 +45,7 @@ export function series(
       stroke: colors.tone[layer.tone],
       width: layer.width,
       dash: layer.dash ? [...layer.dash] : undefined,
+      ...(layer.opacity === undefined ? {} : { alpha: layer.opacity }),
       points: { show: false },
       // Joins across undefined (another layer's time), breaks at null (missing readings).
       spanGaps: false,

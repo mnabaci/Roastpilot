@@ -1,6 +1,7 @@
 import { ChevronDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Select, type SelectOption } from './Select';
+import { Tooltip } from './Tooltip';
 
 export interface FilterSelectProps<V extends string> {
   /** What it filters, shown before the choice: "Bean". */
@@ -42,17 +43,20 @@ export function FilterSelect<V extends string>({
       )}
     >
       {/* Narrow sidebars: the name while unfiltered, the choice while filtering. */}
-      <span title={`${label}: ${current}`} className="min-w-0 truncate">
-        {allValue === undefined ? (
-          <>
-            <span className="text-ink-muted">{label}:</span> {current}
-          </>
-        ) : filtering ? (
-          current
-        ) : (
-          label
-        )}
-      </span>
+      {/* The whole choice when the chip had to cut it short ("Compare: Mon 2 Nov · 18:20"). */}
+      <Tooltip content={`${label}: ${current}`}>
+        <span className="min-w-0 truncate">
+          {allValue === undefined ? (
+            <>
+              <span className="text-ink-muted">{label}:</span> {current}
+            </>
+          ) : filtering ? (
+            current
+          ) : (
+            label
+          )}
+        </span>
+      </Tooltip>
       <ChevronDown
         aria-hidden="true"
         className="size-4 shrink-0 transition-transform group-data-[state=open]:rotate-180"

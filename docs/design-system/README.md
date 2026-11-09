@@ -45,6 +45,10 @@ Rules:
 - Ember and cyan sit on opposite sides of the colour wheel and differ in lightness, so they stay distinct for colour-blind users.
 - Neutrals are cool graphite with no brown or cream: warmth comes only from the ember accent.
 
+## Elevation
+
+Flat by default: cards sit on `bg` by colour, not shadow. `shadow-raised` (a soft drop shadow, heavier in Dark) is only for something lifted off the page while you hold it, such as a dragged row. Use it as `shadow-(--shadow-raised)`.
+
 ## Type
 
 Inter, one family, with tabular numerals (`font-variant-numeric: tabular-nums`) everywhere so live numbers never jump.
@@ -62,9 +66,12 @@ Inter, one family, with tabular numerals (`font-variant-numeric: tabular-nums`) 
 - Roast screen: header, phase stepper, a row of four stat cards, then the chart beside a side panel. Below 900px the side panel stacks under the chart.
 - The side panel follows the roast and shows only what the moment needs: not connected, the next action (Connect) then the setup card, no outputs; before a roast, setup, then the next action, then outputs; during and after a roast, the next action, the outputs, then the setup. The setup card folds into one row: what the roast is of, a chevron, and an Auto Switch that stays live. Drum, filter fan and bean cooler are one row of labelled Switches. The bean cooler (the tray fan) cools the beans; the fan through the drum cools the drum: copy never calls either one just "cooling". The side panel and the chart column scroll on their own.
 - Profile editor: header, top values, then the Preview chart right under them (what you shape stays in view), then the tables. A curve profile's Steps and Curve points sit side by side from 1280px (`xl`), Steps two thirds, Curve points one third, `space-4` apart; below that they stack, Steps first. A step profile's Steps take the full width.
-- Rows you can reorder (the profile editor's steps) have a ⠿ handle in a first column: a ghost `sm` icon button (Lucide `GripVertical`, `ink-muted`, 44px square, `aria-label` "Move <name>"). Drag it, or focus it and press Alt+↑ / Alt+↓; focus stays on the handle and a polite live line says where it went. Rows that can't move (Soak, Development) leave the cell empty; a read-only table has no handle column.
+- Rows you can reorder (the profile editor's steps) have a ⠿ handle in a first column: a ghost `sm` icon button (Lucide `GripVertical`, `ink-muted`, 44px square, `aria-label` "Move <name>"). Rows that can't move (Soak, Development) leave the cell empty, and nothing drops above or below them; a read-only table has no handle column.
+  - Drag: a press moves 4px before it lifts, so a click stays a click. The row floats under the cursor as a copy on `surface-raised`, `radius-md`, `shadow-raised`, its values readable, up and down only and inside the table. Where it will land is a placeholder at 30% opacity edged by a 2px `heat` outline; the other rows slide out of the way in 150ms (ease) and the copy settles into its place the same way. With reduced motion nothing slides: rows jump. Escape puts it back.
+  - Keys: Alt+↑ / Alt+↓ on the handle move one place, focus stays on the handle and a polite live line says where it went. Space (or Enter) picks it up, ↑ / ↓ carry it, Space drops, Escape cancels, each step announced.
 - In the steps table a field never clips its value: each has a minimum width (times `18`, RoR `11`, others `13` spacing units); below 1280px the gap between fields halves (8px to 4px) and a header may wrap ("RoR / min") so the table fits a 960px window.
 - After a roast, its weights, rating and notes sit in a card over the chart that says Saved as each lands; Done hides it.
+- Weights, rating and notes look the same wherever they're edited (that card, and History's Roast details, a CollapsibleCard under the stat cards): Green and Roasted side by side with the loss between them as a quiet readout (`14.3 %` over `loss`), the 1–5 rating and the star as one group under a Rating label, Notes a TextAreaField that grows with its text.
 - Tables sit inside a card with `border` rules between rows and no outer border.
 - Facts (a record's fields) sit in a card as tiles: a `label` name in `ink-muted` over a `body` value, in a grid whose columns follow the card's width (container queries: 3, then 4, then 6), so a wide window shows them in one row instead of a tall list. Hints go at the card's foot under a `border` rule, `label` `ink-muted` after a Lucide light-bulb icon.
 - List-and-detail screens (History, Beans, Profiles, Roasters, Settings) use SidebarLayout: a `sidebar`-wide (256px) column with the title and a NavList, the open item on the right; the two scroll separately.
@@ -72,7 +79,7 @@ Inter, one family, with tabular numerals (`font-variant-numeric: tabular-nums`) 
 - Scrollbars are thin: a `border-strong` thumb on a transparent track, in both themes; never the light system gutter.
 - Every screen follows one pattern: the title, with the list's rare actions in a "⋯" Menu beside it (Export all and Import a Roastpilot file on History, Beans, Profiles and Roasters; Beans: Batch calculator, Show archived; Logs: Open log folder); then filters in one row of FilterSelect chips; then the list. The open item has one header row: its name as the title with its badges, its one or two main actions, and "⋯" for the rest (Delete last, in red, asked in a dialog).
   - Profiles: Save or Use for Auto (or an AUTO badge), ⋯ Duplicate, Copy, Mark as calibrated, Export this profile, Delete (disabled, with why, on the one Auto uses or runs). Title ⋯: New from milestones, Export all, Import a Roastpilot file, Select.
-  - History: Compare ▾, Make profile ▾, ⋯ Export this roast, Delete. Title ⋯: Export all, Import a Roastpilot file, Import from Artisan, Select.
+  - History: Compare ▾, Make profile ▾, ⋯ Export this roast, Delete. Title ⋯: Export all, Import a Roastpilot file, Import from Artisan, Select. The header row never wraps: Compare's choice truncates first (its whole date in a Tooltip), then Make profile; the title keeps its place.
   - Beans: Roast this bean, Add stock, ⋯ Adjust stock, Edit, Make a profile, Export this bean, Archive. Title ⋯: Batch calculator, Show archived, Export all, Import a Roastpilot file.
   - Roasters: ⋯ Use this roaster, Export this roaster, Delete (Use and Delete disabled, with why, when they can't be done now); Connect stays the big action under the header. Title ⋯: Export all, Import a Roastpilot file.
 - An action not allowed right now stays in its "⋯", disabled, with a one-line hint saying why: menus keep their shape.
@@ -87,6 +94,7 @@ Inter, one family, with tabular numerals (`font-variant-numeric: tabular-nums`) 
 | Target curve              | `target`                            | 2px dashed 6 6                   |
 | Rate of rise (right axis) | `air`                               | 2px solid                        |
 | Ghost temperature and RoR | `ghost`                             | 2px solid, behind live           |
+| Compared roast's outputs  | `heat`, `air`, `ink-muted`          | 2px dashed 4 4, 55 % opacity     |
 | First crack, drop markers | `ink` / `ghost`                     | 1.5px dashed vertical, labelled  |
 | Drop temperature line     | `critical-text`                     | 1px dotted                       |
 | Phase bands               | `band-low`, `band-mid`, `band-high` | Full-width fills behind the grid |
@@ -100,7 +108,7 @@ Lucide icons (shadcn/ui's default set), 20px, 2px stroke, `currentColor`. No emo
 
 ## Components
 
-Mark, Button, Badge, StatCard, OutputControl, CoachCard, PhaseStepper, AlertBanner, Toast, RoastChart, RoastStrip, TextField, NumberField, Select, SelectField, FilterSelect, Switch, SegmentedControl, RoastList, EventTable, RoastTable, NavList, SidebarLayout, ErrorState, Menu and ConfirmDialog. Each has its guidelines in `components/<Name>/README.md` and, where one is drawn, a static preview beside it (`preview.html`); the live components are in Storybook (`pnpm storybook`).
+Mark, Button, Badge, StatCard, OutputControl, CoachCard, PhaseStepper, AlertBanner, Toast, RoastChart, RoastStrip, TextField, NumberField, Select, SelectField, FilterSelect, Switch, SegmentedControl, RoastList, EventTable, CompareTable, RoastTable, NavList, SidebarLayout, CollapsibleCard, TextAreaField, ErrorState, Menu, ConfirmDialog and Tooltip. Each has its guidelines in `components/<Name>/README.md` and, where one is drawn, a static preview beside it (`preview.html`); the live components are in Storybook (`pnpm storybook`).
 
 ## Files
 

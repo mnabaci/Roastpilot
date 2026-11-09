@@ -17,5 +17,5 @@ The list of things in a sidebar: profiles, beans, roasters, settings sections. O
 ## Rules
 
 - A `<nav>` or list with an accessible name; Up and Down move between items like Tab does.
-- Long names truncate; the full name is in the item's title.
+- Long names truncate; the full name is in a Tooltip on the row (hover or keyboard focus), never the system's `title`.
 - Actions for the list (Add roaster, Add bean) go under the items as a ghost button, never inside an item.

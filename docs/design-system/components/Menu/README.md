@@ -4,7 +4,7 @@ The actions you rarely need, behind a "⋯" button, so the one main action stand
 
 ## Anatomy
 
-- **Trigger**: a ghost icon button (Lucide Ellipsis), `control-sm`, named for screen readers ("More for Light · Steps"). Or, when the menu is one action with a choice, a worded chip with a ChevronDown after the word ("Make profile ▾" → Step profile, Curve profile), drawn exactly like FilterSelect's chip.
+- **Trigger**: a ghost icon button (Lucide Ellipsis), `control-sm`, named for screen readers ("More for Light · Steps"). Or, when the menu is one action with a choice, a worded chip with a ChevronDown after the word ("Make profile ▾" → Step profile, Curve profile), drawn exactly like FilterSelect's chip. Its word truncates (never wraps) when a tight header row lets it shrink, down to `control-sm`.
 - **List**: the Select panel (`surface-raised`, 1px `border-strong`, `radius-lg`, 4px padding), at least 192px wide, aligned to the trigger's end, 4px below it.
 - **Item**: at least `control-sm` tall, 12px side padding, `radius-md`, `body` in `ink`; an optional 20px icon first, 8px before the label; items 2px apart. Delete is `critical-text`, never a red fill.
 - **Hint** (optional): one `label` line in `ink-muted` under the item's label, saying why a disabled item waits ("Disconnect first"). It describes the item for screen readers; the item's name stays its label. On a disabled item only the label dims; the hint stays at full `ink-muted`, so it reads.

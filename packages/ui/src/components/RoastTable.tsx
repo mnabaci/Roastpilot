@@ -1,5 +1,6 @@
 import { ChevronRight, Star } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { Tooltip } from './Tooltip';
 
 export interface RoastTableRow {
   id: number;
@@ -120,9 +121,9 @@ export function RoastTable({
                   ) : null}
                 </span>
               </th>
-              <td className="max-w-0 truncate py-3 text-ink-muted" title={row.ran}>
-                {row.ran}
-              </td>
+              <Tooltip content={row.ran}>
+                <td className="max-w-0 truncate py-3 text-ink-muted">{row.ran}</td>
+              </Tooltip>
               {NUMBERS.map((key) => (
                 <td key={key} className="py-3 pl-4 text-right whitespace-nowrap">
                   {row[key] ?? '–'}

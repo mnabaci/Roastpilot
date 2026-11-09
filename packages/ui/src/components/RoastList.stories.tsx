@@ -14,7 +14,7 @@ const meta = {
         id: 3,
         title: 'Wed 4 Nov · 14:32',
         numbers: '9:40 · FC 8:00 · 205.5 °C',
-        detail: 'Yirgacheffe · Light · Steps · 4/5',
+        detail: ['Yirgacheffe', 'Auto · Light · Steps', '4/5'],
         favourite: true,
       },
       { id: 2, title: 'Wed 4 Nov · 11:05', numbers: '4:12', badge: 'Unfinished' },
@@ -31,6 +31,25 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+/** A long bean name gives way first, so how it ran stays readable; rest on the row for all of it. */
+export const LongBeanName: Story = {
+  args: {
+    items: [
+      {
+        id: 3,
+        title: 'Wed 4 Nov · 14:32',
+        numbers: '9:40 · FC 8:00 · 205.5 °C',
+        detail: ['Ethiopia Yirgacheffe Kochere Washed', 'Auto · Light · Steps', '5/5'],
+      },
+      {
+        id: 2,
+        title: 'Wed 4 Nov · 11:05',
+        numbers: '10:02 · FC 8:31 · 207.0 °C',
+        detail: ['African Moon', 'Auto · Third crack hunting (from Simulator)', '3/5'],
+      },
+    ],
+  },
+};
 export const NothingSelected: Story = { args: { selectedId: undefined } };
 export const Long: Story = {
   args: {

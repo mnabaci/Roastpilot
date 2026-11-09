@@ -28,8 +28,11 @@ export {
 } from './components/roast-chart/plot-engine';
 export { formatClock, formatNumber } from './lib/format';
 export { TextField, type TextFieldProps } from './components/TextField';
+export { TextAreaField, type TextAreaFieldProps } from './components/TextAreaField';
+export { CollapsibleCard, type CollapsibleCardProps } from './components/CollapsibleCard';
 export { RoastList, type RoastListItem, type RoastListProps } from './components/RoastList';
 export { EventTable, type EventRow } from './components/EventTable';
+export { CompareTable, type CompareTableRow } from './components/CompareTable';
 export { RoastTable, type RoastTableRow } from './components/RoastTable';
 export { Mark, type MarkProps } from './components/Mark';
 export { RoastStrip, type RoastStripNumber, type RoastStripProps } from './components/RoastStrip';
@@ -47,6 +50,7 @@ export { SidebarLayout, type SidebarLayoutProps } from './components/SidebarLayo
 export { ErrorState, type ErrorStateProps } from './components/ErrorState';
 export { Menu, type MenuItem, type MenuProps } from './components/Menu';
 export { ConfirmDialog, type ConfirmDialogProps } from './components/ConfirmDialog';
+export { Tooltip, TOOLTIP_DELAY_MS, type TooltipProps } from './components/Tooltip';
 export { FilterSelect, type FilterSelectProps } from './components/FilterSelect';
 export {
   Toaster,

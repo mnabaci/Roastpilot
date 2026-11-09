@@ -8,6 +8,7 @@ The list of saved roasts on the History screen: one row per roast, newest first,
 - **Row**: a full-width button, at least `control-sm` (44px) tall, 12px × 16px padding.
   - **Title**: date and time, `body` semibold in `ink` (`Wed 4 Nov · 14:32`).
   - **Numbers**: one line of `label` in `ink-muted`, tabular: total time, first crack, drop temperature (`9:40 · FC 8:00 · 205.5 °C`).
+  - **Detail** (optional): one more line of `label` in `ink-muted`, given in parts (History: bean · how it ran · rating, `African Moon · Auto · Light · Steps · 5/5`). When it doesn't fit, the first part gives way first, down to its ellipsis (`African… · Auto · Light · Steps`), then the rest truncates at its end: flexbox, no measuring. Resting on the row or tabbing to it shows the whole line in a Tooltip after 500 ms.
   - **Badge** (optional, at the end of the title line, so the numbers keep the full width): neutral `UNFINISHED` for a roast whose cooling never ended, `IN PROGRESS` for the one being roasted now.
 
 ## States

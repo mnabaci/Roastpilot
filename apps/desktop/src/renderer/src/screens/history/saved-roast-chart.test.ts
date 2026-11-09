@@ -77,6 +77,32 @@ describe('saved roast chart', () => {
     expect(chart.layers[0]?.points[0]).toEqual({ t: -1, v: 100 });
     expect(chart.layers[1]?.id).toBe('bt');
   });
+
+  it("puts the compared roast's outputs behind its own in the strip, dashed and faded, aligned at charge", () => {
+    const other = {
+      ...DETAIL,
+      id: 2,
+      samples: DETAIL.samples.map((s) => ({ ...s, values: { ...s.values, heater: 80 } })),
+    };
+    const { layers } = savedRoastChart(DETAIL, { detail: other, label: 'Mon 2 Nov · 18:20' }, 0);
+    const strip = layers.filter((l) => l.axis === 'output').map((l) => l.id);
+    expect(strip).toEqual(['compare-heater', 'compare-fan', 'heater', 'fan']);
+    expect(layers.find((l) => l.id === 'compare-heater')).toMatchObject({
+      label: 'Compared heater',
+      tone: 'heat',
+      step: true,
+      dash: [4, 4],
+      opacity: 0.55,
+      compareOf: 'heater',
+    });
+    expect(layers.find((l) => l.id === 'compare-heater')?.points[0]).toEqual({ t: -1, v: 80 });
+    expect(layers.find((l) => l.id === 'compare-fan')?.tone).toBe('air');
+  });
+
+  it('draws no compared outputs without a compared roast', () => {
+    const { layers } = savedRoastChart(DETAIL, undefined, 0);
+    expect(layers.some((l) => l.id.startsWith('compare-'))).toBe(false);
+  });
 });
 
 describe('savedRoastFocus', () => {

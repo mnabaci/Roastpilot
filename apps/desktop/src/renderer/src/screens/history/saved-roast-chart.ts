@@ -25,9 +25,13 @@ export function savedAsLive(detail: RoastDetail): { roast: RoastState; readings:
   };
 }
 
+/** A compared roast's outputs: dashed and faded like the projection, so they never read as ours. */
+const COMPARED_DASH = [4, 4] as const;
+const COMPARED_OPACITY = 0.55;
+
 /**
- * The chart for a saved roast, with another roast's temperature behind it as a faded ghost line,
- * both aligned at charge (docs/spec/ui.md, History screen).
+ * The chart for a saved roast, with another roast's temperature behind it as a faded ghost line
+ * and its outputs dashed and faded in the strip, all aligned at charge (docs/spec/ui.md, History).
  */
 export function savedRoastChart(
   detail: RoastDetail,
@@ -41,18 +45,24 @@ export function savedRoastChart(
   });
   if (!compare) return chart;
   const other = savedAsLive(compare.detail);
-  const otherBt = roastChartData(other.roast, other.readings, { smoothingS }).layers.find(
-    (l) => l.id === 'bt',
-  );
-  if (!otherBt) return chart;
-  const ghost: LineLayer = {
-    ...otherBt,
-    id: 'compare-bt',
-    label: compare.label,
-    tone: 'ghost',
-    width: 2,
-  };
-  return { layers: [ghost, ...chart.layers], markers: chart.markers };
+  const otherLayers = roastChartData(other.roast, other.readings, { smoothingS }).layers;
+  const otherBt = otherLayers.find((l) => l.id === 'bt');
+  const ghost: LineLayer[] = otherBt
+    ? [{ ...otherBt, id: 'compare-bt', label: compare.label, tone: 'ghost', width: 2 }]
+    : [];
+  // Its heater, fan and drum in the strip, in their own colours but dashed and faded, behind ours.
+  const outputs = otherLayers
+    // Only what it recorded: a roast without a heater reading has no heater line to compare.
+    .filter((l) => l.axis === 'output' && l.points.some((p) => p.v !== null))
+    .map((l): LineLayer => ({
+      ...l,
+      id: `compare-${l.id}`,
+      label: `Compared ${l.label.toLowerCase()}`,
+      dash: COMPARED_DASH,
+      opacity: COMPARED_OPACITY,
+      compareOf: l.id,
+    }));
+  return { layers: [...ghost, ...outputs, ...chart.layers], markers: chart.markers };
 }
 
 /** −0:30 to a saved roast's cool end (or Stop roast, or else drop) + 0:30; none without an end. */

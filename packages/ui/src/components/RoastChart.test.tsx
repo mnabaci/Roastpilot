@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import type uPlot from 'uplot';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -11,7 +11,14 @@ interface Created {
   opts: {
     height: number;
     scales: { x: { range: Range }; temperature?: { range: Range } };
-    series: { stroke?: string; width?: number; paths?: unknown; scale?: string }[];
+    series: {
+      stroke?: string;
+      width?: number;
+      paths?: unknown;
+      scale?: string;
+      dash?: number[];
+      alpha?: number;
+    }[];
     hooks: {
       setCursor?: ((u: unknown) => void)[];
       drawClear?: ((u: unknown) => void)[];
@@ -125,6 +132,53 @@ describe('RoastChart', () => {
     hover(-10, 0);
     expect(screen.queryByText('0:12')).not.toBeInTheDocument();
     expect(legend).toHaveTextContent('TemperatureRoR');
+  });
+
+  it("draws a compared roast's outputs faded and dashed, its values after its own in the legend", () => {
+    const output = (id: string, label: string, v: number, over: Partial<LineLayer> = {}) => ({
+      id,
+      label,
+      axis: 'output' as const,
+      tone: 'heat' as const,
+      width: 2,
+      step: true,
+      points: [{ t: 0, v }],
+      ...over,
+    });
+    draw(
+      <RoastChart
+        title="Roast curve"
+        layers={[
+          bt([[0, 180]]),
+          output('compare-heater', 'Compared heater', 50, {
+            compareOf: 'heater',
+            dash: [4, 4],
+            opacity: 0.55,
+          }),
+          output('heater', 'Heater', 45),
+          // Only the compared roast had a drum: listed on its own.
+          output('compare-drum', 'Compared drum', 100, { compareOf: 'drum', tone: 'neutral' }),
+        ]}
+      />,
+    );
+    const strip = created[1]?.opts.series;
+    expect(strip?.[1]).toMatchObject({ dash: [4, 4], alpha: 0.55 });
+    expect(strip?.[2]?.alpha).toBeUndefined();
+    const legend = screen.getByRole('list', { name: 'Outputs legend' });
+    expect(
+      within(legend)
+        .getAllByRole('listitem')
+        .map((li) => li.textContent),
+    ).toEqual(['Heater', 'Compared drum']);
+    act(() => {
+      for (const hook of created[0]?.opts.hooks.setCursor ?? [])
+        hook({ cursor: { left: 120 }, posToVal: () => 12 });
+    });
+    expect(
+      within(legend)
+        .getAllByRole('listitem')
+        .map((li) => li.textContent),
+    ).toEqual(['Heater45%· compared50%', 'Compared drum100%']);
   });
 
   describe('a live roast (showLatest)', () => {

@@ -1,14 +1,17 @@
 import type { Bean } from '@roastpilot/shared';
-import { EventTable } from '@roastpilot/ui';
-import { RoastResultForm } from '../../features/RoastResultForm';
+import { CompareTable, EventTable } from '@roastpilot/ui';
 import { useTemperatureUnit } from '../../features/use-temperature-unit';
-import { BeanLink } from './BeanLink';
+import { compareRows } from './compare-rows';
 import { eventRows } from './event-rows';
+import { RoastDetailsCard } from './RoastDetailsCard';
 import { SavedRoastChart } from './SavedRoastChart';
 import { SavedRoastStats } from './SavedRoastStats';
 import type { SavedRoastState } from './use-saved-roast';
 
-/** The open roast's numbers, bean, result, chart and events, or why there is none to show. */
+/**
+ * The open roast's numbers, details, chart, comparison (while comparing) and events, or why there
+ * is none to show.
+ */
 export function OpenRoast({
   selected,
   compared,
@@ -47,9 +50,7 @@ export function OpenRoast({
       return (
         <>
           <SavedRoastStats roast={detail} />
-          {/* Keyed, so a problem linking one roast doesn't follow you to the next. */}
-          {live ? null : <BeanLink key={detail.id} roast={detail} beans={beans} />}
-          <RoastResultForm key={detail.id} roast={detail} />
+          <RoastDetailsCard roast={detail} beans={beans} live={live} />
           <SavedRoastChart
             detail={detail}
             compare={compared.status === 'loaded' ? compared.detail : undefined}
@@ -58,6 +59,12 @@ export function OpenRoast({
             showPreheat={showPreheat}
             onShowPreheat={onShowPreheat}
           />
+          {compared.status === 'loaded' ? (
+            <CompareTable
+              otherTitle={compareLabel}
+              rows={compareRows(detail, compared.detail, unit, beans)}
+            />
+          ) : null}
           <EventTable rows={eventRows(detail, unit)} />
         </>
       );

@@ -1,5 +1,5 @@
 import type { RoastSetup } from '@roastpilot/shared';
-import { Badge, cn, Switch } from '@roastpilot/ui';
+import { Badge, cn, Switch, Tooltip } from '@roastpilot/ui';
 import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
@@ -57,25 +57,26 @@ export function RoastSetupPanel() {
     <section aria-label="Setup" className="flex flex-col rounded-xl bg-surface">
       <div className="flex items-center gap-3 py-2 pr-5 pl-2">
         {/* The whole row opens the card; the Auto switch beside it stays live mid-roast. */}
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-label="Change setup"
-          title={needsCalibration ? `${line} · needs calibration` : line}
-          onClick={() => {
-            setOpen(!open);
-          }}
-          className="flex min-h-control-sm min-w-0 flex-1 items-center gap-2 rounded-md px-3 text-left hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-focus"
-        >
-          <span className="min-w-0 flex-1 truncate text-body">{line}</span>
-          <ChevronDown
-            aria-hidden="true"
-            className={cn(
-              'size-5 shrink-0 text-ink-muted transition-transform',
-              open && 'rotate-180',
-            )}
-          />
-        </button>
+        <Tooltip content={needsCalibration ? `${line} · needs calibration` : line}>
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-label="Change setup"
+            onClick={() => {
+              setOpen(!open);
+            }}
+            className="flex min-h-control-sm min-w-0 flex-1 items-center gap-2 rounded-md px-3 text-left hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-focus"
+          >
+            <span className="min-w-0 flex-1 truncate text-body">{line}</span>
+            <ChevronDown
+              aria-hidden="true"
+              className={cn(
+                'size-5 shrink-0 text-ink-muted transition-transform',
+                open && 'rotate-180',
+              )}
+            />
+          </button>
+        </Tooltip>
         <span className="text-label text-ink-muted" aria-hidden="true">
           Auto
         </span>

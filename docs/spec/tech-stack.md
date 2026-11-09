@@ -11,6 +11,7 @@ the `package.json` files and `pnpm-lock.yaml`.
 | UI                 | React + Tailwind CSS v4 + shadcn/ui                                 | Components you own and edit; design tokens become the Tailwind theme          |
 | Component workshop | Storybook (React + Vite, a11y and themes addons)                    | Every component built and reviewed in isolation, in both themes               |
 | Charts             | uPlot                                                               | Fast live time series, two y-axes for temp and RoR                            |
+| Drag to reorder    | dnd-kit (core, sortable; ADR 0022)                                  | Floating row, drop placeholder, sliding rows, keyboard and announcements      |
 | UI state           | Zustand                                                             | Small stores fed by IPC events, little boilerplate                            |
 | IPC                | Typed contract in `packages/shared` + zod                           | One source of truth for channels; payloads validated at the boundary          |
 | Serial             | serialport                                                          | Used only inside `SerialTransport`                                            |

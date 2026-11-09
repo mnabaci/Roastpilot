@@ -270,10 +270,10 @@ describe('BeansScreen', () => {
   it('archives, and hides archived beans until asked', async () => {
     const user = userEvent.setup();
     const { api } = show(fakeApi(), [BEAN, { ...BEAN, id: 2, name: 'Old', archived: true }]);
-    expect(screen.queryByTitle('Old')).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Old/ })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'More for Beans' }));
     await user.click(screen.getByRole('menuitem', { name: 'Show archived' }));
-    expect(screen.getByTitle('Old')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Old/ })).toBeTruthy();
     await user.click(screen.getByRole('button', { name: `More for ${BEAN.name}` }));
     await user.click(screen.getByRole('menuitem', { name: 'Archive' }));
     await waitFor(() => {
