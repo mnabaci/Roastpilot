@@ -1,6 +1,6 @@
 # Tooltip
 
-The whole of a line that had to truncate (a History row's bean · how it ran · rating), shown when you rest the pointer on it or tab to it. Never the system's `title`: that one ignores the theme and the type.
+The whole of a line that had to truncate (a History row's bean · how it ran · rating, a sidebar name, a filter chip's choice, the Roast setup row), or what a tab's status dot means, shown when you rest the pointer on it or tab to it. The app's only tooltip: never the system's `title`, which ignores the theme and the type.
 
 ## Anatomy
 

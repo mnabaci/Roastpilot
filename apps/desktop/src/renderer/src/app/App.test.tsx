@@ -1,4 +1,4 @@
-import { act, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { READY_ROAST, type Screen } from '@roastpilot/shared';
@@ -81,25 +81,32 @@ describe('App', () => {
     expect(screen.getByText('usbserial-0001')).toBeInTheDocument();
   });
 
-  it('says the connection status to screen readers; the Roasters tab carries it as a dot', () => {
+  it('says the connection status to screen readers; the Roasters tab carries it as a dot', async () => {
     renderApp(<App />, { connection: { status: 'lost', target: SIM } });
     expect(screen.getByText('Connection lost')).toBeInTheDocument();
     const tab = within(screen.getByRole('navigation', { name: 'Screens' })).getByRole('button', {
       name: 'Roasters',
     });
-    expect(within(tab).getByTitle('Connection lost')).toBeInTheDocument();
+    // Resting on the tab says what its dot means, in the app's tooltip.
+    fireEvent.pointerOver(tab);
+    expect(await screen.findByRole('tooltip', {}, { timeout: 2000 })).toHaveTextContent(
+      'Connection lost',
+    );
   });
 
   it.each([
     { state: 'ready', version: '0.2.0' },
     { state: 'available', version: '0.2.0', reason: 'cant-replace' },
-  ] as const)('the Settings tab carries an ember dot while an update is $state', (update) => {
+  ] as const)('the Settings tab carries an ember dot while an update is $state', async (update) => {
     renderApp(<App />, { update });
     const tab = within(screen.getByRole('navigation', { name: 'Screens' })).getByRole('button', {
       name: 'Settings',
     });
-    expect(within(tab).getByTitle('Update available')).toBeInTheDocument();
     expect(screen.getByText('Update available')).toHaveClass('sr-only');
+    fireEvent.pointerOver(tab);
+    expect(await screen.findByRole('tooltip', {}, { timeout: 2000 })).toHaveTextContent(
+      'Update available',
+    );
   });
 
   it.each([
@@ -110,7 +117,6 @@ describe('App', () => {
     { state: 'failed', stage: 'check' },
   ] as const)('no update dot while updates are $state', (update) => {
     renderApp(<App />, { update });
-    expect(screen.queryByTitle('Update available')).toBeNull();
     expect(screen.queryByText('Update available')).toBeNull();
   });
 
@@ -118,11 +124,11 @@ describe('App', () => {
     const { stores } = renderApp(<App />, {
       update: { state: 'available', version: '0.2.0', reason: 'cant-replace' },
     });
-    expect(screen.getByTitle('Update available')).toBeInTheDocument();
+    expect(screen.getByText('Update available')).toBeInTheDocument();
     act(() => {
       stores.updates.setState({ status: { state: 'idle', checkedAt: null } });
     });
-    expect(screen.queryByTitle('Update available')).toBeNull();
+    expect(screen.queryByText('Update available')).toBeNull();
   });
 
   it('shows nothing but the bar until the first snapshot', () => {

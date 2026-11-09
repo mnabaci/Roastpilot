@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { FolderOpen, RotateCw, TriangleAlert } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from './Button';
+import { Tooltip } from './Tooltip';
 
 export interface ErrorStateProps {
   /** What broke: "Settings hit a problem". */
@@ -35,9 +36,9 @@ export function ErrorState({
       <TriangleAlert aria-hidden="true" className="size-8 text-warning" />
       <h2 className="text-heading">{title}</h2>
       {detail ? (
-        <p title={detail} className="max-w-full truncate text-body text-ink-muted">
-          {detail}
-        </p>
+        <Tooltip content={detail}>
+          <p className="max-w-full truncate text-body text-ink-muted">{detail}</p>
+        </Tooltip>
       ) : null}
       {before}
       <div className="flex flex-wrap justify-center gap-2">

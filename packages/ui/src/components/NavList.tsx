@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { moveFocusInList } from '../lib/list-focus';
 import { cn } from '../lib/utils';
 import { TickBox } from './tick-box';
+import { Tooltip } from './Tooltip';
 
 export interface NavListItem<T> {
   id: T;
@@ -45,39 +46,45 @@ export function NavList<T extends string | number>({
         const locked = selecting && item.locked === true;
         return (
           <li key={item.id}>
-            <button
-              type="button"
-              title={item.label}
-              {...(selecting
-                ? { role: 'checkbox', 'aria-checked': ticked, 'aria-disabled': locked || undefined }
-                : { 'aria-current': shown ? ('true' as const) : undefined })}
-              onKeyDown={moveFocusInList}
-              onClick={(event) => {
-                if (!selecting) onOpen(item.id);
-                else if (!locked) onCheck(item.id, event.shiftKey);
-              }}
-              className={cn(
-                'flex min-h-control-sm w-full items-center gap-2 rounded-md px-3 py-1.5 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
-                locked
-                  ? 'cursor-not-allowed text-ink-muted'
-                  : shown
-                    ? 'bg-surface-raised text-ink'
-                    : 'text-ink-muted hover:bg-surface-hover hover:text-ink',
-              )}
-            >
-              {selecting ? (
-                <span className={cn(locked && 'opacity-50')}>
-                  <TickBox ticked={ticked} />
-                </span>
-              ) : null}
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-body">{item.label}</span>
-                {item.detail ? (
-                  <span className="truncate text-label text-ink-muted">{item.detail}</span>
+            {/* The whole name, for one the narrow sidebar truncates. */}
+            <Tooltip content={item.label}>
+              <button
+                type="button"
+                {...(selecting
+                  ? {
+                      role: 'checkbox',
+                      'aria-checked': ticked,
+                      'aria-disabled': locked || undefined,
+                    }
+                  : { 'aria-current': shown ? ('true' as const) : undefined })}
+                onKeyDown={moveFocusInList}
+                onClick={(event) => {
+                  if (!selecting) onOpen(item.id);
+                  else if (!locked) onCheck(item.id, event.shiftKey);
+                }}
+                className={cn(
+                  'flex min-h-control-sm w-full items-center gap-2 rounded-md px-3 py-1.5 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
+                  locked
+                    ? 'cursor-not-allowed text-ink-muted'
+                    : shown
+                      ? 'bg-surface-raised text-ink'
+                      : 'text-ink-muted hover:bg-surface-hover hover:text-ink',
+                )}
+              >
+                {selecting ? (
+                  <span className={cn(locked && 'opacity-50')}>
+                    <TickBox ticked={ticked} />
+                  </span>
                 ) : null}
-              </span>
-              {item.badge}
-            </button>
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-body">{item.label}</span>
+                  {item.detail ? (
+                    <span className="truncate text-label text-ink-muted">{item.detail}</span>
+                  ) : null}
+                </span>
+                {item.badge}
+              </button>
+            </Tooltip>
           </li>
         );
       })}
