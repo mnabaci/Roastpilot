@@ -99,7 +99,8 @@ Each phase:
 A roast that loses its RoR before first crack stalls: in roast 6 (2026-11-04) the fan reached 100% and RoR sat near 2.5 °C/min for the last minute before first crack, where roast 7 reached it at 6.3. In Auto, Steps and Curve alike, from the end of the soak until your first-crack tap:
 
 - **Armed** once RoR has first reached 5 °C/min, so the climb out of the turning point never trips it.
-- **Trips** when RoR is below 5 °C/min, or will reach it within 60 s at its rate of fall over the last 60 s. **Clears** at 6 °C/min or more with no such fall in sight.
+- **Trips** when RoR is below 5 °C/min, or is below 8 °C/min and will reach 5 within 60 s at its rate of fall over the last 60 s. **Clears** at 6 °C/min or more with no such fall in sight.
+- **Above 8 °C/min a fall doesn't count:** at the start of Maillard the heater steps down and RoR falls fast before it levels out. In roasts 15–17 (2026-11-08) that fall, at 8.4–9.9 °C/min, projected to 5 and tripped the guard; RoR then levelled out at 6.9–7.7 before first crack. Roast 6 still trips at 8:26, RoR 7.4.
 - **Heat first, fan last:** near first crack the drum fills with smoke, and heat is what drives RoR, so the fan keeps its plan while the heater does the work.
 - **Heater:** in `target` and `follow` phases the correction may go up to +30% instead of +20%.
 - **Fan, only when heat is spent:** once the heater has been at its limit (the +30%, or 100%) for 30 s and the guard is still tripped, planned increases wait and the fan steps down 5% at once, then every 30 s, to at most 20% below the plan. After it clears, it steps back up 5% every 30 s to the plan.
