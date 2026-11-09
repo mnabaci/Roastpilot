@@ -3,6 +3,8 @@ export const STALL = {
   tripRor: 5,
   clearRor: 6,
   lookAheadS: 60,
+  /** The rate of fall counts only below this: above it, a falling RoR is the planned slow-down. */
+  projectBelowRor: 8,
   /** Heat goes first: the fan is held back only after the heater has been at its limit this long. */
   heaterFirstS: 30,
   /** How much RoR history the rate of fall needs, and how much of it counts. */
@@ -63,7 +65,7 @@ export class StallGuard {
   #nextTripped(elapsedS: number, ror: number | undefined): boolean {
     if (!this.#armed || ror === undefined) return this.#tripped;
     const inAMinute = ror + this.#rorChangePerS(elapsedS) * STALL.lookAheadS;
-    const fallingTowards = inAMinute < STALL.tripRor;
+    const fallingTowards = ror < STALL.projectBelowRor && inAMinute < STALL.tripRor;
     if (this.#tripped) return ror < STALL.clearRor || fallingTowards;
     return ror < STALL.tripRor || fallingTowards;
   }
