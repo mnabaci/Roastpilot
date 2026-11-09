@@ -65,6 +65,7 @@ Inter, one family, with tabular numerals (`font-variant-numeric: tabular-nums`) 
 - Rows you can reorder (the profile editor's steps) have a ⠿ handle in a first column: a ghost `sm` icon button (Lucide `GripVertical`, `ink-muted`, 44px square, `aria-label` "Move <name>"). Drag it, or focus it and press Alt+↑ / Alt+↓; focus stays on the handle and a polite live line says where it went. Rows that can't move (Soak, Development) leave the cell empty; a read-only table has no handle column.
 - In the steps table a field never clips its value: each has a minimum width (times `18`, RoR `11`, others `13` spacing units); below 1280px the gap between fields halves (8px to 4px) and a header may wrap ("RoR / min") so the table fits a 960px window.
 - After a roast, its weights, rating and notes sit in a card over the chart that says Saved as each lands; Done hides it.
+- Weights, rating and notes look the same wherever they're edited (that card, and History's Roast details, a CollapsibleCard under the stat cards): Green and Roasted side by side with the loss between them as a quiet readout (`14.3 %` over `loss`), the 1–5 rating and the star as one group under a Rating label, Notes a TextAreaField that grows with its text.
 - Tables sit inside a card with `border` rules between rows and no outer border.
 - Facts (a record's fields) sit in a card as tiles: a `label` name in `ink-muted` over a `body` value, in a grid whose columns follow the card's width (container queries: 3, then 4, then 6), so a wide window shows them in one row instead of a tall list. Hints go at the card's foot under a `border` rule, `label` `ink-muted` after a Lucide light-bulb icon.
 - List-and-detail screens (History, Beans, Profiles, Roasters, Settings) use SidebarLayout: a `sidebar`-wide (256px) column with the title and a NavList, the open item on the right; the two scroll separately.
@@ -100,7 +101,7 @@ Lucide icons (shadcn/ui's default set), 20px, 2px stroke, `currentColor`. No emo
 
 ## Components
 
-Mark, Button, Badge, StatCard, OutputControl, CoachCard, PhaseStepper, AlertBanner, Toast, RoastChart, RoastStrip, TextField, NumberField, Select, SelectField, FilterSelect, Switch, SegmentedControl, RoastList, EventTable, RoastTable, NavList, SidebarLayout, ErrorState, Menu, ConfirmDialog and Tooltip. Each has its guidelines in `components/<Name>/README.md` and, where one is drawn, a static preview beside it (`preview.html`); the live components are in Storybook (`pnpm storybook`).
+Mark, Button, Badge, StatCard, OutputControl, CoachCard, PhaseStepper, AlertBanner, Toast, RoastChart, RoastStrip, TextField, NumberField, Select, SelectField, FilterSelect, Switch, SegmentedControl, RoastList, EventTable, RoastTable, NavList, SidebarLayout, CollapsibleCard, TextAreaField, ErrorState, Menu, ConfirmDialog and Tooltip. Each has its guidelines in `components/<Name>/README.md` and, where one is drawn, a static preview beside it (`preview.html`); the live components are in Storybook (`pnpm storybook`).
 
 ## Files
 

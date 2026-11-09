@@ -1,9 +1,8 @@
 import type { Bean } from '@roastpilot/shared';
 import { EventTable } from '@roastpilot/ui';
-import { RoastResultForm } from '../../features/RoastResultForm';
 import { useTemperatureUnit } from '../../features/use-temperature-unit';
-import { BeanLink } from './BeanLink';
 import { eventRows } from './event-rows';
+import { RoastDetailsCard } from './RoastDetailsCard';
 import { SavedRoastChart } from './SavedRoastChart';
 import { SavedRoastStats } from './SavedRoastStats';
 import type { SavedRoastState } from './use-saved-roast';
@@ -47,9 +46,7 @@ export function OpenRoast({
       return (
         <>
           <SavedRoastStats roast={detail} />
-          {/* Keyed, so a problem linking one roast doesn't follow you to the next. */}
-          {live ? null : <BeanLink key={detail.id} roast={detail} beans={beans} />}
-          <RoastResultForm key={detail.id} roast={detail} />
+          <RoastDetailsCard roast={detail} beans={beans} live={live} />
           <SavedRoastChart
             detail={detail}
             compare={compared.status === 'loaded' ? compared.detail : undefined}

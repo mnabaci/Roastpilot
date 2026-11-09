@@ -22,6 +22,7 @@ const ROAST_DEFAULTS = {
   sounds: DEFAULT_SOUNDS,
   temperatureUnit: 'c',
   theme: 'dark',
+  historyDetailsOpen: true,
   safetyNoticeAccepted: 0,
 };
 
@@ -65,6 +66,12 @@ describe('SettingsSchema', () => {
     expect(SettingsSchema.parse({ theme: 'sepia' }).theme).toBe('dark');
   });
 
+  it('opens Roast details in History unless you fold them, also for an older file or a bad value', () => {
+    expect(DEFAULT_SETTINGS.historyDetailsOpen).toBe(true);
+    expect(SettingsSchema.parse({ historyDetailsOpen: false }).historyDetailsOpen).toBe(false);
+    expect(SettingsSchema.parse({ historyDetailsOpen: 'no' }).historyDetailsOpen).toBe(true);
+  });
+
   it('shows °C unless you choose °F, and reads an older file or an unknown unit as °C', () => {
     expect(DEFAULT_SETTINGS.temperatureUnit).toBe('c');
     expect(SettingsSchema.parse({ theme: 'light' }).temperatureUnit).toBe('c');
@@ -106,6 +113,7 @@ describe('SettingsSchema', () => {
       },
       temperatureUnit: 'f',
       theme: 'system',
+      historyDetailsOpen: false,
       safetyNoticeAccepted: 1,
     };
     expect(SettingsSchema.parse(settings)).toEqual(settings);

@@ -30,7 +30,7 @@ describe('RoastResultForm', () => {
         notes: null,
       });
     });
-    expect(screen.getByText('15.0% weight loss')).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'How it went' })).toHaveTextContent('15.0 % loss');
   });
 
   it('says Saves as you go, then Saved once a save lands, until the next edit', async () => {

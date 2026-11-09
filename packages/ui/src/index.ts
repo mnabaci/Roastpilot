@@ -28,6 +28,8 @@ export {
 } from './components/roast-chart/plot-engine';
 export { formatClock, formatNumber } from './lib/format';
 export { TextField, type TextFieldProps } from './components/TextField';
+export { TextAreaField, type TextAreaFieldProps } from './components/TextAreaField';
+export { CollapsibleCard, type CollapsibleCardProps } from './components/CollapsibleCard';
 export { RoastList, type RoastListItem, type RoastListProps } from './components/RoastList';
 export { EventTable, type EventRow } from './components/EventTable';
 export { RoastTable, type RoastTableRow } from './components/RoastTable';

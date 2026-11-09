@@ -16,7 +16,7 @@ export function BeanLink({ roast, beans }: { roast: RoastSummary; beans: readonl
   const run = useRun();
   const [problem, setProblem] = useState<string>();
   return (
-    <div className="flex max-w-xs flex-col gap-1">
+    <div className="flex w-60 flex-col gap-1">
       <SelectField
         label="Bean"
         value={roast.beanId === null ? NONE : String(roast.beanId)}
