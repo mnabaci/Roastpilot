@@ -54,6 +54,7 @@ const BEAN = {
   screen: null,
   decaf: false,
   supplier: null,
+  link: null,
   lowStockG: 500,
   notes: null,
 } as const;

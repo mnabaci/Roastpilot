@@ -18,6 +18,7 @@ export interface BeanDraft {
   screen: string;
   decaf: boolean;
   supplier: string;
+  link: string;
   lowStockG: string;
   notes: string;
 }
@@ -40,6 +41,7 @@ export function toBeanDraft(bean: Bean | undefined): BeanDraft {
     screen: text(bean?.screen ?? null),
     decaf: bean?.decaf ?? false,
     supplier: text(bean?.supplier ?? null),
+    link: text(bean?.link ?? null),
     lowStockG: text(bean?.lowStockG ?? DEFAULT_LOW_STOCK_G),
     notes: text(bean?.notes ?? null),
   };
@@ -64,6 +66,7 @@ export function fromBeanDraft(draft: BeanDraft): Result<BeanFields, BeanDraftErr
     decaf: draft.decaf,
     variety: optionalText(draft.variety),
     supplier: optionalText(draft.supplier),
+    link: optionalText(draft.link),
     notes: optionalText(draft.notes),
     altitudeM: number('altitudeM'),
     densityGL: number('densityGL'),

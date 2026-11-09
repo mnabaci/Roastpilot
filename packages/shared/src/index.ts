@@ -268,6 +268,8 @@ export {
   BeanIdSchema,
   BeanProcessSchema,
   BeanSchema,
+  isWebLink,
+  OpenBeanLinkErrorSchema,
   NO_ROAST_SETUP,
   RoastSetupSchema,
   SetArchivedSchema,
@@ -279,6 +281,7 @@ export {
   type BeanFields,
   type BeanId,
   type BeanProcess,
+  type OpenBeanLinkError,
   type RoastSetup,
   type UpdateBean,
 } from './bean';

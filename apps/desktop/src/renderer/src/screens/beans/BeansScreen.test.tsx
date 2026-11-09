@@ -234,6 +234,20 @@ describe('BeansScreen', () => {
     expect(within(table).getByText('14.3 %')).toBeInTheDocument();
   });
 
+  it('orders again from the saved link, through main; no link, no button', async () => {
+    const user = userEvent.setup();
+    const api = fakeApi();
+    show(api, [{ ...BEAN, link: 'https://www.shop.example/yirgacheffe' }]);
+    expect(screen.getByText('shop.example')).not.toHaveClass('first-letter:uppercase');
+    await user.click(screen.getByRole('button', { name: 'Order again' }));
+    expect(api.openBeanLink).toHaveBeenCalledWith(BEAN.id);
+  });
+
+  it('has no Order again for a bean without a link', () => {
+    show();
+    expect(screen.queryByRole('button', { name: 'Order again' })).toBeNull();
+  });
+
   it('archives, and hides archived beans until asked', async () => {
     const user = userEvent.setup();
     const { api } = show(fakeApi(), [BEAN, { ...BEAN, id: 2, name: 'Old', archived: true }]);

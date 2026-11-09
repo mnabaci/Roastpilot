@@ -1,5 +1,14 @@
 import type { Bean } from '@roastpilot/shared';
 
+/** `greencoffeecollective.com` for a link to any page of it. */
+function siteOf(link: string): string {
+  try {
+    return new URL(link).hostname.replace(/^www\./, '');
+  } catch {
+    return link;
+  }
+}
+
 const facts = (bean: Bean): readonly [string, string | null][] => [
   ['Origin', bean.origin],
   ['Process', bean.process],
@@ -10,6 +19,8 @@ const facts = (bean: Bean): readonly [string, string | null][] => [
   ['Bean size', bean.screen === null ? null : `Screen ${String(bean.screen)}`],
   ['Decaf', bean.decaf ? 'Yes' : null],
   ['Supplier', bean.supplier],
+  // Where Order again goes: the shop's address, short.
+  ['Order link', bean.link === null ? null : siteOf(bean.link)],
   ['Notes', bean.notes],
 ];
 
@@ -24,7 +35,11 @@ export function BeanFacts({ bean }: { bean: Bean }) {
               <dt key={label} className="text-ink-muted">
                 {label}
               </dt>,
-              <dd key={`${label}-value`} className="first-letter:uppercase">
+              // A web address keeps its case; the rest starts with a capital.
+              <dd
+                key={`${label}-value`}
+                className={label === 'Order link' ? undefined : 'first-letter:uppercase'}
+              >
                 {value}
               </dd>,
             ],

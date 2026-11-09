@@ -61,7 +61,7 @@ export function BeanEditor({
       { failed: "Couldn't save the bean · try again" },
     );
   };
-  const textCell = (key: 'name' | 'origin' | 'variety' | 'supplier', label: string) => (
+  const textCell = (key: 'name' | 'origin' | 'variety' | 'supplier' | 'link', label: string) => (
     <div className="flex flex-col gap-1">
       <TextField
         label={label}
@@ -131,14 +131,16 @@ export function BeanEditor({
       </p>
       <div className="grid grid-cols-2 gap-3">
         {textCell('supplier', 'Supplier')}
-        <TextField
-          label="Notes"
-          value={draft.notes}
-          onChange={(notes) => {
-            change({ notes });
-          }}
-        />
+        {/* Where to order it again: Order again on the bean opens it. */}
+        {textCell('link', 'Order link')}
       </div>
+      <TextField
+        label="Notes"
+        value={draft.notes}
+        onChange={(notes) => {
+          change({ notes });
+        }}
+      />
       {problem ? (
         <p role="alert" className="text-label text-critical-text">
           {problem}

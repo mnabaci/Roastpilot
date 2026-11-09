@@ -19,6 +19,7 @@ const bean = (fields: Partial<BeanFields> & Pick<BeanFields, 'name' | 'origin'>)
   screen: null,
   decaf: false,
   supplier: null,
+  link: null,
   lowStockG: 500,
   notes: null,
   ...fields,

@@ -14,6 +14,7 @@ const bean = (id: number, change: Partial<Bean> = {}): Bean => ({
   screen: null,
   decaf: false,
   supplier: null,
+  link: null,
   lowStockG: 500,
   notes: null,
   profileId: null,

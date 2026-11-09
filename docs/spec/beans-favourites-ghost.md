@@ -13,7 +13,7 @@ changes no stock and shows "No bean" in History.
 ## Beans
 
 - **Required:** name, origin, process (washed, natural, honey, other).
-- **Optional:** variety, altitude (m), density (g/L), moisture (%), bean size (screen), decaf, supplier, purchase date, notes. Density is the one to measure yourself: weigh a fixed volume of green beans.
+- **Optional:** variety, altitude (m), density (g/L), moisture (%), bean size (screen), decaf, supplier, order link (a web address: Order again on the bean opens it in the browser), purchase date, notes. Density is the one to measure yourself: weigh a fixed volume of green beans.
 - **Stock:** see [batch-and-stock.md](batch-and-stock.md).
 - **Archive** a finished bean; its roasts stay in History.
 

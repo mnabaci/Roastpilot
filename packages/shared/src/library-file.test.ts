@@ -83,11 +83,17 @@ describe('library file items', () => {
       screen: null,
       decaf: false,
       supplier: null,
+      link: null,
       lowStockG: 500,
       notes: null,
     };
     expect(FileBeanSchema.safeParse({ ...bean, profileName: null }).success).toBe(true);
     expect(FileBeanSchema.safeParse({ ...bean, profileName: '' }).success).toBe(false);
+    // A file from before order links reads with none; a link has to be a web address.
+    expect(FileBeanSchema.parse({ ...bean, profileName: null }).link).toBeNull();
+    const linked = { ...bean, profileName: null, link: 'https://shop.example/guji' };
+    expect(FileBeanSchema.parse(linked).link).toBe('https://shop.example/guji');
+    expect(FileBeanSchema.safeParse({ ...linked, link: 'file:///etc/hosts' }).success).toBe(false);
   });
 
   it('an export names ids of the kind, or none for all', () => {

@@ -1,6 +1,7 @@
 import { beanHints } from '@roastpilot/core';
 import type { Bean, RoastSummary } from '@roastpilot/shared';
 import { Badge, Button, Menu, formatNumber, StatCard } from '@roastpilot/ui';
+import { ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 import { describePlan } from './batch-format';
 import { BeanEditor } from './BeanEditor';
@@ -61,6 +62,11 @@ export function BeanDetail({
           >
             Add stock
           </Button>
+          {bean.link === null ? null : (
+            <Button variant="ghost" size="sm" icon={<ExternalLink />} onClick={actions.orderAgain}>
+              Order again
+            </Button>
+          )}
           <Menu
             label={`More for ${bean.name}`}
             items={[

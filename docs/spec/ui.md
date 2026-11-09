@@ -124,11 +124,11 @@ Visual language: the [Roastpilot design system](../design-system/README.md) (ADR
 ## Beans screen
 
 - Bean list: name, origin, process, stock left, low-stock badge.
-- Bean detail: its info, its best favourite, and all its roasts in a table (design system, RoastTable): Roast (date and time, starred if a favourite) · Ran as ("Auto · Light · Steps" or Manual) · Time · FC · Drop · Green → roasted ("356 → 305 g", or "356 g" before it is weighed) · Loss · Rating, numbers right-aligned in columns, a dash where a roast has none.
+- Bean detail: its info (the order link as its site, `shop.example`), its best favourite, and all its roasts in a table (design system, RoastTable): Roast (date and time, starred if a favourite) · Ran as ("Auto · Light · Steps" or Manual) · Time · FC · Drop · Green → roasted ("356 → 305 g", or "356 g" before it is weighed) · Loss · Rating, numbers right-aligned in columns, a dash where a roast has none.
 - Actions: Add bean, Edit, Add stock (with the batch calculator), Adjust stock, Make a profile for this bean, Archive, Roast this bean.
 - List on the left (the shared sidebar), detail on the right; the two scroll separately.
 - **Sidebar:** "Beans ⋯" (Batch calculator, Show archived, Export all, Import a Roastpilot file), the list, then + Add bean under it.
-- **A bean's header:** its name with Low stock and Archived badges; Roast this bean (main) and Add stock; then "⋯" with Adjust stock, Edit, Make a profile, Export this bean and Archive (Bring back when archived).
+- **A bean's header:** its name with Low stock and Archived badges; Roast this bean (main) and Add stock, then Order again (ghost, with a link icon) when the bean has an order link, opening it in the browser (main opens the saved address; the screen only names the bean); then "⋯" with Adjust stock, Edit, Make a profile, Export this bean and Archive (Bring back when archived).
 
 ## Batch calculator
 

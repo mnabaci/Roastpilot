@@ -11,6 +11,7 @@ const FIELD_NAMES: Readonly<Record<string, string>> = {
   variety: 'Variety',
   decaf: 'Decaf',
   supplier: 'Supplier',
+  link: 'Order link',
   notes: 'Notes',
   profileName: 'Profile',
   schemaVersion: 'Profile version',

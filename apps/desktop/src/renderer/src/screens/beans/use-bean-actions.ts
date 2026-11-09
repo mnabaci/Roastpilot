@@ -8,7 +8,10 @@ import { activeEntry } from '../roast/use-active-profile';
 import { useAuto, useRoast, useRoasters } from '../../stores/use-stores';
 import { setupForBean, tunedForG } from '../roast/roast-setup';
 
-/** What a bean's header can do: roast it, make it a profile, archive it; one line when it fails. */
+/**
+ * What a bean's header can do: roast it, order it again, make it a profile, archive it; one line
+ * when it fails.
+ */
 export function useBeanActions({
   bean,
   beans,
@@ -28,6 +31,8 @@ export function useBeanActions({
   canMakeProfile: boolean;
   roastThis: () => void;
   makeProfile: () => void;
+  /** Opens the bean's order link in the browser. */
+  orderAgain: () => void;
   archive: () => void;
   problem: string | undefined;
 } {
@@ -90,6 +95,19 @@ export function useBeanActions({
     );
   };
 
+  // Main opens the link saved with the bean; the screen only names the bean.
+  const orderAgain = () => {
+    setProblem(undefined);
+    run(
+      'beans.link-failed',
+      async () => {
+        const opened = await api.openBeanLink(bean.id);
+        if (!opened.ok) setProblem("Couldn't open the order link · see Logs");
+      },
+      { failed: "Couldn't open the order link · try again" },
+    );
+  };
+
   const archive = () => {
     run(
       'beans.archive-failed',
@@ -106,6 +124,7 @@ export function useBeanActions({
     canMakeProfile: profiles.length > 0,
     roastThis,
     makeProfile,
+    orderAgain,
     archive,
     problem,
   };
