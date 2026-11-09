@@ -23,7 +23,6 @@ const bean = (id: number, change: Partial<Bean> = {}): Bean => ({
   roastedG: 0,
   archived: false,
   avgLossPct: null,
-  batchPlan: null,
   ...change,
 });
 

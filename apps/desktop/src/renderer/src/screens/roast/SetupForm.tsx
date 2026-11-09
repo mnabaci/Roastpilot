@@ -62,10 +62,9 @@ export function SetupForm({
           setBatchText(undefined);
           onChange(
             setupForBean(picked, {
-              roaster,
+              plan: { roaster, profiles, autoProfileG: active?.profile.batchG },
               roasts,
               profileId: active?.profile.id ?? null,
-              tunedForG: tunedFor,
             }),
           );
         }}

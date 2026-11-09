@@ -1,0 +1,1 @@
+ALTER TABLE `bean_purchases` DROP COLUMN `batch_plan`;

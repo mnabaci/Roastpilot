@@ -85,19 +85,15 @@ describe('SqliteBeanRepository', () => {
       roastedG: 0,
       archived: false,
       avgLossPct: null,
-      batchPlan: null,
     });
   });
 
-  it('adds stock, keeping the latest plan', async () => {
+  it('adds stock to the green stock', async () => {
     const { beans } = setup();
     const beanId = await added(beans);
-    const plan = { kind: 'equal' as const, batchesG: [500, 500] };
-    await beans.addStock({ beanId, grams: 1000, purchasedAt: '2026-11-01', plan });
-    await beans.addStock({ beanId, grams: 200, purchasedAt: '2026-11-02', plan: null });
-    expect(await one(beans)).toMatchObject({ greenG: 1200, batchPlan: null });
-    await beans.addStock({ beanId, grams: 100, purchasedAt: '2026-11-03', plan });
-    expect(await one(beans)).toMatchObject({ greenG: 1300, batchPlan: plan });
+    await beans.addStock({ beanId, grams: 1000, purchasedAt: '2026-11-01' });
+    await beans.addStock({ beanId, grams: 200, purchasedAt: '2026-11-02' });
+    expect(await one(beans)).toMatchObject({ greenG: 1200 });
   });
 
   it('adjusts stock by hand', async () => {
@@ -129,16 +125,14 @@ describe('SqliteBeanRepository', () => {
     expect(await beans.setArchived(9, true)).toEqual(notFound);
     expect(await beans.update(9, FIELDS, null)).toEqual(notFound);
     expect(await beans.adjustStock({ beanId: 9, greenG: 1, roastedG: 1 })).toEqual(notFound);
-    expect(await beans.addStock({ beanId: 9, grams: 1, purchasedAt: 'x', plan: null })).toEqual(
-      notFound,
-    );
+    expect(await beans.addStock({ beanId: 9, grams: 1, purchasedAt: 'x' })).toEqual(notFound);
   });
 
   describe('with roasts', () => {
     async function roasted() {
       const all = setup();
       const beanId = await added(all.beans);
-      await all.beans.addStock({ beanId, grams: 1000, purchasedAt: 'x', plan: null });
+      await all.beans.addStock({ beanId, grams: 1000, purchasedAt: 'x' });
       const made = await all.roasts.create({ ...newRoast, beanId, batchG: 400 });
       if (!made.ok) throw new Error('create failed');
       return { ...all, beanId, roastId: made.value };

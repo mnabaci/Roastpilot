@@ -2,7 +2,9 @@ import type { Bean, RoastSummary } from '@roastpilot/shared';
 import { Badge, Button, Menu, formatNumber, StatCard } from '@roastpilot/ui';
 import { ExternalLink } from 'lucide-react';
 import { useState } from 'react';
-import { describePlan } from './batch-format';
+import { planLine } from './batch-format';
+import { beanPlan } from './bean-plan';
+import { usePlanContext } from './use-plan-context';
 import { BeanEditor } from './BeanEditor';
 import { BeanFacts } from './BeanFacts';
 import { BeanRoasts } from './BeanRoasts';
@@ -29,6 +31,7 @@ export function BeanDetail({
   onOpenRoast?: ((id: number) => void) | undefined;
 }) {
   const [panel, setPanel] = useState<Panel>('none');
+  const planContext = usePlanContext();
   const actions = useBeanActions({ bean, beans, roasts, onRoast, onOpenProfile });
   const files = useLibraryFiles('beans');
   const close = () => {
@@ -107,7 +110,12 @@ export function BeanDetail({
           label="Green"
           value={formatNumber(bean.greenG, 0)}
           unit="g"
-          context={bean.batchPlan ? describePlan(bean.batchPlan) : 'No batch plan'}
+          // Worked out live for the active roaster (docs/spec/batch-and-stock.md).
+          context={
+            planContext
+              ? planLine(beanPlan(bean, planContext).batchesG, planContext.roaster.batchMinG)
+              : 'Add a roaster to plan its batches'
+          }
         />
         <StatCard label="Roasted" value={formatNumber(bean.roastedG, 0)} unit="g" />
         <StatCard

@@ -30,6 +30,4 @@ export const beanPurchases = sqliteTable('bean_purchases', {
     .references(() => beans.id, { onDelete: 'cascade' }),
   purchasedAt: text('purchased_at').notNull(),
   grams: real('grams').notNull(),
-  /** JSON BatchPlan: the plan picked with this stock. */
-  batchPlan: text('batch_plan'),
 });

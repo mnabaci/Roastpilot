@@ -1,20 +1,27 @@
-import type { BatchPlan } from '@roastpilot/shared';
-
 const grams = (g: number) => `${Math.round(g).toLocaleString('en-GB')} g`;
 
 export { grams as formatGrams };
 
-/** `3 × 333 g (+1 g)` or `2 × 375 g + 250 g` (docs/spec/batch-and-stock.md). */
-export function describePlan({ kind, batchesG }: BatchPlan): string {
-  const [first] = batchesG;
-  if (first === undefined) return '';
-  if (kind === 'equal') {
-    const each = Math.min(...batchesG);
-    const spare = batchesG.reduce((sum, g) => sum + g, 0) - each * batchesG.length;
-    const count = `${String(batchesG.length)} × ${grams(each)}`;
-    return spare > 0 ? `${count} (+${grams(spare)})` : count;
-  }
-  const whole = batchesG.filter((g) => g === first);
-  const rest = batchesG.filter((g) => g !== first);
-  return [`${String(whole.length)} × ${grams(first)}`, ...rest.map(grams)].join(' + ');
+/** Batches grouped by weight, the most common first: `4 × 356 g · 1 × 360 g`. */
+export function describeBatches(batchesG: readonly number[]): string {
+  const counts = new Map<number, number>();
+  for (const g of batchesG) counts.set(g, (counts.get(g) ?? 0) + 1);
+  return [...counts]
+    .sort((a, b) => b[1] - a[1])
+    .map(([g, n]) => `${String(n)} × ${grams(g)}`)
+    .join(' · ');
 }
+
+/**
+ * A bean's plan in one line, for its Green card: `5 batches · 4 × 356 g · 1 × 360 g`; stock too
+ * small for a batch, or none, says so.
+ */
+export function planLine(batchesG: readonly number[], minG: number): string {
+  const [first] = batchesG;
+  if (first === undefined) return 'No green left';
+  if (first < minG) return `Under one batch · the minimum is ${grams(minG)}`;
+  return `${batchCount(batchesG.length)} · ${describeBatches(batchesG)}`;
+}
+
+/** `5 batches` or `1 batch`. */
+export const batchCount = (n: number): string => `${String(n)} ${n === 1 ? 'batch' : 'batches'}`;

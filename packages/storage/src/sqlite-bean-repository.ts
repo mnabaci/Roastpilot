@@ -1,11 +1,9 @@
 import type { BeanRepository } from '@roastpilot/core';
 import {
-  BatchPlanSchema,
   err,
   ok,
   type AddStock,
   type AdjustStock,
-  type BatchPlan,
   type Bean,
   type BeanFields,
   type BeanId,
@@ -13,9 +11,9 @@ import {
   type Result,
   type StorageError,
 } from '@roastpilot/shared';
-import { and, asc, desc, eq, isNotNull, sql } from 'drizzle-orm';
+import { and, asc, eq, isNotNull, sql } from 'drizzle-orm';
 import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy';
-import { attempt, parseJson } from './attempt';
+import { attempt } from './attempt';
 import { beanPurchases, beans } from './schema/beans';
 import { roasts } from './schema/roasts';
 import { transaction } from './transaction';
@@ -50,20 +48,9 @@ export class SqliteBeanRepository implements BeanRepository {
         )
         .groupBy(roasts.beanId)
         .all();
-      const purchases = await this.#db
-        .select({ beanId: beanPurchases.beanId, plan: beanPurchases.batchPlan })
-        .from(beanPurchases)
-        .orderBy(desc(beanPurchases.id))
-        .all();
-      const planOf = (id: BeanId): BatchPlan | null => {
-        const latest = purchases.find((p) => p.beanId === id);
-        const parsed = BatchPlanSchema.safeParse(latest?.plan && parseJson(latest.plan));
-        return parsed.success ? parsed.data : null;
-      };
       return rows.map((row) => ({
         ...row,
         avgLossPct: losses.find((l) => l.beanId === row.id)?.avg ?? null,
-        batchPlan: planOf(row.id),
       }));
     });
   }
@@ -129,7 +116,7 @@ export class SqliteBeanRepository implements BeanRepository {
   }
 
   /** More green stock and its purchase row, all or nothing. */
-  addStock({ beanId, grams, purchasedAt, plan }: AddStock): Promise<Result<void, StorageError>> {
+  addStock({ beanId, grams, purchasedAt }: AddStock): Promise<Result<void, StorageError>> {
     return transaction(this.#db, async (tx) => {
       const added = await tx
         .update(beans)
@@ -138,10 +125,7 @@ export class SqliteBeanRepository implements BeanRepository {
         .returning({ id: beans.id })
         .all();
       if (added.length === 0) return err({ kind: 'not-found', id: beanId });
-      await tx
-        .insert(beanPurchases)
-        .values({ beanId, grams, purchasedAt, batchPlan: plan && JSON.stringify(plan) })
-        .run();
+      await tx.insert(beanPurchases).values({ beanId, grams, purchasedAt }).run();
       return ok(undefined);
     });
   }

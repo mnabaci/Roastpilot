@@ -1,18 +1,32 @@
-# Batch calculator and stock
+# Batch plans and stock
 
-Enter an order's weight; the calculator uses the active roaster's batch sizes and shows two plans
-side by side. You pick one, and it's saved with the bean purchase.
+A bean belongs to no roaster, so its stock is grams only. Its batch plan is worked out live for the
+active roaster from the green stock left, and never stored: a roast, new stock, an adjustment or
+switching roasters re-plans it.
 
-| Order   | Equal splits     | Ideal + leftover             |
-| ------- | ---------------- | ---------------------------- |
-| 1,000 g | 3 × 333 g (+1 g) | 2 × 375 g + 250 g            |
-| 2,270 g | 6 × 378 g (+2 g) | 6 × 375 g + 20 g (below min) |
+- **The batch it plans around:** the batch its own profile was tuned for, when that profile is one
+  of the active roaster's; else the batch of the profile Auto uses; else the roaster's ideal. Kept
+  inside the roaster's min–max.
+- **Equal batches, always:** as many batches as bring each nearest that weight, each inside
+  min–max; the spare grams go in the first. So no batch is left below the minimum while the stock
+  allows it. Stock below the minimum is one short batch ("Under one batch · the minimum is
+  250 g"); none, no batches.
 
-- **Equal splits:** batch count = order ÷ ideal, rounded, kept inside min–max; spare grams go into the first batch.
-- **Ideal + leftover:** as many ideal batches as fit, plus the rest; flagged if the rest is below the minimum.
-- Both plans show expected roasted output, using the bean's average weight loss (default 15%).
-- Runs automatically when you add a bean or new stock, and as a standalone tool.
-- **The next roast's batch:** picking a bean (or Roast this bean) starts the batch at the bean's next planned batch; without a plan, at the batch the profile the roast follows was tuned for (Auto's, or the coach's in Manual); with neither, at the roaster's ideal.
+| Green left | Plans around | Batches                           |
+| ---------- | ------------ | --------------------------------- |
+| 1,000 g    | 375 g        | 334 · 333 · 333                   |
+| 1,784 g    | 356 g        | 360 · 356 · 356 · 356 · 356       |
+| 2,270 g    | 375 g        | 380 · 378 · 378 · 378 · 378 · 378 |
+
+- **On the bean:** its Green card says how many batches are left and their weights ("5 batches ·
+  4 × 356 g · 1 × 360 g").
+- **Add stock:** the weight and the date, and under them what the green then splits into ("Then
+  2,784 g green · 8 batches · 8 × 348 g"). Nothing to pick.
+- **Batch calculator** (Beans "⋯"): for "what would this order make": the order weight, and the
+  batch you'd roast it at (Auto's profile batch, else the roaster's ideal, unless you change it);
+  the same equal batches, to scale, and about how much it roasts to. Nothing is saved.
+- **The next roast's batch:** picking a bean (or Roast this bean) starts the batch at the first
+  batch of its plan; with no green left, at the batch it plans around.
 - **Off the profile's batch:** when the batch is more than 10 % from the batch the profile was tuned for (exactly 10 % is fine), one quiet line under it: "Profile tuned for 356 g · a 300 g batch runs hotter and faster" (smaller) or "… a 450 g batch runs cooler and slower" (bigger): the same heat on fewer beans climbs faster. A note, not an error: Preheat and Start stay.
 
 ## Stock

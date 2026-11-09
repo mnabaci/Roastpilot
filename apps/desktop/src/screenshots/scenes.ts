@@ -84,7 +84,7 @@ export const SCENES: readonly Scene[] = [
       const keys = user();
       await keys.click(await page.findByRole('button', { name: /Ethiopia Guji/ }));
       await keys.click(await page.findByRole('button', { name: 'Add stock' }));
-      await keys.type(await page.findByRole('textbox', { name: 'Order weight' }), '2000');
+      await keys.type(await page.findByRole('textbox', { name: 'Weight' }), '2000');
       // The form starts on today; the picture keeps one date.
       const bought = page.getByRole('textbox', { name: 'Bought on' });
       await keys.clear(bought);

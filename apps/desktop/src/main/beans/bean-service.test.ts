@@ -27,7 +27,7 @@ describe('BeanService', () => {
     await beans.add(FIELDS);
     await beans.update({ id: 1, fields: FIELDS, profileId: null });
     await beans.setArchived({ id: 1, archived: true });
-    await beans.addStock({ beanId: 1, grams: 10, purchasedAt: 'x', plan: null });
+    await beans.addStock({ beanId: 1, grams: 10, purchasedAt: 'x' });
     await beans.adjustStock({ beanId: 1, greenG: 1, roastedG: 2 });
     expect(onChange).toHaveBeenCalledTimes(5);
     expect(onChange).toHaveBeenLastCalledWith([BEAN]);
@@ -86,7 +86,6 @@ describe('BeanService find and linkProfile', () => {
     roastedG: 0,
     archived: false,
     avgLossPct: null,
-    batchPlan: null,
   };
 
   it('finds a bean by id, archived ones too, and says when there is none', async () => {

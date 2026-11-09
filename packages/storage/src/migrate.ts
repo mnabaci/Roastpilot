@@ -9,6 +9,7 @@ import coolerHelpsDrum0005 from './migrations/0005_cooler_helps_drum.sql?raw';
 import drumSpeed0006 from './migrations/0006_drum_speed.sql?raw';
 import beanLink0007 from './migrations/0007_bean_link.sql?raw';
 import beanSpecies0008 from './migrations/0008_bean_species.sql?raw';
+import dropPurchaseBatchPlan0009 from './migrations/0009_drop_purchase_batch_plan.sql?raw';
 
 interface Migration {
   tag: string;
@@ -29,6 +30,7 @@ export const MIGRATIONS: readonly Migration[] = [
   { tag: '0006_drum_speed', sql: drumSpeed0006 },
   { tag: '0007_bean_link', sql: beanLink0007 },
   { tag: '0008_bean_species', sql: beanSpecies0008 },
+  { tag: '0009_drop_purchase_batch_plan', sql: dropPurchaseBatchPlan0009 },
 ];
 
 /** How many migrations the database has had (`PRAGMA user_version`); 0 for a new one. */

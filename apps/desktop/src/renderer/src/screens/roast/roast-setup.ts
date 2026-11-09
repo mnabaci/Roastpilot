@@ -1,32 +1,26 @@
 import { defaultGhost } from '@roastpilot/core';
-import type {
-  AutoProfile,
-  Bean,
-  Roaster,
-  RoastSetup,
-  RoastSummary,
-  Settings,
-} from '@roastpilot/shared';
+import type { AutoProfile, Bean, RoastSetup, RoastSummary, Settings } from '@roastpilot/shared';
+import { beanPlan, type PlanContext } from '../beans/bean-plan';
 
 /**
- * Choosing a bean: its next planned batch (else the batch the followed profile was tuned for, else
- * the roaster's ideal) and its ghost, both of which you can change (docs/spec/ui.md, Before preheat).
+ * Choosing a bean: the next batch of its plan (its green stock left in equal batches, around its
+ * own profile's batch, else Auto's, else the roaster's ideal; that batch itself once no stock is
+ * left) and its ghost, both of which you can change (docs/spec/ui.md, Before preheat).
  */
 export function setupForBean(
   bean: Bean | undefined,
   context: {
-    roaster: Pick<Roaster, 'batchIdealG'>;
+    plan: PlanContext;
     roasts: readonly RoastSummary[];
     profileId: string | null;
-    /** The batch the profile the roast follows was tuned for; none in Manual without the coach. */
-    tunedForG: number | undefined;
   },
 ): RoastSetup {
-  const { roaster, roasts, profileId, tunedForG } = context;
+  const { roasts, profileId } = context;
   const ghost = defaultGhost({ beanId: bean?.id ?? null, profileId, roasts });
+  const plan = bean ? beanPlan(bean, context.plan) : undefined;
   return {
     beanId: bean?.id ?? null,
-    batchG: bean ? (bean.batchPlan?.batchesG[0] ?? tunedForG ?? roaster.batchIdealG) : null,
+    batchG: plan ? (plan.batchesG[0] ?? plan.targetG) : null,
     ghostRoastId: ghost?.id ?? null,
   };
 }

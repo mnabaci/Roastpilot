@@ -1,19 +1,32 @@
 import { describe, expect, it } from 'vitest';
-import { describePlan, formatGrams } from './batch-format';
+import { batchCount, describeBatches, formatGrams, planLine } from './batch-format';
 
-describe('describePlan', () => {
-  it('equal splits show the spare grams', () => {
-    expect(describePlan({ kind: 'equal', batchesG: [334, 333, 333] })).toBe('3 × 333 g (+1 g)');
-    expect(describePlan({ kind: 'equal', batchesG: [400, 400] })).toBe('2 × 400 g');
+describe('describeBatches', () => {
+  it('groups batches by weight, the most common first', () => {
+    expect(describeBatches([360, 356, 356, 356, 356])).toBe('4 × 356 g · 1 × 360 g');
+    expect(describeBatches([400, 400])).toBe('2 × 400 g');
   });
 
-  it('ideal plans show the leftover', () => {
-    expect(describePlan({ kind: 'ideal', batchesG: [375, 375, 250] })).toBe('2 × 375 g + 250 g');
-    expect(describePlan({ kind: 'ideal', batchesG: [375] })).toBe('1 × 375 g');
+  it('says nothing for no batches', () => {
+    expect(describeBatches([])).toBe('');
+  });
+});
+
+describe('planLine', () => {
+  it('counts the batches left, then their weights', () => {
+    expect(planLine([360, 356, 356, 356, 356], 250)).toBe('5 batches · 4 × 356 g · 1 × 360 g');
   });
 
-  it('an empty plan says nothing', () => {
-    expect(describePlan({ kind: 'ideal', batchesG: [] })).toBe('');
+  it('says when there is no batch to roast', () => {
+    expect(planLine([], 250)).toBe('No green left');
+    expect(planLine([120], 250)).toBe('Under one batch · the minimum is 250 g');
+  });
+});
+
+describe('batchCount', () => {
+  it('counts in words', () => {
+    expect(batchCount(1)).toBe('1 batch');
+    expect(batchCount(5)).toBe('5 batches');
   });
 });
 

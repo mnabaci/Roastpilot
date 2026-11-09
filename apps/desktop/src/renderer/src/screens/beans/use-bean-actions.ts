@@ -6,7 +6,7 @@ import { useRun } from '../../features/use-run';
 import { activeRoaster } from '../../stores/roasters-store';
 import { activeEntry } from '../roast/use-active-profile';
 import { useAuto, useRoast, useRoasters } from '../../stores/use-stores';
-import { setupForBean, tunedForG } from '../roast/roast-setup';
+import { setupForBean } from '../roast/roast-setup';
 
 /**
  * What a bean's header can do: roast it, order it again, make it a profile, archive it; one line
@@ -48,10 +48,13 @@ export function useBeanActions({
     if (!roaster) return;
     const { settings } = stores.settings.getState();
     const setup = setupForBean(bean, {
-      roaster,
+      plan: {
+        roaster,
+        profiles,
+        autoProfileG: activeEntry(profiles, settings.autoProfile)?.profile.batchG,
+      },
       roasts,
       profileId: settings.autoProfile,
-      tunedForG: tunedForG(settings, activeEntry(profiles, settings.autoProfile)?.profile),
     });
     stores.beans.setState({ setup });
     run(

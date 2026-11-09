@@ -64,6 +64,13 @@
       "when": 1794255053878,
       "tag": "0008_bean_species",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1794258980730,
+      "tag": "0009_drop_purchase_batch_plan",
+      "breakpoints": true
     }
   ]
 }

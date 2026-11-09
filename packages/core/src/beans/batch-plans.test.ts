@@ -1,44 +1,38 @@
 import { describe, expect, it } from 'vitest';
-import { batchPlans, expectedRoastedG } from './batch-plans';
+import { clampBatch, expectedRoastedG, splitStock } from './batch-plans';
 
-const SIZES = { minG: 250, idealG: 375, maxG: 400 };
+const SIZES = { minG: 250, maxG: 400 };
 
-describe('batchPlans', () => {
-  it('splits 1,000 g as the spec says', () => {
-    const plans = batchPlans(1000, SIZES);
-    expect(plans.equal.batchesG).toEqual([334, 333, 333]);
-    expect(plans.ideal.batchesG).toEqual([375, 375, 250]);
-    expect(plans.idealLeftoverBelowMin).toBe(false);
+describe('splitStock', () => {
+  it('splits stock into equal batches near the target, the spare in the first', () => {
+    expect(splitStock(1000, 375, SIZES)).toEqual([334, 333, 333]);
+    expect(splitStock(2270, 375, SIZES)).toEqual([380, 378, 378, 378, 378, 378]);
   });
 
-  it('splits 2,270 g as the spec says, flagging a leftover below the minimum', () => {
-    const plans = batchPlans(2270, SIZES);
-    expect(plans.equal.batchesG).toEqual([380, 378, 378, 378, 378, 378]);
-    expect(plans.ideal.batchesG).toEqual([375, 375, 375, 375, 375, 375, 20]);
-    expect(plans.idealLeftoverBelowMin).toBe(true);
+  it("aims for the bean's own batch, not the roaster's ideal", () => {
+    expect(splitStock(1784, 356, SIZES)).toEqual([360, 356, 356, 356, 356]);
   });
 
-  it('keeps equal batches at or below the maximum', () => {
-    expect(batchPlans(590, SIZES).equal.batchesG).toEqual([295, 295]);
-    const { batchesG } = batchPlans(1590, SIZES).equal;
-    expect(Math.max(...batchesG)).toBeLessThanOrEqual(400);
+  it('keeps batches inside min–max', () => {
+    expect(splitStock(590, 375, SIZES)).toEqual([295, 295]);
+    expect(Math.max(...splitStock(1590, 375, SIZES))).toBeLessThanOrEqual(400);
+    expect(splitStock(520, 375, SIZES)).toEqual([260, 260]);
+    // A target outside the roaster's range plans at its edge.
+    expect(splitStock(1000, 500, SIZES)).toEqual([334, 333, 333]);
   });
 
-  it('keeps equal batches at or above the minimum when it can', () => {
-    expect(batchPlans(520, SIZES).equal.batchesG).toEqual([260, 260]);
+  it('is one short batch below the minimum, and nothing with no stock', () => {
+    expect(splitStock(100, 375, SIZES)).toEqual([100]);
+    expect(splitStock(0, 375, SIZES)).toEqual([]);
+    expect(splitStock(0.4, 375, SIZES)).toEqual([]);
   });
+});
 
-  it('copes with an order smaller than one batch', () => {
-    const plans = batchPlans(100, SIZES);
-    expect(plans.equal.batchesG).toEqual([100]);
-    expect(plans.ideal.batchesG).toEqual([100]);
-    expect(plans.idealLeftoverBelowMin).toBe(true);
-  });
-
-  it('has no leftover on an exact order', () => {
-    const plans = batchPlans(750, SIZES);
-    expect(plans.ideal.batchesG).toEqual([375, 375]);
-    expect(plans.idealLeftoverBelowMin).toBe(false);
+describe('clampBatch', () => {
+  it('keeps a target inside the roaster', () => {
+    expect(clampBatch(356, SIZES)).toBe(356);
+    expect(clampBatch(500, SIZES)).toBe(400);
+    expect(clampBatch(100, SIZES)).toBe(250);
   });
 });
 

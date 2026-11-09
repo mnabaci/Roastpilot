@@ -40,12 +40,6 @@ export const BeanFieldsSchema = z.object({
   notes: z.string().max(4000).nullable(),
 });
 
-/** How an order is split into batches (docs/spec/batch-and-stock.md). */
-export const BatchPlanSchema = z.object({
-  kind: z.enum(['equal', 'ideal']),
-  batchesG: z.array(positive()).min(1),
-});
-
 export const BeanSchema = BeanFieldsSchema.extend({
   id: BeanIdSchema,
   /** The bean's own profile: its first suggestion. */
@@ -55,15 +49,12 @@ export const BeanSchema = BeanFieldsSchema.extend({
   archived: z.boolean(),
   /** From its roasts with a roasted weight; null until it has one. */
   avgLossPct: z.number().nullable(),
-  /** The plan picked with the latest stock. */
-  batchPlan: BatchPlanSchema.nullable(),
 });
 
 export const AddStockSchema = z.object({
   beanId: BeanIdSchema,
   grams: positive(),
   purchasedAt: z.string().min(1),
-  plan: BatchPlanSchema.nullable(),
 });
 
 export const AdjustStockSchema = z.object({
@@ -107,7 +98,6 @@ export type BeanSpecies = z.infer<typeof BeanSpeciesSchema>;
 export type BeanId = z.infer<typeof BeanIdSchema>;
 export type BeanFields = z.infer<typeof BeanFieldsSchema>;
 export type Bean = z.infer<typeof BeanSchema>;
-export type BatchPlan = z.infer<typeof BatchPlanSchema>;
 export type AddStock = z.infer<typeof AddStockSchema>;
 export type AdjustStock = z.infer<typeof AdjustStockSchema>;
 export type UpdateBean = z.infer<typeof UpdateBeanSchema>;

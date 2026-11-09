@@ -2,7 +2,7 @@ import type { Bean, RoastSummary } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { batchWarning, setupForBean, stockWarning, tunedForG } from './roast-setup';
 
-const BEAN = { id: 1, greenG: 500, batchPlan: null } as Bean;
+const BEAN = { id: 1, greenG: 500, profileId: null } as unknown as Bean;
 const FAVOURITE = {
   id: 7,
   beanId: 1,
@@ -11,25 +11,30 @@ const FAVOURITE = {
   startedAt: '2026-11-04',
   profileId: null,
 } as RoastSummary;
+const ROASTER = { batchMinG: 250, batchIdealG: 385, batchMaxG: 400 };
 const CONTEXT = {
-  roaster: { batchIdealG: 385 },
+  plan: { roaster: ROASTER, profiles: [], autoProfileG: undefined },
   roasts: [FAVOURITE],
   profileId: null,
-  tunedForG: undefined,
 };
 
 describe('setupForBean', () => {
-  it('without a plan, takes the batch the followed profile was tuned for', () => {
-    expect(setupForBean(BEAN, { ...CONTEXT, tunedForG: 350 }).batchG).toBe(350);
+  it("takes the next batch of its stock's equal split, and the ghost from its best favourite", () => {
+    // 1,000 g around the roaster's 385 g ideal: 334 · 333 · 333, the spare in the first.
+    expect(setupForBean({ ...BEAN, greenG: 1000 }, CONTEXT)).toEqual({
+      beanId: 1,
+      batchG: 334,
+      ghostRoastId: 7,
+    });
   });
 
-  it("with no plan and no profile, takes the roaster's ideal and the ghost from its best favourite", () => {
-    expect(setupForBean(BEAN, CONTEXT)).toEqual({ beanId: 1, batchG: 385, ghostRoastId: 7 });
+  it("plans around Auto's profile batch", () => {
+    const plan = { ...CONTEXT.plan, autoProfileG: 350 };
+    expect(setupForBean({ ...BEAN, greenG: 1400 }, { ...CONTEXT, plan }).batchG).toBe(350);
   });
 
-  it('prefers the batch plan', () => {
-    const planned = { ...BEAN, batchPlan: { kind: 'equal', batchesG: [334, 333] } } as Bean;
-    expect(setupForBean(planned, { ...CONTEXT, tunedForG: 350 }).batchG).toBe(334);
+  it('with no green left, takes the batch it plans around', () => {
+    expect(setupForBean({ ...BEAN, greenG: 0 }, CONTEXT).batchG).toBe(385);
   });
 
   it('No bean clears the batch', () => {

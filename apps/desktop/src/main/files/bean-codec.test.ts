@@ -24,7 +24,6 @@ const GUJI: Bean = {
   roastedG: 340,
   archived: true,
   avgLossPct: 14,
-  batchPlan: null,
 };
 
 const entry = (id: string, name: string) => ({ profile: { id, name } }) as ProfileEntry;
@@ -80,16 +79,7 @@ describe('bean files', () => {
     expect(await filesOf('beans', codec).importFile(text)).toEqual(
       ok({ added: 1, skipped: 0, archived: 0, newestId: 20 }),
     );
-    const fields = without(
-      GUJI,
-      'id',
-      'profileId',
-      'greenG',
-      'roastedG',
-      'archived',
-      'avgLossPct',
-      'batchPlan',
-    );
+    const fields = without(GUJI, 'id', 'profileId', 'greenG', 'roastedG', 'archived', 'avgLossPct');
     expect(beans.addAll).toHaveBeenCalledWith([{ fields, profileId: 'p9' }]);
   });
 
@@ -126,16 +116,7 @@ describe('bean files', () => {
     expect(beans.addAll).toHaveBeenCalledWith([
       {
         fields: {
-          ...without(
-            GUJI,
-            'id',
-            'profileId',
-            'greenG',
-            'roastedG',
-            'archived',
-            'avgLossPct',
-            'batchPlan',
-          ),
+          ...without(GUJI, 'id', 'profileId', 'greenG', 'roastedG', 'archived', 'avgLossPct'),
           name: 'Guji (imported)',
           origin: 'Ethiopia',
         },

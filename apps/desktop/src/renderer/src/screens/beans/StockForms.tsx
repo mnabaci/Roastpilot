@@ -1,50 +1,57 @@
-import type { Bean, BatchPlan } from '@roastpilot/shared';
+import type { Bean } from '@roastpilot/shared';
 import { Button, NumberField, TextField } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
-import { BatchCalculator } from './BatchCalculator';
-import { formatGrams } from './batch-format';
+import { formatGrams, planLine } from './batch-format';
+import { beanPlan } from './bean-plan';
+import { usePlanContext } from './use-plan-context';
 import { isPurchaseDate, today } from './purchase-date';
 
 const FAILED = "Couldn't save the stock · see Logs";
 
-/** New stock: its weight, the plan for it and the date. */
+/**
+ * New stock: its weight and the date, and what the green stock then splits into (docs/spec/
+ * batch-and-stock.md). The plan is worked out from the stock, so there is nothing to pick.
+ */
 export function AddStockForm({ bean, onDone }: { bean: Bean; onDone: () => void }) {
   const { api } = useDeps();
   const run = useRun();
   const [orderG, setOrderG] = useState('');
-  const [plan, setPlan] = useState<BatchPlan | null>(null);
   const [purchasedAt, setPurchasedAt] = useState(() => today());
   const [problem, setProblem] = useState<string>();
   const grams = Number(orderG);
   const dated = isPurchaseDate(purchasedAt);
   const valid = grams > 0 && dated;
+  const planContext = usePlanContext();
+  const after = bean.greenG + (grams > 0 ? grams : 0);
   return (
     <section aria-label="Add stock" className="flex flex-col gap-3">
       <h3 className="text-heading">Add stock</h3>
-      <BatchCalculator
-        orderG={orderG}
-        onOrderG={(value) => {
-          setOrderG(value);
-          setPlan(null);
-        }}
-        lossPct={bean.avgLossPct}
-        picked={plan}
-        onPick={setPlan}
-      />
-      <div className="flex flex-col gap-1">
-        <TextField
-          label="Bought on"
-          value={purchasedAt}
-          onChange={setPurchasedAt}
-          aria-invalid={!dated || undefined}
-          className="w-40"
-        />
-        {dated ? null : (
-          <p className="text-label text-critical-text">Enter a date like {today()}</p>
-        )}
+      <div className="flex flex-wrap items-start gap-3">
+        <NumberField label="Weight" unit="g" value={orderG} onChange={setOrderG} className="w-40" />
+        <div className="flex flex-col gap-1">
+          <TextField
+            label="Bought on"
+            value={purchasedAt}
+            onChange={setPurchasedAt}
+            aria-invalid={!dated || undefined}
+            className="w-40"
+          />
+          {dated ? null : (
+            <p className="text-label text-critical-text">Enter a date like {today()}</p>
+          )}
+        </div>
       </div>
+      {grams > 0 && planContext ? (
+        <p className="text-label text-ink-muted tabular-nums" aria-live="polite">
+          Then {formatGrams(after)} green ·{' '}
+          {planLine(
+            beanPlan({ ...bean, greenG: after }, planContext).batchesG,
+            planContext.roaster.batchMinG,
+          )}
+        </p>
+      ) : null}
       {problem ? (
         <p role="alert" className="text-label text-critical-text">
           {problem}
@@ -66,7 +73,6 @@ export function AddStockForm({ bean, onDone }: { bean: Bean; onDone: () => void 
                   beanId: bean.id,
                   grams,
                   purchasedAt: purchasedAt.trim(),
-                  plan,
                 });
                 if (added.ok) onDone();
                 else setProblem(FAILED);
