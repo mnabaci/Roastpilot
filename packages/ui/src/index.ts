@@ -32,6 +32,7 @@ export { TextAreaField, type TextAreaFieldProps } from './components/TextAreaFie
 export { CollapsibleCard, type CollapsibleCardProps } from './components/CollapsibleCard';
 export { RoastList, type RoastListItem, type RoastListProps } from './components/RoastList';
 export { EventTable, type EventRow } from './components/EventTable';
+export { CompareTable, type CompareTableRow } from './components/CompareTable';
 export { RoastTable, type RoastTableRow } from './components/RoastTable';
 export { Mark, type MarkProps } from './components/Mark';
 export { RoastStrip, type RoastStripNumber, type RoastStripProps } from './components/RoastStrip';

@@ -1,13 +1,17 @@
 import type { Bean } from '@roastpilot/shared';
-import { EventTable } from '@roastpilot/ui';
+import { CompareTable, EventTable } from '@roastpilot/ui';
 import { useTemperatureUnit } from '../../features/use-temperature-unit';
+import { compareRows } from './compare-rows';
 import { eventRows } from './event-rows';
 import { RoastDetailsCard } from './RoastDetailsCard';
 import { SavedRoastChart } from './SavedRoastChart';
 import { SavedRoastStats } from './SavedRoastStats';
 import type { SavedRoastState } from './use-saved-roast';
 
-/** The open roast's numbers, bean, result, chart and events, or why there is none to show. */
+/**
+ * The open roast's numbers, details, chart, comparison (while comparing) and events, or why there
+ * is none to show.
+ */
 export function OpenRoast({
   selected,
   compared,
@@ -55,6 +59,12 @@ export function OpenRoast({
             showPreheat={showPreheat}
             onShowPreheat={onShowPreheat}
           />
+          {compared.status === 'loaded' ? (
+            <CompareTable
+              otherTitle={compareLabel}
+              rows={compareRows(detail, compared.detail, unit, beans)}
+            />
+          ) : null}
           <EventTable rows={eventRows(detail, unit)} />
         </>
       );

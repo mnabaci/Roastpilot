@@ -36,6 +36,7 @@ Drawn faint, so they never compete with the curves; none has a legend entry or a
 
 - A 96px band under the chart, same width, time axis and event markers (unlabelled there), 12px gap.
 - Heater: `heat`, 2px step line. Fan: `air`, 2px step line. Left axis 0 / 50 / 100 %.
+- **Compared roast** (History's Compare): its heater, fan and drum behind ours, in their own colours, dashed 4 4 and at 55 % opacity (like the projection), aligned at charge. A compared line names the line it goes with (`compareOf`): the legend gives it no entry of its own but its value after that line's on hover (`Heater 45% · compared 50%`, "compared" in `ink-muted`); one with no line of ours to go with (only the compared roaster had a drum) is listed on its own (`Compared drum`).
 - Steps change at the moment the output changed, so each change lines up with the curve above.
 - Its time labels are the chart's; the strip shows none of its own.
 

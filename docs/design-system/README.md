@@ -88,6 +88,7 @@ Inter, one family, with tabular numerals (`font-variant-numeric: tabular-nums`) 
 | Target curve              | `target`                            | 2px dashed 6 6                   |
 | Rate of rise (right axis) | `air`                               | 2px solid                        |
 | Ghost temperature and RoR | `ghost`                             | 2px solid, behind live           |
+| Compared roast's outputs  | `heat`, `air`, `ink-muted`          | 2px dashed 4 4, 55 % opacity     |
 | First crack, drop markers | `ink` / `ghost`                     | 1.5px dashed vertical, labelled  |
 | Drop temperature line     | `critical-text`                     | 1px dotted                       |
 | Phase bands               | `band-low`, `band-mid`, `band-high` | Full-width fills behind the grid |
@@ -101,7 +102,7 @@ Lucide icons (shadcn/ui's default set), 20px, 2px stroke, `currentColor`. No emo
 
 ## Components
 
-Mark, Button, Badge, StatCard, OutputControl, CoachCard, PhaseStepper, AlertBanner, Toast, RoastChart, RoastStrip, TextField, NumberField, Select, SelectField, FilterSelect, Switch, SegmentedControl, RoastList, EventTable, RoastTable, NavList, SidebarLayout, CollapsibleCard, TextAreaField, ErrorState, Menu, ConfirmDialog and Tooltip. Each has its guidelines in `components/<Name>/README.md` and, where one is drawn, a static preview beside it (`preview.html`); the live components are in Storybook (`pnpm storybook`).
+Mark, Button, Badge, StatCard, OutputControl, CoachCard, PhaseStepper, AlertBanner, Toast, RoastChart, RoastStrip, TextField, NumberField, Select, SelectField, FilterSelect, Switch, SegmentedControl, RoastList, EventTable, CompareTable, RoastTable, NavList, SidebarLayout, CollapsibleCard, TextAreaField, ErrorState, Menu, ConfirmDialog and Tooltip. Each has its guidelines in `components/<Name>/README.md` and, where one is drawn, a static preview beside it (`preview.html`); the live components are in Storybook (`pnpm storybook`).
 
 ## Files
 
