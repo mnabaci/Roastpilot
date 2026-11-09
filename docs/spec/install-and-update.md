@@ -20,13 +20,13 @@ How Roastpilot gets onto a computer and stays current, without ever touching a r
 
 `major.minor.patch`, picked at release time from what the release brings (`release` skill). The largest bump wins.
 
-| Bump          | When                                                                                                                                                                   | Examples                                                    |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| Major `x.0.0` | Only when the maintainer says so. The release skill may suggest it (a big refactor, data a previous version can't read, a milestone) but always asks                   | 1.0.0 once Auto roasts well on real roasters                |
-| Minor `0.x.0` | New or changed in how a roast runs, is planned, recorded or judged: Auto and the controller, the coach, safety, profiles and steps, roaster support, markers, analysis | Move a step, Compare's table, Auto or Manual on every roast |
-| Patch `0.0.x` | Everything else: settings, the beans library, export and import, looks and polish, bug fixes                                                                           | °F alone, a bean's order link, a fix to Auto's stall guard  |
+| Bump          | When                                                                                                                                                                  | Examples                                                                   |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Major `x.0.0` | Only when the maintainer says so. The release skill may suggest it (a big refactor, data a previous version can't read, a milestone) but always asks                  | 1.0.0 once Auto roasts well on real roasters                               |
+| Minor `0.x.0` | A new roasting capability, something a roaster couldn't do before: a new Auto or controller feature, a coach skill, a safety rule, a roaster, a new kind of analysis  | Manual mode's live coach, a new roaster's driver, Auto's stall guard       |
+| Patch `0.0.x` | Everything else, including improvements to a roasting feature that's already there: polish, easier editing, settings, the beans library, export and import, bug fixes | Compare gains a table, steps move by drag, °F, a fix to Auto's stall guard |
 
-- **A fix is a patch,** in Auto too, when it makes something work as promised. A fix that changes how Auto or the coach behaves is a minor.
+- **Small is a patch,** even in Auto, a profile or History: a better way to do what the app already does is not new. A fix that changes how Auto or the coach behaves is a minor.
 - **Dependency updates** are a patch, a release of their own only for a security fix that reaches the app (Electron, a runtime library).
 - **Nothing for users** (docs, CI, dev tooling, refactors that change nothing users see) is no release on its own.
 

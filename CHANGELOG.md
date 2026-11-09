@@ -2,10 +2,32 @@
 
 All notable changes to Roastpilot are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version numbers say how much changed for
-a roast: minor for roasting features, patch for everything else
+a roast: minor for a new roasting capability, patch for everything else
 ([how versions are picked](docs/spec/install-and-update.md#version-numbers)).
 
 ## [Unreleased]
+
+## [0.3.1] - 2026-11-09
+
+### Added
+
+- **Compare as a table:** total time, turning point, dry end, first crack, development, drop,
+  weight loss and rating for this roast, the compared one and the difference.
+- **The compared roast's heater, fan and drum** show dashed in the strip under the chart.
+
+### Changed
+
+- **Move a step by dragging it:** the row follows the cursor, the others slide out of the way and
+  a faint row shows where it lands. Escape puts it back; Space picks it up from the keyboard.
+- **Roast details fold into one line** (bean, weights, loss, rating, the start of the notes), and
+  stay open or folded as you left them.
+- **History rows show the whole line on hover:** the bean name shortens first, so the profile
+  stays readable.
+- **One tooltip style** across the app.
+
+### Fixed
+
+- **The History header no longer wraps** onto two lines in a small window.
 
 ## [0.3.0] - 2026-11-09
 
