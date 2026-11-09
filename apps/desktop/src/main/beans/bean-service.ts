@@ -12,6 +12,7 @@ import {
   type ProfileId,
   type Result,
   type RoastSetup,
+  type StockMovement,
   type StorageError,
   type UpdateBean,
 } from '@roastpilot/shared';
@@ -120,5 +121,10 @@ export class BeanService {
 
   async adjustStock(stock: AdjustStock): Promise<Result<void, StorageError>> {
     return this.#after('stock-adjusted', await this.#deps.repository.adjustStock(stock));
+  }
+
+  /** Reads only, so nothing to send on. */
+  stockHistory(id: BeanId): Promise<Result<StockMovement[], StorageError>> {
+    return this.#deps.repository.stockHistory(id);
   }
 }

@@ -39,6 +39,7 @@ export function BeansScreen({
   // The calculator is a dialog over the list: a quick "what would this order make", then back.
   const [calculating, setCalculating] = useState(false);
   const [orderG, setOrderG] = useState('');
+  const [calcBatchG, setCalcBatchG] = useState('');
   const shown = beans.filter((b) => showArchived || !b.archived);
   const open = beans.find((b) => b.id === pickedId) ?? shown[0];
   const hasArchived = beans.some((b) => b.archived);
@@ -165,9 +166,14 @@ export function BeansScreen({
             open={calculating}
             onOpenChange={setCalculating}
             title="Batch calculator"
-            description="How an order splits into batches on the active roaster"
+            description="What an order makes in equal batches on the active roaster"
           >
-            <BatchCalculator orderG={orderG} onOrderG={setOrderG} />
+            <BatchCalculator
+              orderG={orderG}
+              onOrderG={setOrderG}
+              batchG={calcBatchG}
+              onBatchG={setCalcBatchG}
+            />
           </Dialog>
         </>
       }

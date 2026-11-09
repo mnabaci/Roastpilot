@@ -1,6 +1,6 @@
 import type { Screen } from '@roastpilot/shared';
 import { screen as page, waitFor } from '@testing-library/dom';
-import { userEvent } from '@testing-library/user-event';
+import { PointerEventsCheckLevel, userEvent } from '@testing-library/user-event';
 import type { SampleWorld } from './app-state';
 
 /** One README screenshot: the moment, the screen, and what a person clicks to get there. */
@@ -81,10 +81,15 @@ export const SCENES: readonly Scene[] = [
     moment: 'idle',
     screen: 'beans',
     prepare: async () => {
-      const keys = user();
+      // Adjust stock is a dialog: while Radix sets it up, the page under it has
+      // `pointer-events: none`, which user-event would read as the field being unclickable.
+      const keys = userEvent.setup({
+        delay: null,
+        pointerEventsCheck: PointerEventsCheckLevel.Never,
+      });
       await keys.click(await page.findByRole('button', { name: /Ethiopia Guji/ }));
-      await keys.click(await page.findByRole('button', { name: 'Add stock' }));
-      await keys.type(await page.findByRole('textbox', { name: 'Order weight' }), '2000');
+      await keys.click(await page.findByRole('button', { name: 'Adjust stock' }));
+      await keys.type(await page.findByRole('textbox', { name: 'Weight' }), '2000');
       // The form starts on today; the picture keeps one date.
       const bought = page.getByRole('textbox', { name: 'Bought on' });
       await keys.clear(bought);

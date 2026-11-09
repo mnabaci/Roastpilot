@@ -1,24 +1,26 @@
 import type { BeanRepository } from '@roastpilot/core';
 import {
-  BatchPlanSchema,
   err,
   ok,
   type AddStock,
   type AdjustStock,
-  type BatchPlan,
   type Bean,
   type BeanFields,
   type BeanId,
   type ProfileId,
   type Result,
+  type StockMovement,
   type StorageError,
 } from '@roastpilot/shared';
-import { and, asc, desc, eq, isNotNull, sql } from 'drizzle-orm';
+import { and, asc, eq, isNotNull, not, sql } from 'drizzle-orm';
 import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy';
-import { attempt, parseJson } from './attempt';
-import { beanPurchases, beans } from './schema/beans';
+import { attempt } from './attempt';
+import { beanPurchases, beans, beanStockAdjustments } from './schema/beans';
 import { roasts } from './schema/roasts';
 import { transaction } from './transaction';
+
+/** An adjustment's reason as a stock history kind. */
+const ADJUSTED = { count: 'counted', returned: 'returned', taken: 'taken' } as const;
 
 /** Beans and stock in SQLite (docs/spec/data-model.md, Roasters and beans). */
 export class SqliteBeanRepository implements BeanRepository {
@@ -50,20 +52,9 @@ export class SqliteBeanRepository implements BeanRepository {
         )
         .groupBy(roasts.beanId)
         .all();
-      const purchases = await this.#db
-        .select({ beanId: beanPurchases.beanId, plan: beanPurchases.batchPlan })
-        .from(beanPurchases)
-        .orderBy(desc(beanPurchases.id))
-        .all();
-      const planOf = (id: BeanId): BatchPlan | null => {
-        const latest = purchases.find((p) => p.beanId === id);
-        const parsed = BatchPlanSchema.safeParse(latest?.plan && parseJson(latest.plan));
-        return parsed.success ? parsed.data : null;
-      };
       return rows.map((row) => ({
         ...row,
         avgLossPct: losses.find((l) => l.beanId === row.id)?.avg ?? null,
-        batchPlan: planOf(row.id),
       }));
     });
   }
@@ -129,7 +120,7 @@ export class SqliteBeanRepository implements BeanRepository {
   }
 
   /** More green stock and its purchase row, all or nothing. */
-  addStock({ beanId, grams, purchasedAt, plan }: AddStock): Promise<Result<void, StorageError>> {
+  addStock({ beanId, grams, purchasedAt }: AddStock): Promise<Result<void, StorageError>> {
     return transaction(this.#db, async (tx) => {
       const added = await tx
         .update(beans)
@@ -138,22 +129,99 @@ export class SqliteBeanRepository implements BeanRepository {
         .returning({ id: beans.id })
         .all();
       if (added.length === 0) return err({ kind: 'not-found', id: beanId });
-      await tx
-        .insert(beanPurchases)
-        .values({ beanId, grams, purchasedAt, batchPlan: plan && JSON.stringify(plan) })
-        .run();
+      await tx.insert(beanPurchases).values({ beanId, grams, purchasedAt }).run();
       return ok(undefined);
     });
   }
 
-  adjustStock({ beanId, greenG, roastedG }: AdjustStock): Promise<Result<void, StorageError>> {
-    return this.#changed(beanId, () =>
-      this.#db
-        .update(beans)
-        .set({ greenG, roastedG })
+  /** The new stock and, when it changed, what changed as an adjustment, all or nothing. */
+  adjustStock({
+    beanId,
+    greenG,
+    roastedG,
+    reason = 'count',
+    note = null,
+  }: AdjustStock): Promise<Result<void, StorageError>> {
+    return transaction(this.#db, async (tx) => {
+      const before = await tx
+        .select({ greenG: beans.greenG, roastedG: beans.roastedG })
+        .from(beans)
         .where(eq(beans.id, beanId))
-        .returning({ id: beans.id })
-        .all(),
-    );
+        .get();
+      if (!before) return err({ kind: 'not-found', id: beanId });
+      await tx.update(beans).set({ greenG, roastedG }).where(eq(beans.id, beanId)).run();
+      const change = { greenG: greenG - before.greenG, roastedG: roastedG - before.roastedG };
+      if (change.greenG !== 0 || change.roastedG !== 0) {
+        await tx
+          .insert(beanStockAdjustments)
+          .values({
+            beanId,
+            adjustedAt: new Date().toISOString(),
+            reason,
+            note: note === '' ? null : note,
+            ...change,
+          })
+          .run();
+      }
+      return ok(undefined);
+    });
+  }
+
+  /**
+   * Everything that moved the bean's stock, oldest first: its purchases, the roasts made here
+   * (an imported one never touched stock) and its adjustments.
+   */
+  stockHistory(id: BeanId): Promise<Result<StockMovement[], StorageError>> {
+    return attempt(async () => {
+      const bought = await this.#db
+        .select({ at: beanPurchases.purchasedAt, grams: beanPurchases.grams })
+        .from(beanPurchases)
+        .where(eq(beanPurchases.beanId, id))
+        .all();
+      const roasted = await this.#db
+        .select({
+          id: roasts.id,
+          at: roasts.startedAt,
+          batchG: roasts.batchG,
+          roastedG: roasts.roastedG,
+        })
+        .from(roasts)
+        .where(and(eq(roasts.beanId, id), not(roasts.imported), isNotNull(roasts.batchG)))
+        .all();
+      const adjusted = await this.#db
+        .select()
+        .from(beanStockAdjustments)
+        .where(eq(beanStockAdjustments.beanId, id))
+        .all();
+      const movements: StockMovement[] = [
+        ...bought.map((p) => ({
+          at: p.at,
+          kind: 'bought' as const,
+          greenG: p.grams,
+          roastedG: 0,
+          roastId: null,
+          note: null,
+        })),
+        ...roasted.map((r) => ({
+          at: r.at,
+          kind: 'roasted' as const,
+          greenG: -(r.batchG ?? 0),
+          roastedG: r.roastedG ?? 0,
+          roastId: r.id,
+          note: null,
+        })),
+        ...adjusted.map((a) => ({
+          at: a.adjustedAt,
+          kind: ADJUSTED[a.reason],
+          greenG: a.greenG,
+          roastedG: a.roastedG,
+          roastId: null,
+          note: a.note,
+        })),
+      ];
+      // A purchase's date sorts before that day's roasts: the bag came first. ISO strings sort
+      // by time as text.
+      return movements.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
+    });
   }
 }

@@ -1,44 +1,28 @@
-import type { BatchPlan } from '@roastpilot/shared';
-
 export interface BatchSizes {
   minG: number;
-  idealG: number;
   maxG: number;
 }
 
-export interface BatchPlans {
-  equal: BatchPlan;
-  ideal: BatchPlan;
-  /** The ideal plan's last batch is below the roaster's minimum. */
-  idealLeftoverBelowMin: boolean;
-}
-
-/** Equal batches: as near the ideal as fits inside min–max; spare grams go in the first. */
-function equalBatches(orderG: number, { minG, idealG, maxG }: BatchSizes): number[] {
-  const fewest = Math.max(1, Math.ceil(orderG / maxG));
-  const most = Math.max(1, Math.floor(orderG / minG));
-  const count = Math.max(fewest, Math.min(most, Math.round(orderG / idealG) || 1));
-  const each = Math.floor(orderG / count);
-  const spare = Math.round(orderG - each * count);
-  return Array.from({ length: count }, (_, i) => (i === 0 ? each + spare : each));
-}
+/** The batch a plan aims for, kept inside the roaster's min–max. */
+export const clampBatch = (targetG: number, { minG, maxG }: BatchSizes): number =>
+  Math.min(maxG, Math.max(minG, targetG));
 
 /**
- * The batch calculator's two plans (docs/spec/batch-and-stock.md). Grams only: expected roasted
- * output is `expectedRoastedG`.
+ * Green stock as equal batches (docs/spec/batch-and-stock.md): as near the target as fits inside
+ * min–max, the spare grams in the first, so the next roast takes it. Stock below the minimum is
+ * one short batch; none at all, no batches.
  */
-export function batchPlans(orderG: number, sizes: BatchSizes): BatchPlans {
-  const whole = Math.floor(orderG / sizes.idealG);
-  const rest = Math.round(orderG - whole * sizes.idealG);
-  const idealBatches = [
-    ...Array.from({ length: whole }, () => sizes.idealG),
-    ...(rest > 0 ? [rest] : []),
-  ];
-  return {
-    equal: { kind: 'equal', batchesG: equalBatches(orderG, sizes) },
-    ideal: { kind: 'ideal', batchesG: idealBatches },
-    idealLeftoverBelowMin: rest > 0 && rest < sizes.minG,
-  };
+export function splitStock(greenG: number, targetG: number, sizes: BatchSizes): number[] {
+  const stock = Math.round(greenG);
+  if (stock <= 0) return [];
+  const { minG, maxG } = sizes;
+  const target = clampBatch(targetG, sizes);
+  const fewest = Math.max(1, Math.ceil(stock / maxG));
+  const most = Math.max(1, Math.floor(stock / minG));
+  const count = Math.max(fewest, Math.min(most, Math.round(stock / target) || 1));
+  const each = Math.floor(stock / count);
+  const spare = stock - each * count;
+  return Array.from({ length: count }, (_, i) => (i === 0 ? each + spare : each));
 }
 
 /** The weight loss a bean is assumed to have until it has roasts of its own. */

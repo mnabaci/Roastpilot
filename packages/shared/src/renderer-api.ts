@@ -1,6 +1,7 @@
 import type { AutoChargeSoonError, AutoResumeError, AutoStatus } from './auto-status';
 import type {
   AddStock,
+  StockMovement,
   AdjustStock,
   Bean,
   BeanFields,
@@ -189,6 +190,8 @@ export interface BeansApi {
   openBeanLink(id: BeanId): Promise<Result<void, OpenBeanLinkError>>;
   addStock(stock: AddStock): Promise<Result<void, StorageError>>;
   adjustStock(stock: AdjustStock): Promise<Result<void, StorageError>>;
+  /** What moved the bean's stock, oldest first: purchases, roasts made here, adjustments. */
+  stockHistory(id: BeanId): Promise<Result<StockMovement[], StorageError>>;
   onBeans(listener: (beans: Bean[]) => void): Unsubscribe;
   /**
    * The bean's own profile in one step: copies `profileId`, names it after the bean, saves it and

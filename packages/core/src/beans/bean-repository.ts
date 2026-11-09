@@ -6,6 +6,7 @@ import type {
   BeanId,
   ProfileId,
   Result,
+  StockMovement,
   StorageError,
 } from '@roastpilot/shared';
 
@@ -25,5 +26,8 @@ export interface BeanRepository {
   ): Promise<Result<void, StorageError>>;
   setArchived(id: BeanId, archived: boolean): Promise<Result<void, StorageError>>;
   addStock(stock: AddStock): Promise<Result<void, StorageError>>;
+  /** The stock as it now is, keeping what changed as an adjustment. */
   adjustStock(stock: AdjustStock): Promise<Result<void, StorageError>>;
+  /** Purchases, roasts made here and adjustments of one bean, oldest first. */
+  stockHistory(id: BeanId): Promise<Result<StockMovement[], StorageError>>;
 }

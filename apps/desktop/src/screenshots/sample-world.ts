@@ -44,7 +44,6 @@ async function addBean(app: HeadlessApp, fields: BeanFields, grams: number): Pro
     beanId: added.value,
     grams,
     purchasedAt: '2026-11-02',
-    plan: null,
   });
   if (!stocked.ok) throw new Error(`Stock not added: ${JSON.stringify(stocked.error)}`);
   return added.value;

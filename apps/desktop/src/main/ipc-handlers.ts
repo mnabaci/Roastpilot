@@ -153,6 +153,9 @@ export function createIpcHandlers({
     [IPC_CHANNELS.adjustStock]: handler((payload) =>
       beans.adjustStock(AdjustStockSchema.parse(payload)),
     ),
+    [IPC_CHANNELS.stockHistory]: handler((payload) =>
+      beans.stockHistory(BeanIdSchema.parse(payload)),
+    ),
     [IPC_CHANNELS.makeBeanProfile]: handler((payload) =>
       makeBeanProfile(MakeBeanProfileRequestSchema.parse(payload)),
     ),

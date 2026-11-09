@@ -80,7 +80,7 @@ Inter, one family, with tabular numerals (`font-variant-numeric: tabular-nums`) 
 - Every screen follows one pattern: the title, with the list's rare actions in a "⋯" Menu beside it (Export all and Import a Roastpilot file on History, Beans, Profiles and Roasters; Beans: Batch calculator, Show archived; Logs: Open log folder); then filters in one row of FilterSelect chips; then the list. The open item has one header row: its name as the title with its badges, its one or two main actions, and "⋯" for the rest (Delete last, in red, asked in a dialog).
   - Profiles: Use for Auto (or an AUTO badge) and Edit (Duplicate on a built-in); editing, Cancel and Save. ⋯ Duplicate (own profiles), Copy, Mark as calibrated, Export this profile, Delete (disabled, with why, on the one Auto uses or runs). Title ⋯: New from milestones, Export all, Import a Roastpilot file, Select.
   - History: Compare ▾, Make profile ▾, ⋯ Export this roast, Delete. Title ⋯: Export all, Import a Roastpilot file, Import from Artisan, Select. The header row never wraps: Compare's choice truncates first (its whole date in a Tooltip), then Make profile; the title keeps its place.
-  - Beans: Roast this bean, Add stock, Order again, Edit, ⋯ Adjust stock, Make a profile, Export this bean, Archive. Title ⋯: Batch calculator, Show archived, Export all, Import a Roastpilot file, Select.
+  - Beans: Roast this bean, Adjust stock, Order again, Edit, ⋯ Make a profile, Export this bean, Archive. Title ⋯: Batch calculator, Show archived, Export all, Import a Roastpilot file, Select.
   - Roasters: Use this roaster (not on the active one), Connect (`sm`, primary) or Disconnect, Edit, ⋯ Export this roaster, Delete. A compact connection card sits under the header: state, port, Change port and Refresh. Title ⋯: Export all, Import a Roastpilot file, Select.
 - An action not allowed right now stays where it is, dimmed (`aria-disabled`, still focusable), with why in a Tooltip on hover or keyboard focus: menus and headers keep their shape. A "⋯" item is its name only.
 - An item being edited (a bean, a profile, a roaster) opens read, values as text; Edit in its header turns them into fields, and Cancel and Save take the header's right end. Never Save at a page's foot.
@@ -112,7 +112,7 @@ Lucide icons (shadcn/ui's default set), 20px, 2px stroke, `currentColor`; inline
 
 ## Components
 
-Mark, Button, Badge, StatCard, OutputControl, CoachCard, PhaseStepper, AlertBanner, Toast, RoastChart, RoastStrip, TextField, NumberField, Select, SelectField, FilterSelect, Switch, SegmentedControl, RoastList, EventTable, CompareTable, RoastTable, StarRating, NavList, SidebarLayout, CollapsibleCard, TextAreaField, ErrorState, Menu, ConfirmDialog, Dialog and Tooltip. Each has its guidelines in `components/<Name>/README.md` and, where one is drawn, a static preview beside it (`preview.html`); the live components are in Storybook (`pnpm storybook`).
+Mark, Button, Badge, StatCard, OutputControl, CoachCard, PhaseStepper, AlertBanner, Toast, RoastChart, RoastStrip, TextField, NumberField, Select, SelectField, FilterSelect, Switch, SegmentedControl, RoastList, EventTable, CompareTable, RoastTable, StockChart, StarRating, NavList, SidebarLayout, CollapsibleCard, TextAreaField, ErrorState, Menu, ConfirmDialog, Dialog and Tooltip. Each has its guidelines in `components/<Name>/README.md` and, where one is drawn, a static preview beside it (`preview.html`); the live components are in Storybook (`pnpm storybook`).
 
 ## Files
 

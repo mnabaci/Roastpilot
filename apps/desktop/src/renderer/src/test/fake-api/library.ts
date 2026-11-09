@@ -44,6 +44,7 @@ export const fakeBeansApi = (): BeansApi => ({
   openBeanLink: accepted,
   addStock: accepted,
   adjustStock: accepted,
+  stockHistory: () => Promise.resolve(ok([])),
   onBeans: listening,
   makeBeanProfile: (request) =>
     Promise.resolve(err({ kind: 'bean-not-found' as const, id: request.beanId })),

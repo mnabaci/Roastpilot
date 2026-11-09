@@ -461,7 +461,6 @@ describe('RoastScreen', () => {
       roastedG: 0,
       archived: false,
       avgLossPct: null,
-      batchPlan: null,
     };
 
     it('clicking Clear in done phase with bean setup shows the stock-return prompt', async () => {
@@ -480,7 +479,7 @@ describe('RoastScreen', () => {
       expect(screen.getByRole('button', { name: 'Keep deducted' })).toBeInTheDocument();
     });
 
-    it('"Return to stock" calls adjustStock then clears the roast', async () => {
+    it('"Return to stock" puts the batch back on the green stock, then clears the roast', async () => {
       const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
         ...connected,
         roast: { ...roast('done'), chargedAtMs: 0 },
@@ -489,7 +488,12 @@ describe('RoastScreen', () => {
       });
       await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
       await userEvent.click(screen.getByRole('button', { name: 'Return to stock' }));
-      expect(api.adjustStock).toHaveBeenCalledWith({ beanId: 1, greenG: 350, roastedG: 0 });
+      expect(api.adjustStock).toHaveBeenCalledWith({
+        beanId: 1,
+        greenG: 850,
+        roastedG: 0,
+        reason: 'returned',
+      });
       expect(api.roastAction).toHaveBeenCalledWith('clear');
     });
 
@@ -887,10 +891,11 @@ describe('RoastScreen', () => {
       expect(screen.getByLabelText('Profile')).toHaveTextContent(/^Light · Steps$/);
     });
 
-    it("starts the batch at the profile's tuned-for batch without a plan, and warns when far off", async () => {
+    it("starts the batch at its stock's next equal batch, around the profile's batch, and warns when far off", async () => {
       const { stores } = renderApp(<RoastScreen onConnect={onConnect} />, {
         ...auto('ready'),
-        beans: [{ ...BEAN, batchPlan: null, greenG: 2000 }],
+        // 5 × 385 g: the profile's batch exactly.
+        beans: [{ ...BEAN, greenG: 1925 }],
         roasters: [SKYWALKER],
       });
       await openSetup();
@@ -907,15 +912,15 @@ describe('RoastScreen', () => {
       expect(screen.getByRole('button', { name: 'Preheat' })).toBeEnabled();
     });
 
-    it("starts the batch at the bean's plan when it has one", async () => {
+    it('roasts what is left in one batch when it is less than two', async () => {
       const { stores } = renderApp(<RoastScreen onConnect={onConnect} />, {
         ...auto('ready'),
-        beans: [{ ...BEAN, greenG: 2000 }],
+        beans: [{ ...BEAN, greenG: 300 }],
         roasters: [SKYWALKER],
       });
       await openSetup();
       await pick(screen.getByLabelText('Bean'), /^Yirgacheffe/);
-      expect(stores.beans.getState().setup.batchG).toBe(375);
+      expect(stores.beans.getState().setup.batchG).toBe(300);
     });
 
     it('labels the suggested profile, says why, and Use this profile picks it', async () => {

@@ -8,6 +8,7 @@ export type { CoachChange as CoachCardChange } from './components/CoachChanges';
 export { OutputControl, type OutputControlProps } from './components/OutputControl';
 export { PhaseStepper, type PhaseStepperProps } from './components/PhaseStepper';
 export { StatCard, type StatCardProps } from './components/StatCard';
+export { StockChart, type StockChartProps, type StockPoint } from './components/StockChart';
 export { RoastChart, type RoastChartProps } from './components/RoastChart';
 export {
   isLineLayer,

@@ -67,7 +67,6 @@ describe('bean draft', () => {
       roastedG: 0,
       archived: false,
       avgLossPct: null,
-      batchPlan: null,
     };
     expect(fromBeanDraft(toBeanDraft(bean))).toEqual(filled);
     expect(filled.value).toMatchObject({ densityGL: 780, decaf: true, variety: 'Heirloom' });

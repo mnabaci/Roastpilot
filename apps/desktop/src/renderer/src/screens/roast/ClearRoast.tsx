@@ -18,7 +18,7 @@ export function ClearRoast() {
   const toast = useToast();
   const roast = useRoast((s) => s.roast);
   const setup = useBeans((s) => s.setup);
-  const beanName = useBeans((s) => s.beans.find((b) => b.id === setup.beanId)?.name);
+  const bean = useBeans((s) => s.beans.find((b) => b.id === setup.beanId));
   const [asking, setAsking] = useState(false);
   const roastOnScreen = roast.preheatAtMs !== null || roast.chargedAtMs !== null;
   if (!(roast.phase === 'ready' || roast.phase === 'done') || !roastOnScreen) return null;
@@ -30,8 +30,14 @@ export function ClearRoast() {
     run(
       'roast.clear-failed',
       async () => {
-        if (returnStock && beanId !== null && batchG !== null) {
-          const returned = await api.adjustStock({ beanId, greenG: batchG, roastedG: 0 });
+        if (returnStock && bean && batchG !== null) {
+          // The batch goes back on top of what's there, kept in the bean's stock history.
+          const returned = await api.adjustStock({
+            beanId: bean.id,
+            greenG: bean.greenG + batchG,
+            roastedG: bean.roastedG,
+            reason: 'returned',
+          });
           // Keep the roast on screen, so Clear can be tried again or the stock kept deducted.
           if (!returned.ok) {
             logger.warn('roast.stock-return-failed', { beanId, batchG, error: returned.error });
@@ -71,7 +77,7 @@ export function ClearRoast() {
         onOpenChange={setAsking}
         // Clear only empties the screen: the saved roast stays, which "Clear this roast?" hid.
         question="Clear the screen?"
-        detail={`The roast stays in History. Return ${String(batchG)} g of ${beanName ?? 'beans'} to stock too?`}
+        detail={`The roast stays in History. Return ${String(batchG)} g of ${bean?.name ?? 'beans'} to stock too?`}
         confirmLabel="Return to stock"
         onConfirm={() => {
           clear(true);

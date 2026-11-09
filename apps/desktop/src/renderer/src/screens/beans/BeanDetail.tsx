@@ -2,15 +2,18 @@ import type { Bean, RoastSummary } from '@roastpilot/shared';
 import { Badge, Button, Menu, formatNumber, StatCard } from '@roastpilot/ui';
 import { ExternalLink } from 'lucide-react';
 import { useState } from 'react';
-import { describePlan } from './batch-format';
+import { planLine } from './batch-format';
+import { beanPlan } from './bean-plan';
+import { usePlanContext } from './use-plan-context';
 import { BeanEditor } from './BeanEditor';
 import { BeanFacts } from './BeanFacts';
 import { BeanRoasts } from './BeanRoasts';
-import { AddStockForm, AdjustStockForm } from './StockForms';
+import { StockHistory } from './StockHistory';
+import { AdjustStockDialog } from './StockForms';
 import { useLibraryFiles } from '../../features/use-library-files';
 import { useBeanActions } from './use-bean-actions';
 
-type Panel = 'none' | 'edit' | 'add-stock' | 'adjust-stock';
+type Panel = 'none' | 'edit' | 'adjust-stock';
 
 /** One bean: its record, stock, roasts and what you can do with it (docs/spec/ui.md, Beans screen). */
 export function BeanDetail({
@@ -29,6 +32,7 @@ export function BeanDetail({
   onOpenRoast?: ((id: number) => void) | undefined;
 }) {
   const [panel, setPanel] = useState<Panel>('none');
+  const planContext = usePlanContext();
   const actions = useBeanActions({ bean, beans, roasts, onRoast, onOpenProfile });
   const files = useLibraryFiles('beans');
   const close = () => {
@@ -58,10 +62,10 @@ export function BeanDetail({
           <Button
             size="sm"
             onClick={() => {
-              setPanel('add-stock');
+              setPanel('adjust-stock');
             }}
           >
-            Add stock
+            Adjust stock
           </Button>
           {bean.link === null ? null : (
             <Button variant="ghost" size="sm" icon={<ExternalLink />} onClick={actions.orderAgain}>
@@ -80,12 +84,6 @@ export function BeanDetail({
           <Menu
             label={`More for ${bean.name}`}
             items={[
-              {
-                label: 'Adjust stock',
-                onSelect: () => {
-                  setPanel('adjust-stock');
-                },
-              },
               {
                 label: bean.profileId === null ? 'Make a profile' : 'Make another profile',
                 disabled: !actions.canMakeProfile,
@@ -107,7 +105,12 @@ export function BeanDetail({
           label="Green"
           value={formatNumber(bean.greenG, 0)}
           unit="g"
-          context={bean.batchPlan ? describePlan(bean.batchPlan) : 'No batch plan'}
+          // Worked out live for the active roaster (docs/spec/batch-and-stock.md).
+          context={
+            planContext
+              ? planLine(beanPlan(bean, planContext).batchesG, planContext.roaster.batchMinG)
+              : 'Add a roaster to plan its batches'
+          }
         />
         <StatCard label="Roasted" value={formatNumber(bean.roastedG, 0)} unit="g" />
         <StatCard
@@ -122,8 +125,8 @@ export function BeanDetail({
           {actions.problem}
         </p>
       ) : null}
-      {panel === 'add-stock' ? <AddStockForm bean={bean} onDone={close} /> : null}
-      {panel === 'adjust-stock' ? <AdjustStockForm bean={bean} onDone={close} /> : null}
+      <AdjustStockDialog bean={bean} open={panel === 'adjust-stock'} onClose={close} />
+      <StockHistory bean={bean} />
       <BeanFacts bean={bean} />
       <BeanRoasts bean={bean} roasts={roasts} onOpen={onOpenRoast} />
     </section>

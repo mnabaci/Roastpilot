@@ -158,6 +158,10 @@ function setup() {
         calls.push(['archive', request]);
         return Promise.resolve(ok(undefined));
       },
+      stockHistory: (id) => {
+        calls.push(['stockHistory', id]);
+        return Promise.resolve(ok([]));
+      },
       addStock: (stock) => {
         calls.push(['addStock', stock.grams]);
         return Promise.resolve(ok(undefined));
@@ -327,6 +331,7 @@ describe('createIpcHandlers', () => {
         IPC_CHANNELS.openBeanLink,
         IPC_CHANNELS.addStock,
         IPC_CHANNELS.adjustStock,
+        IPC_CHANNELS.stockHistory,
         IPC_CHANNELS.setRoastSetup,
         IPC_CHANNELS.saveRoastResult,
         IPC_CHANNELS.makeProfileFromRoast,

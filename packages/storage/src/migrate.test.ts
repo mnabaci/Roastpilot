@@ -36,12 +36,15 @@ describe('migrate', () => {
           '0006_drum_speed',
           '0007_bean_link',
           '0008_bean_species',
+          '0009_drop_purchase_batch_plan',
+          '0010_bean_stock_adjustments',
         ],
       },
     });
     expect(tables(db)).toEqual(
       expect.arrayContaining([
         'bean_purchases',
+        'bean_stock_adjustments',
         'beans',
         'profiles',
         'roast_events',
@@ -70,6 +73,8 @@ describe('migrate', () => {
           '0006_drum_speed',
           '0007_bean_link',
           '0008_bean_species',
+          '0009_drop_purchase_batch_plan',
+          '0010_bean_stock_adjustments',
         ],
       },
     });
@@ -153,6 +158,36 @@ describe('migrate', () => {
     ]);
   });
 
+  it('keeps every purchase, without its stored batch plan', () => {
+    const db = new DatabaseSync(':memory:');
+    migrate(db, MIGRATIONS.slice(0, 9));
+    db.exec(
+      `INSERT INTO beans (name, origin, process) VALUES ('African Moon', 'Uganda', 'natural')`,
+    );
+    db.exec(
+      `INSERT INTO bean_purchases (bean_id, purchased_at, grams, batch_plan) VALUES (1, '2026-11-01', 2000, '{"kind":"equal","batchesG":[400,400,400,400,400]}')`,
+    );
+    migrate(db);
+    expect(db.prepare('SELECT * FROM bean_purchases').all()).toEqual([
+      { id: 1, bean_id: 1, purchased_at: '2026-11-01', grams: 2000 },
+    ]);
+  });
+
+  it('adds stock adjustments to a database with beans, keeping them and their purchases', () => {
+    const db = new DatabaseSync(':memory:');
+    migrate(db, MIGRATIONS.slice(0, 10));
+    db.exec(
+      `INSERT INTO beans (name, origin, process, green_g) VALUES ('African Moon', 'Uganda', 'natural', 1500)`,
+    );
+    db.exec(
+      `INSERT INTO bean_purchases (bean_id, purchased_at, grams) VALUES (1, '2026-11-01', 2000)`,
+    );
+    migrate(db);
+    expect(db.prepare('SELECT id, green_g FROM beans').all()).toEqual([{ id: 1, green_g: 1500 }]);
+    expect(db.prepare('SELECT grams FROM bean_purchases').all()).toEqual([{ grams: 2000 }]);
+    expect(db.prepare('SELECT * FROM bean_stock_adjustments').all()).toEqual([]);
+  });
+
   it('applies only the migrations a database is missing, keeping its data', () => {
     const db = new DatabaseSync(':memory:');
     const first = [{ tag: 'a', sql: 'CREATE TABLE a (x INTEGER);' }];
@@ -198,6 +233,8 @@ describe('migrate', () => {
         '0006_drum_speed',
         '0007_bean_link',
         '0008_bean_species',
+        '0009_drop_purchase_batch_plan',
+        '0010_bean_stock_adjustments',
       ]);
       expect(schemaVersion(db)).toBe(5);
     });

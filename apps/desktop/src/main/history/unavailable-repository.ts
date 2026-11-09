@@ -56,5 +56,6 @@ export function unavailableBeans(message: string): BeanRepository {
     setArchived: fail,
     addStock: fail,
     adjustStock: fail,
+    stockHistory: fail,
   };
 }

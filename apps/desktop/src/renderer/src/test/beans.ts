@@ -22,5 +22,4 @@ export const BEAN: Bean = {
   roastedG: 100,
   archived: false,
   avgLossPct: null,
-  batchPlan: { kind: 'equal', batchesG: [375, 375] },
 };

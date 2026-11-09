@@ -67,28 +67,50 @@ describe('BeansScreen', () => {
     });
   });
 
-  it('adds stock with a picked plan', async () => {
+  it('adds stock, showing what the green then splits into, with nothing to pick', async () => {
     const user = userEvent.setup();
     const { api } = show();
-    await user.click(screen.getByRole('button', { name: 'Add stock' }));
-    await user.type(screen.getByLabelText('Order weight'), '1000');
-    const equal = within(screen.getByRole('region', { name: 'Equal splits' }));
-    expect(equal.getByText('3 × 333 g (+1 g)')).toBeTruthy();
-    await user.click(equal.getByRole('button', { name: 'Pick' }));
+    // Its 300 g left is one batch now.
+    expect(screen.getByRole('region', { name: 'Green' })).toHaveTextContent('1 batch · 1 × 300 g');
+    await user.click(screen.getByRole('button', { name: 'Adjust stock' }));
+    await user.type(screen.getByLabelText('Weight'), '1000');
+    // 1,300 g at most 400 g a batch: four equal batches.
+    expect(screen.getByText('Then 1,300 g green · 4 batches · 4 × 325 g')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Pick' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Add 1,000 g' }));
     await waitFor(() => {
-      expect(api.addStock).toHaveBeenCalledWith(
-        expect.objectContaining({ beanId: 1, grams: 1000, plan: expect.anything() as unknown }),
-      );
+      expect(api.addStock).toHaveBeenCalledWith({
+        beanId: 1,
+        grams: 1000,
+        purchasedAt: expect.any(String) as unknown,
+      });
+    });
+    // Saved, the dialog closes onto the bean page.
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: 'Adjust stock' })).toBeNull();
     });
   });
 
-  it('adjusts stock by hand', async () => {
+  it('Adjust stock opens on Add, with Take out and Recount beside it', async () => {
+    const user = userEvent.setup();
+    show();
+    await user.click(screen.getByRole('button', { name: 'Adjust stock' }));
+    const changes = screen.getByRole('radiogroup', { name: 'Change' });
+    expect(
+      within(changes)
+        .getAllByRole('radio')
+        .map((r) => r.textContent),
+    ).toEqual(['Add', 'Take out', 'Recount']);
+    expect(within(changes).getByRole('radio', { name: 'Add' })).toBeChecked();
+    expect(screen.queryByRole('menuitem', { name: 'Adjust stock' })).toBeNull();
+  });
+
+  it('recounts stock by hand', async () => {
     const user = userEvent.setup();
     const { api } = show();
-    await user.click(screen.getByRole('button', { name: `More for ${BEAN.name}` }));
-    await user.click(screen.getByRole('menuitem', { name: 'Adjust stock' }));
-    const form = within(screen.getByRole('region', { name: 'Adjust stock' }));
+    await user.click(screen.getByRole('button', { name: 'Adjust stock' }));
+    await user.click(screen.getByRole('radio', { name: 'Recount' }));
+    const form = within(screen.getByRole('dialog', { name: 'Adjust stock' }));
     const green = form.getByLabelText('Green');
     await user.clear(green);
     await user.type(green, '250');
@@ -98,11 +120,37 @@ describe('BeansScreen', () => {
     });
   });
 
+  it('takes green out of stock with why, never more than there is', async () => {
+    const user = userEvent.setup();
+    const { api } = show();
+    await user.click(screen.getByRole('button', { name: 'Adjust stock' }));
+    await user.click(screen.getByRole('radio', { name: 'Take out' }));
+    const form = within(screen.getByRole('dialog', { name: 'Adjust stock' }));
+    await user.type(form.getByLabelText('Weight'), '400');
+    expect(form.getByText('Only 300 g green left')).toBeInTheDocument();
+    expect(form.getByRole('button', { name: 'Take out 400 g' })).toBeDisabled();
+    await user.clear(form.getByLabelText('Weight'));
+    await user.type(form.getByLabelText('Weight'), '50');
+    await user.type(form.getByLabelText('Why'), ' Gave some to Sam ');
+    expect(form.getByText('Then 250 g green')).toBeInTheDocument();
+    await user.click(form.getByRole('button', { name: 'Take out 50 g' }));
+    await waitFor(() => {
+      expect(api.adjustStock).toHaveBeenCalledWith({
+        beanId: 1,
+        greenG: 250,
+        roastedG: 100,
+        reason: 'taken',
+        note: 'Gave some to Sam',
+      });
+    });
+  });
+
   it('Roast this bean sets up the next roast from its plan, then opens Roast', async () => {
     const user = userEvent.setup();
     const { api, onRoast, stores } = show();
     await user.click(screen.getByRole('button', { name: 'Roast this bean' }));
-    const setup = { beanId: 1, batchG: 375, ghostRoastId: null };
+    // Its 300 g left is one batch: the whole of it.
+    const setup = { beanId: 1, batchG: 300, ghostRoastId: null };
     await waitFor(() => {
       expect(onRoast).toHaveBeenCalled();
     });
@@ -132,8 +180,8 @@ describe('BeansScreen', () => {
   it('holds stock back until Bought on is a real date', async () => {
     const user = userEvent.setup();
     const { api } = show();
-    await user.click(screen.getByRole('button', { name: 'Add stock' }));
-    await user.type(screen.getByLabelText('Order weight'), '1000');
+    await user.click(screen.getByRole('button', { name: 'Adjust stock' }));
+    await user.type(screen.getByLabelText('Weight'), '1000');
     const date = screen.getByLabelText('Bought on');
     await user.clear(date);
     await user.type(date, 'last week');
@@ -307,8 +355,12 @@ describe('BeansScreen', () => {
     // A dialog over the list, so the bean behind it stays where it was.
     const dialog = within(screen.getByRole('dialog', { name: 'Batch calculator' }));
     await user.type(dialog.getByLabelText('Order weight'), '1000');
-    expect(dialog.getByText('2 × 375 g + 250 g')).toBeTruthy();
-    expect(dialog.queryByRole('button', { name: 'Pick' })).toBeNull();
+    // Equal batches around the roaster's ideal, as a bean's stock gets.
+    expect(dialog.getByText('3 batches')).toBeTruthy();
+    expect(dialog.getByText('2 × 333 g · 1 × 334 g')).toBeTruthy();
+    // Around another batch, if you'd roast it at that.
+    await user.type(dialog.getByLabelText('Batch'), '260');
+    expect(dialog.getByText('4 batches')).toBeTruthy();
     // A common order is one tap.
     await user.click(dialog.getByRole('button', { name: '2 kg' }));
     expect(dialog.getByLabelText('Order weight')).toHaveValue('2000');

@@ -116,9 +116,9 @@ describe('all-or-nothing writes', () => {
     const env = setup();
     const before = env.snapshot();
     env.failOn('INSERT', 'bean_purchases');
-    expect(
-      await env.beans.addStock({ beanId: 1, grams: 500, purchasedAt: 'x', plan: null }),
-    ).toMatchObject(failed);
+    expect(await env.beans.addStock({ beanId: 1, grams: 500, purchasedAt: 'x' })).toMatchObject(
+      failed,
+    );
     expect(env.snapshot()).toEqual(before);
   });
 

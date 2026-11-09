@@ -263,7 +263,6 @@ export {
 export {
   AddStockSchema,
   AdjustStockSchema,
-  BatchPlanSchema,
   BeanFieldsSchema,
   BeanIdSchema,
   BeanProcessSchema,
@@ -274,10 +273,11 @@ export {
   NO_ROAST_SETUP,
   RoastSetupSchema,
   SetArchivedSchema,
+  StockAdjustReasonSchema,
+  StockMovementSchema,
   UpdateBeanSchema,
   type AddStock,
   type AdjustStock,
-  type BatchPlan,
   type Bean,
   type BeanFields,
   type BeanId,
@@ -285,6 +285,8 @@ export {
   type BeanSpecies,
   type OpenBeanLinkError,
   type RoastSetup,
+  type StockAdjustReason,
+  type StockMovement,
   type UpdateBean,
 } from './bean';
 export {

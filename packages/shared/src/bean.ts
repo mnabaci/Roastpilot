@@ -40,12 +40,6 @@ export const BeanFieldsSchema = z.object({
   notes: z.string().max(4000).nullable(),
 });
 
-/** How an order is split into batches (docs/spec/batch-and-stock.md). */
-export const BatchPlanSchema = z.object({
-  kind: z.enum(['equal', 'ideal']),
-  batchesG: z.array(positive()).min(1),
-});
-
 export const BeanSchema = BeanFieldsSchema.extend({
   id: BeanIdSchema,
   /** The bean's own profile: its first suggestion. */
@@ -55,21 +49,44 @@ export const BeanSchema = BeanFieldsSchema.extend({
   archived: z.boolean(),
   /** From its roasts with a roasted weight; null until it has one. */
   avgLossPct: z.number().nullable(),
-  /** The plan picked with the latest stock. */
-  batchPlan: BatchPlanSchema.nullable(),
 });
 
 export const AddStockSchema = z.object({
   beanId: BeanIdSchema,
   grams: positive(),
   purchasedAt: z.string().min(1),
-  plan: BatchPlanSchema.nullable(),
 });
 
+/**
+ * Why stock was changed by hand: a count of the bags, a batch given back at Clear, or beans taken
+ * out for any other reason (given away, spilled, a sample).
+ */
+export const StockAdjustReasonSchema = z.enum(['count', 'returned', 'taken']);
+
+/** The stock as it now is; what changed is kept as an adjustment in its history. */
 export const AdjustStockSchema = z.object({
   beanId: BeanIdSchema,
   greenG: z.number().nonnegative(),
   roastedG: z.number().nonnegative(),
+  reason: StockAdjustReasonSchema.default('count'),
+  /** In your words, for `taken`: "Gave 200 g to Sam". */
+  note: z.string().trim().max(120).nullable().default(null),
+});
+
+/**
+ * One thing that moved a bean's stock (docs/spec/batch-and-stock.md, Stock history), with what it
+ * changed in grams: a purchase, a roast made here, or an adjustment.
+ */
+export const StockMovementSchema = z.object({
+  /** A purchase's date, or the moment of a roast or adjustment (ISO). */
+  at: z.string(),
+  kind: z.enum(['bought', 'roasted', 'counted', 'returned', 'taken']),
+  greenG: z.number(),
+  roastedG: z.number(),
+  /** The roast, for `roasted`. */
+  roastId: z.number().int().positive().nullable(),
+  /** Why, for `taken`, when you said. */
+  note: z.string().nullable(),
 });
 
 export const UpdateBeanSchema = z.object({
@@ -107,8 +124,9 @@ export type BeanSpecies = z.infer<typeof BeanSpeciesSchema>;
 export type BeanId = z.infer<typeof BeanIdSchema>;
 export type BeanFields = z.infer<typeof BeanFieldsSchema>;
 export type Bean = z.infer<typeof BeanSchema>;
-export type BatchPlan = z.infer<typeof BatchPlanSchema>;
 export type AddStock = z.infer<typeof AddStockSchema>;
-export type AdjustStock = z.infer<typeof AdjustStockSchema>;
+export type AdjustStock = z.input<typeof AdjustStockSchema>;
+export type StockAdjustReason = z.infer<typeof StockAdjustReasonSchema>;
+export type StockMovement = z.infer<typeof StockMovementSchema>;
 export type UpdateBean = z.infer<typeof UpdateBeanSchema>;
 export type RoastSetup = z.infer<typeof RoastSetupSchema>;
