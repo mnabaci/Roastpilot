@@ -2,7 +2,7 @@
 
 All notable changes to Roastpilot are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version numbers say how much changed for
-a roast: minor for roasting features, patch for everything else
+a roast: minor for a new roasting capability, patch for everything else
 ([how versions are picked](docs/spec/install-and-update.md#version-numbers)).
 
 ## [Unreleased]
