@@ -1,5 +1,5 @@
 import {
-  diffNumber,
+  toUnit,
   formatTemp,
   tempSymbol,
   type Bean,
@@ -17,8 +17,9 @@ function signed(text: string): string {
   return text.startsWith('-') ? `−${text.slice(1)}` : `+${text}`;
 }
 
-const signedClock = (s: number): string => {
-  const whole = Math.round(s);
+/** Clocks show whole seconds, rounded down: the difference is of the times as shown. */
+const clockDiff = (a: number, b: number): string => {
+  const whole = Math.floor(a) - Math.floor(b);
   const sign = whole > 0 ? '+' : whole < 0 ? '−' : '';
   return `${sign}${formatClock(Math.abs(whole))}`;
 };
@@ -26,9 +27,20 @@ const signedClock = (s: number): string => {
 /** °C to 0.1, °F whole: the numbers on the rest of the screen. */
 const tempDecimals = (unit: TemperatureUnit) => (unit === 'f' ? 0 : 1);
 
-/** A temperature difference: ×1.8 in °F, never + 32 (docs/spec/ui.md, Units). */
-const signedTemp = (c: number, unit: TemperatureUnit): string =>
-  `${signed(diffNumber(c, unit, tempDecimals(unit)))} ${tempSymbol(unit)}`;
+/**
+ * The difference of two temperatures as shown, so the column adds up: °C to 0.1, °F whole. It is a
+ * difference, so it carries no + 32 (docs/spec/ui.md, Units).
+ */
+const tempDiff = (a: number, b: number, unit: TemperatureUnit): string => {
+  const scale = 10 ** tempDecimals(unit);
+  const shown = (c: number) => Math.round(toUnit(c, unit) * scale);
+  const d = (shown(a) - shown(b)) / scale;
+  return `${signed(d.toFixed(tempDecimals(unit)))} ${tempSymbol(unit)}`;
+};
+
+/** The difference of two percentages as shown, to 0.1. */
+const percentDiff = (a: number, b: number): string =>
+  `${signed(((Math.round(a * 10) - Math.round(b * 10)) / 10).toFixed(1))} %`;
 
 const both = <T>(a: T | null | undefined, b: T | null | undefined): [T, T] | undefined =>
   a === null || a === undefined || b === null || b === undefined ? undefined : [a, b];
@@ -63,7 +75,7 @@ function momentRow(
   const temps = both(own?.c, other?.c);
   const diff =
     own && other
-      ? [signedClock(own.tS - other.tS), temps && signedTemp(temps[0] - temps[1], unit)]
+      ? [clockDiff(own.tS, other.tS), temps && tempDiff(temps[0], temps[1], unit)]
           .filter(Boolean)
           .join(' · ')
       : undefined;
@@ -87,8 +99,7 @@ function developmentRow(own: RoastDetail, other: RoastDetail): CompareTableRow {
     own: show(development(own)),
     other: show(development(other)),
     diff:
-      pair &&
-      `${signedClock(pair[0].s - pair[1].s)} · ${signed(String(pair[0].pct - pair[1].pct))} %`,
+      pair && `${clockDiff(pair[0].s, pair[1].s)} · ${signed(String(pair[0].pct - pair[1].pct))} %`,
   };
 }
 
@@ -98,14 +109,14 @@ function numberRow(
   own: number | null | undefined,
   other: number | null | undefined,
   show: (v: number) => string,
-  showDiff: (d: number) => string,
+  showDiff: (a: number, b: number) => string,
 ): CompareTableRow {
   const pair = both(own, other);
   return {
     label,
     own: own === null || own === undefined ? undefined : show(own),
     other: other === null || other === undefined ? undefined : show(other),
-    diff: pair && showDiff(pair[0] - pair[1]),
+    diff: pair && showDiff(pair[0], pair[1]),
   };
 }
 
@@ -125,7 +136,7 @@ export function compareRows(
   const beanName = (d: RoastDetail) => beans.find((b) => b.id === d.beanId)?.name ?? 'No bean';
   const temp = (c: number) => formatTemp(c, unit, tempDecimals(unit));
   return [
-    numberRow('Total', own.dropTimeS, other.dropTimeS, formatClock, signedClock),
+    numberRow('Total', own.dropTimeS, other.dropTimeS, formatClock, clockDiff),
     momentRow(
       'Turning point',
       eventMoment(own, 'turning-point'),
@@ -135,20 +146,14 @@ export function compareRows(
     momentRow('Dry end', eventMoment(own, 'dry-end'), eventMoment(other, 'dry-end'), unit),
     momentRow('First crack', firstCrack(own), firstCrack(other), unit),
     developmentRow(own, other),
-    numberRow('Drop temp', own.dropTemp, other.dropTemp, temp, (d) => signedTemp(d, unit)),
-    numberRow(
-      'Weight loss',
-      weightLossPct(own),
-      weightLossPct(other),
-      percent,
-      (d) => `${signed(formatNumber(d, 1) ?? '0')} %`,
-    ),
+    numberRow('Drop temp', own.dropTemp, other.dropTemp, temp, (a, b) => tempDiff(a, b, unit)),
+    numberRow('Weight loss', weightLossPct(own), weightLossPct(other), percent, percentDiff),
     numberRow(
       'Rating',
       own.rating,
       other.rating,
       (v) => `${String(v)}/5`,
-      (d) => signed(String(d)),
+      (a, b) => signed(String(a - b)),
     ),
     { label: 'Profile', own: howItRan(own), other: howItRan(other), diff: undefined },
     { label: 'Bean', own: beanName(own), other: beanName(other), diff: undefined },

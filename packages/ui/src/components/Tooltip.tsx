@@ -74,7 +74,7 @@ export function Tooltip({ content, children }: TooltipProps) {
           onCloseAutoFocus={(event) => {
             event.preventDefault();
           }}
-          className="pointer-events-none z-50 max-w-80 rounded-md border border-border-strong bg-surface-raised px-3 py-1.5 text-label text-ink"
+          className="pointer-events-none z-50 max-w-96 rounded-md border border-border-strong bg-surface-raised px-3 py-1.5 text-label text-ink"
         >
           {content}
         </Popover.Content>

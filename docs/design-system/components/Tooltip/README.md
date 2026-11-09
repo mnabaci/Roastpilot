@@ -4,7 +4,7 @@ The whole of a line that had to truncate (a History row's bean · how it ran · 
 
 ## Anatomy
 
-- **Panel**: `surface-raised` fill, 1px `border-strong`, `radius-md`, 6px × 12px padding, at most 320px wide (longer text wraps).
+- **Panel**: `surface-raised` fill, 1px `border-strong`, `radius-md`, 6px × 12px padding, at most 384px wide (longer text wraps).
 - **Text**: `label` style in `ink`.
 - **Place**: under its trigger, 4px away, lined up with its left edge; it flips above, or shifts sideways, to stay 8px inside the window.
 

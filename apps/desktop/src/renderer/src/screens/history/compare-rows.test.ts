@@ -142,4 +142,22 @@ describe('compareRows', () => {
       { label: 'Turning point', own: '1:32', other: '1:27 · 93.4 °C', diff: '+0:05' },
     );
   });
+
+  it('takes each difference from the values as shown, so the row adds up', () => {
+    const a = roast({ dropTimeS: 185.9, dropTemp: 86.2 });
+    const b = roast({ id: 2, dropTimeS: 255.0, dropTemp: 61.4 });
+    const rows = compareRows(a, b, 'f', BEANS);
+    // 3:05 against 4:15, never the raw −1:09.1 rounded to −1:09.
+    expect(rows.find((r) => r.label === 'Total')).toMatchObject({
+      own: '3:05',
+      other: '4:15',
+      diff: '−1:10',
+    });
+    // 187 °F against 143 °F.
+    expect(rows.find((r) => r.label === 'Drop temp')).toMatchObject({
+      own: '187 °F',
+      other: '143 °F',
+      diff: '+44 °F',
+    });
+  });
 });
