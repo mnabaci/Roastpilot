@@ -7,6 +7,42 @@ a roast: minor for a new roasting capability, patch for everything else
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-11-09
+
+### Added
+
+- **Stock history on every bean:** how often and how much you bought and roasted, your weekly
+  pace and how long the green lasts, a chart of the green stock over time, and every purchase,
+  roast and adjustment.
+- **Take out stock** for beans that leave the bag without a roast (given away, spilled, a
+  sample), with a note on why.
+- **Species** on a bean (Arabica, Robusta and more).
+- **Select mode on Beans and Roasters**, as on History and Profiles: tick several to export,
+  archive or delete them at once.
+
+### Changed
+
+- **Batch plans follow your green stock:** a bean's batches are worked out from what's left, in
+  equal batches around its profile's batch, and update after every roast or new bag. Add stock
+  only asks for the weight and the date.
+- **One Adjust stock dialog** on a bean for Add, Take out and Recount.
+- **The Batch calculator opens as a dialog**, with common order sizes and a clearer plan.
+- **Beans, Profiles and Roasters open to read:** Edit turns a record into fields, with Cancel
+  and Save at the top.
+- **Roasters:** the connection fits in one compact card; Use this roaster, Connect and Edit sit
+  at the top, and a button that has to wait says why.
+- **Ratings are stars everywhere; favourites are a heart.**
+- **Folding cards animate** open and closed, and the Roast setup card takes two lines.
+- **Archived beans say so** in the list.
+- **Buttons are one size** across forms, Settings and page headers.
+
+### Fixed
+
+- **Return to stock at Clear** now puts the batch back on top of the green stock, instead of
+  setting the stock to the batch's weight.
+- **Clear on the Roast screen** is no longer cut off.
+- **Rate of rise** shows a dash until charge, as the chart does.
+
 ## [0.3.1] - 2026-11-09
 
 ### Added
