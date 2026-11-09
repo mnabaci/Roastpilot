@@ -178,6 +178,10 @@ function setup() {
       calls.push(['makeBeanProfile', request]);
       return Promise.resolve(err({ kind: 'bean-not-found', id: request.beanId }));
     },
+    openBeanLink: (id) => {
+      calls.push(['openBeanLink', id]);
+      return Promise.resolve(err({ kind: 'no-link', id }));
+    },
     roasters: {
       load: () => Promise.resolve([]),
       add: (r) => {
@@ -320,6 +324,7 @@ describe('createIpcHandlers', () => {
         IPC_CHANNELS.addBean,
         IPC_CHANNELS.updateBean,
         IPC_CHANNELS.setBeanArchived,
+        IPC_CHANNELS.openBeanLink,
         IPC_CHANNELS.addStock,
         IPC_CHANNELS.adjustStock,
         IPC_CHANNELS.setRoastSetup,
@@ -465,6 +470,10 @@ describe('roast, snapshot and settings handlers', () => {
     await expect(handlers[IPC_CHANNELS.addStock]?.({ beanId: 1, grams: -5 })).rejects.toThrow();
     await expect(handlers[IPC_CHANNELS.setRoastSetup]?.({ beanId: 'x' })).rejects.toThrow();
     await expect(handlers[IPC_CHANNELS.saveRoastResult]?.({ id: 1, rating: 9 })).rejects.toThrow();
+    // A bean id only: an address from the renderer is refused before anything opens.
+    await expect(
+      handlers[IPC_CHANNELS.openBeanLink]?.('https://elsewhere.example'),
+    ).rejects.toThrow();
     await expect(
       handlers[IPC_CHANNELS.makeProfileFromRoast]?.({ roastId: 1, style: 'wavy' }),
     ).rejects.toThrow();
@@ -476,11 +485,13 @@ describe('roast, snapshot and settings handlers', () => {
     await handlers[IPC_CHANNELS.adjustStock]?.(adjust);
     const made = { roastId: 1, style: 'curve' };
     await handlers[IPC_CHANNELS.makeProfileFromRoast]?.(made);
+    await handlers[IPC_CHANNELS.openBeanLink]?.(1);
     expect(calls).toEqual([
       ['setup', setup_],
       ['archive', { id: 1, archived: true }],
       ['adjustStock', 5],
       ['makeProfile', made],
+      ['openBeanLink', 1],
     ]);
   });
 

@@ -50,6 +50,13 @@
       "when": 1794037009232,
       "tag": "0006_drum_speed",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1794209487710,
+      "tag": "0007_bean_link",
+      "breakpoints": true
     }
   ]
 }

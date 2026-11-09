@@ -34,6 +34,7 @@ export function App() {
   );
   const [screen, setScreen] = useState<Screen | undefined>();
   const [profileToOpen, setProfileToOpen] = useState<string>();
+  const [roastToOpen, setRoastToOpen] = useState<number>();
   // Settings reopens on the last section viewed until quit (docs/spec/ui.md, Settings).
   const [settingsSection, setSettingsSection] = useState<SettingsSection>('controls');
   const { api, logger } = useDeps();
@@ -71,6 +72,7 @@ export function App() {
     ),
     history: () => (
       <HistoryScreen
+        openFirst={roastToOpen}
         onOpenProfile={(id) => {
           setProfileToOpen(id);
           setScreen('profiles');
@@ -85,6 +87,10 @@ export function App() {
         onOpenProfile={(id) => {
           setProfileToOpen(id);
           setScreen('profiles');
+        }}
+        onOpenRoast={(id) => {
+          setRoastToOpen(id);
+          setScreen('history');
         }}
       />
     ),
@@ -115,6 +121,7 @@ export function App() {
         onNavigate={(next) => {
           setNoticeOpen(false);
           setProfileToOpen(undefined);
+          setRoastToOpen(undefined);
           setScreen(next);
         }}
       />

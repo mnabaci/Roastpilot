@@ -62,14 +62,21 @@ export function inProgressId(
   return newest?.endedAt === null && LIVE_PHASES.includes(livePhase) ? newest.id : undefined;
 }
 
-/** `Yirgacheffe · Light · Steps · 4/5`: bean, profile and rating. */
+/** `Auto · Light · Steps`, or `Manual`: only an Auto roast keeps a profile. */
+export const howItRan = (roast: Pick<RoastSummary, 'profileName'>): string =>
+  roast.profileName === null ? 'Manual' : `Auto · ${roast.profileName}`;
+
+/**
+ * `Yirgacheffe · Auto · Light · Steps · 4/5`: bean, how it ran, and rating. Only an Auto roast keeps
+ * a profile, so a profile means Auto.
+ */
 export function roastDetailLine(
   roast: RoastSummary,
   beans: readonly Pick<Bean, 'id' | 'name'>[],
 ): string {
   return [
     beans.find((b) => b.id === roast.beanId)?.name ?? 'No bean',
-    roast.profileName ?? 'Manual',
+    howItRan(roast),
     roast.rating === null ? undefined : `${String(roast.rating)}/5`,
   ]
     .filter(Boolean)

@@ -19,6 +19,9 @@ const ROAST = {
   dropTimeS: null,
   dropTemp: null,
   profileId: null,
+  profileName: 'Light · Steps',
+  batchG: 356,
+  roastedG: 305,
 } as RoastSummary;
 
 function show(api = fakeApi(), beans = [BEAN]) {
@@ -225,6 +228,43 @@ describe('BeansScreen', () => {
     const api = fakeApi({ listRoasts: vi.fn(() => Promise.resolve([ROAST])) });
     show(api);
     expect(await screen.findByText(/Best favourite/)).toBeTruthy();
+    const table = screen.getByRole('table', { name: 'Roasts of Yirgacheffe' });
+    expect(within(table).getAllByRole('row')[1]?.textContent).toContain('Auto · Light · Steps');
+    expect(within(table).getByText('356 → 305 g')).toBeInTheDocument();
+    expect(within(table).getByText('14.3 %')).toBeInTheDocument();
+  });
+
+  it('orders again from the saved link, through main; no link, no button', async () => {
+    const user = userEvent.setup();
+    const api = fakeApi();
+    show(api, [{ ...BEAN, link: 'https://www.shop.example/yirgacheffe' }]);
+    // Under the supplier in the bean's card, as written.
+    const about = within(screen.getByRole('region', { name: 'About this bean' }));
+    expect(about.getByText('shop.example')).not.toHaveClass('first-letter:uppercase');
+    await user.click(screen.getByRole('button', { name: 'Order again' }));
+    expect(api.openBeanLink).toHaveBeenCalledWith(BEAN.id);
+  });
+
+  it("sets out the bean's facts as tiles, its order link's site under the supplier, and its hints", () => {
+    show(fakeApi(), [
+      {
+        ...BEAN,
+        process: 'natural',
+        supplier: 'Green Coffee Collective',
+        link: 'https://www.greencoffee.example/african-moon',
+      },
+    ]);
+    const about = within(screen.getByRole('region', { name: 'About this bean' }));
+    const supplier = about.getByText('Supplier').parentElement!;
+    expect(supplier.textContent).toBe('SupplierGreen Coffee Collectivegreencoffee.example');
+    expect(about.getAllByRole('listitem').some((li) => li.textContent.startsWith('Natural'))).toBe(
+      true,
+    );
+  });
+
+  it('has no Order again for a bean without a link', () => {
+    show();
+    expect(screen.queryByRole('button', { name: 'Order again' })).toBeNull();
   });
 
   it('archives, and hides archived beans until asked', async () => {

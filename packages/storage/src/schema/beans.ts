@@ -13,6 +13,7 @@ export const beans = sqliteTable('beans', {
   screen: real('screen'),
   decaf: integer('decaf', { mode: 'boolean' }).notNull().default(false),
   supplier: text('supplier'),
+  link: text('link'),
   profileId: text('profile_id'),
   greenG: real('green_g').notNull().default(0),
   roastedG: real('roasted_g').notNull().default(0),

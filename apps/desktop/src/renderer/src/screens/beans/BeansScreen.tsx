@@ -17,9 +17,12 @@ type RightSide = { kind: 'bean' } | { kind: 'add' } | { kind: 'calculator' };
 export function BeansScreen({
   onRoast,
   onOpenProfile,
+  onOpenRoast,
 }: {
   onRoast: () => void;
   onOpenProfile: (id: string) => void;
+  /** Opens one of the bean's roasts in History. */
+  onOpenRoast?: (id: number) => void;
 }) {
   const beans = useBeans((s) => s.beans);
   const roasts = useRoastList() ?? [];
@@ -127,6 +130,7 @@ export function BeansScreen({
           roasts={roasts}
           onRoast={onRoast}
           onOpenProfile={onOpenProfile}
+          onOpenRoast={onOpenRoast}
         />
       ) : (
         <p className="flex min-h-control-sm items-center text-body text-ink-muted">

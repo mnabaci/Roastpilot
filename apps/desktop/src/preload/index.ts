@@ -74,6 +74,7 @@ const api: RoastpilotApi = {
   addBean: (fields) => ipcRenderer.invoke(IPC_CHANNELS.addBean, fields),
   updateBean: (update) => ipcRenderer.invoke(IPC_CHANNELS.updateBean, update),
   setBeanArchived: (request) => ipcRenderer.invoke(IPC_CHANNELS.setBeanArchived, request),
+  openBeanLink: (id) => ipcRenderer.invoke(IPC_CHANNELS.openBeanLink, id),
   addStock: (stock) => ipcRenderer.invoke(IPC_CHANNELS.addStock, stock),
   adjustStock: (stock) => ipcRenderer.invoke(IPC_CHANNELS.adjustStock, stock),
   onBeans: (listener) => subscribe(IPC_CHANNELS.beansChanged, listener),

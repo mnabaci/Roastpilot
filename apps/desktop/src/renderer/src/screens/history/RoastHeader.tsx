@@ -7,7 +7,8 @@ import type { ProfileStyle } from './use-make-profile';
 const NONE = 'none';
 
 /**
- * Everything for the open roast in one row (docs/spec/ui.md, History screen): its date, Compare,
+ * Everything for the open roast in one row (docs/spec/ui.md, History screen): its date with Auto
+ * or Manual, Compare,
  * Make profile and "⋯"; the roast being roasted says it is saving instead of the last two.
  */
 export function RoastHeader({
@@ -39,6 +40,13 @@ export function RoastHeader({
     <header className="flex min-h-control-sm flex-wrap items-center gap-3">
       <div className="mr-auto flex min-w-0 items-center gap-3">
         <h2 className="text-title">{roast ? roastTitle(roast.startedAt) : ''}</h2>
+        {roast === undefined ? null : roast.profileName === null ? (
+          <Badge className="shrink-0">Manual</Badge>
+        ) : (
+          <Badge tone="air" className="shrink-0">
+            Auto
+          </Badge>
+        )}
         {stopped ? <Badge className="shrink-0">Stopped</Badge> : null}
       </div>
       <FilterSelect

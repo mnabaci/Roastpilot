@@ -41,6 +41,7 @@ export const fakeBeansApi = (): BeansApi => ({
   addBean: () => Promise.resolve(ok(1)),
   updateBean: accepted,
   setBeanArchived: accepted,
+  openBeanLink: accepted,
   addStock: accepted,
   adjustStock: accepted,
   onBeans: listening,

@@ -35,6 +35,7 @@ import { pathChoosers } from './files/file-dialogs';
 import { createLibraryFileActions } from './files/library-file-actions';
 import { createLibraryKinds } from './files/library-wiring';
 import { makeBeanProfile } from './beans/make-bean-profile';
+import { openBeanLink } from './beans/open-bean-link';
 import { createPowerGuard } from './power-guard';
 import { createQuitGuard } from './quit-guard';
 import { JsonSettingsStore } from './settings/json-settings-store';
@@ -268,6 +269,12 @@ app
             }),
           makeBeanProfile: (request) =>
             makeBeanProfile(request, { beans, profiles, logger: logger.child('beans') }),
+          openBeanLink: (id) =>
+            openBeanLink(id, {
+              beans,
+              openExternal: (url) => shell.openExternal(url),
+              logger: logger.child('beans'),
+            }),
           nowMs: () => systemClock.now(),
           snapshot,
           listPorts: () => listSerialPorts(),

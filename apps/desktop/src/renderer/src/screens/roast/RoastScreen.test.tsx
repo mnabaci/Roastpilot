@@ -452,6 +452,7 @@ describe('RoastScreen', () => {
       screen: null,
       decaf: false,
       supplier: null,
+      link: null,
       lowStockG: 0,
       notes: null,
       profileId: null,

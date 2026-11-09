@@ -114,21 +114,21 @@ Visual language: the [Roastpilot design system](../design-system/README.md) (ADR
 
 - **Sidebar:** the title with "⋯" (Export all ▸ Roastpilot file / CSV, Import a Roastpilot file, Import from Artisan, Select), then one row of filters: ★ (favourites only) and Bean ▾ / Profile ▾ chips that show their name until they filter, then the choice ("Ethiopia Guji ▾") in ember; then the list.
 - **Select:** checkboxes appear on the rows (Shift-click ticks a range) and a bar sits over the list: "3 selected", Export ▾ (Roastpilot file, CSV) and Done. Clicking a row ticks it instead of opening it until Done.
-- **The open roast:** one header row: its date and time as the title (with a Stopped badge after it for a roast stopped with Stop roast before drop: an `end` event and no drop), Compare ▾, Make profile ▾ (Step profile, Curve profile) and "⋯" (Export this roast as a Roastpilot file or CSV, then Delete, asked in a dialog). Beside the weights, Bean ▾ links the roast to a bean (stock as [data-model.md](data-model.md#roastpilot-roast-files) says). The roast being roasted shows "Saving as it roasts" instead of the last two.
+- **The open roast:** one header row: its date and time as the title (with Auto (`air`) or Manual (neutral) as a badge after it, and a Stopped badge for a roast stopped with Stop roast before drop: an `end` event and no drop), Compare ▾, Make profile ▾ (Step profile, Curve profile) and "⋯" (Export this roast as a Roastpilot file or CSV, then Delete, asked in a dialog). Beside the weights, Bean ▾ links the roast to a bean (stock as [data-model.md](data-model.md#roastpilot-roast-files) says). The roast being roasted shows "Saving as it roasts" instead of the last two.
 - List of roasts in the shared sidebar, newest first: date and time, total time (charge to drop), first crack time, drop temp; Unfinished when cooling never ended.
 - Open a roast to see its chart, stage times and events; under the chart, a small events table (secondary text): Event · Time · Temp · RoR · Heater · Fan for Charge, Turning point, First crack, Drop and Cool end (or End), with the values read from the saved samples at each event, so older roasts get it too. A dash where there is no value; Compare overlays one other roast, faded, aligned at charge. The chart opens focused on the roast (−0:30 to the cool end, or drop when there is none, + 0:30; to the compared roast's end instead when that is later), with a quiet "Show preheat" toggle above it that widens it to everything recorded; the choice stays while you browse History.
 - Delete asks once ("Delete this roast? · can't be undone"), then the list moves to the next roast.
-- **Milestone 6:** bean, profile, rating and star on each row; filter by bean, profile or favourites; edit weight, rating, star and notes on the open roast; Make step profile and Make curve profile.
+- **Milestone 6:** bean, how it ran ("Auto · Light · Steps", or Manual), rating and star on each row; filter by bean, profile or favourites; edit weight, rating, star and notes on the open roast; Make step profile and Make curve profile.
 - Later: Export CSV.
 
 ## Beans screen
 
 - Bean list: name, origin, process, stock left, low-stock badge.
-- Bean detail: its info, all its roasts with stars, and its best favourite.
+- Bean detail: its info in an "About this bean" card under the stock cards: one tile per field that has a value (a `label` name over its value), as many columns as the card holds (3 at its narrowest, up to 6), so a wide window shows it in one row; Supplier with the order link's site under it (`shop.example`), Notes across the full width; the bean's hints at the card's foot, each after a light-bulb icon, under a rule. Then its best favourite, and all its roasts in a table (design system, RoastTable): Roast (date and time, starred if a favourite) · Ran as ("Auto · Light · Steps" or Manual) · Time · FC · Drop · Green → roasted ("356 → 305 g", or "356 g" before it is weighed) · Loss · Rating, numbers right-aligned in columns, a dash where a roast has none. A roast's date (or anywhere on its row) opens it in History; choosing History in the top bar again opens the newest.
 - Actions: Add bean, Edit, Add stock (with the batch calculator), Adjust stock, Make a profile for this bean, Archive, Roast this bean.
 - List on the left (the shared sidebar), detail on the right; the two scroll separately.
 - **Sidebar:** "Beans ⋯" (Batch calculator, Show archived, Export all, Import a Roastpilot file), the list, then + Add bean under it.
-- **A bean's header:** its name with Low stock and Archived badges; Roast this bean (main) and Add stock; then "⋯" with Adjust stock, Edit, Make a profile, Export this bean and Archive (Bring back when archived).
+- **A bean's header:** its name with Low stock and Archived badges; Roast this bean (main) and Add stock, then Order again (ghost, with a link icon) when the bean has an order link, opening it in the browser (main opens the saved address; the screen only names the bean); then "⋯" with Adjust stock, Edit, Make a profile, Export this bean and Archive (Bring back when archived).
 
 ## Batch calculator
 

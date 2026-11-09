@@ -305,6 +305,41 @@ describe('HistoryScreen', () => {
     expect(await screen.findByText('Stopped')).toBeInTheDocument();
   });
 
+  it('opens the roast another screen asked for, not the newest', async () => {
+    const api = fakeApi({
+      listRoasts: vi.fn(() => Promise.resolve([NEWER, OLDER])),
+      getRoast: vi.fn((id: RoastId) =>
+        Promise.resolve(ok(detail(id === NEWER.id ? NEWER : OLDER))),
+      ),
+    });
+    renderApp(<HistoryScreen onOpenProfile={vi.fn()} openFirst={OLDER.id} />, {}, api);
+    await vi.waitFor(() => {
+      expect(api.getRoast).toHaveBeenCalledWith(OLDER.id);
+    });
+    expect(api.getRoast).not.toHaveBeenCalledWith(NEWER.id);
+  });
+
+  it('says by its title whether a roast ran in Auto or Manual', async () => {
+    const auto = { ...NEWER, profileId: 'light-steps', profileName: 'Light · Steps' };
+    const api = fakeApi({
+      listRoasts: vi.fn(() => Promise.resolve([auto, OLDER])),
+      getRoast: vi.fn((id: RoastId) =>
+        Promise.resolve(ok(id === auto.id ? detail(auto) : detail(OLDER))),
+      ),
+    });
+    renderApp(<HistoryScreen onOpenProfile={vi.fn()} />, {}, api);
+    // The title and its badges share one box in the header row.
+    const header = () => document.querySelector('header h2')!.parentElement!;
+    await screen.findByRole('region', { name: 'Roast curve' });
+    expect(within(header()).getByText('Auto')).toBeInTheDocument();
+    expect(screen.getByText(/Auto · Light · Steps/)).toBeInTheDocument();
+    await userEvent.click(screen.getByText(/Manual/));
+    await vi.waitFor(() => {
+      expect(within(header()).getByText('Manual')).toBeInTheDocument();
+    });
+    expect(within(header()).queryByText('Auto')).toBeNull();
+  });
+
   it('has no Stopped badge on a roast that dropped', async () => {
     const api = fakeApi({
       listRoasts: vi.fn(() => Promise.resolve([NEWER])),

@@ -7,6 +7,7 @@ import beans0003 from './migrations/0003_beans.sql?raw';
 import roastImported0004 from './migrations/0004_roast_imported.sql?raw';
 import coolerHelpsDrum0005 from './migrations/0005_cooler_helps_drum.sql?raw';
 import drumSpeed0006 from './migrations/0006_drum_speed.sql?raw';
+import beanLink0007 from './migrations/0007_bean_link.sql?raw';
 
 interface Migration {
   tag: string;
@@ -25,6 +26,7 @@ export const MIGRATIONS: readonly Migration[] = [
   { tag: '0004_roast_imported', sql: roastImported0004 },
   { tag: '0005_cooler_helps_drum', sql: coolerHelpsDrum0005 },
   { tag: '0006_drum_speed', sql: drumSpeed0006 },
+  { tag: '0007_bean_link', sql: beanLink0007 },
 ];
 
 /** How many migrations the database has had (`PRAGMA user_version`); 0 for a new one. */

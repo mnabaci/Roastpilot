@@ -66,7 +66,9 @@ export const lossHint = (lossPct: number | undefined): string | undefined =>
     : undefined;
 
 /** Weight loss %, once both weights are in and make sense. */
-export function weightLossPct(result: RoastResult | undefined): number | undefined {
+export function weightLossPct(
+  result: Pick<RoastResult, 'batchG' | 'roastedG'> | undefined,
+): number | undefined {
   const batchG = result?.batchG ?? null;
   const roastedG = result?.roastedG ?? null;
   if (batchG === null || roastedG === null || roastedG > batchG) return undefined;

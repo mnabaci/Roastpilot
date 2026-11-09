@@ -14,6 +14,7 @@ describe('bean draft', () => {
         decaf: false,
         variety: null,
         supplier: null,
+        link: null,
         notes: null,
         altitudeM: null,
         densityGL: null,
@@ -37,6 +38,16 @@ describe('bean draft', () => {
       ok: false,
       error: { densityGL: 'Enter a number', moisturePct: 'At most 100' },
     });
+  });
+
+  it('takes a web address as the order link, and refuses anything else', () => {
+    const shop = fromBeanDraft({ ...draft, link: ' https://shop.example/african-moon ' });
+    expect(shop.ok && shop.value.link).toBe('https://shop.example/african-moon');
+    expect(fromBeanDraft({ ...draft, link: 'shop.example' })).toEqual({
+      ok: false,
+      error: { link: 'Enter a web address, starting with https://' },
+    });
+    expect(fromBeanDraft({ ...draft, link: 'javascript:alert(1)' }).ok).toBe(false);
   });
 
   it('round-trips a saved bean', () => {

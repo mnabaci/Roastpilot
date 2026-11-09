@@ -7,6 +7,16 @@ export const BeanIdSchema = z.number().int().positive();
 
 const positive = (message = 'Must be above 0') => z.number().positive(message);
 
+/** A web address the app may open in the browser: http or https only. */
+const WebLinkSchema = z
+  .string()
+  .trim()
+  .max(2000)
+  .pipe(z.url({ protocol: /^https?$/, error: 'Enter a web address, starting with https://' }));
+
+/** Whether `text` is a link the app may open (WebLinkSchema). */
+export const isWebLink = (text: string): boolean => WebLinkSchema.safeParse(text).success;
+
 /** What you enter about a bean (docs/spec/beans-favourites-ghost.md). */
 export const BeanFieldsSchema = z.object({
   name: z.string().trim().min(1, 'Enter a name').max(120),
@@ -19,6 +29,8 @@ export const BeanFieldsSchema = z.object({
   screen: positive().nullable(),
   decaf: z.boolean(),
   supplier: z.string().trim().max(120).nullable(),
+  /** Where to order it again. Missing from files and beans saved before it: none. */
+  link: WebLinkSchema.nullable().default(null),
   lowStockG: z.number().min(0, 'At least 0'),
   notes: z.string().max(4000).nullable(),
 });
@@ -62,6 +74,15 @@ export const UpdateBeanSchema = z.object({
 });
 
 export const SetArchivedSchema = z.object({ id: BeanIdSchema, archived: z.boolean() });
+
+/** Why a bean's order link didn't open. */
+export const OpenBeanLinkErrorSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('bean-not-found'), id: BeanIdSchema }),
+  z.object({ kind: z.literal('no-link'), id: BeanIdSchema }),
+  z.object({ kind: z.literal('storage-failed'), message: z.string() }),
+  z.object({ kind: z.literal('open-failed') }),
+]);
+export type OpenBeanLinkError = z.infer<typeof OpenBeanLinkErrorSchema>;
 
 /** What the next roast is of, set before Preheat and read at charge. Every part is optional. */
 export const RoastSetupSchema = z.object({

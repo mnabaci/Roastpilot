@@ -1,6 +1,6 @@
-import { beanHints } from '@roastpilot/core';
 import type { Bean, RoastSummary } from '@roastpilot/shared';
 import { Badge, Button, Menu, formatNumber, StatCard } from '@roastpilot/ui';
+import { ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 import { describePlan } from './batch-format';
 import { BeanEditor } from './BeanEditor';
@@ -19,12 +19,14 @@ export function BeanDetail({
   roasts,
   onRoast,
   onOpenProfile,
+  onOpenRoast,
 }: {
   bean: Bean;
   beans: readonly Bean[];
   roasts: readonly RoastSummary[];
   onRoast: () => void;
   onOpenProfile: (id: string) => void;
+  onOpenRoast?: ((id: number) => void) | undefined;
 }) {
   const [panel, setPanel] = useState<Panel>('none');
   const actions = useBeanActions({ bean, beans, roasts, onRoast, onOpenProfile });
@@ -61,6 +63,11 @@ export function BeanDetail({
           >
             Add stock
           </Button>
+          {bean.link === null ? null : (
+            <Button variant="ghost" size="sm" icon={<ExternalLink />} onClick={actions.orderAgain}>
+              Order again
+            </Button>
+          )}
           <Menu
             label={`More for ${bean.name}`}
             items={[
@@ -115,14 +122,7 @@ export function BeanDetail({
       {panel === 'add-stock' ? <AddStockForm bean={bean} onDone={close} /> : null}
       {panel === 'adjust-stock' ? <AdjustStockForm bean={bean} onDone={close} /> : null}
       <BeanFacts bean={bean} />
-      <div className="flex flex-col gap-1">
-        {beanHints(bean).map((hint) => (
-          <p key={hint} className="text-label text-ink-muted">
-            {hint}
-          </p>
-        ))}
-      </div>
-      <BeanRoasts bean={bean} roasts={roasts} />
+      <BeanRoasts bean={bean} roasts={roasts} onOpen={onOpenRoast} />
     </section>
   );
 }

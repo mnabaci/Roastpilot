@@ -3,6 +3,7 @@ import {
   AdjustStockSchema,
   AutoProfileSchema,
   BeanFieldsSchema,
+  BeanIdSchema,
   MakeBeanProfileRequestSchema,
   MakeProfileRequestSchema,
   RoastResultSchema,
@@ -60,6 +61,7 @@ export function createIpcHandlers({
   beans,
   makeProfile,
   makeBeanProfile,
+  openBeanLink,
   nowMs,
   snapshot,
   listPorts,
@@ -146,6 +148,7 @@ export function createIpcHandlers({
     [IPC_CHANNELS.setBeanArchived]: handler((payload) =>
       beans.setArchived(SetArchivedSchema.parse(payload)),
     ),
+    [IPC_CHANNELS.openBeanLink]: handler((payload) => openBeanLink(BeanIdSchema.parse(payload))),
     [IPC_CHANNELS.addStock]: handler((payload) => beans.addStock(AddStockSchema.parse(payload))),
     [IPC_CHANNELS.adjustStock]: handler((payload) =>
       beans.adjustStock(AdjustStockSchema.parse(payload)),

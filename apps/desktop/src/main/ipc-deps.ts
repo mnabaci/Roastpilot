@@ -1,5 +1,6 @@
 import type { AutoPilot, ManualRoast, RoasterDriver, RoasterSession } from '@roastpilot/core';
 import type {
+  BeanId,
   ConnectTarget,
   LogDay,
   LogDayRead,
@@ -7,6 +8,7 @@ import type {
   MakeBeanProfileRequest,
   MakeProfileError,
   MakeProfileRequest,
+  OpenBeanLinkError,
   ProfileEntry,
   Result,
   SerialPortInfo,
@@ -53,6 +55,7 @@ export interface IpcDeps {
   makeBeanProfile: (
     request: MakeBeanProfileRequest,
   ) => Promise<Result<ProfileEntry, MakeBeanProfileError>>;
+  openBeanLink: (id: BeanId) => Promise<Result<void, OpenBeanLinkError>>;
   /** The clock's now, for Charge soon. */
   nowMs: () => number;
   snapshot: () => Snapshot;

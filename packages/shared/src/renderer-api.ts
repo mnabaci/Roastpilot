@@ -5,6 +5,7 @@ import type {
   Bean,
   BeanFields,
   BeanId,
+  OpenBeanLinkError,
   RoastSetup,
   UpdateBean,
 } from './bean';
@@ -184,6 +185,8 @@ export interface BeansApi {
   addBean(fields: BeanFields): Promise<Result<BeanId, StorageError>>;
   updateBean(update: UpdateBean): Promise<Result<void, StorageError>>;
   setBeanArchived(request: { id: BeanId; archived: boolean }): Promise<Result<void, StorageError>>;
+  /** Opens the bean's saved order link in the browser; main reads the link, never the caller. */
+  openBeanLink(id: BeanId): Promise<Result<void, OpenBeanLinkError>>;
   addStock(stock: AddStock): Promise<Result<void, StorageError>>;
   adjustStock(stock: AdjustStock): Promise<Result<void, StorageError>>;
   onBeans(listener: (beans: Bean[]) => void): Unsubscribe;
