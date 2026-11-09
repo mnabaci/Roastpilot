@@ -5,7 +5,8 @@ description: Plan a new Roastpilot feature spec-first. Use when asked to add or 
 
 # Plan a feature
 
-1. Restate the feature in one sentence and list what the user will see or do.
+1. Restate the feature in one sentence and list what the user will see or do. Run `challenge` on it
+   first; a concern is settled with the user before planning.
 2. Read the affected `docs/spec/*.md` files and the root `AGENTS.md`.
 3. Ask the user only about choices that change behaviour; propose a recommended option for each.
 4. Update the spec: edit the right file(s) in `docs/spec/`, keep the style (tables, short bullets, no walls of text). Add a new file only for a new area, and link it from `docs/spec/README.md`.

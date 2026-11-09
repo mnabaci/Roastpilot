@@ -1,6 +1,6 @@
 ---
 name: release
-description: Cut a Roastpilot release: version bump, changelog, tag; GitHub Actions builds and publishes the macOS DMG and Windows installer. Use when the user asks to release.
+description: Cut a Roastpilot release: pick the version, changelog, tag; GitHub Actions builds and publishes the macOS DMG and Windows installer. Use when the user asks to release or what the next version would be.
 ---
 
 # Release
@@ -9,7 +9,13 @@ Releases are built by GitHub Actions from a tag, never on a laptop
 ([install-and-update.md](../../../docs/spec/install-and-update.md), ADR 0017).
 
 1. Make sure `main` is green in CI and up to date.
-2. Pick the version (semver) from the conventional commits since the last tag.
+2. Pick the version by the rules in
+   [Version numbers](../../../docs/spec/install-and-update.md#version-numbers):
+   - List every PR merged since the last tag (`git log --first-parent --oneline <last tag>..main`),
+     each with its bump (minor / patch / none) and a one-line reason.
+   - Propose the largest bump. Never pick a major yourself: if the release looks like one (a big
+     refactor, data a previous version can't read, a milestone), say why and ask.
+   - Show the list and the version and wait for the user's OK (AskUserQuestion) before step 3.
 3. On a branch, update `CHANGELOG.md`: move the release's lines from `[Unreleased]` into
    `## [X.Y.Z] - YYYY-MM-DD` (Added / Changed / Fixed, written for the user, one line each). This
    section becomes the GitHub release notes, word for word.

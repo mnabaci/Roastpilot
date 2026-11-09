@@ -16,6 +16,19 @@ How Roastpilot gets onto a computer and stays current, without ever touching a r
 - The release token is `GITHUB_TOKEN` with `contents: write`, only in the release workflow's publish job, which checks out and installs nothing; the build jobs, which run install scripts, are read-only. The workflow runs on tags (never on fork PRs) and pins every action to a commit.
 - No Apple Developer ID yet: the macOS app is ad-hoc signed (`identity: '-'`, no hardened runtime), because Apple silicon refuses an app with no signature at all as "damaged". macOS then asks once (System Settings → Privacy & Security → Open Anyway); Windows SmartScreen asks once (More info → Run anyway). The README says how.
 
+### Version numbers
+
+`major.minor.patch`, picked at release time from what the release brings (`release` skill). The largest bump wins.
+
+| Bump          | When                                                                                                                                                                   | Examples                                                    |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Major `x.0.0` | Only when the maintainer says so. The release skill may suggest it (a big refactor, data a previous version can't read, a milestone) but always asks                   | 1.0.0 once Auto roasts well on real roasters                |
+| Minor `0.x.0` | New or changed in how a roast runs, is planned, recorded or judged: Auto and the controller, the coach, safety, profiles and steps, roaster support, markers, analysis | Move a step, Compare's table, Auto or Manual on every roast |
+| Patch `0.0.x` | Everything else: settings, the beans library, export and import, looks and polish, bug fixes                                                                           | °F alone, a bean's order link, a fix to Auto's stall guard  |
+
+- **A fix is a patch,** in Auto too, when it makes something work as promised. A fix that changes how Auto or the coach behaves is a minor.
+- **Nothing for users** (docs, CI, refactors that change nothing users see) is no release on its own.
+
 ## Updates
 
 |                   | Windows                                                                  | macOS (ad-hoc signed)                                                             |

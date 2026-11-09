@@ -4,6 +4,26 @@ A simple desktop app for macOS and Windows (Electron) that roasts automatically 
 pick Light, Medium or Dark, press Start, and the app runs that profile's heat and fan steps,
 correcting drift as it goes, then drops and cools on its own. It replaces Artisan for day-to-day roasting.
 
+## Who it's for
+
+| User                    | Hires Roastpilot to                                                                                             |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Home roaster            | Get good, repeatable roasts on their own machine without watching every second; learn by doing in Manual        |
+| Small roasting business | Get the same coffee batch after batch, on its own roasters, from any staff member; keep a record of every batch |
+| First-time user         | Roast safely within minutes: connect, pick bean and profile, Start                                              |
+
+## What it isn't
+
+- **Not Artisan with every knob:** good defaults, few settings.
+- **Not a dashboard mid-roast:** only what helps the next decision.
+- **Not tied to one roaster:** the Skywalker first, everything per roaster record.
+- **Not a shop or ERP:** stock and batches serve roasting; no orders, invoices or customers.
+- **Not a textbook:** the coach speaks in one line.
+
+Every request that changes what users see or do is checked against these first (`challenge` skill).
+
+## Decisions
+
 | Topic                 | Decision                                                                                                                                                                                      |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Automation            | Full auto, plus a Manual mode with a live coach                                                                                                                                               |

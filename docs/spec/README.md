@@ -5,7 +5,7 @@ The source of truth for what Roastpilot does and how it is built. Change the spe
 
 | File                                                   | Covers                                                           |
 | ------------------------------------------------------ | ---------------------------------------------------------------- |
-| [overview.md](overview.md)                             | Goal, scope and the decisions made so far                        |
+| [overview.md](overview.md)                             | Goal, who it's for, what it isn't, scope and decisions           |
 | [principles.md](principles.md)                         | UX rules, code rules, design patterns                            |
 | [extensibility.md](extensibility.md)                   | Extension points, generic data, where to stop                    |
 | [errors-and-logging.md](errors-and-logging.md)         | Error kinds, how each is handled, what and where we log          |
