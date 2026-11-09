@@ -6,7 +6,16 @@ import { roastTitle } from '../history/history-format';
 import { beanRoastRows } from './bean-roast-rows';
 
 /** A bean's roasts, its best favourite named (docs/spec/beans-favourites-ghost.md, Favourites). */
-export function BeanRoasts({ bean, roasts }: { bean: Bean; roasts: readonly RoastSummary[] }) {
+export function BeanRoasts({
+  bean,
+  roasts,
+  onOpen,
+}: {
+  bean: Bean;
+  roasts: readonly RoastSummary[];
+  /** Opens a roast in History. */
+  onOpen?: ((id: number) => void) | undefined;
+}) {
   const own = roasts.filter((r) => r.beanId === bean.id);
   const best = bestFavourite(own);
   const unit = useTemperatureUnit();
@@ -16,7 +25,11 @@ export function BeanRoasts({ bean, roasts }: { bean: Bean; roasts: readonly Roas
         {best ? `Best favourite: ${roastTitle(best.startedAt)}` : 'No favourite yet'}
       </h3>
       {own.length > 0 ? (
-        <RoastTable label={`Roasts of ${bean.name}`} rows={beanRoastRows(own, unit)} />
+        <RoastTable
+          label={`Roasts of ${bean.name}`}
+          rows={beanRoastRows(own, unit)}
+          onOpen={onOpen}
+        />
       ) : (
         <p className="text-label text-ink-muted">No roasts of this bean yet.</p>
       )}

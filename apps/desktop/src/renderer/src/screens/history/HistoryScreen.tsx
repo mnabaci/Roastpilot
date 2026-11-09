@@ -24,7 +24,14 @@ import { useRoastList } from './use-roast-list';
 import { useSavedRoast } from './use-saved-roast';
 
 /** Saved roasts: pick one, see its numbers and chart, compare with another, delete (docs/spec/ui.md). */
-export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) => void }) {
+export function HistoryScreen({
+  onOpenProfile,
+  openFirst,
+}: {
+  onOpenProfile: (id: string) => void;
+  /** The roast to open, from another screen (a bean's roasts); else the newest. */
+  openFirst?: RoastId | undefined;
+}) {
   const { api } = useDeps();
   const run = useRun();
   const roasts = useRoastList();
@@ -32,7 +39,7 @@ export function HistoryScreen({ onOpenProfile }: { onOpenProfile: (id: string) =
   const smoothingS = useSettings((s) => s.settings.chartSmoothingS);
   const unit = useTemperatureUnit();
   const beans = useBeans((s) => s.beans);
-  const [picked, setPicked] = useState<RoastId>();
+  const [picked, setPicked] = useState<RoastId | undefined>(openFirst);
   const [compareId, setCompareId] = useState<RoastId>();
   const [deleteError, setDeleteError] = useState<string>();
   const [filter, setFilter] = useState(NO_FILTER);

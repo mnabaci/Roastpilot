@@ -66,6 +66,7 @@ Inter, one family, with tabular numerals (`font-variant-numeric: tabular-nums`) 
 - In the steps table a field never clips its value: each has a minimum width (times `18`, RoR `11`, others `13` spacing units); below 1280px the gap between fields halves (8px to 4px) and a header may wrap ("RoR / min") so the table fits a 960px window.
 - After a roast, its weights, rating and notes sit in a card over the chart that says Saved as each lands; Done hides it.
 - Tables sit inside a card with `border` rules between rows and no outer border.
+- Facts (a record's fields) sit in a card as tiles: a `label` name in `ink-muted` over a `body` value, in a grid whose columns follow the card's width (container queries: 3, then 4, then 6), so a wide window shows them in one row instead of a tall list. Hints go at the card's foot under a `border` rule, `label` `ink-muted` after a Lucide light-bulb icon.
 - List-and-detail screens (History, Beans, Profiles, Roasters, Settings) use SidebarLayout: a `sidebar`-wide (256px) column with the title and a NavList, the open item on the right; the two scroll separately.
 - Top bar: the mark, the tabs, Emergency stop. Connection is a dot on the Roasters tab: `ink-muted` not connected, `air` connected, `heat` connecting or reconnecting.
 - Scrollbars are thin: a `border-strong` thumb on a transparent track, in both themes; never the light system gutter.

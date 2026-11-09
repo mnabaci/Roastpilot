@@ -1,4 +1,4 @@
-import { Star } from 'lucide-react';
+import { ChevronRight, Star } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export interface RoastTableRow {
@@ -32,16 +32,19 @@ const TITLES: Record<(typeof NUMBERS)[number], string> = {
 
 /**
  * Saved roasts side by side, one row each, the numbers in columns that line up (design system,
- * RoastTable). For reading and comparing, so rows are not buttons.
+ * RoastTable). With `onOpen`, each roast's date is a button that opens it, and so is its row.
  */
 export function RoastTable({
   label,
   rows,
+  onOpen,
   className,
 }: {
   /** Accessible name of the table. */
   label: string;
   rows: readonly RoastTableRow[];
+  /** Opens a roast: the date is its button, and a click anywhere on the row does the same. */
+  onOpen?: ((id: number) => void) | undefined;
   className?: string;
 }) {
   return (
@@ -65,14 +68,48 @@ export function RoastTable({
                 {TITLES[key]}
               </th>
             ))}
+            {onOpen ? (
+              <th scope="col" className="pb-2 pl-3">
+                <span className="sr-only">Open</span>
+              </th>
+            ) : null}
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.id} className="border-t border-border text-ink">
-              <th scope="row" className="py-2.5 pr-4 text-left font-semibold whitespace-nowrap">
+            <tr
+              key={row.id}
+              className={cn(
+                'border-t border-border text-ink',
+                // A 44px target once rows open a roast.
+                onOpen && 'h-control-sm cursor-pointer hover:bg-surface-hover',
+              )}
+              // The row is the mouse's way in; the date's button is the keyboard's.
+              onClick={
+                onOpen
+                  ? () => {
+                      onOpen(row.id);
+                    }
+                  : undefined
+              }
+            >
+              <th scope="row" className="py-3 pr-4 text-left font-semibold whitespace-nowrap">
                 <span className="inline-flex items-center gap-1.5">
-                  {row.title}
+                  {onOpen ? (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        // The row opens it too: once is enough.
+                        event.stopPropagation();
+                        onOpen(row.id);
+                      }}
+                      className="rounded-sm text-left font-semibold underline decoration-border-strong underline-offset-4 hover:decoration-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                    >
+                      {row.title}
+                    </button>
+                  ) : (
+                    row.title
+                  )}
                   {row.favourite ? (
                     <Star
                       role="img"
@@ -83,14 +120,19 @@ export function RoastTable({
                   ) : null}
                 </span>
               </th>
-              <td className="max-w-0 truncate py-2.5 text-ink-muted" title={row.ran}>
+              <td className="max-w-0 truncate py-3 text-ink-muted" title={row.ran}>
                 {row.ran}
               </td>
               {NUMBERS.map((key) => (
-                <td key={key} className="py-2.5 pl-4 text-right whitespace-nowrap">
+                <td key={key} className="py-3 pl-4 text-right whitespace-nowrap">
                   {row[key] ?? '–'}
                 </td>
               ))}
+              {onOpen ? (
+                <td className="py-3 pl-3 text-ink-muted">
+                  <ChevronRight aria-hidden="true" className="size-4" />
+                </td>
+              ) : null}
             </tr>
           ))}
         </tbody>

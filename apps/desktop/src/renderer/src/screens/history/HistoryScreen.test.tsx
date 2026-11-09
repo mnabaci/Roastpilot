@@ -305,6 +305,20 @@ describe('HistoryScreen', () => {
     expect(await screen.findByText('Stopped')).toBeInTheDocument();
   });
 
+  it('opens the roast another screen asked for, not the newest', async () => {
+    const api = fakeApi({
+      listRoasts: vi.fn(() => Promise.resolve([NEWER, OLDER])),
+      getRoast: vi.fn((id: RoastId) =>
+        Promise.resolve(ok(detail(id === NEWER.id ? NEWER : OLDER))),
+      ),
+    });
+    renderApp(<HistoryScreen onOpenProfile={vi.fn()} openFirst={OLDER.id} />, {}, api);
+    await vi.waitFor(() => {
+      expect(api.getRoast).toHaveBeenCalledWith(OLDER.id);
+    });
+    expect(api.getRoast).not.toHaveBeenCalledWith(NEWER.id);
+  });
+
   it('says by its title whether a roast ran in Auto or Manual', async () => {
     const auto = { ...NEWER, profileId: 'light-steps', profileName: 'Light · Steps' };
     const api = fakeApi({

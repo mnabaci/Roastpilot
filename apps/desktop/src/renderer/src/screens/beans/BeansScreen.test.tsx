@@ -238,9 +238,28 @@ describe('BeansScreen', () => {
     const user = userEvent.setup();
     const api = fakeApi();
     show(api, [{ ...BEAN, link: 'https://www.shop.example/yirgacheffe' }]);
-    expect(screen.getByText('shop.example')).not.toHaveClass('first-letter:uppercase');
+    // Under the supplier in the bean's card, as written.
+    const about = within(screen.getByRole('region', { name: 'About this bean' }));
+    expect(about.getByText('shop.example')).not.toHaveClass('first-letter:uppercase');
     await user.click(screen.getByRole('button', { name: 'Order again' }));
     expect(api.openBeanLink).toHaveBeenCalledWith(BEAN.id);
+  });
+
+  it("sets out the bean's facts as tiles, its order link's site under the supplier, and its hints", () => {
+    show(fakeApi(), [
+      {
+        ...BEAN,
+        process: 'natural',
+        supplier: 'Green Coffee Collective',
+        link: 'https://www.greencoffee.example/african-moon',
+      },
+    ]);
+    const about = within(screen.getByRole('region', { name: 'About this bean' }));
+    const supplier = about.getByText('Supplier').parentElement!;
+    expect(supplier.textContent).toBe('SupplierGreen Coffee Collectivegreencoffee.example');
+    expect(about.getAllByRole('listitem').some((li) => li.textContent.startsWith('Natural'))).toBe(
+      true,
+    );
   });
 
   it('has no Order again for a bean without a link', () => {

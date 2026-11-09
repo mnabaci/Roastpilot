@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 import { RoastTable } from './RoastTable';
 
 const ROW = {
@@ -47,5 +48,24 @@ describe('RoastTable', () => {
     render(<RoastTable label="Roasts" rows={[{ ...ROW, favourite: true }]} />);
     const roast = screen.getByRole('rowheader');
     expect(within(roast).getByRole('img', { name: 'Favourite' })).toBeInTheDocument();
+  });
+});
+
+describe('RoastTable with onOpen', () => {
+  it("opens a roast from its date's button, or from anywhere on its row, once", async () => {
+    const onOpen = vi.fn();
+    render(<RoastTable label="Roasts" rows={[ROW, { ...ROW, id: 16 }]} onOpen={onOpen} />);
+    const [first, second] = screen.getAllByRole('button', { name: 'Sun 8 Nov · 16:45' });
+    await userEvent.click(first!);
+    expect(onOpen).toHaveBeenCalledExactlyOnceWith(17);
+    await userEvent.click(within(screen.getAllByRole('row')[2]!).getByText('356 → 305 g'));
+    expect(onOpen).toHaveBeenLastCalledWith(16);
+    expect(onOpen).toHaveBeenCalledTimes(2);
+    expect(second).toBeDefined();
+  });
+
+  it('has no buttons without onOpen', () => {
+    render(<RoastTable label="Roasts" rows={[ROW]} />);
+    expect(screen.queryByRole('button')).toBeNull();
   });
 });
