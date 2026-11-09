@@ -37,3 +37,22 @@ switching roasters re-plans it.
 - Skipping the roasted weight is fine: the roast shows no weight loss and roasted stock doesn't change.
 - A bean's average weight loss comes from its roasts with a roasted weight; 15% until it has one.
 - A batch bigger than the green stock left is allowed, with a one-line warning, as your count may be off; stock stops at 0.
+- Clear after a finished roast can give its batch back to the green stock: it goes back on top of what is there, never in place of it.
+
+## Stock history
+
+Each bean has its own, whichever roaster or profile roasted it: how much and how often it is bought and used.
+
+- **What counts:** purchases (Add stock: grams and the day bought), roasts made here (the batch off green at Start; an imported roast never touched stock, so it isn't here), and adjustments: Adjust stock keeps what it changed ("Counted"), Take out stock what you took and why ("Taken out · …"), and a batch given back at Clear is "Returned at Clear". An adjustment that changes nothing isn't kept.
+- **Green after each:** worked back from today's green stock, so today's is always right; when older records are missing (a deleted roast, stock set before adjustments were kept), the oldest steps are what's off. Never below 0.
+- **Card:** "Stock history" on the bean page, under the stock cards, folded by default with one line: "Bought twice · 360 g a week" (or "3 roasts", or "Nothing yet"). Open, it shows:
+  - **Facts:** Bought (times · grams), Roasted (roasts · green grams), Pace (green a week from the first roast to today, once there are two weeks of roasting), Lasts (the green left at that pace: "About 3 weeks", "Under a week", months past 12 weeks). A dash where there's nothing yet.
+  - **Chart:** the green stock as steps from the first movement to today, with the low-stock line (design system: StockChart). Hover shows each movement.
+  - **Movements:** Date · What · Green (+/− grams) · Green after, newest first; six, then Show all.
+
+## Take out stock
+
+Green beans that leave the bag for any reason but a roast: given away, spilled, a sample for a friend. On the bean page's ⋯ menu, above Adjust stock (greyed out with no green left).
+
+- **Form:** Weight (g) and Why (optional, up to 120 characters, "Gave some to a friend"), then "Then 1,384 g green". More than the green stock is refused under the field: "Only 1,784 g green left". The primary reads "Take out 400 g".
+- **Kept:** as an adjustment with reason `taken` and your words; Stock history shows it as "Taken out · Gave some to a friend". Roasted stock doesn't move.

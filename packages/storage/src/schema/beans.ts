@@ -31,3 +31,17 @@ export const beanPurchases = sqliteTable('bean_purchases', {
   purchasedAt: text('purchased_at').notNull(),
   grams: real('grams').notNull(),
 });
+
+/** What Adjust stock, Take out stock or a batch given back at Clear changed: differences in grams. */
+export const beanStockAdjustments = sqliteTable('bean_stock_adjustments', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  beanId: integer('bean_id')
+    .notNull()
+    .references(() => beans.id, { onDelete: 'cascade' }),
+  adjustedAt: text('adjusted_at').notNull(),
+  greenG: real('green_g').notNull(),
+  roastedG: real('roasted_g').notNull(),
+  reason: text('reason', { enum: ['count', 'returned', 'taken'] }).notNull(),
+  /** Why stock was taken out, in your words: "Gave 200 g to Sam". */
+  note: text('note'),
+});

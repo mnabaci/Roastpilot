@@ -81,6 +81,7 @@ export const IPC_CHANNELS = {
   openBeanLink: 'beans:open-link',
   addStock: 'beans:add-stock',
   adjustStock: 'beans:adjust-stock',
+  stockHistory: 'beans:stock-history',
   beansChanged: 'beans:changed',
   makeBeanProfile: 'beans:make-profile',
   setRoastSetup: 'roast:set-setup',

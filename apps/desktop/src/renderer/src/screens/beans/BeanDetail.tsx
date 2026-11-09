@@ -8,11 +8,12 @@ import { usePlanContext } from './use-plan-context';
 import { BeanEditor } from './BeanEditor';
 import { BeanFacts } from './BeanFacts';
 import { BeanRoasts } from './BeanRoasts';
-import { AddStockForm, AdjustStockForm } from './StockForms';
+import { StockHistory } from './StockHistory';
+import { AddStockForm, AdjustStockForm, TakeOutStockForm } from './StockForms';
 import { useLibraryFiles } from '../../features/use-library-files';
 import { useBeanActions } from './use-bean-actions';
 
-type Panel = 'none' | 'edit' | 'add-stock' | 'adjust-stock';
+type Panel = 'none' | 'edit' | 'add-stock' | 'take-out-stock' | 'adjust-stock';
 
 /** One bean: its record, stock, roasts and what you can do with it (docs/spec/ui.md, Beans screen). */
 export function BeanDetail({
@@ -84,6 +85,13 @@ export function BeanDetail({
             label={`More for ${bean.name}`}
             items={[
               {
+                label: 'Take out stock',
+                disabled: bean.greenG <= 0,
+                onSelect: () => {
+                  setPanel('take-out-stock');
+                },
+              },
+              {
                 label: 'Adjust stock',
                 onSelect: () => {
                   setPanel('adjust-stock');
@@ -131,7 +139,9 @@ export function BeanDetail({
         </p>
       ) : null}
       {panel === 'add-stock' ? <AddStockForm bean={bean} onDone={close} /> : null}
+      {panel === 'take-out-stock' ? <TakeOutStockForm bean={bean} onDone={close} /> : null}
       {panel === 'adjust-stock' ? <AdjustStockForm bean={bean} onDone={close} /> : null}
+      <StockHistory bean={bean} />
       <BeanFacts bean={bean} />
       <BeanRoasts bean={bean} roasts={roasts} onOpen={onOpenRoast} />
     </section>

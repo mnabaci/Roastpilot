@@ -16,6 +16,7 @@ function setup(repository: Partial<BeanRepository> = {}) {
     setArchived: () => Promise.resolve(ok(undefined)),
     addStock: () => Promise.resolve(ok(undefined)),
     adjustStock: () => Promise.resolve(ok(undefined)),
+    stockHistory: () => Promise.resolve(ok([])),
     ...repository,
   };
   return { onChange, beans: new BeanService({ repository: fake, onChange, logger: silentLogger }) };

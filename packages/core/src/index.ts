@@ -86,6 +86,12 @@ export {
   type BatchSizes,
 } from './beans/batch-plans';
 export { beanHints } from './beans/bean-hints';
+export {
+  stockSummary,
+  stockTimeline,
+  type StockStep,
+  type StockSummary,
+} from './beans/stock-history';
 export type { BeanRepository } from './beans/bean-repository';
 export {
   bestFavourite,

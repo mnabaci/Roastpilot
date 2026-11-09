@@ -102,6 +102,31 @@ describe('BeansScreen', () => {
     });
   });
 
+  it('takes green out of stock with why, never more than there is', async () => {
+    const user = userEvent.setup();
+    const { api } = show();
+    await user.click(screen.getByRole('button', { name: `More for ${BEAN.name}` }));
+    await user.click(screen.getByRole('menuitem', { name: 'Take out stock' }));
+    const form = within(screen.getByRole('region', { name: 'Take out stock' }));
+    await user.type(form.getByLabelText('Weight'), '400');
+    expect(form.getByText('Only 300 g green left')).toBeInTheDocument();
+    expect(form.getByRole('button', { name: 'Take out 400 g' })).toBeDisabled();
+    await user.clear(form.getByLabelText('Weight'));
+    await user.type(form.getByLabelText('Weight'), '50');
+    await user.type(form.getByLabelText('Why'), ' Gave some to Sam ');
+    expect(form.getByText('Then 250 g green')).toBeInTheDocument();
+    await user.click(form.getByRole('button', { name: 'Take out 50 g' }));
+    await waitFor(() => {
+      expect(api.adjustStock).toHaveBeenCalledWith({
+        beanId: 1,
+        greenG: 250,
+        roastedG: 100,
+        reason: 'taken',
+        note: 'Gave some to Sam',
+      });
+    });
+  });
+
   it('Roast this bean sets up the next roast from its plan, then opens Roast', async () => {
     const user = userEvent.setup();
     const { api, onRoast, stores } = show();

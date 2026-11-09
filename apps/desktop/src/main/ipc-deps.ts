@@ -49,7 +49,14 @@ export interface IpcDeps {
   >;
   beans: Pick<
     BeanService,
-    'list' | 'add' | 'update' | 'setArchived' | 'addStock' | 'adjustStock' | 'setSetup'
+    | 'list'
+    | 'add'
+    | 'update'
+    | 'setArchived'
+    | 'addStock'
+    | 'adjustStock'
+    | 'stockHistory'
+    | 'setSetup'
   >;
   makeProfile: (request: MakeProfileRequest) => Promise<Result<ProfileEntry, MakeProfileError>>;
   makeBeanProfile: (

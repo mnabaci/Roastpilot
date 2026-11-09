@@ -142,3 +142,81 @@ export function AdjustStockForm({ bean, onDone }: { bean: Bean; onDone: () => vo
     </section>
   );
 }
+
+/**
+ * Green beans out of stock for any reason but a roast: given away, spilled, a sample. Kept in the
+ * bean's stock history with your words (docs/spec/batch-and-stock.md, Stock history).
+ */
+export function TakeOutStockForm({ bean, onDone }: { bean: Bean; onDone: () => void }) {
+  const { api } = useDeps();
+  const run = useRun();
+  const [weight, setWeight] = useState('');
+  const [why, setWhy] = useState('');
+  const [problem, setProblem] = useState<string>();
+  const grams = Number(weight);
+  const tooMuch = grams > bean.greenG;
+  const valid = grams > 0 && !tooMuch;
+  return (
+    <section aria-label="Take out stock" className="flex flex-col gap-3">
+      <h3 className="text-heading">Take out stock</h3>
+      <div className="flex flex-wrap items-start gap-3">
+        <NumberField
+          label="Weight"
+          unit="g"
+          value={weight}
+          onChange={setWeight}
+          invalid={tooMuch}
+          hint={tooMuch ? `Only ${formatGrams(bean.greenG)} green left` : undefined}
+          className="w-40"
+        />
+        <TextField
+          label="Why"
+          value={why}
+          onChange={setWhy}
+          placeholder="Gave some to a friend"
+          maxLength={120}
+          className="w-72"
+        />
+      </div>
+      {valid ? (
+        <p className="text-label text-ink-muted tabular-nums" aria-live="polite">
+          Then {formatGrams(bean.greenG - grams)} green
+        </p>
+      ) : null}
+      {problem ? (
+        <p role="alert" className="text-label text-critical-text">
+          {problem}
+        </p>
+      ) : null}
+      <div className="flex justify-end gap-2">
+        <Button size="sm" onClick={onDone}>
+          Cancel
+        </Button>
+        <Button
+          size="sm"
+          variant="primary"
+          disabled={!valid}
+          onClick={() => {
+            run(
+              'beans.take-out-stock-failed',
+              async () => {
+                const taken = await api.adjustStock({
+                  beanId: bean.id,
+                  greenG: bean.greenG - grams,
+                  roastedG: bean.roastedG,
+                  reason: 'taken',
+                  note: why.trim() === '' ? null : why.trim(),
+                });
+                if (taken.ok) onDone();
+                else setProblem(FAILED);
+              },
+              { failed: "Couldn't take out the stock · try again" },
+            );
+          }}
+        >
+          {grams > 0 ? `Take out ${formatGrams(grams)}` : 'Take out'}
+        </Button>
+      </div>
+    </section>
+  );
+}

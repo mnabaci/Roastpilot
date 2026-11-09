@@ -479,7 +479,7 @@ describe('RoastScreen', () => {
       expect(screen.getByRole('button', { name: 'Keep deducted' })).toBeInTheDocument();
     });
 
-    it('"Return to stock" calls adjustStock then clears the roast', async () => {
+    it('"Return to stock" puts the batch back on the green stock, then clears the roast', async () => {
       const { api } = renderApp(<RoastScreen onConnect={onConnect} />, {
         ...connected,
         roast: { ...roast('done'), chargedAtMs: 0 },
@@ -488,7 +488,12 @@ describe('RoastScreen', () => {
       });
       await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
       await userEvent.click(screen.getByRole('button', { name: 'Return to stock' }));
-      expect(api.adjustStock).toHaveBeenCalledWith({ beanId: 1, greenG: 350, roastedG: 0 });
+      expect(api.adjustStock).toHaveBeenCalledWith({
+        beanId: 1,
+        greenG: 850,
+        roastedG: 0,
+        reason: 'returned',
+      });
       expect(api.roastAction).toHaveBeenCalledWith('clear');
     });
 

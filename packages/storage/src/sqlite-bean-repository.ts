@@ -9,14 +9,18 @@ import {
   type BeanId,
   type ProfileId,
   type Result,
+  type StockMovement,
   type StorageError,
 } from '@roastpilot/shared';
-import { and, asc, eq, isNotNull, sql } from 'drizzle-orm';
+import { and, asc, eq, isNotNull, not, sql } from 'drizzle-orm';
 import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy';
 import { attempt } from './attempt';
-import { beanPurchases, beans } from './schema/beans';
+import { beanPurchases, beans, beanStockAdjustments } from './schema/beans';
 import { roasts } from './schema/roasts';
 import { transaction } from './transaction';
+
+/** An adjustment's reason as a stock history kind. */
+const ADJUSTED = { count: 'counted', returned: 'returned', taken: 'taken' } as const;
 
 /** Beans and stock in SQLite (docs/spec/data-model.md, Roasters and beans). */
 export class SqliteBeanRepository implements BeanRepository {
@@ -130,14 +134,94 @@ export class SqliteBeanRepository implements BeanRepository {
     });
   }
 
-  adjustStock({ beanId, greenG, roastedG }: AdjustStock): Promise<Result<void, StorageError>> {
-    return this.#changed(beanId, () =>
-      this.#db
-        .update(beans)
-        .set({ greenG, roastedG })
+  /** The new stock and, when it changed, what changed as an adjustment, all or nothing. */
+  adjustStock({
+    beanId,
+    greenG,
+    roastedG,
+    reason = 'count',
+    note = null,
+  }: AdjustStock): Promise<Result<void, StorageError>> {
+    return transaction(this.#db, async (tx) => {
+      const before = await tx
+        .select({ greenG: beans.greenG, roastedG: beans.roastedG })
+        .from(beans)
         .where(eq(beans.id, beanId))
-        .returning({ id: beans.id })
-        .all(),
-    );
+        .get();
+      if (!before) return err({ kind: 'not-found', id: beanId });
+      await tx.update(beans).set({ greenG, roastedG }).where(eq(beans.id, beanId)).run();
+      const change = { greenG: greenG - before.greenG, roastedG: roastedG - before.roastedG };
+      if (change.greenG !== 0 || change.roastedG !== 0) {
+        await tx
+          .insert(beanStockAdjustments)
+          .values({
+            beanId,
+            adjustedAt: new Date().toISOString(),
+            reason,
+            note: note === '' ? null : note,
+            ...change,
+          })
+          .run();
+      }
+      return ok(undefined);
+    });
+  }
+
+  /**
+   * Everything that moved the bean's stock, oldest first: its purchases, the roasts made here
+   * (an imported one never touched stock) and its adjustments.
+   */
+  stockHistory(id: BeanId): Promise<Result<StockMovement[], StorageError>> {
+    return attempt(async () => {
+      const bought = await this.#db
+        .select({ at: beanPurchases.purchasedAt, grams: beanPurchases.grams })
+        .from(beanPurchases)
+        .where(eq(beanPurchases.beanId, id))
+        .all();
+      const roasted = await this.#db
+        .select({
+          id: roasts.id,
+          at: roasts.startedAt,
+          batchG: roasts.batchG,
+          roastedG: roasts.roastedG,
+        })
+        .from(roasts)
+        .where(and(eq(roasts.beanId, id), not(roasts.imported), isNotNull(roasts.batchG)))
+        .all();
+      const adjusted = await this.#db
+        .select()
+        .from(beanStockAdjustments)
+        .where(eq(beanStockAdjustments.beanId, id))
+        .all();
+      const movements: StockMovement[] = [
+        ...bought.map((p) => ({
+          at: p.at,
+          kind: 'bought' as const,
+          greenG: p.grams,
+          roastedG: 0,
+          roastId: null,
+          note: null,
+        })),
+        ...roasted.map((r) => ({
+          at: r.at,
+          kind: 'roasted' as const,
+          greenG: -(r.batchG ?? 0),
+          roastedG: r.roastedG ?? 0,
+          roastId: r.id,
+          note: null,
+        })),
+        ...adjusted.map((a) => ({
+          at: a.adjustedAt,
+          kind: ADJUSTED[a.reason],
+          greenG: a.greenG,
+          roastedG: a.roastedG,
+          roastId: null,
+          note: a.note,
+        })),
+      ];
+      // A purchase's date sorts before that day's roasts: the bag came first. ISO strings sort
+      // by time as text.
+      return movements.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
+    });
   }
 }

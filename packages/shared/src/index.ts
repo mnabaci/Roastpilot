@@ -273,6 +273,8 @@ export {
   NO_ROAST_SETUP,
   RoastSetupSchema,
   SetArchivedSchema,
+  StockAdjustReasonSchema,
+  StockMovementSchema,
   UpdateBeanSchema,
   type AddStock,
   type AdjustStock,
@@ -283,6 +285,8 @@ export {
   type BeanSpecies,
   type OpenBeanLinkError,
   type RoastSetup,
+  type StockAdjustReason,
+  type StockMovement,
   type UpdateBean,
 } from './bean';
 export {

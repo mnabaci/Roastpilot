@@ -103,6 +103,29 @@ describe('SqliteBeanRepository', () => {
     expect(await one(beans)).toMatchObject({ greenG: 321, roastedG: 45 });
   });
 
+  it('keeps what an adjustment changed, and nothing when it changed nothing', async () => {
+    const { beans } = setup();
+    const beanId = await added(beans);
+    await beans.addStock({ beanId, grams: 1000, purchasedAt: '2026-11-01' });
+    await beans.adjustStock({ beanId, greenG: 950, roastedG: 0 });
+    await beans.adjustStock({ beanId, greenG: 950, roastedG: 0 });
+    await beans.adjustStock({ beanId, greenG: 1350, roastedG: 0, reason: 'returned' });
+    await beans.adjustStock({
+      beanId,
+      greenG: 1150,
+      roastedG: 0,
+      reason: 'taken',
+      note: 'Gave 200 g to Sam',
+    });
+    const history = await beans.stockHistory(beanId);
+    expect(history.ok && history.value).toMatchObject([
+      { at: '2026-11-01', kind: 'bought', greenG: 1000, roastedG: 0, roastId: null },
+      { kind: 'counted', greenG: -50, roastedG: 0 },
+      { kind: 'returned', greenG: 400, roastedG: 0, note: null },
+      { kind: 'taken', greenG: -200, roastedG: 0, note: 'Gave 200 g to Sam' },
+    ]);
+  });
+
   it('updates fields and the bean own profile', async () => {
     const { beans } = setup();
     const id = await added(beans);
@@ -197,6 +220,30 @@ describe('SqliteBeanRepository', () => {
       const { beans, roasts, roastId } = await roasted();
       await roasts.saveResult(result(roastId, 3200));
       expect(await one(beans)).toMatchObject({ avgLossPct: null });
+    });
+
+    it('stock history has its roasts made here, in time order, and not imported ones', async () => {
+      const { beans, roasts, beanId, roastId } = await roasted();
+      await roasts.saveResult(result(roastId, 340));
+      await roasts.create({
+        ...newRoast,
+        startedAt: '2026-10-01T09:00:00.000Z',
+        beanId,
+        batchG: 300,
+        imported: true,
+      });
+      const history = await beans.stockHistory(beanId);
+      expect(history.ok && history.value).toEqual([
+        {
+          at: '2026-11-04T10:00:00.000Z',
+          kind: 'roasted',
+          greenG: -400,
+          roastedG: 340,
+          roastId,
+          note: null,
+        },
+        { at: 'x', kind: 'bought', greenG: 1000, roastedG: 0, roastId: null, note: null },
+      ]);
     });
 
     it('deleting a roast gives no stock back', async () => {
