@@ -2,6 +2,7 @@ import type { RoastSummary } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import {
   inProgressId,
+  roastDetailLine,
   roastNumbers,
   roastRows,
   roastTitle,
@@ -92,5 +93,17 @@ describe('wasStopped', () => {
     expect(wasStopped({ events: [at('charge'), at('drop'), at('end')] })).toBe(false);
     expect(wasStopped({ events: [at('charge'), at('drop'), at('cool-end')] })).toBe(false);
     expect(wasStopped({ events: [at('charge')] })).toBe(false);
+  });
+});
+
+describe('roastDetailLine', () => {
+  const beans = [{ id: 3, name: 'Yirgacheffe' }];
+  it('says Auto before the profile an Auto roast ran', () => {
+    const auto = summary(1, { beanId: 3, profileName: 'Light · Steps', rating: 4 });
+    expect(roastDetailLine(auto, beans)).toBe('Yirgacheffe · Auto · Light · Steps · 4/5');
+  });
+
+  it('says Manual for a roast with no profile', () => {
+    expect(roastDetailLine(summary(1), beans)).toBe('No bean · Manual');
   });
 });

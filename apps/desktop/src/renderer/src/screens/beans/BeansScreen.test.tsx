@@ -19,6 +19,9 @@ const ROAST = {
   dropTimeS: null,
   dropTemp: null,
   profileId: null,
+  profileName: 'Light · Steps',
+  batchG: 356,
+  roastedG: 305,
 } as RoastSummary;
 
 function show(api = fakeApi(), beans = [BEAN]) {
@@ -225,6 +228,10 @@ describe('BeansScreen', () => {
     const api = fakeApi({ listRoasts: vi.fn(() => Promise.resolve([ROAST])) });
     show(api);
     expect(await screen.findByText(/Best favourite/)).toBeTruthy();
+    const table = screen.getByRole('table', { name: 'Roasts of Yirgacheffe' });
+    expect(within(table).getAllByRole('row')[1]?.textContent).toContain('Auto · Light · Steps');
+    expect(within(table).getByText('356 → 305 g')).toBeInTheDocument();
+    expect(within(table).getByText('14.3 %')).toBeInTheDocument();
   });
 
   it('archives, and hides archived beans until asked', async () => {
