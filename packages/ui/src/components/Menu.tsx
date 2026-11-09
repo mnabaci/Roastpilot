@@ -4,6 +4,7 @@ import { useId, type ReactNode } from 'react';
 import { cn } from '../lib/utils';
 import { Button } from './Button';
 import { DROPDOWN_PANEL, DROPDOWN_ROW } from './dropdown-panel';
+import { Tooltip } from './Tooltip';
 
 export interface MenuItem {
   label: string;
@@ -12,7 +13,7 @@ export interface MenuItem {
   /** Deletes something: red text (`critical-text`), never a red fill. */
   destructive?: boolean;
   disabled?: boolean;
-  /** One line under the label: why a disabled item can't be picked now ("Disconnect first"). */
+  /** Why a disabled item can't be picked now ("Disconnect first"): a tooltip, and its description. */
   hint?: string;
 }
 
@@ -22,6 +23,8 @@ export interface MenuProps {
   /** A worded button with a chevron ("Make profile ▾") instead of "⋯". */
   text?: string;
   items: readonly MenuItem[];
+  /** The trigger waits, dimmed (Export before anything is ticked). */
+  disabled?: boolean;
   className?: string;
 }
 
@@ -29,11 +32,11 @@ export interface MenuProps {
  * The actions you rarely need, behind a "⋯" button (design system: Menu). Arrows move, Enter picks,
  * Escape closes and focus goes back to the button.
  */
-export function Menu({ label, text, items, className }: MenuProps) {
+export function Menu({ label, text, items, disabled, className }: MenuProps) {
   const hintId = useId();
   return (
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
+      <DropdownMenu.Trigger asChild disabled={disabled}>
         {text ? (
           <Button
             size="sm"
@@ -57,35 +60,44 @@ export function Menu({ label, text, items, className }: MenuProps) {
       <DropdownMenu.Portal>
         <DropdownMenu.Content align="end" sideOffset={4} className={cn(DROPDOWN_PANEL, 'min-w-48')}>
           {items.map((item, index) => {
-            // The hint describes the item; its name stays the label.
+            // The reason describes the item; its name stays the label.
             const hint = item.hint ? `${hintId}-${String(index)}` : undefined;
-            return (
+            const row = (
               <DropdownMenu.Item
                 key={item.label}
-                disabled={item.disabled}
-                onSelect={item.onSelect}
+                // Not Radix's disabled: that skips the item on the arrow keys, and its reason with
+                // it. A waiting item stays focusable, says so, and does nothing.
+                aria-disabled={item.disabled ? true : undefined}
+                onSelect={(event) => {
+                  if (item.disabled) {
+                    event.preventDefault();
+                    return;
+                  }
+                  item.onSelect();
+                }}
                 aria-label={hint ? item.label : undefined}
                 aria-describedby={hint}
                 className={cn(
                   DROPDOWN_ROW,
-                  'data-disabled:cursor-not-allowed [&_svg]:size-5',
-                  // A hint stays readable: only the label dims.
-                  !hint && 'data-disabled:opacity-50',
+                  'aria-disabled:cursor-not-allowed aria-disabled:opacity-50 [&_svg]:size-5',
                   item.destructive ? 'text-critical-text' : 'text-ink',
                 )}
               >
                 {item.icon}
+                {item.label}
                 {hint ? (
-                  <span className="flex flex-col">
-                    <span className={cn(item.disabled && 'opacity-50')}>{item.label}</span>
-                    <span id={hint} className="text-label text-ink-muted">
-                      {item.hint}
-                    </span>
+                  <span id={hint} className="sr-only">
+                    {item.hint}
                   </span>
-                ) : (
-                  item.label
-                )}
+                ) : null}
               </DropdownMenu.Item>
+            );
+            return item.hint ? (
+              <Tooltip key={item.label} content={item.hint} side="left">
+                {row}
+              </Tooltip>
+            ) : (
+              row
             );
           })}
         </DropdownMenu.Content>

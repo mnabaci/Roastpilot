@@ -19,7 +19,9 @@ const menuItems = () =>
     const why = item.getAttribute('aria-disabled') === 'true' ? ' (disabled)' : '';
     return `${name}${why}`;
   });
-const ALL_WAIT = ['Use this roaster (disabled)', 'Export this roaster', 'Delete (disabled)'];
+const ALL_WAIT = ['Export this roaster', 'Delete (disabled)'];
+/** Opens the shown roaster's record for editing. */
+const edit = () => userEvent.click(screen.getByRole('button', { name: 'Edit' }));
 const toasts = (stores: Stores) => stores.toasts.getState().toasts.map((t) => [t.kind, t.text]);
 
 describe('RoastersScreen', () => {
@@ -50,19 +52,16 @@ describe('RoastersScreen', () => {
 
     it('Use this roaster makes it active without connecting', async () => {
       const { api } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
-      // The active roaster has nothing to switch to: Use and Delete stay, disabled, with why.
+      // The active roaster has nothing to switch to: no Use, and Delete waits, with why.
+      expect(screen.queryByRole('button', { name: 'Use this roaster' })).toBeNull();
       await userEvent.click(screen.getByRole('button', { name: 'More for Skywalker' }));
       expect(menuItems()).toEqual(ALL_WAIT);
-      expect(
-        screen.getByRole('menuitem', { name: 'Use this roaster' }),
-      ).toHaveAccessibleDescription('Already the active one');
       expect(screen.getByRole('menuitem', { name: 'Delete' })).toHaveAccessibleDescription(
         'Use another roaster first',
       );
       await userEvent.keyboard('{Escape}');
       await userEvent.click(sidebar().getByRole('button', { name: /^Simulator/ }));
-      await userEvent.click(screen.getByRole('button', { name: 'More for Simulator' }));
-      await userEvent.click(screen.getByRole('menuitem', { name: 'Use this roaster' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Use this roaster' }));
       expect(api.setActiveRoaster).toHaveBeenCalledWith(SIMULATOR.id);
       expect(api.connect).not.toHaveBeenCalled();
     });
@@ -75,19 +74,22 @@ describe('RoastersScreen', () => {
       });
       renderApp(<RoastersScreen />, { roasters: roastersWith(null) }, api);
       await userEvent.click(sidebar().getByRole('button', { name: /^Simulator/ }));
-      await userEvent.click(screen.getByRole('button', { name: 'More for Simulator' }));
-      await userEvent.click(screen.getByRole('menuitem', { name: 'Use this roaster' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Use this roaster' }));
       expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't switch roasters");
     });
 
     it('offers no switch while a roaster is in use', async () => {
       renderApp(<RoastersScreen />, { connection: CONNECTED, roasters: roastersWith(PORT) });
       await userEvent.click(sidebar().getByRole('button', { name: /^Simulator/ }));
+      expect(screen.getByRole('button', { name: 'Use this roaster' })).toHaveAttribute(
+        'aria-disabled',
+        'true',
+      );
+      expect(screen.getByRole('button', { name: 'Use this roaster' })).toHaveAccessibleDescription(
+        'Disconnect first',
+      );
       await userEvent.click(screen.getByRole('button', { name: 'More for Simulator' }));
       expect(menuItems()).toEqual(ALL_WAIT);
-      expect(
-        screen.getByRole('menuitem', { name: 'Use this roaster' }),
-      ).toHaveAccessibleDescription('Disconnect first');
       await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
       expect(screen.queryByRole('alertdialog')).toBeNull();
     });
@@ -117,7 +119,10 @@ describe('RoastersScreen', () => {
       const list = within(screen.getByRole('list', { name: 'Ports' }));
       expect(await list.findByRole('button', { name: /usbserial-0001/ })).toBeInTheDocument();
       expect(list.queryByRole('button', { name: /Simulator/ })).toBeNull();
-      expect(screen.getByRole('button', { name: 'Connect' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Connect' })).toHaveAttribute(
+        'aria-disabled',
+        'true',
+      );
       expect(screen.getByText('Pick a port to connect')).toBeInTheDocument();
     });
 
@@ -143,7 +148,7 @@ describe('RoastersScreen', () => {
       ];
       const { api } = renderApp(<RoastersScreen />, { roasters }, fakeApi({ listPorts: ports }));
       await userEvent.click(sidebar().getByRole('button', { name: /^Skywalker/ }));
-      await screen.findByText('Silicon Labs');
+      await screen.findByText(/Silicon Labs/);
       await userEvent.click(screen.getByRole('button', { name: 'Connect' }));
       expect(api.setActiveRoaster).toHaveBeenCalledWith(SKYWALKER.id);
       expect(api.connect).toHaveBeenCalledWith(PORT);
@@ -163,7 +168,7 @@ describe('RoastersScreen', () => {
       });
       renderApp(<RoastersScreen />, { roasters }, api);
       await userEvent.click(sidebar().getByRole('button', { name: /^Skywalker/ }));
-      await screen.findByText('Silicon Labs');
+      await screen.findByText(/Silicon Labs/);
       await userEvent.click(screen.getByRole('button', { name: 'Connect' }));
       await vi.waitFor(() => {
         expect(screen.getByRole('button', { name: 'Connect' })).toBeEnabled();
@@ -177,7 +182,7 @@ describe('RoastersScreen', () => {
       renderApp(<RoastersScreen />, { roasters: roastersWith(null) }, fakeApi({ listPorts }));
       expect(await screen.findByText(/No roaster found/)).toBeInTheDocument();
       expect(screen.queryByText('Pick a port to connect')).toBeNull();
-      await userEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Refresh ports' }));
       expect(listPorts).toHaveBeenCalledTimes(2);
     });
 
@@ -189,10 +194,11 @@ describe('RoastersScreen', () => {
           { path: '/dev/cu.usbserial-0002', manufacturer: 'WCH' },
         ]);
       renderApp(<RoastersScreen />, { roasters: roastersWith(PORT) }, fakeApi({ listPorts }));
+      // Remembered, the port is one line of the card; Change port opens the list.
+      expect(await screen.findByText(/Silicon Labs/)).toBeInTheDocument();
+      expect(screen.queryByRole('list', { name: 'Ports' })).toBeNull();
+      await userEvent.click(screen.getByRole('button', { name: 'Change port' }));
       const list = within(screen.getByRole('list', { name: 'Ports' }));
-      expect(await list.findByText('Silicon Labs')).toBeInTheDocument();
-      expect(list.getAllByRole('button')).toHaveLength(1);
-      await userEvent.click(screen.getByRole('button', { name: 'Choose another' }));
       expect(list.getAllByRole('button')).toHaveLength(2);
       expect(list.queryByText(/debug-console/)).toBeNull();
       await userEvent.click(screen.getByRole('button', { name: 'Show all ports (1 more)' }));
@@ -261,8 +267,10 @@ describe('RoastersScreen', () => {
         roasters: roastersWith(PORT),
       });
       expect(screen.getByText('Connected')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /usbserial-0001/ })).toBeDisabled();
-      expect(screen.queryByRole('button', { name: 'Refresh' })).toBeNull();
+      expect(screen.getByText(/usbserial-0001/)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Change port' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Refresh ports' })).toBeNull();
+      expect(screen.getByRole('button', { name: 'Edit' })).toHaveAttribute('aria-disabled', 'true');
       await userEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
       expect(api.disconnect).toHaveBeenCalledOnce();
     });
@@ -271,8 +279,12 @@ describe('RoastersScreen', () => {
       renderApp(<RoastersScreen />, { connection: CONNECTED, roasters: roastersWith(PORT) });
       await userEvent.click(sidebar().getByRole('button', { name: /^Simulator/ }));
       expect(screen.getByText('Disconnect Skywalker to switch')).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Connect' })).toBeNull();
-      expect(screen.getByRole('textbox', { name: 'Max temp' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Connect' })).toHaveAttribute(
+        'aria-disabled',
+        'true',
+      );
+      expect(screen.getByRole('button', { name: 'Edit' })).toHaveAttribute('aria-disabled', 'true');
+      expect(screen.queryByRole('textbox', { name: 'Max temp' })).toBeNull();
       await userEvent.click(screen.getByRole('button', { name: 'More for Simulator' }));
       expect(menuItems()).toEqual(ALL_WAIT);
     });
@@ -288,11 +300,11 @@ describe('RoastersScreen', () => {
       const { stores } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) }, api);
       await userEvent.click(sidebar().getByRole('button', { name: /^Simulator/ }));
       await userEvent.click(screen.getByRole('button', { name: 'More for Simulator' }));
-      expect(menuItems()).toEqual(['Use this roaster', 'Export this roaster', 'Delete']);
+      expect(menuItems()).toEqual(['Export this roaster', 'Delete']);
       await userEvent.click(screen.getByRole('menuitem', { name: 'Export this roaster' }));
       expect(api.exportLibrary).toHaveBeenCalledWith({ kind: 'roasters', ids: [SIMULATOR.id] });
       await userEvent.click(screen.getByRole('button', { name: 'More for Roasters' }));
-      expect(menuItems()).toEqual(['Export all', 'Import a Roastpilot file']);
+      expect(menuItems()).toEqual(['Export all', 'Import a Roastpilot file', 'Select']);
       await userEvent.click(screen.getByRole('menuitem', { name: 'Export all' }));
       expect(api.exportLibrary).toHaveBeenLastCalledWith({ kind: 'roasters' });
       expect(toasts(stores)).toContainEqual(['success', 'Saved roasters.rpr']);
@@ -344,6 +356,8 @@ describe('RoastersScreen', () => {
   describe('the record', () => {
     it('saves an edit, and holds Save back while a cell has a problem', async () => {
       const { api } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
+      expect(screen.getByLabelText('Max temp')).toHaveTextContent('240 °C');
+      await edit();
       const maxTemp = screen.getByRole('textbox', { name: 'Max temp' });
       await userEvent.clear(maxTemp);
       await userEvent.type(maxTemp, '300');
@@ -360,6 +374,7 @@ describe('RoastersScreen', () => {
         roasters: roastersWith(null),
         settings: { ...ACCEPTED_SETTINGS, temperatureUnit: 'f' },
       });
+      await edit();
       const maxTemp = screen.getByRole('textbox', { name: 'Max temp' });
       expect(maxTemp).toHaveValue('464');
       await userEvent.clear(maxTemp);
@@ -377,6 +392,7 @@ describe('RoastersScreen', () => {
 
     it('turns the bean cooler helping the drum off, and saves it', async () => {
       const { api } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
+      await edit();
       const helps = screen.getByRole('switch', { name: 'Bean cooler helps cool the drum' });
       expect(helps).toBeChecked();
       await userEvent.click(helps);
@@ -391,6 +407,7 @@ describe('RoastersScreen', () => {
       const { api } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
       expect(screen.queryByRole('group', { name: 'Drum' })).toBeNull();
       await userEvent.click(sidebar().getByRole('button', { name: /^Simulator/ }));
+      await edit();
       const drum = within(screen.getByRole('group', { name: 'Drum' }));
       expect(drum.getByText('Usual speed · from Preheat, and while cooling')).toBeInTheDocument();
       const speed = drum.getByLabelText('Drum speed');
@@ -405,8 +422,9 @@ describe('RoastersScreen', () => {
 
     it('keeps the tuning closed, in plain words, until asked', async () => {
       const { api } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
+      await edit();
       expect(screen.queryByRole('group', { name: 'Reaching step temperatures' })).toBeNull();
-      const toggle = screen.getByRole('button', { name: 'Advanced tuning · for experts' });
+      const toggle = screen.getByRole('button', { name: 'Advanced tuning' });
       expect(toggle).toHaveAttribute('aria-expanded', 'false');
       await userEvent.click(toggle);
       expect(toggle).toHaveAttribute('aria-expanded', 'true');
@@ -424,7 +442,8 @@ describe('RoastersScreen', () => {
 
     it('a tuning number with a problem keeps the section open', async () => {
       renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
-      const toggle = screen.getByRole('button', { name: 'Advanced tuning · for experts' });
+      await edit();
+      const toggle = screen.getByRole('button', { name: 'Advanced tuning' });
       await userEvent.click(toggle);
       const follow = within(screen.getByRole('group', { name: 'Following a curve' }));
       await userEvent.clear(follow.getByRole('textbox', { name: 'Catch-up (Ki)' }));

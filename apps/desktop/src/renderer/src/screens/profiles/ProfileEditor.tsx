@@ -27,7 +27,10 @@ export function ProfileEditor({
   const { draft, errors, valid, change } = state;
   const active = useSettings((s) => s.settings.autoProfile) === entry.profile.id;
   const locked = useProfileLocked();
-  const readOnly = entry.builtIn;
+  // Opens to read; Edit makes it a form (docs/spec/ui.md, Read and edit). An unsaved edit kept
+  // from before opens as the form, so it shows.
+  const [editing, setEditing] = useState(state.edited && !entry.builtIn);
+  const readOnly = entry.builtIn || !editing;
   const steps = isStepProfile(entry.profile);
   // While a cell has a problem the chart keeps the last profile that worked.
   const [shown, setShown] = useState(valid ?? entry.profile);
@@ -49,6 +52,8 @@ export function ProfileEditor({
         state={state}
         active={active}
         locked={locked}
+        editing={!readOnly}
+        onEditingChange={setEditing}
         onSelect={onSelect}
       />
       <TopValues

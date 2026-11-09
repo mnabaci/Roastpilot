@@ -35,6 +35,7 @@ describe('migrate', () => {
           '0005_cooler_helps_drum',
           '0006_drum_speed',
           '0007_bean_link',
+          '0008_bean_species',
         ],
       },
     });
@@ -68,6 +69,7 @@ describe('migrate', () => {
           '0005_cooler_helps_drum',
           '0006_drum_speed',
           '0007_bean_link',
+          '0008_bean_species',
         ],
       },
     });
@@ -139,6 +141,18 @@ describe('migrate', () => {
     ]);
   });
 
+  it('keeps every bean, with no species yet', () => {
+    const db = new DatabaseSync(':memory:');
+    migrate(db, MIGRATIONS.slice(0, 8));
+    db.exec(
+      `INSERT INTO beans (name, origin, process) VALUES ('African Moon', 'Uganda', 'natural')`,
+    );
+    migrate(db);
+    expect(db.prepare('SELECT name, species FROM beans').all()).toEqual([
+      { name: 'African Moon', species: null },
+    ]);
+  });
+
   it('applies only the migrations a database is missing, keeping its data', () => {
     const db = new DatabaseSync(':memory:');
     const first = [{ tag: 'a', sql: 'CREATE TABLE a (x INTEGER);' }];
@@ -183,6 +197,7 @@ describe('migrate', () => {
         '0005_cooler_helps_drum',
         '0006_drum_speed',
         '0007_bean_link',
+        '0008_bean_species',
       ]);
       expect(schemaVersion(db)).toBe(5);
     });

@@ -273,7 +273,11 @@ describe('BeansScreen', () => {
     expect(screen.queryByRole('button', { name: /^Old/ })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'More for Beans' }));
     await user.click(screen.getByRole('menuitem', { name: 'Show archived' }));
-    expect(screen.getByRole('button', { name: /^Old/ })).toBeTruthy();
+    // Shown, it says it is archived; the others don't.
+    expect(screen.getByRole('button', { name: /^Old/ })).toHaveTextContent('Archived');
+    expect(screen.getByRole('button', { name: new RegExp(`^${BEAN.name}`) })).not.toHaveTextContent(
+      'Archived',
+    );
     await user.click(screen.getByRole('button', { name: `More for ${BEAN.name}` }));
     await user.click(screen.getByRole('menuitem', { name: 'Archive' }));
     await waitFor(() => {
@@ -300,9 +304,16 @@ describe('BeansScreen', () => {
     show();
     await user.click(screen.getByRole('button', { name: 'More for Beans' }));
     await user.click(screen.getByRole('menuitem', { name: 'Batch calculator' }));
-    await user.type(screen.getByLabelText('Order weight'), '1000');
-    expect(screen.getByText('2 × 375 g + 250 g')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Pick' })).toBeNull();
+    // A dialog over the list, so the bean behind it stays where it was.
+    const dialog = within(screen.getByRole('dialog', { name: 'Batch calculator' }));
+    await user.type(dialog.getByLabelText('Order weight'), '1000');
+    expect(dialog.getByText('2 × 375 g + 250 g')).toBeTruthy();
+    expect(dialog.queryByRole('button', { name: 'Pick' })).toBeNull();
+    // A common order is one tap.
+    await user.click(dialog.getByRole('button', { name: '2 kg' }));
+    expect(dialog.getByLabelText('Order weight')).toHaveValue('2000');
+    await user.click(dialog.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   describe('files', () => {
@@ -321,7 +332,7 @@ describe('BeansScreen', () => {
       expect(api.exportLibrary).toHaveBeenCalledWith({ kind: 'beans', ids: [BEAN.id] });
       await userEvent.click(screen.getByRole('button', { name: 'More for Beans' }));
       const items = screen.getAllByRole('menuitem').map((item) => item.textContent);
-      expect(items.slice(-2)).toEqual(['Export all', 'Import a Roastpilot file']);
+      expect(items.slice(-3)).toEqual(['Export all', 'Import a Roastpilot file', 'Select']);
       await userEvent.click(screen.getByRole('menuitem', { name: 'Export all' }));
       expect(api.exportLibrary).toHaveBeenLastCalledWith({ kind: 'beans' });
       expect(toasts(stores)).toContainEqual(['success', 'Saved beans.rpr']);

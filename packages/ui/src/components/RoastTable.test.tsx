@@ -12,7 +12,7 @@ const ROW = {
   drop: '197.0 °C',
   weights: '356 → 305 g',
   loss: '14.3 %',
-  rating: '5/5',
+  rating: 5,
 };
 
 describe('RoastTable', () => {
@@ -39,7 +39,7 @@ describe('RoastTable', () => {
     ]);
     const [first, second] = within(table).getAllByRole('row').slice(1);
     expect(first?.textContent).toBe(
-      'Sun 8 Nov · 16:45Auto · Light · Curve10:208:34197.0 °C356 → 305 g14.3 %5/5',
+      'Sun 8 Nov · 16:45Auto · Light · Curve10:208:34197.0 °C356 → 305 g14.3 %',
     );
     expect(second?.textContent).toContain('Manual10:20–197.0 °C–14.3 %');
   });

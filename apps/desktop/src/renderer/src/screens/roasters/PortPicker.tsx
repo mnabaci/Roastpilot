@@ -1,6 +1,5 @@
 import type { ConnectTarget } from '@roastpilot/shared';
 import { Button, cn } from '@roastpilot/ui';
-import { RefreshCw } from 'lucide-react';
 import { sameTarget, type RoasterRow } from './roaster-rows';
 
 function PortRow({
@@ -37,49 +36,30 @@ function PortRow({
   );
 }
 
-/** A roaster's port: the remembered one, or the likely ones with the rest behind Show all. */
+/**
+ * The ports to pick from, inside the connection card while choosing: the likely ones, with the
+ * rest behind Show all.
+ */
 export function PortPicker({
   rows,
   shown,
   hidden,
-  canRefresh,
   idle,
-  canChooseAnother,
   onSelect,
-  onRefresh,
   onShowAll,
-  onChooseAnother,
 }: {
   rows: readonly RoasterRow[];
   /** The port marked: the one in use, else the remembered one. */
   shown: ConnectTarget | null | undefined;
   /** Ports left out until Show all ports; 0 hides the button. */
   hidden: number;
-  canRefresh: boolean;
   /** Nothing connecting or connected: the list can change. */
   idle: boolean;
-  canChooseAnother: boolean;
   onSelect: (target: ConnectTarget) => void;
-  onRefresh: () => void;
   onShowAll: () => void;
-  onChooseAnother: () => void;
 }) {
   return (
     <>
-      <div className="flex items-center justify-between">
-        <h3 className="text-body font-semibold">Port</h3>
-        {canRefresh ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={<RefreshCw aria-hidden="true" />}
-            onClick={onRefresh}
-            disabled={!idle}
-          >
-            Refresh
-          </Button>
-        ) : null}
-      </div>
       <ul aria-label="Ports" className="flex flex-col gap-2 empty:hidden">
         {rows.map((row) => (
           <PortRow
@@ -97,11 +77,6 @@ export function PortPicker({
       {hidden > 0 ? (
         <Button variant="ghost" size="sm" className="self-start" onClick={onShowAll}>
           Show all ports ({hidden} more)
-        </Button>
-      ) : null}
-      {canChooseAnother ? (
-        <Button variant="ghost" size="sm" className="self-start" onClick={onChooseAnother}>
-          Choose another
         </Button>
       ) : null}
     </>

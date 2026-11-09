@@ -1,5 +1,5 @@
 import { updateWaiting, type ConnectionState, type Screen } from '@roastpilot/shared';
-import { Button, cn, Mark, Tooltip } from '@roastpilot/ui';
+import { Badge, Button, cn, Mark, Tooltip } from '@roastpilot/ui';
 import type { ReactElement } from 'react';
 import { OctagonX } from 'lucide-react';
 import { activeRoaster } from '../stores/roasters-store';
@@ -93,7 +93,7 @@ export function TopBar({
         // On a wide window the roaster in use (its name; the port is on Roasters) and the phase.
         <p className="hidden items-center gap-2 text-label whitespace-nowrap text-ink-muted lg:flex">
           <span className="text-ink">{connectedName(connection.target, roaster)}</span>
-          {status === 'connected' ? <span>· {PHASE_LABEL[phase]}</span> : null}
+          {status === 'connected' ? <Badge>{PHASE_LABEL[phase]}</Badge> : null}
         </p>
       ) : null}
       <Button

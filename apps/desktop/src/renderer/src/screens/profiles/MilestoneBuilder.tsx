@@ -90,7 +90,7 @@ export function MilestoneBuilder({
         </div>
         <div className="flex flex-col items-end gap-1">
           <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={onCancel}>
+            <Button size="sm" onClick={onCancel}>
               Cancel
             </Button>
             <Button variant="primary" size="sm" disabled={!valid || busy} onClick={create}>

@@ -101,7 +101,8 @@ describe('roastDetailParts', () => {
   const beans = [{ id: 3, name: 'Yirgacheffe' }];
   it('says Auto before the profile an Auto roast ran', () => {
     const auto = summary(1, { beanId: 3, profileName: 'Light · Steps', rating: 4 });
-    expect(roastDetailParts(auto, beans)).toEqual(['Yirgacheffe', 'Auto · Light · Steps', '4/5']);
+    // The rating isn't a part: the row shows it as stars.
+    expect(roastDetailParts(auto, beans)).toEqual(['Yirgacheffe', 'Auto · Light · Steps']);
   });
 
   it('says Manual for a roast with no profile', () => {

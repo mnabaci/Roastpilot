@@ -45,7 +45,7 @@ export function StepRow({
       hideLabel
       className={FIELD_MIN[cell] ?? FIELD_MIN_DEFAULT}
       value={step[cell]}
-      disabled={readOnly}
+      readOnly={readOnly}
       invalid={Boolean(error(cell))}
       onChange={(value) => {
         onChange({ [cell]: value });
@@ -65,16 +65,21 @@ export function StepRow({
       <tr>
         {handle}
         <td className={CELL}>
-          <input
-            aria-label={`Step ${String(index + 1)} name`}
-            aria-invalid={Boolean(error('name')) || undefined}
-            value={step.name}
-            disabled={readOnly}
-            onChange={(event) => {
-              onChange({ name: event.target.value });
-            }}
-            className="h-control-sm w-full min-w-30 rounded-md border border-border bg-surface px-2.5 text-body text-ink hover:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50"
-          />
+          {readOnly ? (
+            <p className="flex h-control-sm min-w-30 items-center px-2.5 text-body text-ink">
+              {step.name}
+            </p>
+          ) : (
+            <input
+              aria-label={`Step ${String(index + 1)} name`}
+              aria-invalid={Boolean(error('name')) || undefined}
+              value={step.name}
+              onChange={(event) => {
+                onChange({ name: event.target.value });
+              }}
+              className="h-control-sm w-full min-w-30 rounded-md border border-border bg-surface px-2.5 text-body text-ink hover:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            />
+          )}
         </td>
         {steps || !last ? (
           <td className={CELL}>{field('endC', 'end temperature')}</td>

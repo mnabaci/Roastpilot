@@ -43,7 +43,7 @@ export function CurvePointsTable({
               hideLabel
               className="flex-1"
               value={point.time}
-              disabled={readOnly}
+              readOnly={readOnly}
               invalid={Boolean(timeError)}
               hint={timeError}
               onChange={(time) => {
@@ -56,7 +56,7 @@ export function CurvePointsTable({
               className="flex-1"
               unit={tempSymbol(draft.unit)}
               value={point.c}
-              disabled={readOnly}
+              readOnly={readOnly}
               invalid={Boolean(tempError)}
               hint={tempError}
               onChange={(c) => {

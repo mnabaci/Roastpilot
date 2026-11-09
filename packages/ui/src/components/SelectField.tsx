@@ -13,6 +13,8 @@ export interface SelectFieldProps<V extends string> {
   hideLabel?: boolean;
   /** Numbers (times, temperatures) among NumberFields: tabular, the text lined up with theirs. */
   numeric?: boolean;
+  /** One line under the field, like the other fields' hints ("First batch"). */
+  hint?: string | undefined;
   className?: string;
 }
 
@@ -25,6 +27,7 @@ export function SelectField<V extends string>({
   disabled,
   hideLabel = false,
   numeric = false,
+  hint,
   className,
 }: SelectFieldProps<V>) {
   const id = useId();
@@ -53,6 +56,7 @@ export function SelectField<V extends string>({
           className="size-5 shrink-0 text-ink-muted transition-transform group-data-[state=open]:rotate-180"
         />
       </Select>
+      {hint ? <p className="text-label text-ink-muted">{hint}</p> : null}
     </div>
   );
 }

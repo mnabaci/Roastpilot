@@ -1,188 +1,85 @@
-import type { ConnectTarget, Roaster, SerialPortInfo } from '@roastpilot/shared';
-import { Button } from '@roastpilot/ui';
-import { LoaderCircle } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
-import { connectErrorText } from './connect-error';
-import { useRun } from '../../features/use-run';
-import { useDeps } from '../../app/app-context';
-import { activeRoaster } from '../../stores/roasters-store';
-import { useConnection, useRoasters } from '../../stores/use-stores';
+import { Button, cn } from '@roastpilot/ui';
+import { RefreshCw } from 'lucide-react';
+import { targetLabel } from '../../app/connection-label';
 import { PortPicker } from './PortPicker';
-import { refusalText } from './roaster-refusal';
-import { roasterRows } from './roaster-rows';
+import { sameTarget } from './roaster-rows';
+import type { ConnectControls } from './use-connect-controls';
 
-const SIMULATOR: ConnectTarget = { kind: 'simulator' };
 const STATE_TEXT = { connecting: 'Connecting…', connected: 'Connected', lost: 'Reconnecting…' };
+/** The same colours as the Roasters tab's dot: grey off, air connected, ember on the way. */
+const DOT = { connecting: 'bg-heat', connected: 'bg-air', lost: 'bg-heat' };
 
 /**
- * Connect or disconnect one roaster, picking its port first if it has one
- * (docs/spec/ui.md, Roasters screen). Connect makes this roaster the active one.
+ * One roaster's connection as a single card (docs/spec/ui.md, Roasters screen): how it stands and
+ * on which port. The port list opens in it only to choose one. Connect is the page header's.
  */
-export function ConnectPanel({ roaster }: { roaster: Roaster }) {
-  const { api, stores, logger } = useDeps();
-  const run = useRun();
-  const active = useRoasters((s) => activeRoaster(s.roasters));
-  const connection = useConnection((s) => s.connection);
-  const { status } = connection;
-  const usedTarget = connection.status === 'disconnected' ? undefined : connection.target;
-  const isSimulator = roaster.model === 'simulator';
-  const target = isSimulator ? SIMULATOR : roaster.connection;
-  // Connect uses the active roaster, so while one is in use it is that one.
-  const inUse = usedTarget !== undefined && active?.id === roaster.id;
-  const otherInUse = usedTarget !== undefined && !inUse;
-  const [ports, setPorts] = useState<SerialPortInfo[]>([]);
-  const [error, setError] = useState<string | undefined>();
-  const [busy, setBusy] = useState(false);
-  // With a remembered port, the list stays closed until you choose another.
-  const [choosing, setChoosing] = useState(target === null);
-  const [showAll, setShowAll] = useState(false);
-  const connecting = busy || (inUse && status === 'connecting');
-  const idle = status === 'disconnected' && !connecting;
-
-  const refresh = useCallback(() => {
-    if (isSimulator) return;
-    run(
-      'ports.list-failed',
-      async () => {
-        setPorts(await api.listPorts());
-      },
-      { failed: "Couldn't list the ports · try Refresh" },
-    );
-  }, [api, run, isSimulator]);
-  useEffect(refresh, [refresh]);
-
-  /** Connect and a picked port both work on the active roaster, so this one goes first. */
-  const makeActive = async (): Promise<boolean> => {
-    if (roaster.active) return true;
-    const set = await api.setActiveRoaster(roaster.id);
-    if (set.ok) return true;
-    logger.warn('roasters.refused', { ...set.error });
-    setError(refusalText(set.error, 'switch roasters'));
-    return false;
-  };
-  const connect = (to: ConnectTarget) => {
-    setError(undefined);
-    setBusy(true);
-    run(
-      'connect.failed',
-      async () => {
-        try {
-          if (!(await makeActive())) return;
-          const result = await api.connect(to);
-          if (!result.ok) setError(connectErrorText(result.error));
-        } finally {
-          setBusy(false);
-        }
-      },
-      { failed: "Couldn't connect · try again" },
-    );
-  };
-  const select = (to: ConnectTarget) => {
-    setError(undefined);
-    run(
-      'roasters.choose-failed',
-      async () => {
-        if (!(await makeActive())) return;
-        const chosen = await api.chooseConnection(to);
-        if (!chosen.ok) {
-          logger.warn('roasters.refused', { ...chosen.error });
-          setError(refusalText(chosen.error, 'save the port'));
-          return;
-        }
-        stores.roasters.setState({ roasters: await api.listRoasters() });
-      },
-      { failed: "Couldn't save the port · try again" },
-    );
-    setChoosing(false);
-    setShowAll(false);
-  };
-
-  if (otherInUse) {
-    return (
-      <p className="text-body text-ink-muted">
-        Disconnect {active?.name ?? 'the roaster'} to switch
-      </p>
-    );
-  }
-
-  const shownTarget = inUse ? usedTarget : target;
-  const view = roasterRows(ports, {
-    inUse: inUse ? usedTarget : undefined,
-    saved: target,
-    choosing,
-    showAll,
-  });
-  // A Skywalker-type roaster lists ports only; the Simulator is its own record.
-  const rows = view.rows.filter((row) => row.target.kind === 'serial');
-  const ready = isSimulator || (target !== null && view.savedPresent);
-  const hint = error
-    ? undefined
-    : !isSimulator && idle && !view.anyRoaster && (choosing || !view.savedPresent)
-      ? 'No roaster found · plug it in, then Refresh'
-      : !isSimulator && idle && target === null
-        ? 'Pick a port to connect'
-        : undefined;
-
+export function ConnectPanel({ controls }: { controls: ConnectControls }) {
+  const c = controls;
+  const live = c.inUse && c.connection.status !== 'disconnected' ? c.connection.status : undefined;
+  const state = c.otherInUse
+    ? `Disconnect ${c.otherName} to switch`
+    : live
+      ? STATE_TEXT[live]
+      : c.connecting
+        ? 'Connecting…'
+        : c.target === null
+          ? 'No port chosen'
+          : 'Not connected';
+  const shownRow = c.rows.find((row) => sameTarget(c.shownTarget, row.target));
+  const port = c.isSimulator
+    ? 'Built in · practice without a roaster'
+    : c.shownTarget
+      ? [targetLabel(c.shownTarget), shownRow?.detail].filter(Boolean).join(' · ')
+      : 'No port';
+  const listing = !c.isSimulator && c.choosing && !c.otherInUse;
   return (
-    <section aria-label="Connection" className="flex flex-col gap-3">
-      {inUse && connection.status !== 'disconnected' ? (
-        <p className="text-body text-ink" aria-live="polite">
-          {STATE_TEXT[connection.status]}
-        </p>
-      ) : null}
-      {isSimulator ? null : (
-        <PortPicker
-          rows={rows}
-          shown={shownTarget}
-          hidden={choosing ? view.hidden : 0}
-          canRefresh={!inUse}
-          idle={idle}
-          canChooseAnother={idle && !choosing && target !== null}
-          onSelect={select}
-          onRefresh={refresh}
-          onShowAll={() => {
-            setShowAll(true);
-          }}
-          onChooseAnother={() => {
-            setChoosing(true);
-          }}
+    <section
+      aria-label="Connection"
+      className="flex flex-col gap-3 rounded-xl bg-surface px-5 py-3"
+    >
+      <div className="flex min-h-control-sm items-center gap-3">
+        <span
+          aria-hidden="true"
+          className={cn('size-2 shrink-0 rounded-full', live ? DOT[live] : 'bg-ink-muted')}
         />
-      )}
-      {idle || connecting ? (
-        <Button
-          variant="primary"
-          size="lg"
-          disabled={!ready || connecting}
-          aria-busy={connecting}
-          icon={
-            connecting ? (
-              <LoaderCircle aria-hidden="true" className="motion-safe:animate-spin" />
-            ) : undefined
-          }
-          onClick={() => {
-            if (target) connect(target);
-          }}
-        >
-          {connecting ? 'Connecting…' : 'Connect'}
-        </Button>
-      ) : (
-        <Button
-          size="lg"
-          onClick={() => {
-            run('disconnect.failed', () => api.disconnect(), {
-              failed: "Couldn't disconnect · try again",
-            });
-          }}
-        >
-          Disconnect
-        </Button>
-      )}
-      {error ? (
-        <p role="alert" className="text-body text-critical-text">
-          {error}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <p className="text-body text-ink" aria-live="polite">
+            {state}
+          </p>
+          {listing ? null : <p className="truncate text-label text-ink-muted">{port}</p>}
+        </div>
+        {!c.isSimulator && c.idle && !c.choosing && c.target !== null && !c.otherInUse ? (
+          <Button variant="ghost" size="sm" onClick={c.chooseAnother}>
+            Change port
+          </Button>
+        ) : null}
+        {!c.isSimulator && !c.inUse && !c.otherInUse ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label="Refresh ports"
+            icon={<RefreshCw aria-hidden="true" />}
+            disabled={!c.idle}
+            onClick={c.refresh}
+          />
+        ) : null}
+      </div>
+      {listing ? (
+        <PortPicker
+          rows={c.rows}
+          shown={c.shownTarget}
+          hidden={c.view.hidden}
+          idle={c.idle}
+          onSelect={c.select}
+          onShowAll={c.showAll}
+        />
+      ) : null}
+      {c.error ? (
+        <p role="alert" className="text-label text-critical-text">
+          {c.error}
         </p>
-      ) : hint ? (
-        <p className="text-label text-ink-muted">{hint}</p>
+      ) : c.hint ? (
+        <p className="text-label text-ink-muted">{c.hint}</p>
       ) : null}
     </section>
   );

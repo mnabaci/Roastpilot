@@ -57,8 +57,8 @@ export function ClearRoast() {
       <Button
         variant="ghost"
         size="sm"
-        // Its text on the step names' line, keeping the 44 px target without a taller row.
-        className="-my-3 shrink-0"
+        // A whole 44 px button: pulled into the step names' line, the scrolling column cut its top.
+        className="shrink-0"
         onClick={() => {
           if (deducted) setAsking(true);
           else clear(false);

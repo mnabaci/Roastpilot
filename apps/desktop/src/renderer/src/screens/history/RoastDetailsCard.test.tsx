@@ -53,7 +53,9 @@ describe('RoastDetailsCard', () => {
     expect(header).toHaveAccessibleDescription(
       `${BEAN.name} · 356 → 305 g · 14.3 % · rated 5 of 5 · Third auto roast curve`,
     );
-    expect(screen.queryByLabelText('Notes')).toBeNull();
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Notes')).toBeNull();
+    });
     await waitFor(() => {
       expect(api.setSettings).toHaveBeenCalledWith(
         expect.objectContaining({ historyDetailsOpen: false }),

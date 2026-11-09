@@ -88,6 +88,26 @@ export function HistoryScreen({
     );
   };
 
+  /** Deletes the ticked roasts; one still roasting stays, and says so. */
+  const removeTicked = () => {
+    const ids = [...selection.checked];
+    setDeleteError(undefined);
+    run(
+      'history.delete-many-failed',
+      async () => {
+        let kept = 0;
+        for (const id of ids) {
+          const deleted = await api.deleteRoast(id);
+          if (!deleted.ok) kept += 1;
+        }
+        selection.done();
+        if (kept > 0) setDeleteError("Couldn't delete every roast · one may still be roasting");
+        setPicked(undefined);
+      },
+      { failed: "Couldn't delete the roasts · try again" },
+    );
+  };
+
   if (roasts === undefined) return <main className="flex-1" />;
   if (list.length === 0)
     return (
@@ -142,20 +162,28 @@ export function HistoryScreen({
             <SelectionBar
               label="Selected roasts"
               count={selection.checked.size}
+              exportAction={
+                // A choice of file: a worded menu button, dimmed like Export elsewhere till a tick.
+                <Menu
+                  label="Export selected"
+                  text="Export"
+                  disabled={selection.checked.size === 0}
+                  items={(['roastpilot', 'csv'] as const).map((format) => ({
+                    label: format === 'csv' ? 'CSV' : 'Roastpilot file',
+                    onSelect: () => {
+                      files.exportRoasts({ format, ids: [...selection.checked] });
+                    },
+                  }))}
+                />
+              }
+              remove={{
+                verb: 'Delete',
+                noun: ['roast', 'roasts'],
+                detail: "can't be undone",
+                onConfirm: removeTicked,
+              }}
               onDone={selection.done}
-            >
-              <Menu
-                label="Export selected"
-                text="Export"
-                items={(['roastpilot', 'csv'] as const).map((format) => ({
-                  label: format === 'csv' ? 'CSV' : 'Roastpilot file',
-                  disabled: selection.checked.size === 0,
-                  onSelect: () => {
-                    files.exportRoasts({ format, ids: [...selection.checked] });
-                  },
-                }))}
-              />
-            </SelectionBar>
+            />
           ) : null}
           <RoastList
             label="Saved roasts"

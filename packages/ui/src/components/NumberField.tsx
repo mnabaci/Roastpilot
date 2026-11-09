@@ -16,6 +16,11 @@ export interface NumberFieldProps extends Omit<
   invalid?: boolean;
   /** One line under the field; in the critical colour when invalid. */
   hint?: string | undefined;
+  /**
+   * Read mode (docs/spec/ui.md, Read and edit): the value as text with its unit, no box, where the
+   * field would be; "–" when empty.
+   */
+  readOnly?: boolean;
 }
 
 /** A short numeric or m:ss input, for tables and rows of values (design system: NumberField). */
@@ -27,11 +32,33 @@ export function NumberField({
   hideLabel = false,
   invalid = false,
   hint,
+  readOnly = false,
   className,
   ...props
 }: NumberFieldProps) {
   const id = useId();
   const hintId = useId();
+  if (readOnly) {
+    const shown = value.trim() === '' ? '–' : unit ? `${value} ${unit}` : value;
+    return (
+      <div className={cn('flex flex-col gap-1.5', className)}>
+        <span id={id} className={hideLabel ? 'sr-only' : 'text-label text-ink-muted'}>
+          {label}
+        </span>
+        <p
+          aria-labelledby={id}
+          className={cn(
+            'flex h-control-sm items-center text-body text-ink tabular-nums',
+            // In a table the text lines up with the column's heading, as a field's would.
+            hideLabel && 'px-2.5',
+          )}
+        >
+          {shown}
+        </p>
+        {hint && !invalid ? <p className="text-label text-ink-muted">{hint}</p> : null}
+      </div>
+    );
+  }
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
       <label htmlFor={id} className={hideLabel ? 'sr-only' : 'text-label text-ink-muted'}>

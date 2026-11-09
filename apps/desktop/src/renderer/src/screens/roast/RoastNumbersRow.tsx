@@ -38,7 +38,8 @@ export function RoastNumbersRow({
         value={numbers.ror === undefined ? undefined : diffNumber(numbers.ror, unit, 1)}
         unit={rorSymbol(unit)}
         tone="air"
-        {...(rorLine ? { context: rorLine } : {})}
+        // Every card has its line under the value: the aim in Auto, else what the rate is over.
+        context={rorLine ?? 'Last 30 s'}
       />
       <StatCard
         label="Time"

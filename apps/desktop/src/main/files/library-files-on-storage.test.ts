@@ -12,6 +12,7 @@ const GUJI: BeanFields = {
   name: 'Ethiopia Guji',
   origin: 'Ethiopia',
   process: 'washed',
+  species: null,
   variety: null,
   altitudeM: 2100,
   densityGL: null,

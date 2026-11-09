@@ -5,7 +5,7 @@ import { useAuto, useSettings } from '../../stores/use-stores';
 import { activeEntry } from '../roast/use-active-profile';
 import { MilestoneBuilder } from './MilestoneBuilder';
 import { ProfileEditor } from './ProfileEditor';
-import { ProfileSelectionBar } from './ProfileSelectionBar';
+import { SelectionBar } from '../../features/SelectionBar';
 import { useProfileFiles } from './use-profile-files';
 import { useProfileSelect } from './use-profile-select';
 
@@ -60,10 +60,16 @@ export function ProfilesScreen({ openFirst }: { openFirst?: string | undefined }
       sidebar={
         <>
           {select.selecting ? (
-            <ProfileSelectionBar
+            <SelectionBar
+              label="Selected profiles"
               count={select.checked.size}
-              onExport={select.exportTicked}
-              onDelete={select.remove}
+              exportAction={select.exportTicked}
+              remove={{
+                verb: 'Delete',
+                noun: ['profile', 'profiles'],
+                detail: 'saved roasts keep their copy',
+                onConfirm: select.remove,
+              }}
               onDone={select.done}
             />
           ) : null}

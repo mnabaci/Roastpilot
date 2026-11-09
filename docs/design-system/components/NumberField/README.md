@@ -15,6 +15,7 @@ A short labelled input for a number or an `m:ss` time, in tables and rows of val
 - **Focus**: 2px `focus` ring, 2px offset.
 - **Invalid**: `critical-text` border and hint, `aria-invalid`; the hint is the field's description.
 - **Disabled**: 50% opacity, `not-allowed` cursor.
+- **Read** (`readOnly`): no field, the value as text (`body`, `ink`, tabular) with its unit (`240 °C`), or `–` when empty, on a line as tall as the field so a read page and its edit form line up; the label stays above and names it. Pages in read mode (a bean, a profile, a roaster) use it.
 
 ## Rules
 

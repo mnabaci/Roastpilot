@@ -3,6 +3,9 @@ import { ProfileIdSchema } from './profile';
 
 export const BeanProcessSchema = z.enum(['washed', 'natural', 'honey', 'other']);
 
+/** The coffee plant species: nearly every specialty bean is Arabica. */
+export const BeanSpeciesSchema = z.enum(['arabica', 'robusta', 'liberica', 'excelsa', 'other']);
+
 export const BeanIdSchema = z.number().int().positive();
 
 const positive = (message = 'Must be above 0') => z.number().positive(message);
@@ -22,6 +25,8 @@ export const BeanFieldsSchema = z.object({
   name: z.string().trim().min(1, 'Enter a name').max(120),
   origin: z.string().trim().min(1, 'Enter an origin').max(120),
   process: BeanProcessSchema,
+  /** Missing from files and beans saved before it: none. */
+  species: BeanSpeciesSchema.nullable().default(null),
   variety: z.string().trim().max(120).nullable(),
   altitudeM: positive().nullable(),
   densityGL: positive().nullable(),
@@ -98,6 +103,7 @@ export const NO_ROAST_SETUP: z.infer<typeof RoastSetupSchema> = {
 };
 
 export type BeanProcess = z.infer<typeof BeanProcessSchema>;
+export type BeanSpecies = z.infer<typeof BeanSpeciesSchema>;
 export type BeanId = z.infer<typeof BeanIdSchema>;
 export type BeanFields = z.infer<typeof BeanFieldsSchema>;
 export type Bean = z.infer<typeof BeanSchema>;

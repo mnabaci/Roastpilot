@@ -1,4 +1,5 @@
 import { cn } from '../lib/utils';
+import { StarRating } from './StarRating';
 
 export interface CompareTableRow {
   label: string;
@@ -7,6 +8,8 @@ export interface CompareTableRow {
   other: string | undefined;
   /** This one minus the other, signed; undefined leaves the cell blank. */
   diff: string | undefined;
+  /** `own` and `other` are ratings (`4`), shown as stars. */
+  stars?: boolean;
 }
 
 const VALUES = ['own', 'other', 'diff'] as const;
@@ -53,7 +56,11 @@ export function CompareTable({
               </th>
               {VALUES.map((key) => (
                 <td key={key} className="py-2 pl-4 text-right">
-                  {row[key] ?? (key === 'diff' ? '' : '–')}
+                  {row.stars && key !== 'diff' ? (
+                    <StarRating value={row[key] === undefined ? null : Number(row[key])} />
+                  ) : (
+                    (row[key] ?? (key === 'diff' ? '' : '–'))
+                  )}
                 </td>
               ))}
             </tr>

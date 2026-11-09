@@ -6,6 +6,7 @@ export const beans = sqliteTable('beans', {
   name: text('name').notNull(),
   origin: text('origin').notNull(),
   process: text('process', { enum: ['washed', 'natural', 'honey', 'other'] }).notNull(),
+  species: text('species', { enum: ['arabica', 'robusta', 'liberica', 'excelsa', 'other'] }),
   variety: text('variety'),
   altitudeM: real('altitude_m'),
   densityGL: real('density_g_l'),

@@ -45,7 +45,7 @@ export function SoakRow({
   return (
     <>
       <tr>
-        {/* The Soak stays first: no handle, only the column's room. */}
+        {/* The Soak stays first: no handle, an empty cell, as Development's. */}
         {readOnly ? null : <td className={BUTTON_CELL} />}
         <td className={cn(FIXED, 'text-ink')}>
           <span>Soak</span>
@@ -64,7 +64,8 @@ export function SoakRow({
             label="Soak fan"
             hideLabel
             value={draft.soakFan}
-            disabled={readOnly || off}
+            readOnly={readOnly}
+            disabled={off}
             invalid={Boolean(errors.soakFan)}
             onChange={(soakFan) => {
               onChange({ ...draft, soakFan });

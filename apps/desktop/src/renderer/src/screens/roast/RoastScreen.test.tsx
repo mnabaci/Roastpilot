@@ -445,6 +445,7 @@ describe('RoastScreen', () => {
       name: 'Ethiopia Yirgacheffe',
       origin: 'Ethiopia',
       process: 'washed' as const,
+      species: null,
       variety: null,
       altitudeM: null,
       densityGL: null,
@@ -827,7 +828,9 @@ describe('RoastScreen', () => {
       expect(api.setSettings).toHaveBeenCalledWith(expect.objectContaining({ roastMode: 'auto' }));
       await openSetup();
       expect(screen.getByLabelText('Profile')).toHaveTextContent('Light · Steps');
-      expect(screen.getByText('Needs calibration · stay close.')).toBeInTheDocument();
+      // Said once, by the badge on the setup line, not again under the field.
+      expect(screen.getByText('Needs calibration')).toBeInTheDocument();
+      expect(screen.queryByText(/stay close/)).toBeNull();
     });
 
     it('mid-roast shows how far the roast is from the plan, and the RoR the step aims for', () => {
@@ -854,7 +857,7 @@ describe('RoastScreen', () => {
     it('says a profile needs calibration as a badge under the folded setup line', () => {
       renderApp(<RoastScreen onConnect={onConnect} />, auto('ready'));
       const row = screen.getByRole('button', { name: 'Change setup' });
-      expect(row).toHaveTextContent(/^Light · Steps · No bean$/);
+      expect(row).toHaveTextContent(/^Light · StepsNo beanNeeds calibration$/);
       expect(
         within(screen.getByRole('region', { name: 'Setup' })).getByText('Needs calibration'),
       ).toBeInTheDocument();

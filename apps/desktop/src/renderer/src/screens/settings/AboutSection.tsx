@@ -75,13 +75,13 @@ export function AboutSection() {
       </SettingRow>
       <SettingRow name="Updates" hint={line}>
         {action === 'check' ? (
-          <Button disabled={busy} onClick={check}>
+          <Button size="sm" disabled={busy} onClick={check}>
             Check for updates
           </Button>
         ) : null}
         {action === 'restart' ? (
           <>
-            <Button variant="primary" disabled={roasting} onClick={restart}>
+            <Button size="sm" variant="primary" disabled={roasting} onClick={restart}>
               Restart to update
             </Button>
             {roasting ? <p className="text-label text-ink-muted">Finish the roast first</p> : null}
@@ -89,6 +89,7 @@ export function AboutSection() {
         ) : null}
         {action === 'download' ? (
           <Button
+            size="sm"
             variant="primary"
             onClick={() => {
               openPage('latest');

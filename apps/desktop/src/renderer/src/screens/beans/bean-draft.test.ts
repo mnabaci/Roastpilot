@@ -12,6 +12,7 @@ describe('bean draft', () => {
         origin: 'Ethiopia',
         process: 'washed',
         decaf: false,
+        species: null,
         variety: null,
         supplier: null,
         link: null,

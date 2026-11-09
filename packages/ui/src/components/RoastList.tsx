@@ -1,8 +1,9 @@
-import { Star } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { moveFocusInList } from '../lib/list-focus';
 import { cn } from '../lib/utils';
 import { Badge } from './Badge';
+import { spokenRating, StarRating } from './StarRating';
 import { TickBox } from './tick-box';
 import { Tooltip } from './Tooltip';
 
@@ -13,10 +14,12 @@ export interface RoastListItem {
   /** One line of numbers, e.g. `9:40 · FC 8:00 · 205.5 °C`. */
   numbers: string;
   /**
-   * A second line in parts, joined with ` · `, e.g. `Yirgacheffe`, `Auto · Light · Steps`, `4/5`.
-   * When it doesn't fit, the first part gives way first; the whole line is in a tooltip.
+   * A second line in parts, joined with ` · `, e.g. `Yirgacheffe`, `Auto · Light · Steps`. When it
+   * doesn't fit, both give way, the first never below a few letters; the whole line is in a tooltip.
    */
   detail?: readonly string[];
+  /** 1–5, shown as stars at the end of the second line. */
+  rating?: number | null;
   /** Marked with a filled star. */
   favourite?: boolean;
   /** A short status, e.g. `Unfinished`. */
@@ -59,7 +62,7 @@ export function RoastList({
         const ticked = selecting && checked.has(item.id);
         return (
           <li key={item.id}>
-            <WholeLine parts={item.detail}>
+            <WholeLine parts={wholeLine(item)}>
               <button
                 type="button"
                 {...(selecting
@@ -80,7 +83,7 @@ export function RoastList({
                     {selecting ? <TickBox ticked={ticked} /> : null}
                     <span className="truncate text-body font-semibold text-ink">{item.title}</span>
                     {item.favourite ? (
-                      <Star
+                      <Heart
                         role="img"
                         aria-label="Favourite"
                         className="size-3.5 shrink-0 text-heat"
@@ -93,7 +96,9 @@ export function RoastList({
                 {item.numbers ? (
                   <span className="truncate text-label text-ink-muted">{item.numbers}</span>
                 ) : null}
-                {item.detail && item.detail.length > 0 ? <DetailLine parts={item.detail} /> : null}
+                {item.detail && item.detail.length > 0 ? (
+                  <DetailLine parts={item.detail} rating={item.rating} />
+                ) : null}
               </button>
             </WholeLine>
           </li>
@@ -120,19 +125,29 @@ function WholeLine({
   );
 }
 
+/** The second line in words, for its tooltip: `Yirgacheffe · Auto · Light · Steps · Rated 4 of 5`. */
+function wholeLine(item: RoastListItem): string[] | undefined {
+  if (!item.detail || item.detail.length === 0) return undefined;
+  return item.rating == null ? [...item.detail] : [...item.detail, spokenRating(item.rating)];
+}
+
 /**
- * The second line: the first part (the bean) shrinks to its ellipsis before the rest truncates
- * ("African… · Auto · Light · Steps"), with flexbox, not measuring text.
+ * The second line: the bean, then the rest, both truncating at their ends but the bean never below
+ * a few letters, so the line never starts with its separator; then the stars, which never shrink.
+ * Flexbox, not measuring text.
  */
-function DetailLine({ parts }: { parts: readonly string[] }) {
+function DetailLine({ parts, rating }: { parts: readonly string[]; rating?: number | null }) {
   const [first, ...rest] = parts;
   return (
-    <span className="flex min-w-0 text-label text-ink-muted">
-      <span className="min-w-0 truncate">{first}</span>
+    <span className="flex min-w-0 items-center text-label text-ink-muted">
+      <span className="max-w-1/2 min-w-12 shrink truncate">{first}</span>
       {rest.length > 0 ? (
         // A no-break space, so the separator's leading space isn't trimmed.
-        <span className="max-w-full shrink-0 truncate">{`\u00a0·\u00a0${rest.join(SEPARATOR)}`}</span>
-      ) : null}
+        <span className="min-w-0 flex-1 truncate">{`\u00a0·\u00a0${rest.join(SEPARATOR)}`}</span>
+      ) : (
+        <span className="flex-1" />
+      )}
+      {rating == null ? null : <StarRating value={rating} className="ml-2" />}
     </span>
   );
 }

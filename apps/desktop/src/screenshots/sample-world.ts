@@ -12,6 +12,7 @@ import {
 /** A bean as the Add bean form saves it; only what the sample sets differs from empty. */
 const bean = (fields: Partial<BeanFields> & Pick<BeanFields, 'name' | 'origin'>): BeanFields => ({
   process: 'washed',
+  species: 'arabica',
   variety: null,
   altitudeM: null,
   densityGL: null,
