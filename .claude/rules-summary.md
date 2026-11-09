@@ -1,6 +1,6 @@
 Roastpilot rules (full list: AGENTS.md and the engineering-standards skill):
 
-1. Load the engineering-standards skill before writing or changing code; start features with plan-feature.
+1. Load the engineering-standards skill before writing or changing code; challenge any user-facing request first (challenge skill), then plan-feature.
 2. Spec in docs/spec is the source of truth: change it first.
 3. Package boundaries: shared <- core <- drivers/storage; ui <- shared; only apps/desktop uses Electron.
 4. core is pure TypeScript: no Electron, no Node I/O, inject time.

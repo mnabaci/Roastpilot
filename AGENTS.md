@@ -18,6 +18,7 @@ Claude Code runs these as skills; other agents open and follow the file. Skill `
 | When you …                                                  | Read                    |
 | ----------------------------------------------------------- | ----------------------- |
 | write or change any code                                    | `engineering-standards` |
+| get a request that changes what users see or do (first)     | `challenge`             |
 | add or change behaviour (start here, before code)           | `plan-feature`          |
 | review a change, before opening or merging a PR             | `code-review`           |
 | change a screen or component (review it)                    | `design-review`         |
@@ -34,6 +35,7 @@ Claude Code runs these as skills; other agents open and follow the file. Skill `
 
 ## Non-negotiables
 
+- **Challenge before building:** every request that changes what users see or do is checked against who Roastpilot is for and what it isn't (`docs/spec/overview.md`, `challenge` skill), the maintainer's requests included.
 - **UX first, no walls of text:** one obvious next action per state, numbers before sentences, one-line hints.
 - **SOLID, KISS, DRY:** small single-purpose modules; depend on interfaces; no speculative abstractions.
 - **Extend by adding, not editing:** new hardware, rules, layers or exporters are new implementations of an extension point (`docs/spec/extensibility.md`), registered at startup.
