@@ -1,4 +1,4 @@
-import { Button, cn, type ButtonProps } from '@roastpilot/ui';
+import { Button, cn, Tooltip, type ButtonProps } from '@roastpilot/ui';
 import { GripVertical } from 'lucide-react';
 
 /**
@@ -7,15 +7,19 @@ import { GripVertical } from 'lucide-react';
  */
 export function StepHandle({ name, className, ...props }: { name: string } & ButtonProps) {
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      aria-label={`Move ${name}`}
-      aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
-      title="Drag, or Alt+↑ / Alt+↓"
-      className={cn('cursor-grab touch-none px-0 text-ink-muted active:cursor-grabbing', className)}
-      icon={<GripVertical aria-hidden="true" />}
-      {...props}
-    />
+    <Tooltip content="Drag, or Alt+↑ / Alt+↓">
+      <Button
+        variant="ghost"
+        size="sm"
+        aria-label={`Move ${name}`}
+        aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+        className={cn(
+          'cursor-grab touch-none px-0 text-ink-muted active:cursor-grabbing',
+          className,
+        )}
+        icon={<GripVertical aria-hidden="true" />}
+        {...props}
+      />
+    </Tooltip>
   );
 }
