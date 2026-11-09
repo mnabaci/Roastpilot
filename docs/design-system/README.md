@@ -100,7 +100,7 @@ Lucide icons (shadcn/ui's default set), 20px, 2px stroke, `currentColor`. No emo
 
 ## Components
 
-Mark, Button, Badge, StatCard, OutputControl, CoachCard, PhaseStepper, AlertBanner, Toast, RoastChart, RoastStrip, TextField, NumberField, Select, SelectField, FilterSelect, Switch, SegmentedControl, RoastList, EventTable, RoastTable, NavList, SidebarLayout, ErrorState, Menu and ConfirmDialog. Each has its guidelines in `components/<Name>/README.md` and, where one is drawn, a static preview beside it (`preview.html`); the live components are in Storybook (`pnpm storybook`).
+Mark, Button, Badge, StatCard, OutputControl, CoachCard, PhaseStepper, AlertBanner, Toast, RoastChart, RoastStrip, TextField, NumberField, Select, SelectField, FilterSelect, Switch, SegmentedControl, RoastList, EventTable, RoastTable, NavList, SidebarLayout, ErrorState, Menu, ConfirmDialog and Tooltip. Each has its guidelines in `components/<Name>/README.md` and, where one is drawn, a static preview beside it (`preview.html`); the live components are in Storybook (`pnpm storybook`).
 
 ## Files
 

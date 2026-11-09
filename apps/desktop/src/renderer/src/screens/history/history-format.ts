@@ -67,20 +67,19 @@ export const howItRan = (roast: Pick<RoastSummary, 'profileName'>): string =>
   roast.profileName === null ? 'Manual' : `Auto · ${roast.profileName}`;
 
 /**
- * `Yirgacheffe · Auto · Light · Steps · 4/5`: bean, how it ran, and rating. Only an Auto roast keeps
- * a profile, so a profile means Auto.
+ * `Yirgacheffe`, `Auto · Light · Steps`, `4/5`: bean, how it ran, and rating, as the row's parts, so
+ * the bean can give way first (docs/spec/ui.md, History). Only an Auto roast keeps a profile, so a
+ * profile means Auto.
  */
-export function roastDetailLine(
+export function roastDetailParts(
   roast: RoastSummary,
   beans: readonly Pick<Bean, 'id' | 'name'>[],
-): string {
+): string[] {
   return [
     beans.find((b) => b.id === roast.beanId)?.name ?? 'No bean',
     howItRan(roast),
     roast.rating === null ? undefined : `${String(roast.rating)}/5`,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  ].filter((part): part is string => part !== undefined);
 }
 
 /** List rows. A roast that never reached its end is Unfinished, unless it is in progress. */
@@ -96,7 +95,7 @@ export function roastRows(
     id: roast.id,
     title: roastTitle(roast.startedAt, options),
     numbers: roastNumbers(roast, unit),
-    detail: roastDetailLine(roast, beans),
+    detail: roastDetailParts(roast, beans),
     favourite: roast.isFavourite,
     badge: roast.endedAt !== null ? undefined : roast.id === live ? 'In progress' : 'Unfinished',
   }));

@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { RoastList } from './RoastList';
+import { TOOLTIP_DELAY_MS } from './Tooltip';
 
 const ITEMS = [
   { id: 3, title: 'Wed 4 Nov · 14:32', numbers: '9:40 · FC 8:00 · 205.5 °C' },
@@ -44,13 +45,21 @@ describe('RoastList', () => {
       <RoastList
         label="Saved roasts"
         items={[
-          { id: 1, title: 'Wed', numbers: '9:40', detail: 'Yirgacheffe · 4/5', favourite: true },
+          {
+            id: 1,
+            title: 'Wed',
+            numbers: '9:40',
+            detail: ['Yirgacheffe', 'Auto · Light · Steps', '4/5'],
+            favourite: true,
+          },
         ]}
         selectedId={undefined}
         onSelect={() => undefined}
       />,
     );
-    expect(screen.getByText('Yirgacheffe · 4/5')).toBeTruthy();
+    expect(screen.getByRole('button')).toHaveTextContent(
+      'Yirgacheffe · Auto · Light · Steps · 4/5',
+    );
     expect(screen.getByRole('img', { name: 'Favourite' })).toBeTruthy();
   });
 
@@ -78,5 +87,26 @@ describe('RoastList', () => {
     await user.keyboard('{/Shift}');
     expect(onCheck).toHaveBeenLastCalledWith(ITEMS[1]?.id, true);
     expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('shows the whole second line in a tooltip when you rest on a row', () => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <RoastList
+          label="Saved roasts"
+          items={[{ id: 1, title: 'Wed', numbers: '9:40', detail: ['African Moon', 'Manual'] }]}
+          selectedId={undefined}
+          onSelect={() => undefined}
+        />,
+      );
+      fireEvent.pointerOver(screen.getByRole('button'));
+      act(() => {
+        vi.advanceTimersByTime(TOOLTIP_DELAY_MS);
+      });
+      expect(screen.getByRole('tooltip')).toHaveTextContent('African Moon · Manual');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
