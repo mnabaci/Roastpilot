@@ -1,3 +1,4 @@
+import { Lock } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { moveFocusInList } from '../lib/list-focus';
 import { cn } from '../lib/utils';
@@ -64,17 +65,22 @@ export function NavList<T extends string | number>({
                 }}
                 className={cn(
                   'flex min-h-control-sm w-full items-center gap-2 rounded-md px-3 py-1.5 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
+                  // In select mode every row reads at full contrast, as History's do; only the
+                  // open (or ticked) one is grey.
                   locked
-                    ? 'cursor-not-allowed text-ink-muted'
+                    ? 'cursor-not-allowed text-ink'
                     : shown
                       ? 'bg-surface-raised text-ink'
-                      : 'text-ink-muted hover:bg-surface-hover hover:text-ink',
+                      : selecting
+                        ? 'text-ink hover:bg-surface-hover'
+                        : 'text-ink-muted hover:bg-surface-hover hover:text-ink',
                 )}
               >
-                {selecting ? (
-                  <span className={cn(locked && 'opacity-50')}>
-                    <TickBox ticked={ticked} />
-                  </span>
+                {/* A lock where the box would be: this one can't be ticked, the line under says why. */}
+                {locked ? (
+                  <Lock aria-hidden="true" className="size-5 shrink-0 p-0.5 text-ink-muted" />
+                ) : selecting ? (
+                  <TickBox ticked={ticked} />
                 ) : null}
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate text-body">{item.label}</span>

@@ -16,7 +16,7 @@ Compact, tonal buttons with an icon: one ember primary per phase, quiet tonal se
 
 ## Sizes
 
-- `sm` (`control-sm`, 44px, 14px side padding, `label` at 600) for page-header actions next to the title, the ⋯, filter chips and the coach card's buttons; `md` (`control-md`, 48px, 16px padding, `body` at 600, the default) for form Save / Cancel; `lg` (`control-lg`, 56px, full width, 20px padding, `heading` at 600) for the phase action.
+- `sm` (`control-sm`, 44px, 14px side padding, `label` at 600) for every action outside the Roast screen's side panel: page-header actions next to the title (Edit, Cancel / Save), the ⋯, filter chips, forms' Cancel / Save (Add stock, New from milestones), Add beside its fields (Add roaster), Settings rows (Check for updates) and the coach card's buttons; `md` (`control-md`, 48px, 16px padding, `body` at 600, the default) on the Roast screen's side panel, read from a step back (the flow's secondary actions, Stop roast), and the sidebar's Add bean / Add roaster; `lg` (`control-lg`, 56px, full width, 20px padding, `heading` at 600) for the phase action.
 - The text style comes from the size, never the variant: every label is semibold.
 - `sm` and `md` are at least as wide as they are tall, so a one-character or icon-only button (a rating 1–5) is still a square 44 / 48px target.
 
@@ -29,4 +29,4 @@ Lucide, 20px, 2px stroke, left of the label with an 8px gap: Flame for Preheat, 
 - A real `<button>`; never a clickable div.
 - No outlines as a style, except the Outline variant for closing buttons; otherwise borders only for focus (2px `focus` ring, 2px offset).
 - One primary per screen state.
-- **Choice buttons** (dialogs, the coach card, an editor's Save / Discard, a form's Save / Cancel): at the right end, the quiet choice first (Cancel, Discard, Dismiss, Keep roasting) and the action last (Save, Apply, Stop roast), as macOS and Windows dialogs do. One alone also sits at the right.
+- **Choice buttons** (dialogs, the coach card, an editor's or a form's Cancel / Save): at the right end, the quiet choice first (Cancel, secondary, never ghost outside a dialog; Dismiss; Keep roasting) and the action last (Save, Apply, Stop roast), as macOS and Windows dialogs do. One alone also sits at the right.

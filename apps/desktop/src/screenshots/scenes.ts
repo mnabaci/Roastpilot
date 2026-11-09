@@ -51,7 +51,7 @@ export const SCENES: readonly Scene[] = [
     screen: 'profiles',
     prepare: async () => {
       await user().click(await page.findByRole('button', { name: 'Light · Steps' }));
-      await page.findByDisplayValue('Light · Steps');
+      await page.findByRole('heading', { level: 2, name: 'Light · Steps' });
     },
   },
   {

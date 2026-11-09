@@ -51,10 +51,11 @@ export function AddStockForm({ bean, onDone }: { bean: Bean; onDone: () => void 
         </p>
       ) : null}
       <div className="flex justify-end gap-2">
-        <Button variant="ghost" onClick={onDone}>
+        <Button size="sm" onClick={onDone}>
           Cancel
         </Button>
         <Button
+          size="sm"
           variant="primary"
           disabled={!valid}
           onClick={() => {
@@ -110,10 +111,11 @@ export function AdjustStockForm({ bean, onDone }: { bean: Bean; onDone: () => vo
         </p>
       ) : null}
       <div className="flex justify-end gap-2">
-        <Button variant="ghost" onClick={onDone}>
+        <Button size="sm" onClick={onDone}>
           Cancel
         </Button>
         <Button
+          size="sm"
           variant="primary"
           disabled={!valid}
           onClick={() => {

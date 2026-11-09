@@ -3,6 +3,7 @@ import {
   type Bean,
   type BeanFields,
   type BeanProcess,
+  type BeanSpecies,
   type Result,
 } from '@roastpilot/shared';
 
@@ -11,6 +12,8 @@ export interface BeanDraft {
   name: string;
   origin: string;
   process: BeanProcess;
+  /** `''` until you pick one. */
+  species: BeanSpecies | '';
   variety: string;
   altitudeM: string;
   densityGL: string;
@@ -34,6 +37,7 @@ export function toBeanDraft(bean: Bean | undefined): BeanDraft {
     name: bean?.name ?? '',
     origin: bean?.origin ?? '',
     process: bean?.process ?? 'washed',
+    species: bean?.species ?? '',
     variety: text(bean?.variety ?? null),
     altitudeM: text(bean?.altitudeM ?? null),
     densityGL: text(bean?.densityGL ?? null),
@@ -63,6 +67,7 @@ export function fromBeanDraft(draft: BeanDraft): Result<BeanFields, BeanDraftErr
     name: draft.name,
     origin: draft.origin,
     process: draft.process,
+    species: draft.species === '' ? null : draft.species,
     decaf: draft.decaf,
     variety: optionalText(draft.variety),
     supplier: optionalText(draft.supplier),

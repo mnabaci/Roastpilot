@@ -33,7 +33,7 @@ export function TopValues({
           key={key}
           label={label}
           value={draft[key]}
-          disabled={readOnly}
+          readOnly={readOnly}
           invalid={Boolean(errors[key])}
           hint={errors[key] ?? hint}
           {...(unit ? { unit: unit === 'temp' ? tempSymbol(draft.unit) : unit } : {})}

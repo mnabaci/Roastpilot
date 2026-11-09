@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -30,7 +30,11 @@ describe('CollapsibleCard', () => {
     expect(screen.queryByText('African Moon · ★★★★★')).toBeNull();
     await userEvent.click(header);
     expect(header).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByLabelText('Notes')).toBeNull();
+    // Folding, it is out of reach at once, and gone once it has shrunk.
+    expect(screen.getByLabelText('Notes').closest('[inert]')).not.toBeNull();
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Notes')).toBeNull();
+    });
   });
 
   it('folded, sums up what is inside, spoken in words', () => {

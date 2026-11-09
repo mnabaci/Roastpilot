@@ -20,10 +20,10 @@ describe('roastNumbers', () => {
     });
   });
 
-  it('BT and RoR from the readings; no time before charge', () => {
+  it('BT from the readings; no RoR or time before charge, as on the chart', () => {
     const n = roastNumbers(roast({ phase: 'preheat' }), readings(60));
     expect(n.bt).toBeCloseTo(110);
-    expect(n.ror).toBeCloseTo(10);
+    expect(n.ror).toBeUndefined();
     expect(n.elapsedS).toBeUndefined();
   });
 

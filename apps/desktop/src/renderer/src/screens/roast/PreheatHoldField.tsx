@@ -47,21 +47,13 @@ export function PreheatHoldField({
     });
   };
   return (
-    <div className="flex items-center justify-between gap-3">
-      {/* Two lines, so neither wraps beside the select in the narrow panel. */}
-      <div className="flex min-w-0 flex-col">
-        <p className="text-body text-ink">Preheat hold</p>
-        <p className="text-label text-ink-muted">{BATCH[batch]}</p>
-      </div>
-      <SelectField
-        label="Preheat hold"
-        hideLabel
-        numeric
-        value={String(shownS)}
-        options={OPTIONS}
-        onChange={choose}
-        className="w-24 shrink-0"
-      />
-    </div>
+    <SelectField
+      label="Preheat hold"
+      numeric
+      value={String(shownS)}
+      options={OPTIONS}
+      onChange={choose}
+      hint={BATCH[batch]}
+    />
   );
 }

@@ -74,6 +74,48 @@
     outline: 2px solid var(--focus);
     outline-offset: 2px;
   }
+  /* Everything you can click shows the hand; disabled controls say no (design system README). */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='checkbox']:not([aria-disabled='true']),
+  [role='switch']:not([aria-disabled='true']),
+  [role='tab'],
+  [role='option']:not([aria-disabled='true']),
+  [role='menuitem']:not([data-disabled]),
+  a[href],
+  label:has(input:not(:disabled)) {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+}
+
+/* CollapsibleCard's content grows from nothing to its height and fades in, and back (grid rows
+   0fr → 1fr animate to the content's own height). 150ms ease, as the steps table's drag; none
+   with reduced motion. */
+.collapse-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 150ms ease,
+    opacity 150ms ease;
+}
+.collapse-panel[data-open] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  /* Just mounted, it starts from nothing, so opening animates too. */
+  @starting-style {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .collapse-panel {
+    transition: none;
+  }
 }
 
 /* RoastChart hover line (uPlot's cursor), in token colours. */

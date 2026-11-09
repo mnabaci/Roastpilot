@@ -2,6 +2,7 @@ import type { ProfileEntry } from '@roastpilot/shared';
 import { Badge, Button, ConfirmDialog, Menu, type MenuItem } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
+import { EditActions } from '../../features/EditActions';
 import { useLibraryFiles } from '../../features/use-library-files';
 import { IN_USE } from '../../features/profile-messages';
 import { useRun } from '../../features/use-run';
@@ -16,6 +17,8 @@ export function ProfileActions({
   state,
   active,
   locked,
+  editing,
+  onEditingChange,
   onSelect,
   onCopied,
 }: {
@@ -24,6 +27,8 @@ export function ProfileActions({
   active: boolean;
   /** Auto is running a profile: the choice, and the one it runs, wait until Drop. */
   locked: boolean;
+  editing: boolean;
+  onEditingChange: (editing: boolean) => void;
   onSelect: (id: string) => void;
   onCopied: (message: string) => void;
 }) {
@@ -57,6 +62,7 @@ export function ProfileActions({
         setProblem(undefined);
         await refresh();
         state.discard();
+        onEditingChange(false);
       },
       { failed: "Couldn't save the profile · try again" },
     );
@@ -139,7 +145,8 @@ export function ProfileActions({
   const yours = !entry.builtIn && !(active && locked);
   const { needsCalibration } = entry.profile;
   const more: MenuItem[] = [
-    { label: 'Duplicate', onSelect: duplicate },
+    // A built-in's Duplicate is its button.
+    ...(entry.builtIn ? [] : [{ label: 'Duplicate', onSelect: duplicate }]),
     ...others.map((roaster) => ({
       label: `Copy to ${roaster.name}`,
       onSelect: () => {
@@ -179,41 +186,49 @@ export function ProfileActions({
   return (
     <div className="flex flex-col items-end gap-1">
       <div className="flex items-center gap-2">
-        {state.edited ? (
-          <>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                // A refusal was about the edit going away with it.
-                setProblem(undefined);
-                state.discard();
-              }}
-            >
-              Discard
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              disabled={!state.valid || (active && locked)}
-              onClick={save}
-            >
-              Save
-            </Button>
-          </>
-        ) : active ? (
-          <Badge tone="air">Auto</Badge>
-        ) : (
-          <Button
-            variant="primary"
-            size="sm"
-            disabled={locked}
-            onClick={() => {
-              saveSettings({ autoProfile: id });
+        {editing ? (
+          // Cancel throws the edit away; Save waits for a change it can save.
+          <EditActions
+            onCancel={() => {
+              setProblem(undefined);
+              state.discard();
+              onEditingChange(false);
             }}
-          >
-            Use for Auto
-          </Button>
+            onSave={save}
+            canSave={state.edited && state.valid !== undefined && !(active && locked)}
+          />
+        ) : (
+          <>
+            {active ? (
+              <Badge tone="air">Auto</Badge>
+            ) : (
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={locked}
+                onClick={() => {
+                  saveSettings({ autoProfile: id });
+                }}
+              >
+                Use for Auto
+              </Button>
+            )}
+            {/* A built-in can't change: its copy can. */}
+            {entry.builtIn ? (
+              <Button size="sm" onClick={duplicate}>
+                Duplicate
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                onClick={() => {
+                  onEditingChange(true);
+                }}
+              >
+                Edit
+              </Button>
+            )}
+          </>
         )}
         <Menu label={`More for ${entry.profile.name}`} items={more} />
       </div>

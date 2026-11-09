@@ -1,3 +1,4 @@
+import { formatPlainTemp } from '@roastpilot/shared';
 import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { activeRoaster } from '../../stores/roasters-store';
 import { useAuto, useRoast, useRoasters } from '../../stores/use-stores';
@@ -5,8 +6,8 @@ import { planLine, rorAimLine } from './plan-lines';
 import { useActiveProfile, useRunningPlan } from './use-active-profile';
 
 /**
- * In Auto, mid-roast: how far BT is from the plan, and the RoR the phase aims for, for the big
- * numbers (docs/spec/ui.md, Big numbers). Nothing in a manual roast.
+ * In Auto: the charge temperature in preheat; mid-roast, how far BT is from the plan, and the RoR
+ * the phase aims for, for the big numbers (docs/spec/ui.md, Big numbers). Nothing in a manual roast.
  */
 export function usePlanLines(
   bt: number | undefined,
@@ -19,6 +20,9 @@ export function usePlanLines(
   const profile = useActiveProfile()?.profile;
   const curveFollow = activeRoaster(useRoasters((s) => s.roasters))?.tuning.curveFollow;
   const roasting = roast.phase === 'roasting' || roast.phase === 'development';
+  // In preheat, where Auto takes the drum: the charge temperature, under the temperature.
+  if (auto.enabled && roast.phase === 'preheat' && profile)
+    return { temp: `Charge at ${formatPlainTemp(profile.chargeC, unit)}` };
   if (!auto.enabled || !roasting) return {};
   const temp =
     plan && bt !== undefined && elapsedS !== undefined

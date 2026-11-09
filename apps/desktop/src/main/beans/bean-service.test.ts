@@ -73,6 +73,7 @@ describe('BeanService find and linkProfile', () => {
     screen: null,
     decaf: false,
     supplier: null,
+    species: null,
     link: null,
     lowStockG: 0,
     notes: null,

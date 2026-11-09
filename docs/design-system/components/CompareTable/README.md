@@ -6,7 +6,7 @@ Two roasts' numbers side by side with the difference, on History while comparing
 
 - **Card**: `surface` fill, `radius-xl`, `space-4` padding; a `table` with 1px `border` rules between rows and no outer border, like EventTable.
 - **Header**: an unlabelled first column (named "Measure" for screen readers), then This roast · the compared roast's date and time (`Mon 2 Nov · 18:20`) · Difference, in `label` `ink-muted`, right-aligned over their numbers.
-- **Rows**: `label` size, `ink`, tabular, values right-aligned: `First crack · 8:00 · 196.2 °C · 7:30 · 195.0 °C · +0:30 · +1.2 °C`. Rows: Total, Turning point, Dry end, First crack, Development, Drop temp, Weight loss, Rating, Profile, Bean.
+- **Rows**: `label` size, `ink`, tabular, values right-aligned: `First crack · 8:00 · 196.2 °C · 7:30 · 195.0 °C · +0:30 · +1.2 °C`. Rows: Total, Turning point, Dry end, First crack, Development, Drop temp, Weight loss, Rating, Profile, Bean. A row marked `stars` (Rating) shows each value as StarRating, its difference as a number (`+1`).
 - **Missing**: a dash where a roast has no value; the Difference is left blank where the two can't be compared (a value missing, or words such as Profile and Bean).
 
 ## Rules

@@ -6,6 +6,7 @@ export const BEAN: Bean = {
   name: 'Yirgacheffe',
   origin: 'Ethiopia',
   process: 'washed',
+  species: 'arabica',
   variety: null,
   altitudeM: 1900,
   densityGL: 830,

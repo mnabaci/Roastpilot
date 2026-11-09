@@ -3,7 +3,7 @@ import type { Reading, RoastState } from '@roastpilot/shared';
 
 export interface RoastNumbers {
   bt: number | undefined;
-  /** °C/min over the last 30 s, never reaching back before charge. */
+  /** °C/min over the last 30 s since charge; none before it, as on the chart. */
   ror: number | undefined;
   /** Seconds since charge, frozen at drop. */
   elapsedS: number | undefined;
@@ -30,7 +30,8 @@ export function roastNumbers(roast: RoastState, readings: readonly Reading[]): R
     roast.firstCrackAtMs !== null && endMs !== undefined ? endMs - roast.firstCrackAtMs : undefined;
   return {
     bt: latest?.values.bt,
-    ror: rateOfRise(rorReadings(readings, roast.chargedAtMs)),
+    ror:
+      roast.chargedAtMs === null ? undefined : rateOfRise(rorReadings(readings, roast.chargedAtMs)),
     elapsedS: elapsedMs === undefined ? undefined : seconds(elapsedMs),
     preheatS:
       // typeof, not !== null: a main process from before preheatAtMs existed leaves it out.

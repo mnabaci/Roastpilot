@@ -2,6 +2,7 @@ export { cn } from './lib/utils';
 export { AlertBanner, type AlertBannerProps } from './components/AlertBanner';
 export { Badge, type BadgeProps } from './components/Badge';
 export { Button, type ButtonProps } from './components/Button';
+export { Dialog, type DialogProps } from './components/Dialog';
 export { CoachCard, type CoachCardProps } from './components/CoachCard';
 export type { CoachChange as CoachCardChange } from './components/CoachChanges';
 export { OutputControl, type OutputControlProps } from './components/OutputControl';
@@ -49,6 +50,7 @@ export { NavList, type NavListItem, type NavListProps } from './components/NavLi
 export { SidebarLayout, type SidebarLayoutProps } from './components/SidebarLayout';
 export { ErrorState, type ErrorStateProps } from './components/ErrorState';
 export { Menu, type MenuItem, type MenuProps } from './components/Menu';
+export { MAX_STARS, spokenRating, StarRating, type StarRatingProps } from './components/StarRating';
 export { ConfirmDialog, type ConfirmDialogProps } from './components/ConfirmDialog';
 export { Tooltip, TOOLTIP_DELAY_MS, type TooltipProps } from './components/Tooltip';
 export { FilterSelect, type FilterSelectProps } from './components/FilterSelect';

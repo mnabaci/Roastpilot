@@ -45,7 +45,7 @@ export function AddRoaster({ onAdded }: { onAdded: (id: RoasterId) => void }) {
           options={MODELS}
           onChange={setModel}
         />
-        <Button variant="primary" disabled={name.trim() === ''} onClick={add}>
+        <Button size="sm" variant="primary" disabled={name.trim() === ''} onClick={add}>
           Add
         </Button>
       </div>

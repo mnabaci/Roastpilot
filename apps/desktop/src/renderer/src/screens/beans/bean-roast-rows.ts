@@ -27,7 +27,7 @@ export function beanRoastRows(
       drop: roast.dropTemp === null ? undefined : formatTemp(roast.dropTemp, unit, 1),
       weights: weights(roast),
       loss: loss === undefined ? undefined : `${formatNumber(loss, 1)} %`,
-      rating: roast.rating === null ? undefined : `${String(roast.rating)}/5`,
+      rating: roast.rating ?? undefined,
     };
   });
 }

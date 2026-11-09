@@ -1,12 +1,7 @@
 import { MODEL_DRUM_SPEED, type Roaster } from '@roastpilot/shared';
 import { Button, NumberField, Switch, TextField } from '@roastpilot/ui';
 import { ChevronDown } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { useDeps } from '../../app/app-context';
-import { useRun } from '../../features/use-run';
-import { useTemperatureUnit } from '../../features/use-temperature-unit';
-import { fromRoasterDraft, toRoasterDraft } from './roaster-draft';
-import { refusalText } from './roaster-refusal';
+import { useState } from 'react';
 import {
   DRUM_FIELDS,
   everydayFields,
@@ -14,34 +9,23 @@ import {
   tuningHint,
   type FieldGroup,
 } from './roaster-fields';
+import type { RoasterDraftState } from './use-roaster-draft';
 
-/** One roaster's record (docs/spec/roasters.md). Locked while a roaster is connected. */
-export function RoasterEditor({ roaster, locked }: { roaster: Roaster; locked: boolean }) {
-  const { api, logger } = useDeps();
-  const run = useRun();
-  const unit = useTemperatureUnit();
-  const saved = useMemo(() => toRoasterDraft(roaster, unit), [roaster, unit]);
-  const [draft, setDraft] = useState(saved);
-  const [problem, setProblem] = useState<string>();
-  const checked = useMemo(() => fromRoasterDraft(draft, roaster, unit), [draft, roaster, unit]);
-  const errors = checked.ok ? {} : checked.error;
-  const edited = JSON.stringify(draft) !== JSON.stringify(saved);
-  const save = () => {
-    if (!checked.ok) return;
-    run(
-      'roasters.save-failed',
-      async () => {
-        const result = await api.saveRoaster(checked.value);
-        if (result.ok) {
-          setProblem(undefined);
-          return;
-        }
-        logger.warn('roasters.refused', { ...result.error });
-        setProblem(refusalText(result.error, 'save'));
-      },
-      { failed: "Couldn't save the roaster · try again" },
-    );
-  };
+/**
+ * One roaster's record (docs/spec/roasters.md): read until Edit, then a form whose Cancel and Save
+ * sit in the page's header.
+ */
+export function RoasterEditor({
+  roaster,
+  state,
+  editing,
+}: {
+  roaster: Roaster;
+  state: RoasterDraftState;
+  editing: boolean;
+}) {
+  const { draft, setDraft, errors, problem, unit } = state;
+  const readOnly = !editing;
   const [showTuning, setShowTuning] = useState(false);
   // A problem in a tuning number opens the section, so a held-back Save is never unexplained.
   const tuningShown =
@@ -49,14 +33,14 @@ export function RoasterEditor({ roaster, locked }: { roaster: Roaster; locked: b
   const fields = ({ title, hint, cells }: FieldGroup) => (
     <fieldset key={title} className="flex flex-col gap-2">
       <legend className="pb-1 text-body font-semibold">{title}</legend>
-      {hint ? <p className="-mt-2 text-label text-ink-muted">{hint}</p> : null}
+      {hint ? <p className="text-label text-ink-muted">{hint}</p> : null}
       <div className="grid grid-cols-3 items-start gap-3">
         {cells.map(({ key, label, unit }) => (
           <NumberField
             key={key}
             label={label}
             value={draft[key]}
-            disabled={locked}
+            readOnly={readOnly}
             invalid={Boolean(errors[key])}
             hint={errors[key]}
             {...(unit ? { unit } : {})}
@@ -69,16 +53,24 @@ export function RoasterEditor({ roaster, locked }: { roaster: Roaster; locked: b
     </fieldset>
   );
   return (
-    <div className="flex flex-col gap-4 rounded-xl bg-surface px-5 py-4.5">
-      <TextField
-        label="Name"
-        value={draft.name}
-        disabled={locked}
-        onChange={(name) => {
-          setDraft({ ...draft, name });
-        }}
-      />
-      {errors.name ? <p className="text-label text-critical-text">{errors.name}</p> : null}
+    <div className="flex flex-col gap-5 rounded-xl bg-surface px-5 py-4.5">
+      {problem ? (
+        <p role="alert" className="text-label text-critical-text">
+          {problem}
+        </p>
+      ) : null}
+      {editing ? (
+        <div className="flex flex-col gap-1.5">
+          <TextField
+            label="Name"
+            value={draft.name}
+            onChange={(name) => {
+              setDraft({ ...draft, name });
+            }}
+          />
+          {errors.name ? <p className="text-label text-critical-text">{errors.name}</p> : null}
+        </div>
+      ) : null}
       {everydayFields(unit).map(fields)}
       {MODEL_DRUM_SPEED[roaster.model] ? fields(DRUM_FIELDS) : null}
       <fieldset className="flex flex-col gap-2">
@@ -90,19 +82,23 @@ export function RoasterEditor({ roaster, locked }: { roaster: Roaster; locked: b
               Tray fan under the drum · stays on while the drum cools
             </p>
           </div>
-          <Switch
-            aria-label="Bean cooler helps cool the drum"
-            checked={draft.coolerHelpsDrum}
-            disabled={locked}
-            onChange={(on) => {
-              setDraft({ ...draft, coolerHelpsDrum: on });
-            }}
-          />
+          {readOnly ? (
+            <p className="text-body text-ink">{draft.coolerHelpsDrum ? 'On' : 'Off'}</p>
+          ) : (
+            <Switch
+              aria-label="Bean cooler helps cool the drum"
+              checked={draft.coolerHelpsDrum}
+              onChange={(on) => {
+                setDraft({ ...draft, coolerHelpsDrum: on });
+              }}
+            />
+          )}
         </div>
       </fieldset>
       <Button
         variant="ghost"
-        className="self-start"
+        size="sm"
+        className="-ml-3.5 self-start"
         aria-expanded={tuningShown}
         icon={
           <ChevronDown
@@ -114,33 +110,13 @@ export function RoasterEditor({ roaster, locked }: { roaster: Roaster; locked: b
           setShowTuning(!showTuning);
         }}
       >
-        Advanced tuning · for experts
+        Advanced tuning
       </Button>
       {tuningShown ? (
         <div className="flex flex-col gap-4">
           <p className="text-label text-ink-muted">{tuningHint(unit)}</p>
           {TUNING_FIELDS.map(fields)}
         </div>
-      ) : null}
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        {edited ? (
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setDraft(saved);
-            }}
-          >
-            Discard
-          </Button>
-        ) : null}
-        <Button variant="primary" disabled={locked || !edited || !checked.ok} onClick={save}>
-          Save
-        </Button>
-      </div>
-      {problem ? (
-        <p role="alert" className="text-label text-critical-text">
-          {problem}
-        </p>
       ) : null}
     </div>
   );

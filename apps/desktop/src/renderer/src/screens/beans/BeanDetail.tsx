@@ -68,6 +68,15 @@ export function BeanDetail({
               Order again
             </Button>
           )}
+          {/* Edit sits in the same place on every page that has one (docs/spec/ui.md). */}
+          <Button
+            size="sm"
+            onClick={() => {
+              setPanel('edit');
+            }}
+          >
+            Edit
+          </Button>
           <Menu
             label={`More for ${bean.name}`}
             items={[
@@ -75,12 +84,6 @@ export function BeanDetail({
                 label: 'Adjust stock',
                 onSelect: () => {
                   setPanel('adjust-stock');
-                },
-              },
-              {
-                label: 'Edit',
-                onSelect: () => {
-                  setPanel('edit');
                 },
               },
               {

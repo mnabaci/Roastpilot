@@ -53,7 +53,7 @@ describe('MilestoneBuilder', () => {
     await retype(table.getByLabelText('Drop temperature'), '201');
     await userEvent.click(screen.getByRole('button', { name: 'Create' }));
     await waitFor(() => {
-      expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Milestones');
+      expect(screen.getByRole('heading', { level: 2, name: 'Milestones' })).toBeInTheDocument();
     });
     expect(api.makeProfileFromMilestones).toHaveBeenCalledWith(
       expect.objectContaining({ drop: { tS: 600, c: 201 }, extras: [] }),
@@ -97,11 +97,11 @@ describe('MilestoneBuilder', () => {
     open();
     await startBuilding();
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Light · Steps');
+    expect(screen.getByRole('heading', { level: 2, name: 'Light · Steps' })).toBeInTheDocument();
     await startBuilding();
     const list = within(screen.getByRole('list', { name: 'Profiles' }));
     await userEvent.click(list.getByRole('button', { name: 'Light · Curve' }));
-    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Light · Curve');
+    expect(screen.getByRole('heading', { level: 2, name: 'Light · Curve' })).toBeInTheDocument();
   });
 
   it('offers no milestone builder when the roaster has no curve profile to start from', async () => {

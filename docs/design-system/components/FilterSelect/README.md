@@ -13,4 +13,4 @@ A compact filter chip in a sidebar or a header: "Bean ▾", "Profile ▾", "Comp
 ## Rules
 
 - The chip is a button opening the Select panel; its first option is the "All" that clears the filter.
-- Filters sit in one row under the title: ★ (favourites only) first, then the chips; they share the row's width and never wrap a chip's text.
+- Filters sit in one row under the title: ♥ (favourites only, Lucide Heart) first, then the chips; they share the row's width and never wrap a chip's text.

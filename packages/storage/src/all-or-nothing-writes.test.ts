@@ -47,6 +47,7 @@ const BEAN = {
   name: 'Guji',
   origin: 'Ethiopia',
   process: 'washed',
+  species: null,
   variety: null,
   altitudeM: null,
   densityGL: null,

@@ -1,12 +1,17 @@
 import type { Roaster } from '@roastpilot/shared';
-import { cn, ConfirmDialog, Menu, type MenuItem } from '@roastpilot/ui';
+import { Button, cn, ConfirmDialog, Menu, type MenuItem } from '@roastpilot/ui';
+import { LoaderCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useLibraryFiles } from '../../features/use-library-files';
 import { useRun } from '../../features/use-run';
 import { useConnection } from '../../stores/use-stores';
 import { ConnectPanel } from './ConnectPanel';
+import { EditActions } from '../../features/EditActions';
 import { RoasterEditor } from './RoasterEditor';
+import { useRoasterDraft } from './use-roaster-draft';
+import { WaitingButton } from '../../features/WaitingButton';
+import { useConnectControls } from './use-connect-controls';
 import { modelNote } from './roaster-model';
 import { refusalText } from './roaster-refusal';
 import { PAGE_WIDTH } from '../../lib/page-width';
@@ -21,6 +26,9 @@ export function RoasterPage({ roaster, onDeleted }: { roaster: Roaster; onDelete
   const [deleting, setDeleting] = useState(false);
   const [problem, setProblem] = useState<string>();
   const files = useLibraryFiles('roasters');
+  const connect = useConnectControls(roaster);
+  const record = useRoasterDraft(roaster);
+  const [editing, setEditing] = useState(false);
   const use = () => {
     setProblem(undefined);
     run(
@@ -55,17 +63,9 @@ export function RoasterPage({ roaster, onDeleted }: { roaster: Roaster; onDelete
     );
   };
   // Nothing changes while a roaster is in use (docs/spec/roasters.md); the active one can't go.
-  // The menu keeps its items either way, the ones that wait disabled with why.
+  // Actions keep their place either way, the ones that wait disabled with why.
   const waits = roaster.active ? 'active' : locked ? 'locked' : undefined;
   const more: MenuItem[] = [
-    {
-      label: 'Use this roaster',
-      onSelect: use,
-      ...(waits && {
-        disabled: true,
-        hint: waits === 'active' ? 'Already the active one' : 'Disconnect first',
-      }),
-    },
     // Export only reads the record, so it is always there.
     {
       label: 'Export this roaster',
@@ -95,7 +95,73 @@ export function RoasterPage({ roaster, onDeleted }: { roaster: Roaster; onDelete
           </div>
           {note ? <p className="text-label text-ink-muted">{note}</p> : null}
         </div>
-        <Menu label={`More for ${roaster.name}`} items={more} />
+        {editing ? (
+          <EditActions
+            onCancel={() => {
+              record.cancel();
+              setEditing(false);
+            }}
+            onSave={() => {
+              record.save(() => {
+                setEditing(false);
+              });
+            }}
+            canSave={record.canSave && !locked}
+          />
+        ) : (
+          <div className="flex shrink-0 items-center gap-2">
+            {roaster.active ? null : (
+              <WaitingButton
+                size="sm"
+                disabled={locked}
+                reason={locked ? 'Disconnect first' : undefined}
+                onClick={use}
+              >
+                Use this roaster
+              </WaitingButton>
+            )}
+            {connect.idle || connect.connecting || connect.otherInUse ? (
+              <WaitingButton
+                reason={
+                  connect.otherInUse
+                    ? `Disconnect ${connect.otherName} first`
+                    : !connect.ready && !connect.connecting
+                      ? connect.target === null
+                        ? 'Choose a port first'
+                        : 'Plug the roaster in, then Refresh'
+                      : undefined
+                }
+                size="sm"
+                variant="primary"
+                disabled={!connect.ready || connect.connecting || connect.otherInUse}
+                aria-busy={connect.connecting}
+                icon={
+                  connect.connecting ? (
+                    <LoaderCircle aria-hidden="true" className="motion-safe:animate-spin" />
+                  ) : undefined
+                }
+                onClick={connect.connect}
+              >
+                {connect.connecting ? 'Connecting…' : 'Connect'}
+              </WaitingButton>
+            ) : connect.inUse ? (
+              <Button size="sm" onClick={connect.disconnect}>
+                Disconnect
+              </Button>
+            ) : null}
+            <WaitingButton
+              size="sm"
+              disabled={locked}
+              reason={locked ? 'Disconnect first' : undefined}
+              onClick={() => {
+                setEditing(true);
+              }}
+            >
+              Edit
+            </WaitingButton>
+            <Menu label={`More for ${roaster.name}`} items={more} />
+          </div>
+        )}
       </header>
       {problem ? (
         <p role="alert" className="text-label text-critical-text">
@@ -110,8 +176,8 @@ export function RoasterPage({ roaster, onDeleted }: { roaster: Roaster; onDelete
         destructive
         onConfirm={remove}
       />
-      <ConnectPanel roaster={roaster} />
-      <RoasterEditor key={roaster.id} roaster={roaster} locked={locked} />
+      <ConnectPanel controls={connect} />
+      <RoasterEditor roaster={roaster} state={record} editing={editing} />
     </div>
   );
 }

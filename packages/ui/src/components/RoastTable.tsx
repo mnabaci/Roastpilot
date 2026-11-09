@@ -1,5 +1,6 @@
-import { ChevronRight, Star } from 'lucide-react';
+import { ChevronRight, Heart } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { StarRating } from './StarRating';
 import { Tooltip } from './Tooltip';
 
 export interface RoastTableRow {
@@ -17,7 +18,8 @@ export interface RoastTableRow {
   /** Green → roasted, e.g. `356 → 305 g`. */
   weights: string | undefined;
   loss: string | undefined;
-  rating: string | undefined;
+  /** 1–5, shown as stars. */
+  rating: number | undefined;
 }
 
 const NUMBERS = ['time', 'fc', 'drop', 'weights', 'loss', 'rating'] as const;
@@ -49,11 +51,11 @@ export function RoastTable({
   className?: string;
 }) {
   return (
-    <div className={cn('rounded-xl bg-surface px-4 py-3', className)}>
+    <div className={cn('overflow-hidden rounded-xl bg-surface py-3', className)}>
       <table aria-label={label} className="w-full border-collapse text-label tabular-nums">
         <thead>
           <tr className="text-ink-muted">
-            <th scope="col" className="pb-2 pr-4 text-left font-medium whitespace-nowrap">
+            <th scope="col" className="pb-2 pr-4 pl-4 text-left font-medium whitespace-nowrap">
               Roast
             </th>
             {/* Takes the room the numbers leave, and cuts a long profile name short. */}
@@ -64,13 +66,13 @@ export function RoastTable({
               <th
                 key={key}
                 scope="col"
-                className="pb-2 pl-4 text-right font-medium whitespace-nowrap"
+                className="pb-2 pl-4 text-right font-medium whitespace-nowrap last:pr-4"
               >
                 {TITLES[key]}
               </th>
             ))}
             {onOpen ? (
-              <th scope="col" className="pb-2 pl-3">
+              <th scope="col" className="pb-2 pr-4 pl-3">
                 <span className="sr-only">Open</span>
               </th>
             ) : null}
@@ -94,7 +96,7 @@ export function RoastTable({
                   : undefined
               }
             >
-              <th scope="row" className="py-3 pr-4 text-left font-semibold whitespace-nowrap">
+              <th scope="row" className="py-3 pr-4 pl-4 text-left font-semibold whitespace-nowrap">
                 <span className="inline-flex items-center gap-1.5">
                   {onOpen ? (
                     <button
@@ -112,7 +114,7 @@ export function RoastTable({
                     row.title
                   )}
                   {row.favourite ? (
-                    <Star
+                    <Heart
                       role="img"
                       aria-label="Favourite"
                       className="size-3.5 shrink-0 text-heat"
@@ -125,12 +127,12 @@ export function RoastTable({
                 <td className="max-w-0 truncate py-3 text-ink-muted">{row.ran}</td>
               </Tooltip>
               {NUMBERS.map((key) => (
-                <td key={key} className="py-3 pl-4 text-right whitespace-nowrap">
-                  {row[key] ?? '–'}
+                <td key={key} className="py-3 pl-4 text-right whitespace-nowrap last:pr-4">
+                  {key === 'rating' ? <StarRating value={row.rating} /> : (row[key] ?? '–')}
                 </td>
               ))}
               {onOpen ? (
-                <td className="py-3 pl-3 text-ink-muted">
+                <td className="py-3 pr-4 pl-3 text-ink-muted">
                   <ChevronRight aria-hidden="true" className="size-4" />
                 </td>
               ) : null}

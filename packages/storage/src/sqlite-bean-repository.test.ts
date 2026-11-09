@@ -17,6 +17,7 @@ const FIELDS: BeanFields = {
   screen: null,
   decaf: false,
   supplier: null,
+  species: null,
   link: null,
   lowStockG: 500,
   notes: null,

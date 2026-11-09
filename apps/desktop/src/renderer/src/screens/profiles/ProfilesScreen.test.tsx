@@ -20,7 +20,21 @@ const withMine = [...BUILT_INS, OWN];
 const settingsOn = (autoProfile: string) => ({ settings: { ...DEFAULT_SETTINGS, autoProfile } });
 const open = (api = fakeApi(), profiles = withMine, id = 'custom-1') =>
   renderApp(<ProfilesScreen />, { profiles, ...settingsOn(id) }, api);
+/** The open profile's name, its title. */
+const profileTitle = () =>
+  screen.getByRole('region', { name: 'Profile' }).querySelector('h2') ?? document.body;
+/** A control only Edit mode has, pressing Edit first. */
+const editingButton = async (name: string) => {
+  await startEditing();
+  return screen.getByRole('button', { name });
+};
+/** Edit mode, as you'd press Edit; a no-op once it is a form. */
+const startEditing = async () => {
+  const button = screen.queryByRole('button', { name: 'Edit' });
+  if (button) await userEvent.click(button);
+};
 const edit = async (name: string, text: string) => {
+  await startEditing();
   const field = screen.getByRole('textbox', { name });
   await userEvent.clear(field);
   await userEvent.type(field, text);
@@ -29,7 +43,7 @@ const edit = async (name: string, text: string) => {
 describe('ProfilesScreen', () => {
   it('opens the profile Auto uses, and lists the rest', () => {
     open();
-    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Mine');
+    expect(profileTitle()).toHaveTextContent('Mine');
     // Auto's profile shows its badge in the header and in the list.
     const header = within(screen.getByRole('banner'));
     expect(header.getByText('Auto')).toBeInTheDocument();
@@ -45,15 +59,17 @@ describe('ProfilesScreen', () => {
       listProfiles: vi.fn(() => Promise.resolve(withMine)),
     });
     open(api, BUILT_INS, 'light-steps');
-    expect(screen.getByRole('textbox', { name: 'Name' })).toBeDisabled();
-    expect(screen.getByRole('textbox', { name: 'BT cap' })).toBeDisabled();
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: /^More for (?!Profiles$)/ }));
     expect(screen.queryByRole('menuitem', { name: 'Delete' })).toBeNull();
     expect(screen.queryByRole('menuitem', { name: /calibrat/ })).toBeNull();
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Duplicate' }));
+    await userEvent.keyboard('{Escape}');
+    // Duplicate is its button, in Edit's place.
+    await userEvent.click(screen.getByRole('button', { name: 'Duplicate' }));
     expect(api.duplicateProfile).toHaveBeenCalledWith('light-steps');
     await waitFor(() => {
-      expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Mine');
+      expect(profileTitle()).toHaveTextContent('Mine');
     });
   });
 
@@ -98,7 +114,7 @@ describe('ProfilesScreen', () => {
     it('shows °F and saves what you type in °C, which shows as typed again', async () => {
       const { api } = inF();
       // BT cap 200 °C is 392 °F.
-      expect(screen.getByRole('textbox', { name: 'BT cap' })).toHaveValue('392');
+      expect(screen.getByLabelText('BT cap')).toHaveTextContent('392 °F');
       expect(screen.getByRole('columnheader', { name: 'Ends °F' })).toBeInTheDocument();
       // A rate is a difference: its unit follows too.
       expect(screen.getByRole('columnheader', { name: 'RoR °F/min' })).toBeInTheDocument();
@@ -112,7 +128,7 @@ describe('ProfilesScreen', () => {
       });
       const saved = { ...MINE, chargeC: 187.8 };
       inF([...BUILT_INS, { profile: saved, builtIn: false }]);
-      expect(screen.getAllByRole('textbox', { name: 'Charge temp' }).at(-1)).toHaveValue('370');
+      expect(screen.getAllByLabelText('Charge temp').at(-1)).toHaveTextContent('370 °F');
     });
 
     it('says a limit in °F', async () => {
@@ -146,14 +162,14 @@ describe('ProfilesScreen', () => {
 
   describe('the soak', () => {
     const pick = async (option: string) => {
-      await userEvent.click(screen.getByRole('button', { name: 'Soak length' }));
+      await userEvent.click(await editingButton('Soak length'));
       await userEvent.click(screen.getByRole('option', { name: option }));
     };
 
     it('sets its length from a list, and saves it', async () => {
       const api = fakeApi({ listProfiles: vi.fn(() => Promise.resolve(withMine)) });
       open(api);
-      expect(screen.getByRole('button', { name: 'Soak length' })).toHaveTextContent('1:00');
+      expect(await editingButton('Soak length')).toHaveTextContent('1:00');
       await pick('1:30');
       await userEvent.click(screen.getByRole('button', { name: 'Save' }));
       const saved = vi.mocked(api.saveProfile).mock.calls[0]?.[0];
@@ -185,32 +201,36 @@ describe('ProfilesScreen', () => {
       expect(screen.getByRole('cell', { name: '1:00' })).toBeInTheDocument();
     });
 
-    it('a curve profile has its length too', () => {
+    it('a curve profile has its length too', async () => {
       const curve = { profile: { ...CURVE, id: 'custom-c', name: 'My curve' }, builtIn: false };
       open(fakeApi(), [...BUILT_INS, curve], 'custom-c');
-      expect(screen.getByRole('button', { name: 'Soak length' })).toHaveTextContent('1:00');
+      expect(await editingButton('Soak length')).toHaveTextContent('1:00');
     });
   });
 
-  it('Discard goes back to what is saved', async () => {
+  it('opens to read; Edit makes it a form, and Cancel goes back to what is saved', async () => {
     open();
+    expect(screen.queryByRole('textbox', { name: 'BT cap' })).toBeNull();
+    expect(screen.getByLabelText('BT cap')).toHaveTextContent('200 °C');
     await edit('BT cap', '205');
-    await userEvent.click(screen.getByRole('button', { name: 'Discard' }));
-    expect(screen.getByRole('textbox', { name: 'BT cap' })).toHaveValue('200');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByLabelText('BT cap')).toHaveTextContent('200 °C');
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
   });
 
   it('keeps an unsaved edit while you look at another profile', async () => {
     open();
     await edit('BT cap', '205');
     await userEvent.click(screen.getByRole('button', { name: 'Light · Steps' }));
-    expect(screen.getByRole('textbox', { name: 'BT cap' })).toHaveValue('200');
+    expect(screen.getByLabelText('BT cap')).toHaveTextContent('200 °C');
+    // Back on it, it opens as the form, with the edit.
     await userEvent.click(screen.getByRole('button', { name: /Mine/ }));
     expect(screen.getByRole('textbox', { name: 'BT cap' })).toHaveValue('205');
   });
 
   it('adds and removes steps', async () => {
     open();
-    await userEvent.click(screen.getByRole('button', { name: 'Add step' }));
+    await userEvent.click(await editingButton('Add step'));
     expect(screen.getByRole('textbox', { name: 'Step 2 name' })).toHaveValue('New step');
     await userEvent.click(screen.getByRole('button', { name: 'Remove New step' }));
     expect(screen.getByRole('textbox', { name: 'Step 2 name' })).toHaveValue('Development');
@@ -219,12 +239,12 @@ describe('ProfilesScreen', () => {
 
   it('an edit undone by hand is no edit: no Edited badge, no Save', async () => {
     open();
-    await userEvent.click(screen.getByRole('button', { name: 'Add step' }));
+    await userEvent.click(await editingButton('Add step'));
     const list = within(screen.getByRole('list', { name: 'Profiles' }));
     expect(list.getByRole('button', { name: /Mine/ })).toHaveTextContent('Edited');
     await userEvent.click(screen.getByRole('button', { name: 'Remove New step' }));
     expect(list.getByRole('button', { name: /Mine/ })).not.toHaveTextContent('Edited');
-    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
     expect(screen.queryByText('Not saved')).toBeNull();
   });
 
@@ -251,7 +271,7 @@ describe('ProfilesScreen', () => {
     const openWithThree = async () => {
       const api = fakeApi({ listProfiles: vi.fn(() => Promise.resolve(withMine)) });
       open(api);
-      await userEvent.click(screen.getByRole('button', { name: 'Add step' }));
+      await userEvent.click(await editingButton('Add step'));
       return api;
     };
     const press = async (handle: string, key: 'ArrowUp' | 'ArrowDown') => {
@@ -401,11 +421,12 @@ describe('ProfilesScreen', () => {
     });
   });
 
-  it('shows the preview right under the top values, then the steps, then the curve points', () => {
+  it('shows the preview right under the top values, then the steps, then the curve points', async () => {
     const curve = { profile: { ...CURVE, id: 'custom-c', name: 'My curve' }, builtIn: false };
     open(fakeApi(), [...BUILT_INS, curve], 'custom-c');
     const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
-    expect(headings).toEqual(['Preview', 'Steps', 'Curve points']);
+    expect(headings).toEqual(['My curve', 'Preview', 'Steps', 'Curve points']);
+    await startEditing();
     const batch = screen.getByRole('textbox', { name: 'Tuned for' });
     expect(batch).toHaveAccessibleDescription('Batch size');
     const preview = screen.getByRole('heading', { name: 'Preview' });
@@ -423,7 +444,7 @@ describe('ProfilesScreen', () => {
     await userEvent.click(within(confirm).getByRole('button', { name: 'Delete' }));
     expect(api.deleteProfile).toHaveBeenCalledWith('custom-1');
     await waitFor(() => {
-      expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Light · Steps');
+      expect(profileTitle()).toHaveTextContent('Light · Steps');
     });
   });
 
@@ -455,7 +476,7 @@ describe('ProfilesScreen', () => {
         "Can't delete a profile Auto uses or is running",
       ]);
     });
-    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Mine');
+    expect(profileTitle()).toHaveTextContent('Mine');
   });
 
   it('says so when storage refuses, and keeps your edit', async () => {
@@ -481,7 +502,7 @@ describe('ProfilesScreen', () => {
     await edit('BT cap', '205');
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Disk full');
-    await userEvent.click(screen.getByRole('button', { name: 'Discard' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
@@ -565,6 +586,7 @@ describe('ProfilesScreen', () => {
       expect(banner).toHaveTextContent('Auto is running this profile · edits save after Drop');
       // Under the title, before the rest of the editor.
       const title = screen.getByRole('textbox', { name: 'Name' });
+      // (Edit mode: the name is a field.)
       expect(title.compareDocumentPosition(banner) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       act(() => {
         stores.roast.setState({ roast: { ...READY_ROAST, phase: 'cooling' } });
@@ -709,7 +731,7 @@ describe('ProfilesScreen', () => {
       await user.keyboard('{/Shift}');
       expect(box('Two')).toBeChecked();
       expect(box('Three')).toBeChecked();
-      expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Mine');
+      expect(profileTitle()).toHaveTextContent('Mine');
       expect(screen.getByRole('toolbar', { name: 'Selected profiles' })).toHaveTextContent(
         '2 selected',
       );
@@ -765,7 +787,7 @@ describe('ProfilesScreen', () => {
       await waitFor(() => {
         expect(screen.queryByRole('toolbar', { name: 'Selected profiles' })).toBeNull();
       });
-      expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Mine');
+      expect(profileTitle()).toHaveTextContent('Mine');
       expect(list().queryByRole('button', { name: /Two/ })).toBeNull();
       expect(stores.auto.getState().drafts).toEqual({});
       expect(stores.toasts.getState().toasts.map((t) => t.text)).toContain('Deleted 2 profiles');
@@ -832,7 +854,7 @@ describe('ProfilesScreen', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Done' }));
       expect(list().queryByRole('checkbox')).toBeNull();
       await userEvent.click(list().getByRole('button', { name: 'Two' }));
-      expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Two');
+      expect(profileTitle()).toHaveTextContent('Two');
     });
   });
 });

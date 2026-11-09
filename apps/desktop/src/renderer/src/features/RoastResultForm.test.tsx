@@ -37,7 +37,7 @@ describe('RoastResultForm', () => {
     const user = userEvent.setup();
     renderApp(<RoastResultForm roast={ROAST} />);
     expect(screen.getByRole('status')).toHaveTextContent('Saves as you go');
-    await user.click(screen.getByRole('button', { name: '4' }));
+    await user.click(screen.getByRole('button', { name: '4 stars' }));
     await waitFor(() => {
       expect(screen.getByRole('status')).toHaveTextContent('Saved');
     });
@@ -48,9 +48,9 @@ describe('RoastResultForm', () => {
   it('a rating and the star save at once; tapping a rating again clears it', async () => {
     const user = userEvent.setup();
     const { api } = renderApp(<RoastResultForm roast={ROAST} />);
-    await user.click(screen.getByRole('button', { name: '4' }));
+    await user.click(screen.getByRole('button', { name: '4 stars' }));
     expect(api.saveRoastResult).toHaveBeenLastCalledWith(expect.objectContaining({ rating: 4 }));
-    await user.click(screen.getByRole('button', { name: '4' }));
+    await user.click(screen.getByRole('button', { name: '4 stars' }));
     expect(api.saveRoastResult).toHaveBeenLastCalledWith(expect.objectContaining({ rating: null }));
     await user.click(screen.getByRole('button', { name: 'Favourite' }));
     expect(api.saveRoastResult).toHaveBeenLastCalledWith(
@@ -87,7 +87,7 @@ describe('RoastResultForm', () => {
     const failed = err({ kind: 'storage-failed' as const, message: 'x' });
     const api = fakeApi({ saveRoastResult: vi.fn(() => Promise.resolve(failed)) });
     const { stores } = renderApp(<RoastResultForm roast={ROAST} />, {}, api);
-    await user.click(screen.getByRole('button', { name: '5' }));
+    await user.click(screen.getByRole('button', { name: '5 stars' }));
     await waitFor(() => {
       expect(screen.getByRole('status')).toHaveTextContent('Not saved · try again');
     });
@@ -98,7 +98,7 @@ describe('RoastResultForm', () => {
     await user.type(screen.getByLabelText('Notes'), 'b');
     expect(screen.getByRole('status')).toHaveTextContent('Not saved · try again');
     api.saveRoastResult.mockResolvedValue(ok(undefined));
-    await user.click(screen.getByRole('button', { name: '4' }));
+    await user.click(screen.getByRole('button', { name: '4 stars' }));
     await waitFor(() => {
       expect(screen.getByRole('status')).toHaveTextContent('Saved');
     });
@@ -108,7 +108,7 @@ describe('RoastResultForm', () => {
     const user = userEvent.setup();
     const api = fakeApi({ saveRoastResult: vi.fn(() => Promise.reject(new Error('ipc'))) });
     const { stores } = renderApp(<RoastResultForm roast={ROAST} />, {}, api);
-    await user.click(screen.getByRole('button', { name: '5' }));
+    await user.click(screen.getByRole('button', { name: '5 stars' }));
     await waitFor(() => {
       expect(screen.getByRole('status')).toHaveTextContent('Not saved · try again');
     });

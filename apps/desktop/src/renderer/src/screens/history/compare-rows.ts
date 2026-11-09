@@ -148,13 +148,10 @@ export function compareRows(
     developmentRow(own, other),
     numberRow('Drop temp', own.dropTemp, other.dropTemp, temp, (a, b) => tempDiff(a, b, unit)),
     numberRow('Weight loss', weightLossPct(own), weightLossPct(other), percent, percentDiff),
-    numberRow(
-      'Rating',
-      own.rating,
-      other.rating,
-      (v) => `${String(v)}/5`,
-      (a, b) => signed(String(a - b)),
-    ),
+    {
+      ...numberRow('Rating', own.rating, other.rating, String, (a, b) => signed(String(a - b))),
+      stars: true,
+    },
     { label: 'Profile', own: howItRan(own), other: howItRan(other), diff: undefined },
     { label: 'Bean', own: beanName(own), other: beanName(other), diff: undefined },
   ];

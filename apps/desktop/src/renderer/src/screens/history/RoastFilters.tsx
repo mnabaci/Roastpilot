@@ -1,6 +1,6 @@
 import type { Bean, RoastSummary } from '@roastpilot/shared';
 import { Button, cn, FilterSelect } from '@roastpilot/ui';
-import { Star } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { ALL, MANUAL, NO_BEAN, profileOptions, type RoastFilter } from './roast-filter';
 
 /** One row of filters over the roast list; a chip turns ember while it filters. */
@@ -23,7 +23,7 @@ export function RoastFilters({
         aria-label="Favourites only"
         aria-pressed={filter.favourites}
         icon={
-          <Star aria-hidden="true" className={filter.favourites ? 'fill-current' : undefined} />
+          <Heart aria-hidden="true" className={filter.favourites ? 'fill-current' : undefined} />
         }
         className={cn('shrink-0', filter.favourites && 'bg-heat-tint text-heat')}
         onClick={() => {

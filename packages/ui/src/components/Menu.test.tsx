@@ -52,7 +52,7 @@ describe('Menu', () => {
     );
   });
 
-  it("says under a disabled item why it can't be picked now", async () => {
+  it("says why a disabled item can't be picked now in a tooltip, not a line under it", async () => {
     render(
       <Menu
         label="More"
@@ -74,6 +74,10 @@ describe('Menu', () => {
     expect(screen.getByRole('menuitem', { name: 'Export this roaster' })).not.toHaveAttribute(
       'aria-describedby',
     );
+    // Only in the tooltip, which opens after a short rest on the item.
+    expect(screen.queryByRole('tooltip')).toBeNull();
+    await userEvent.hover(item);
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Disconnect first');
   });
 
   it('can be a worded button with a chevron', async () => {

@@ -78,7 +78,7 @@ describe('compareRows', () => {
       { label: 'Development', own: '1:54 · 19 %', other: '1:30 · 17 %', diff: '+0:24 · +2 %' },
       { label: 'Drop temp', own: '205.5 °C', other: '206.5 °C', diff: '−1.0 °C' },
       { label: 'Weight loss', own: '14.3 %', other: '13.1 %', diff: '+1.2 %' },
-      { label: 'Rating', own: '5/5', other: '4/5', diff: '+1' },
+      { label: 'Rating', own: '5', other: '4', diff: '+1', stars: true },
       { label: 'Profile', own: 'Auto · Light · Steps', other: 'Manual', diff: undefined },
       { label: 'Bean', own: 'African Moon', other: 'Ethiopia Guji', diff: undefined },
     ]);

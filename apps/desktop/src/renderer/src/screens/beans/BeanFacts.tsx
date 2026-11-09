@@ -25,6 +25,7 @@ interface Fact {
 
 const facts = (bean: Bean): readonly Fact[] => [
   { label: 'Origin', value: bean.origin },
+  { label: 'Species', value: bean.species },
   { label: 'Process', value: bean.process },
   { label: 'Variety', value: bean.variety },
   { label: 'Altitude', value: bean.altitudeM === null ? null : `${String(bean.altitudeM)} m` },
@@ -33,7 +34,7 @@ const facts = (bean: Bean): readonly Fact[] => [
     label: 'Moisture',
     value: bean.moisturePct === null ? null : `${String(bean.moisturePct)} %`,
   },
-  { label: 'Bean size', value: bean.screen === null ? null : `Screen ${String(bean.screen)}` },
+  { label: 'Screen size', value: bean.screen === null ? null : String(bean.screen) },
   { label: 'Decaf', value: bean.decaf ? 'Yes' : null },
   // The shop and, under it, where Order again goes: its site, short and as written.
   {

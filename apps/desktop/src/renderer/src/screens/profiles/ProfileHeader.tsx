@@ -10,32 +10,41 @@ export function ProfileHeader({
   state,
   active,
   locked,
+  editing,
+  onEditingChange,
   onSelect,
 }: {
   entry: ProfileEntry;
   state: ProfileDraftState;
   active: boolean;
   locked: boolean;
+  /** Edit mode: the name is a field, and Cancel and Save replace Edit. */
+  editing: boolean;
+  onEditingChange: (editing: boolean) => void;
   onSelect: (id: string) => void;
 }) {
   const { draft, errors, change, edited } = state;
-  const readOnly = entry.builtIn;
   const [copied, setCopied] = useState<string>();
   return (
     <>
       <header className="flex flex-wrap items-start gap-3">
         <div className="flex min-w-60 flex-1 flex-col gap-1">
-          {/* The name is the title; click it to rename (built-ins are read-only). */}
-          <input
-            aria-label="Name"
-            value={draft.name}
-            disabled={readOnly}
-            aria-invalid={Boolean(errors.name) || undefined}
-            onChange={(event) => {
-              change({ ...draft, name: event.target.value });
-            }}
-            className="-mx-2 h-control-sm w-full truncate rounded-md bg-transparent px-2 text-title text-ink hover:bg-surface-hover focus-visible:bg-surface focus-visible:outline-2 focus-visible:outline-focus disabled:hover:bg-transparent"
-          />
+          {/* The name is the title; in Edit it is a field to rename it. */}
+          {editing ? (
+            <input
+              aria-label="Name"
+              value={draft.name}
+              aria-invalid={Boolean(errors.name) || undefined}
+              onChange={(event) => {
+                change({ ...draft, name: event.target.value });
+              }}
+              className="-mx-2 h-control-sm w-full truncate rounded-md border border-border bg-surface px-2 text-title text-ink hover:border-border-strong focus-visible:outline-2 focus-visible:outline-focus"
+            />
+          ) : (
+            <h2 className="flex h-control-sm min-w-0 items-center truncate text-title text-ink">
+              {draft.name}
+            </h2>
+          )}
           <div className="flex flex-wrap items-center gap-2">
             {entry.builtIn ? <Badge tone="neutral">Built-in</Badge> : null}
             {entry.profile.needsCalibration ? (
@@ -49,6 +58,8 @@ export function ProfileHeader({
           state={state}
           active={active}
           locked={locked}
+          editing={editing}
+          onEditingChange={onEditingChange}
           onSelect={onSelect}
           onCopied={setCopied}
         />
@@ -61,11 +72,7 @@ export function ProfileHeader({
             : 'Auto is running another profile · Use for Auto after Drop'}
         </AlertBanner>
       ) : null}
-      {readOnly || copied ? (
-        <p className="text-label text-ink-muted">
-          {[readOnly ? 'Duplicate it to change it' : undefined, copied].filter(Boolean).join(' · ')}
-        </p>
-      ) : null}
+      {copied ? <p className="text-label text-ink-muted">{copied}</p> : null}
       {errors.name ? (
         <p role="alert" className="text-label text-critical-text">
           Name: {errors.name}

@@ -9,13 +9,17 @@ export interface TooltipProps {
   content: string;
   /** The trigger: one focusable element, such as a row's button. */
   children: ReactElement;
+  /** Where it opens: under the trigger, or beside it (a menu item's reason, to the left). */
+  side?: 'bottom' | 'left';
+  /** No wider than the trigger, wrapping instead: a list row's line stays over its own list. */
+  fitTrigger?: boolean;
 }
 
 /**
  * The whole of a truncated line, on hover or keyboard focus after a short rest (design system:
  * Tooltip). App-styled and themed, never the system `title`; it never takes focus.
  */
-export function Tooltip({ content, children }: TooltipProps) {
+export function Tooltip({ content, children, side = 'bottom', fitTrigger = false }: TooltipProps) {
   const id = useId();
   const [open, setOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -64,8 +68,8 @@ export function Tooltip({ content, children }: TooltipProps) {
         <Popover.Content
           id={id}
           role="tooltip"
-          side="bottom"
-          align="start"
+          side={side}
+          align={side === 'left' ? 'center' : 'start'}
           sideOffset={4}
           collisionPadding={8}
           onOpenAutoFocus={(event) => {
@@ -74,6 +78,7 @@ export function Tooltip({ content, children }: TooltipProps) {
           onCloseAutoFocus={(event) => {
             event.preventDefault();
           }}
+          style={fitTrigger ? { maxWidth: 'var(--radix-popover-trigger-width)' } : undefined}
           className="pointer-events-none z-50 max-w-96 rounded-md border border-border-strong bg-surface-raised px-3 py-1.5 text-label text-ink"
         >
           {content}

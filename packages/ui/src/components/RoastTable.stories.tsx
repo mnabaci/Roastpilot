@@ -18,7 +18,7 @@ const meta = {
         drop: '197.0 °C',
         weights: '356 → 305 g',
         loss: '14.3 %',
-        rating: '5/5',
+        rating: 5,
       },
       {
         id: 16,

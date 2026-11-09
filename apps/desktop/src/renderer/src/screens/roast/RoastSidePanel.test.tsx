@@ -96,7 +96,8 @@ describe('Roast side panel follows the roast', () => {
   it('ready: the setup starts closed, with its one line', async () => {
     renderApp(<RoastScreen onConnect={vi.fn()} />, { connection: CONNECTED });
     const setup = within(screen.getByRole('region', { name: 'Setup' }));
-    expect(setup.getByText('Manual · No bean')).toBeInTheDocument();
+    expect(setup.getByText('Manual')).toBeInTheDocument();
+    expect(setup.getByText('No bean')).toBeInTheDocument();
     expect(setup.queryByLabelText('Bean')).toBeNull();
     await userEvent.click(setup.getByRole('button', { name: 'Change setup' }));
     expect(setup.getByLabelText('Bean')).toBeInTheDocument();

@@ -49,7 +49,8 @@ describe('RoastList', () => {
             id: 1,
             title: 'Wed',
             numbers: '9:40',
-            detail: ['Yirgacheffe', 'Auto · Light · Steps', '4/5'],
+            detail: ['Yirgacheffe', 'Auto · Light · Steps'],
+            rating: 4,
             favourite: true,
           },
         ]}
@@ -57,9 +58,8 @@ describe('RoastList', () => {
         onSelect={() => undefined}
       />,
     );
-    expect(screen.getByRole('button')).toHaveTextContent(
-      'Yirgacheffe · Auto · Light · Steps · 4/5',
-    );
+    expect(screen.getByRole('button')).toHaveTextContent('Yirgacheffe · Auto · Light · Steps');
+    expect(screen.getByRole('img', { name: 'Rated 4 of 5' })).toBeTruthy();
     expect(screen.getByRole('img', { name: 'Favourite' })).toBeTruthy();
   });
 

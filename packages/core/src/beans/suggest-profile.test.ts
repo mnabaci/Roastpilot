@@ -7,6 +7,7 @@ const bean = (id: number, change: Partial<Bean> = {}): Bean => ({
   name: `Bean ${String(id)}`,
   origin: 'Ethiopia',
   process: 'washed',
+  species: null,
   variety: null,
   altitudeM: null,
   densityGL: null,

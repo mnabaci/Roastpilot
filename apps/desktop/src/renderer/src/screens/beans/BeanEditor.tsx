@@ -1,7 +1,9 @@
-import type { Bean, BeanId, BeanProcess } from '@roastpilot/shared';
+import type { Bean, BeanId, BeanProcess, BeanSpecies } from '@roastpilot/shared';
 import { Button, cn, NumberField, SegmentedControl, SelectField, TextField } from '@roastpilot/ui';
+import { ExternalLink } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
+import { EditActions } from '../../features/EditActions';
 import { useRun } from '../../features/use-run';
 import { fromBeanDraft, toBeanDraft, type BeanDraft } from './bean-draft';
 import { PAGE_WIDTH } from '../../lib/page-width';
@@ -13,13 +15,25 @@ const PROCESSES: readonly { value: BeanProcess; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
-const NUMBERS: readonly { key: keyof BeanDraft; label: string; unit?: string }[] = [
-  { key: 'densityGL', label: 'Density', unit: 'g/L' },
-  { key: 'altitudeM', label: 'Altitude', unit: 'm' },
-  { key: 'moisturePct', label: 'Moisture', unit: '%' },
-  { key: 'screen', label: 'Bean size (screen)' },
-  { key: 'lowStockG', label: 'Low stock below', unit: 'g' },
+const SPECIES: readonly { value: BeanSpecies | ''; label: string }[] = [
+  { value: '', label: 'Not set' },
+  { value: 'arabica', label: 'Arabica' },
+  { value: 'robusta', label: 'Robusta' },
+  { value: 'liberica', label: 'Liberica' },
+  { value: 'excelsa', label: 'Excelsa' },
+  { value: 'other', label: 'Other' },
 ];
+
+type NumberKey = 'densityGL' | 'altitudeM' | 'moisturePct' | 'screen' | 'lowStockG';
+
+/** Units sit inside the field, never in the label; screen size is a number of its own. */
+const NUMBER_CELLS: Readonly<Record<NumberKey, { label: string; unit?: string }>> = {
+  altitudeM: { label: 'Altitude', unit: 'm' },
+  screen: { label: 'Screen size' },
+  densityGL: { label: 'Density', unit: 'g/L' },
+  moisturePct: { label: 'Moisture', unit: '%' },
+  lowStockG: { label: 'Low stock below', unit: 'g' },
+};
 
 /** A new bean, or an existing one's details (docs/spec/beans-favourites-ghost.md, Beans). */
 export function BeanEditor({
@@ -75,17 +89,54 @@ export function BeanEditor({
       ) : null}
     </div>
   );
+  const numberCell = (key: NumberKey) => {
+    const { label, unit } = NUMBER_CELLS[key];
+    return (
+      <NumberField
+        label={label}
+        {...(unit ? { unit } : {})}
+        value={draft[key]}
+        invalid={errors[key] !== undefined}
+        hint={errors[key]}
+        onChange={(value) => {
+          change({ [key]: value });
+        }}
+      />
+    );
+  };
+  const savedLink = bean?.link != null && draft.link.trim() === bean.link;
   return (
     <section
       aria-label={bean ? 'Edit bean' : 'Add bean'}
       className={cn('flex flex-col gap-4', PAGE_WIDTH)}
     >
-      <div className="flex min-h-control-sm min-w-0 items-center">
-        <h2 className="truncate text-title">{bean ? `Edit ${bean.name}` : 'Add a bean'}</h2>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        {textCell('name', 'Name')}
-        {textCell('origin', 'Origin')}
+      <header className="flex min-h-control-sm min-w-0 items-center gap-3">
+        <h2 className="min-w-0 truncate text-title">{bean ? `Edit ${bean.name}` : 'Add a bean'}</h2>
+        <EditActions
+          onCancel={onDone}
+          onSave={save}
+          canSave={checked.ok}
+          saveLabel={bean ? 'Save' : 'Add bean'}
+        />
+      </header>
+      {problem ? (
+        <p role="alert" className="text-label text-critical-text">
+          {problem}
+        </p>
+      ) : null}
+      {/* One 6-column grid for every row, so the columns line up from top to bottom. */}
+      <div className="grid grid-cols-6 gap-x-3 gap-y-4">
+        <div className="col-span-3">{textCell('name', 'Name')}</div>
+        <div className="col-span-3">{textCell('origin', 'Origin')}</div>
+        <SelectField
+          label="Species"
+          value={draft.species}
+          options={SPECIES}
+          onChange={(species) => {
+            change({ species });
+          }}
+          className="col-span-2"
+        />
         <SelectField
           label="Process"
           value={draft.process}
@@ -93,66 +144,64 @@ export function BeanEditor({
           onChange={(process) => {
             change({ process });
           }}
+          className="col-span-2"
         />
-        {textCell('variety', 'Variety')}
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <p className="text-label text-ink-muted">Decaf</p>
-        <SegmentedControl
-          label="Decaf"
-          className="self-start"
-          options={[
-            { value: false, label: 'No' },
-            { value: true, label: 'Yes' },
-          ]}
-          value={draft.decaf}
-          onChange={(decaf) => {
-            change({ decaf });
-          }}
-        />
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        {NUMBERS.map(({ key, label, unit }) => (
-          <NumberField
-            key={key}
-            label={label}
-            {...(unit ? { unit } : {})}
-            value={String(draft[key])}
-            invalid={errors[key] !== undefined}
-            hint={errors[key]}
-            onChange={(value) => {
-              change({ [key]: value });
+        <div className="col-span-2">{textCell('variety', 'Variety')}</div>
+        <div className="col-span-2">{numberCell('altitudeM')}</div>
+        <div className="col-span-2">{numberCell('screen')}</div>
+        <div className="col-span-2 flex flex-col gap-1.5">
+          <p className="text-label text-ink-muted">Decaf</p>
+          <SegmentedControl
+            label="Decaf"
+            className="self-start"
+            options={[
+              { value: false, label: 'No' },
+              { value: true, label: 'Yes' },
+            ]}
+            value={draft.decaf}
+            onChange={(decaf) => {
+              change({ decaf });
             }}
           />
-        ))}
-      </div>
-      <p className="text-label text-ink-muted">
-        Density is the one to measure: weigh a fixed volume of green beans.
-      </p>
-      <div className="grid grid-cols-2 gap-3">
-        {textCell('supplier', 'Supplier')}
-        {/* Where to order it again: Order again on the bean opens it. */}
-        {textCell('link', 'Order link')}
-      </div>
-      <TextField
-        label="Notes"
-        value={draft.notes}
-        onChange={(notes) => {
-          change({ notes });
-        }}
-      />
-      {problem ? (
-        <p role="alert" className="text-label text-critical-text">
-          {problem}
+        </div>
+        <div className="col-span-2">{numberCell('densityGL')}</div>
+        <div className="col-span-2">{numberCell('moisturePct')}</div>
+        <div className="col-span-2">{numberCell('lowStockG')}</div>
+        <p className="col-span-6 -mt-2 text-label text-ink-muted">
+          Density is the one to measure: weigh a fixed volume of green beans.
         </p>
-      ) : null}
-      <div className="flex justify-end gap-2">
-        <Button variant="ghost" onClick={onDone}>
-          Cancel
-        </Button>
-        <Button variant="primary" disabled={!checked.ok} onClick={save}>
-          {bean ? 'Save' : 'Add bean'}
-        </Button>
+        <div className="col-span-3">{textCell('supplier', 'Supplier')}</div>
+        {/* Where to order it again: Order again on the bean opens it, and so does the button,
+            for the saved link (main opens only a saved one). */}
+        <div className="col-span-3 flex items-end gap-2">
+          <div className="min-w-0 flex-1">{textCell('link', 'Order link')}</div>
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-label="Open the order link"
+            disabled={!savedLink}
+            icon={<ExternalLink aria-hidden="true" />}
+            onClick={() => {
+              if (!bean) return;
+              run(
+                'beans.open-link-failed',
+                async () => {
+                  const opened = await api.openBeanLink(bean.id);
+                  if (!opened.ok) setProblem("Couldn't open the order link · see Logs");
+                },
+                { failed: "Couldn't open the order link · try again" },
+              );
+            }}
+          />
+        </div>
+        <TextField
+          label="Notes"
+          value={draft.notes}
+          onChange={(notes) => {
+            change({ notes });
+          }}
+          className="col-span-6"
+        />
       </div>
     </section>
   );
