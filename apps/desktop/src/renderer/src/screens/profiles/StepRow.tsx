@@ -1,9 +1,8 @@
-import { Button, cn, NumberField } from '@roastpilot/ui';
+import { Button, NumberField } from '@roastpilot/ui';
 import { X } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { stepName, type DraftErrors, type StepDraft } from './profile-draft';
 import { BUTTON_CELL, CELL, FIELD_MIN, FIELD_MIN_DEFAULT, FIXED } from './step-cells';
-import { StepHandle } from './StepHandle';
-import type { StepMoves } from './use-step-moves';
 
 const ROR_CELLS = [
   { key: 'rorMin', label: 'RoR min' },
@@ -11,8 +10,9 @@ const ROR_CELLS = [
 ] as const;
 
 /**
- * One step's cells, then its problems on their own line. The last step ends the roast, so it has
- * no handle; `moves` is left out where nothing can be moved (a built-in).
+ * One step's cells, then its problems on their own line. `handle` is the first cell (the ⠿ handle,
+ * or an empty cell for the last step, which ends the roast); left out where nothing can be moved
+ * (a built-in).
  */
 export function StepRow({
   step,
@@ -24,7 +24,7 @@ export function StepRow({
   readOnly,
   onChange,
   onRemove,
-  moves,
+  handle,
 }: {
   step: StepDraft;
   index: number;
@@ -35,7 +35,7 @@ export function StepRow({
   readOnly: boolean;
   onChange: (change: Partial<StepDraft>) => void;
   onRemove: () => void;
-  moves?: StepMoves | undefined;
+  handle?: ReactNode;
 }) {
   const error = (cell: string) => errors[`steps.${String(index)}.${cell}`];
   const name = stepName(step, index);
@@ -62,12 +62,8 @@ export function StepRow({
   ];
   return (
     <>
-      <tr {...moves?.row(index)} className={cn(moves?.dragging === index && 'opacity-50')}>
-        {moves ? (
-          <td className={BUTTON_CELL}>
-            {last ? null : <StepHandle name={name} index={index} moves={moves} />}
-          </td>
-        ) : null}
+      <tr>
+        {handle}
         <td className={CELL}>
           <input
             aria-label={`Step ${String(index + 1)} name`}

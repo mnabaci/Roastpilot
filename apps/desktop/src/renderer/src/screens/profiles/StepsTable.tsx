@@ -1,15 +1,20 @@
-import { rorSymbol, tempSymbol } from '@roastpilot/shared';
-import { Plus } from 'lucide-react';
+import { DndContext, DragOverlay } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Button, cn } from '@roastpilot/ui';
-import type { ProfileDraft, StepDraft, DraftErrors } from './profile-draft';
+import { Plus } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { addStep, removeStep } from './draft-edits';
+import { stepName, type DraftErrors, type ProfileDraft, type StepDraft } from './profile-draft';
 import { SoakRow } from './SoakRow';
+import { SortableStep } from './SortableStep';
+import { BUTTON_CELL } from './step-cells';
+import { StepHandle } from './StepHandle';
+import { StepOverlay } from './StepOverlay';
 import { StepRow } from './StepRow';
+import { StepsHead } from './StepsHead';
+import { useStepDrag } from './use-step-drag';
 import { useStepMoves } from './use-step-moves';
-
-// Headers stay on one line at 960 px: RoR's unit sits once over its min and max (a group).
-const HEAD =
-  'px-0.5 pb-1 text-left align-bottom text-label font-normal whitespace-nowrap text-ink-muted xl:px-1';
 
 interface StepsTableProps {
   draft: ProfileDraft;
@@ -21,7 +26,10 @@ interface StepsTableProps {
   className?: string;
 }
 
-/** One row per step (docs/spec/ui.md, Profiles screen). The Soak row and the last step stay. */
+/**
+ * One row per step (docs/spec/ui.md, Profiles screen), each step in a group of its own so it can
+ * be dragged by its handle. The Soak row and the last step stay.
+ */
 export function StepsTable({
   draft,
   errors,
@@ -31,14 +39,31 @@ export function StepsTable({
   className,
 }: StepsTableProps) {
   const moves = useStepMoves(draft, onChange);
+  const drag = useStepDrag(draft, onChange);
   // Step, Ends, Heat, Fan, Backup and Remove; a step profile adds Time and RoR; the handles theirs.
   const columns = (steps ? 9 : 6) + (readOnly ? 0 : 1);
-  const setStep = (index: number, change: Partial<StepDraft>) => {
-    onChange({
-      ...draft,
-      steps: draft.steps.map((step, i) => (i === index ? { ...step, ...change } : step)),
-    });
-  };
+  const row = (step: StepDraft, index: number, handle?: ReactNode) => (
+    <StepRow
+      step={step}
+      index={index}
+      last={index === draft.steps.length - 1}
+      errors={errors}
+      steps={steps}
+      columns={columns}
+      readOnly={readOnly}
+      onChange={(change) => {
+        onChange({
+          ...draft,
+          steps: draft.steps.map((s, i) => (i === index ? { ...s, ...change } : s)),
+        });
+      }}
+      onRemove={() => {
+        onChange(removeStep(draft, index));
+      }}
+      handle={handle}
+    />
+  );
+  const carried = drag.carried && draft.steps[drag.carried.index];
   return (
     <section
       aria-labelledby="steps-heading"
@@ -47,78 +72,61 @@ export function StepsTable({
       <h2 id="steps-heading" className="text-heading">
         Steps
       </h2>
-      <table className="w-full border-collapse">
-        <thead>
-          <tr>
-            {readOnly ? null : <th rowSpan={steps ? 2 : 1} aria-label="Move" />}
-            <th rowSpan={steps ? 2 : 1} className={HEAD}>
-              Step
-            </th>
-            <th rowSpan={steps ? 2 : 1} className={HEAD}>
-              Ends {tempSymbol(draft.unit)}
-            </th>
-            {steps ? (
-              <th rowSpan={2} className={HEAD}>
-                Time
-              </th>
-            ) : null}
-            {steps ? (
-              <th colSpan={2} scope="colgroup" className={cn(HEAD, 'pb-0')}>
-                RoR {rorSymbol(draft.unit)}
-              </th>
-            ) : null}
-            <th rowSpan={steps ? 2 : 1} className={HEAD}>
-              Heat %
-            </th>
-            <th rowSpan={steps ? 2 : 1} className={HEAD}>
-              Fan %
-            </th>
-            <th rowSpan={steps ? 2 : 1} className={HEAD}>
-              Backup
-            </th>
-            <th rowSpan={steps ? 2 : 1} aria-label="Remove" />
-          </tr>
-          {steps ? (
-            <tr>
-              <th scope="col" className={HEAD}>
-                Min
-              </th>
-              <th scope="col" className={HEAD}>
-                Max
-              </th>
-            </tr>
-          ) : null}
-        </thead>
-        <tbody>
-          <SoakRow
-            draft={draft}
-            errors={errors}
-            steps={steps}
-            columns={columns}
-            readOnly={readOnly}
-            onChange={onChange}
-          />
-          {draft.steps.map((step, index) => (
-            <StepRow
-              key={String(index)}
-              step={step}
-              index={index}
-              last={index === draft.steps.length - 1}
+      <DndContext {...drag.context}>
+        <table className="w-full border-collapse">
+          <StepsHead unit={draft.unit} steps={steps} readOnly={readOnly} />
+          <tbody>
+            <SoakRow
+              draft={draft}
               errors={errors}
               steps={steps}
               columns={columns}
               readOnly={readOnly}
-              onChange={(change) => {
-                setStep(index, change);
-              }}
-              onRemove={() => {
-                onChange(removeStep(draft, index));
-              }}
-              moves={readOnly ? undefined : moves}
+              onChange={onChange}
             />
-          ))}
-        </tbody>
-      </table>
+          </tbody>
+          <SortableContext items={drag.sortable} strategy={verticalListSortingStrategy}>
+            {draft.steps.map((step, index) => {
+              const id = drag.ids[index] ?? String(index);
+              if (readOnly) return <tbody key={id}>{row(step, index)}</tbody>;
+              if (index === draft.steps.length - 1) {
+                return <tbody key={id}>{row(step, index, <td className={BUTTON_CELL} />)}</tbody>;
+              }
+              return (
+                <SortableStep
+                  key={id}
+                  id={id}
+                  index={index}
+                  name={stepName(step, index)}
+                  slide={drag.slide}
+                  moves={moves}
+                >
+                  {(handle) => row(step, index, handle)}
+                </SortableStep>
+              );
+            })}
+          </SortableContext>
+        </table>
+        {createPortal(
+          <DragOverlay
+            dropAnimation={drag.dropAnimation}
+            className="cursor-grabbing rounded-md bg-surface-raised shadow-(--shadow-raised)"
+          >
+            {drag.carried && carried ? (
+              <StepOverlay widths={drag.carried.widths}>
+                {row(
+                  carried,
+                  drag.carried.index,
+                  <td className={BUTTON_CELL}>
+                    <StepHandle name={stepName(carried, drag.carried.index)} tabIndex={-1} />
+                  </td>,
+                )}
+              </StepOverlay>
+            ) : null}
+          </DragOverlay>,
+          document.body,
+        )}
+      </DndContext>
       {readOnly ? null : (
         <Button
           variant="ghost"
