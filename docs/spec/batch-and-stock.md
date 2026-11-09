@@ -20,7 +20,7 @@ switching roasters re-plans it.
 
 - **On the bean:** its Green card says how many batches are left and their weights ("5 batches ·
   4 × 356 g · 1 × 360 g").
-- **Add stock:** the weight and the date, and under them what the green then splits into ("Then
+- **Adjust stock › Add:** the weight and the date, and under them what the green then splits into ("Then
   2,784 g green · 8 batches · 8 × 348 g"). Nothing to pick.
 - **Batch calculator** (Beans "⋯"): for "what would this order make": the order weight, and the
   batch you'd roast it at (Auto's profile batch, else the roaster's ideal, unless you change it);
@@ -43,16 +43,19 @@ switching roasters re-plans it.
 
 Each bean has its own, whichever roaster or profile roasted it: how much and how often it is bought and used.
 
-- **What counts:** purchases (Add stock: grams and the day bought), roasts made here (the batch off green at Start; an imported roast never touched stock, so it isn't here), and adjustments: Adjust stock keeps what it changed ("Counted"), Take out stock what you took and why ("Taken out · …"), and a batch given back at Clear is "Returned at Clear". An adjustment that changes nothing isn't kept.
+- **What counts:** purchases (Adjust stock › Add: grams and the day bought), roasts made here (the batch off green at Start; an imported roast never touched stock, so it isn't here), and adjustments: Recount keeps what it changed ("Counted"), Take out what you took and why ("Taken out · …"), and a batch given back at Clear is "Returned at Clear". An adjustment that changes nothing isn't kept.
 - **Green after each:** worked back from today's green stock, so today's is always right; when older records are missing (a deleted roast, stock set before adjustments were kept), the oldest steps are what's off. Never below 0.
 - **Card:** "Stock history" on the bean page, under the stock cards, folded by default with one line: "Bought twice · 360 g a week" (or "3 roasts", or "Nothing yet"). Open, it shows:
   - **Facts:** Bought (times · grams), Roasted (roasts · green grams), Pace (green a week from the first roast to today, once there are two weeks of roasting), Lasts (the green left at that pace: "About 3 weeks", "Under a week", months past 12 weeks). A dash where there's nothing yet.
   - **Chart:** the green stock as steps from the first movement to today, with the low-stock line (design system: StockChart). Hover shows each movement.
   - **Movements:** Date · What · Green (+/− grams) · Green after, newest first; six, then Show all.
 
-## Take out stock
+## Adjust stock
 
-Green beans that leave the bag for any reason but a roast: given away, spilled, a sample for a friend. On the bean page's ⋯ menu, above Adjust stock (greyed out with no green left).
+One button on the bean's header, beside Roast this bean, for every change to its stock. It opens a dialog (design system: Dialog) titled Adjust stock, with the bean's name and stock under the title ("African Moon · 1,664 g green · 911 g roasted") and three changes to pick from (a segmented control), Add first each time it opens:
 
-- **Form:** Weight (g) and Why (optional, up to 120 characters, "Gave some to a friend"), then "Then 1,384 g green". More than the green stock is refused under the field: "Only 1,784 g green left". The primary reads "Take out 400 g".
-- **Kept:** as an adjustment with reason `taken` and your words; Stock history shows it as "Taken out · Gave some to a friend". Roasted stock doesn't move.
+- **Add:** new green stock, as above; it is a purchase in the stock history.
+- **Take out:** green beans that leave the bag for any reason but a roast: given away, spilled, a sample for a friend. Weight (g) and Why (optional, up to 120 characters, "Gave some to a friend"), then "Then 1,384 g green". More than the green stock is refused under the field: "Only 1,784 g green left". The primary reads "Take out 400 g". Kept as an adjustment with reason `taken` and your words; Stock history shows "Taken out · Gave some to a friend". Roasted stock doesn't move.
+- **Recount:** green and roasted as your count says; kept as "Counted" with what it changed.
+
+Each has Cancel and its own primary; switching keeps nothing typed in the other. Saving closes the dialog, and the bean page shows the new stock and its history at once; Escape, Close or a click outside closes it without saving.

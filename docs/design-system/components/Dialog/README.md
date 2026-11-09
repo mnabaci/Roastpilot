@@ -1,6 +1,6 @@
 # Dialog
 
-A small window over the screen for a tool you use and close, without leaving where you are: Beans' Batch calculator. Asking before something that can't be undone is ConfirmDialog's job, not this one's.
+A small window over the screen for a tool you use and close, without leaving where you are: Beans' Batch calculator, a bean's Adjust stock. Asking before something that can't be undone is ConfirmDialog's job, not this one's.
 
 ## Anatomy
 

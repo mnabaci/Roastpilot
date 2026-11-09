@@ -99,7 +99,7 @@ export function StockHistory({
     >
       {first === undefined ? (
         <p className="text-label text-ink-muted">
-          Add stock or roast this bean, and its history starts here
+          Adjust stock or roast this bean, and its history starts here
         </p>
       ) : (
         <div className="@container flex flex-col gap-5">

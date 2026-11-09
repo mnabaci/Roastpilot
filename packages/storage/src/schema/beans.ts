@@ -32,7 +32,7 @@ export const beanPurchases = sqliteTable('bean_purchases', {
   grams: real('grams').notNull(),
 });
 
-/** What Adjust stock, Take out stock or a batch given back at Clear changed: differences in grams. */
+/** What a recount, a take-out or a batch given back at Clear changed: differences in grams. */
 export const beanStockAdjustments = sqliteTable('bean_stock_adjustments', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   beanId: integer('bean_id')

@@ -54,7 +54,7 @@ describe('StockHistory', () => {
     ).toHaveAccessibleDescription('Nothing yet');
     await userEvent.click(screen.getByRole('button', { name: 'Stock history' }));
     expect(
-      screen.getByText('Add stock or roast this bean, and its history starts here'),
+      screen.getByText('Adjust stock or roast this bean, and its history starts here'),
     ).toBeInTheDocument();
   });
 

@@ -16,7 +16,7 @@ Compact, tonal buttons with an icon: one ember primary per phase, quiet tonal se
 
 ## Sizes
 
-- `sm` (`control-sm`, 44px, 14px side padding, `label` at 600) for every action outside the Roast screen's side panel: page-header actions next to the title (Edit, Cancel / Save), the ⋯, filter chips, forms' Cancel / Save (Add stock, New from milestones), Add beside its fields (Add roaster), Settings rows (Check for updates) and the coach card's buttons; `md` (`control-md`, 48px, 16px padding, `body` at 600, the default) on the Roast screen's side panel, read from a step back (the flow's secondary actions, Stop roast), and the sidebar's Add bean / Add roaster; `lg` (`control-lg`, 56px, full width, 20px padding, `heading` at 600) for the phase action.
+- `sm` (`control-sm`, 44px, 14px side padding, `label` at 600) for every action outside the Roast screen's side panel: page-header actions next to the title (Edit, Cancel / Save), the ⋯, filter chips, forms' Cancel / Save (Adjust stock, New from milestones), Add beside its fields (Add roaster), Settings rows (Check for updates) and the coach card's buttons; `md` (`control-md`, 48px, 16px padding, `body` at 600, the default) on the Roast screen's side panel, read from a step back (the flow's secondary actions, Stop roast), and the sidebar's Add bean / Add roaster; `lg` (`control-lg`, 56px, full width, 20px padding, `heading` at 600) for the phase action.
 - The text style comes from the size, never the variant: every label is semibold.
 - `sm` and `md` are at least as wide as they are tall, so a one-character or icon-only button (a rating 1–5) is still a square 44 / 48px target.
 

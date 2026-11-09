@@ -72,7 +72,7 @@ describe('BeansScreen', () => {
     const { api } = show();
     // Its 300 g left is one batch now.
     expect(screen.getByRole('region', { name: 'Green' })).toHaveTextContent('1 batch · 1 × 300 g');
-    await user.click(screen.getByRole('button', { name: 'Add stock' }));
+    await user.click(screen.getByRole('button', { name: 'Adjust stock' }));
     await user.type(screen.getByLabelText('Weight'), '1000');
     // 1,300 g at most 400 g a batch: four equal batches.
     expect(screen.getByText('Then 1,300 g green · 4 batches · 4 × 325 g')).toBeTruthy();
@@ -85,14 +85,32 @@ describe('BeansScreen', () => {
         purchasedAt: expect.any(String) as unknown,
       });
     });
+    // Saved, the dialog closes onto the bean page.
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: 'Adjust stock' })).toBeNull();
+    });
   });
 
-  it('adjusts stock by hand', async () => {
+  it('Adjust stock opens on Add, with Take out and Recount beside it', async () => {
+    const user = userEvent.setup();
+    show();
+    await user.click(screen.getByRole('button', { name: 'Adjust stock' }));
+    const changes = screen.getByRole('radiogroup', { name: 'Change' });
+    expect(
+      within(changes)
+        .getAllByRole('radio')
+        .map((r) => r.textContent),
+    ).toEqual(['Add', 'Take out', 'Recount']);
+    expect(within(changes).getByRole('radio', { name: 'Add' })).toBeChecked();
+    expect(screen.queryByRole('menuitem', { name: 'Adjust stock' })).toBeNull();
+  });
+
+  it('recounts stock by hand', async () => {
     const user = userEvent.setup();
     const { api } = show();
-    await user.click(screen.getByRole('button', { name: `More for ${BEAN.name}` }));
-    await user.click(screen.getByRole('menuitem', { name: 'Adjust stock' }));
-    const form = within(screen.getByRole('region', { name: 'Adjust stock' }));
+    await user.click(screen.getByRole('button', { name: 'Adjust stock' }));
+    await user.click(screen.getByRole('radio', { name: 'Recount' }));
+    const form = within(screen.getByRole('dialog', { name: 'Adjust stock' }));
     const green = form.getByLabelText('Green');
     await user.clear(green);
     await user.type(green, '250');
@@ -105,9 +123,9 @@ describe('BeansScreen', () => {
   it('takes green out of stock with why, never more than there is', async () => {
     const user = userEvent.setup();
     const { api } = show();
-    await user.click(screen.getByRole('button', { name: `More for ${BEAN.name}` }));
-    await user.click(screen.getByRole('menuitem', { name: 'Take out stock' }));
-    const form = within(screen.getByRole('region', { name: 'Take out stock' }));
+    await user.click(screen.getByRole('button', { name: 'Adjust stock' }));
+    await user.click(screen.getByRole('radio', { name: 'Take out' }));
+    const form = within(screen.getByRole('dialog', { name: 'Adjust stock' }));
     await user.type(form.getByLabelText('Weight'), '400');
     expect(form.getByText('Only 300 g green left')).toBeInTheDocument();
     expect(form.getByRole('button', { name: 'Take out 400 g' })).toBeDisabled();
@@ -162,7 +180,7 @@ describe('BeansScreen', () => {
   it('holds stock back until Bought on is a real date', async () => {
     const user = userEvent.setup();
     const { api } = show();
-    await user.click(screen.getByRole('button', { name: 'Add stock' }));
+    await user.click(screen.getByRole('button', { name: 'Adjust stock' }));
     await user.type(screen.getByLabelText('Weight'), '1000');
     const date = screen.getByLabelText('Bought on');
     await user.clear(date);

@@ -1,5 +1,5 @@
 import type { Bean } from '@roastpilot/shared';
-import { Button, NumberField, TextField } from '@roastpilot/ui';
+import { Button, Dialog, NumberField, SegmentedControl, TextField } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
@@ -26,8 +26,7 @@ export function AddStockForm({ bean, onDone }: { bean: Bean; onDone: () => void 
   const planContext = usePlanContext();
   const after = bean.greenG + (grams > 0 ? grams : 0);
   return (
-    <section aria-label="Add stock" className="flex flex-col gap-3">
-      <h3 className="text-heading">Add stock</h3>
+    <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-start gap-3">
         <NumberField label="Weight" unit="g" value={orderG} onChange={setOrderG} className="w-40" />
         <div className="flex flex-col gap-1">
@@ -84,12 +83,12 @@ export function AddStockForm({ bean, onDone }: { bean: Bean; onDone: () => void 
           {grams > 0 ? `Add ${formatGrams(grams)}` : 'Add stock'}
         </Button>
       </div>
-    </section>
+    </div>
   );
 }
 
 /** Stock by hand, when your count says otherwise. */
-export function AdjustStockForm({ bean, onDone }: { bean: Bean; onDone: () => void }) {
+export function RecountStockForm({ bean, onDone }: { bean: Bean; onDone: () => void }) {
   const { api } = useDeps();
   const run = useRun();
   const [green, setGreen] = useState(String(bean.greenG));
@@ -99,16 +98,15 @@ export function AdjustStockForm({ bean, onDone }: { bean: Bean; onDone: () => vo
   const invalid = (value: string, n: number) => value.trim() === '' || !(n >= 0);
   const valid = !invalid(green, greenG) && !invalid(roasted, roastedG);
   return (
-    <section aria-label="Adjust stock" className="flex flex-col gap-3">
-      <h3 className="text-heading">Adjust stock</h3>
+    <div className="flex flex-col gap-3">
       <div className="flex gap-3">
-        <NumberField label="Green" unit="g" value={green} onChange={setGreen} className="w-32" />
+        <NumberField label="Green" unit="g" value={green} onChange={setGreen} className="w-40" />
         <NumberField
           label="Roasted"
           unit="g"
           value={roasted}
           onChange={setRoasted}
-          className="w-32"
+          className="w-40"
         />
       </div>
       {problem ? (
@@ -139,7 +137,7 @@ export function AdjustStockForm({ bean, onDone }: { bean: Bean; onDone: () => vo
           Save
         </Button>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -157,8 +155,7 @@ export function TakeOutStockForm({ bean, onDone }: { bean: Bean; onDone: () => v
   const tooMuch = grams > bean.greenG;
   const valid = grams > 0 && !tooMuch;
   return (
-    <section aria-label="Take out stock" className="flex flex-col gap-3">
-      <h3 className="text-heading">Take out stock</h3>
+    <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-start gap-3">
         <NumberField
           label="Weight"
@@ -217,6 +214,56 @@ export function TakeOutStockForm({ bean, onDone }: { bean: Bean; onDone: () => v
           {grams > 0 ? `Take out ${formatGrams(grams)}` : 'Take out'}
         </Button>
       </div>
-    </section>
+    </div>
+  );
+}
+
+type StockChange = 'add' | 'take-out' | 'recount';
+
+const CHANGES = [
+  { value: 'add', label: 'Add' },
+  { value: 'take-out', label: 'Take out' },
+  { value: 'recount', label: 'Recount' },
+] as const;
+
+/**
+ * Every change to a bean's stock in one dialog (docs/spec/batch-and-stock.md): new stock, green
+ * taken out for any reason, or a recount, each kept in the bean's stock history.
+ */
+export function AdjustStockDialog({
+  bean,
+  open,
+  onClose,
+}: {
+  bean: Bean;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [change, setChange] = useState<StockChange>('add');
+  const close = () => {
+    onClose();
+    // It opens on Add again next time.
+    setChange('add');
+  };
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(opened) => {
+        if (!opened) close();
+      }}
+      title="Adjust stock"
+      description={`${bean.name} · ${formatGrams(bean.greenG)} green · ${formatGrams(bean.roastedG)} roasted`}
+    >
+      <SegmentedControl
+        label="Change"
+        options={CHANGES}
+        value={change}
+        onChange={setChange}
+        className="self-start"
+      />
+      {change === 'add' ? <AddStockForm bean={bean} onDone={close} /> : null}
+      {change === 'take-out' ? <TakeOutStockForm bean={bean} onDone={close} /> : null}
+      {change === 'recount' ? <RecountStockForm bean={bean} onDone={close} /> : null}
+    </Dialog>
   );
 }

@@ -9,11 +9,11 @@ import { BeanEditor } from './BeanEditor';
 import { BeanFacts } from './BeanFacts';
 import { BeanRoasts } from './BeanRoasts';
 import { StockHistory } from './StockHistory';
-import { AddStockForm, AdjustStockForm, TakeOutStockForm } from './StockForms';
+import { AdjustStockDialog } from './StockForms';
 import { useLibraryFiles } from '../../features/use-library-files';
 import { useBeanActions } from './use-bean-actions';
 
-type Panel = 'none' | 'edit' | 'add-stock' | 'take-out-stock' | 'adjust-stock';
+type Panel = 'none' | 'edit' | 'adjust-stock';
 
 /** One bean: its record, stock, roasts and what you can do with it (docs/spec/ui.md, Beans screen). */
 export function BeanDetail({
@@ -62,10 +62,10 @@ export function BeanDetail({
           <Button
             size="sm"
             onClick={() => {
-              setPanel('add-stock');
+              setPanel('adjust-stock');
             }}
           >
-            Add stock
+            Adjust stock
           </Button>
           {bean.link === null ? null : (
             <Button variant="ghost" size="sm" icon={<ExternalLink />} onClick={actions.orderAgain}>
@@ -84,19 +84,6 @@ export function BeanDetail({
           <Menu
             label={`More for ${bean.name}`}
             items={[
-              {
-                label: 'Take out stock',
-                disabled: bean.greenG <= 0,
-                onSelect: () => {
-                  setPanel('take-out-stock');
-                },
-              },
-              {
-                label: 'Adjust stock',
-                onSelect: () => {
-                  setPanel('adjust-stock');
-                },
-              },
               {
                 label: bean.profileId === null ? 'Make a profile' : 'Make another profile',
                 disabled: !actions.canMakeProfile,
@@ -138,9 +125,7 @@ export function BeanDetail({
           {actions.problem}
         </p>
       ) : null}
-      {panel === 'add-stock' ? <AddStockForm bean={bean} onDone={close} /> : null}
-      {panel === 'take-out-stock' ? <TakeOutStockForm bean={bean} onDone={close} /> : null}
-      {panel === 'adjust-stock' ? <AdjustStockForm bean={bean} onDone={close} /> : null}
+      <AdjustStockDialog bean={bean} open={panel === 'adjust-stock'} onClose={close} />
       <StockHistory bean={bean} />
       <BeanFacts bean={bean} />
       <BeanRoasts bean={bean} roasts={roasts} onOpen={onOpenRoast} />
