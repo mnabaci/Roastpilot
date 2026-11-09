@@ -29,7 +29,7 @@ Claude Code runs these as skills; other agents open and follow the file. Skill `
 | change the controller, PID, rules or safety (test it)       | `simulate`              |
 | tune PID gains from saved roasts                            | `pid-tune`              |
 | change tokens, or sync the design system page after a merge | `design-sync`           |
-| cut a release                                               | `release`               |
+| cut a release or pick its version                           | `release`               |
 | merge main, a stack parent or another branch into yours     | `merge`                 |
 
 ## Non-negotiables
