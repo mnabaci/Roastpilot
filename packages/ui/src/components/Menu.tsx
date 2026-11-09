@@ -41,7 +41,8 @@ export function Menu({ label, text, items, className }: MenuProps) {
             className={cn('flex-row-reverse gap-1 px-2.5 [&_svg]:size-4', className)}
             icon={<ChevronDown aria-hidden="true" />}
           >
-            {text}
+            {/* Truncates when a header row is tight and the button is allowed to shrink. */}
+            <span className="truncate">{text}</span>
           </Button>
         ) : (
           <Button

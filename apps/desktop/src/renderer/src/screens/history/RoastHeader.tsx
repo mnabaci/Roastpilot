@@ -37,9 +37,11 @@ export function RoastHeader({
 }) {
   const [deleting, setDeleting] = useState(false);
   return (
-    <header className="flex min-h-control-sm flex-wrap items-center gap-3">
-      <div className="mr-auto flex min-w-0 items-center gap-3">
-        <h2 className="text-title">{roast ? roastTitle(roast.startedAt) : ''}</h2>
+    // One row that never wraps: when it's tight, Compare's choice gives way first (whole in its
+    // tooltip), then Make profile; the title and badges keep their place (docs/spec/ui.md, History).
+    <header className="flex min-h-control-sm items-center gap-3">
+      <div className="flex min-h-control-sm shrink-0 items-center gap-3">
+        <h2 className="text-title whitespace-nowrap">{roast ? roastTitle(roast.startedAt) : ''}</h2>
         {roast === undefined ? null : roast.profileName === null ? (
           <Badge className="shrink-0">Manual</Badge>
         ) : (
@@ -49,20 +51,24 @@ export function RoastHeader({
         )}
         {stopped ? <Badge className="shrink-0">Stopped</Badge> : null}
       </div>
-      <FilterSelect
-        label="Compare"
-        allValue={NONE}
-        value={compareId === undefined ? NONE : String(compareId)}
-        options={[
-          { value: NONE, label: 'None' },
-          ...others.map((r) => ({ value: String(r.id), label: roastTitle(r.startedAt) })),
-        ]}
-        onChange={(value) => {
-          onCompare(value === NONE ? undefined : Number(value));
-        }}
-      />
+      {/* Takes the room that's left, so it shrinks before anything after it does. */}
+      <div className="flex min-w-control-sm flex-1 justify-end">
+        <FilterSelect
+          label="Compare"
+          className="max-w-48"
+          allValue={NONE}
+          value={compareId === undefined ? NONE : String(compareId)}
+          options={[
+            { value: NONE, label: 'None' },
+            ...others.map((r) => ({ value: String(r.id), label: roastTitle(r.startedAt) })),
+          ]}
+          onChange={(value) => {
+            onCompare(value === NONE ? undefined : Number(value));
+          }}
+        />
+      </div>
       {roast === undefined ? null : live ? (
-        <p className="text-label text-ink-muted">Saving as it roasts</p>
+        <p className="min-w-0 truncate text-label text-ink-muted">Saving as it roasts</p>
       ) : (
         <>
           <Menu
