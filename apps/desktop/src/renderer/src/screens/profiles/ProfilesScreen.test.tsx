@@ -6,9 +6,9 @@ import {
   READY_ROAST,
   type AutoProfile,
 } from '@roastpilot/shared';
-import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BUILT_INS, CURVE, STEPS } from '../../test/profiles';
 import { fakeApi, renderApp } from '../../test/render-app';
 import { roastersWith } from '../../test/roasters';
@@ -312,30 +312,92 @@ describe('ProfilesScreen', () => {
       expect(api.saveProfile).not.toHaveBeenCalled();
     });
 
-    it('drags a step to another row, values and all', async () => {
-      await openWithThree();
-      const handle = screen.getByRole('button', { name: 'Move New step' });
-      const target = name(1).closest('tr');
-      if (!target) throw new Error('no row for step 1');
-      const dataTransfer = { setData: vi.fn(), effectAllowed: '', dropEffect: '' };
-      fireEvent.dragStart(handle, { dataTransfer });
-      fireEvent.dragOver(target, { dataTransfer });
-      fireEvent.drop(target, { dataTransfer });
-      fireEvent.dragEnd(handle, { dataTransfer });
-      expect(name(1)).toHaveValue('New step');
-      expect(screen.getByRole('textbox', { name: 'New step end temperature' })).toHaveValue('171');
-    });
+    describe('carrying it (Space, the arrows, Space)', () => {
+      // jsdom has no layout: lay each step's group of rows (and all in it) out 50 px under the one
+      // before, the table around them; the floating copy sits where its inline style puts it.
+      const ROW_PX = 50;
+      const placed = (style: CSSStyleDeclaration) =>
+        new DOMRect(
+          parseFloat(style.left),
+          parseFloat(style.top),
+          parseFloat(style.width),
+          parseFloat(style.height),
+        );
+      let layout: { mockRestore: () => void } | undefined;
+      beforeEach(() => {
+        const zero = Element.prototype.getBoundingClientRect;
+        layout = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (
+          this: Element,
+        ) {
+          const floating = this.closest<HTMLElement>('[style*="position: fixed"]');
+          if (floating?.style.top) return placed(floating.style);
+          if (this instanceof HTMLTableElement) {
+            return new DOMRect(0, 0, 800, this.tBodies.length * ROW_PX);
+          }
+          const group = this.closest('tbody');
+          const table = group?.parentElement;
+          if (!group || !(table instanceof HTMLTableElement)) return zero.call(this);
+          return new DOMRect(0, [...table.tBodies].indexOf(group) * ROW_PX, 800, ROW_PX);
+        });
+      });
+      afterEach(() => {
+        layout?.mockRestore();
+      });
+      const pickUp = async (handle: string) => {
+        screen.getByRole('button', { name: `Move ${handle}` }).focus();
+        await userEvent.keyboard('[Space]');
+      };
 
-    it('Development is no place to drop a step', async () => {
-      await openWithThree();
-      const handle = screen.getByRole('button', { name: 'Move Heat on' });
-      const target = name(3).closest('tr');
-      if (!target) throw new Error('no row for Development');
-      const dataTransfer = { setData: vi.fn(), effectAllowed: '', dropEffect: '' };
-      fireEvent.dragStart(handle, { dataTransfer });
-      fireEvent.drop(target, { dataTransfer });
-      expect(name(3)).toHaveValue('Development');
-      expect(name(1)).toHaveValue('Heat on');
+      it('moves a step, values and all, and says where it went', async () => {
+        await openWithThree();
+        await pickUp('New step');
+        expect(screen.getByText('Picked up New step, step 2 of 3')).toBeInTheDocument();
+        await userEvent.keyboard('[ArrowUp]');
+        expect(screen.getByText('New step, step 1 of 3')).toBeInTheDocument();
+        await userEvent.keyboard('[Space]');
+        expect(name(1)).toHaveValue('New step');
+        expect(name(2)).toHaveValue('Heat on');
+        expect(screen.getByRole('textbox', { name: 'New step end temperature' })).toHaveValue(
+          '171',
+        );
+        expect(screen.getByText('Moved New step to step 1')).toBeInTheDocument();
+      });
+
+      it('Escape puts it back', async () => {
+        await openWithThree();
+        await pickUp('New step');
+        await userEvent.keyboard('[ArrowUp]');
+        await userEvent.keyboard('{Escape}');
+        expect(name(1)).toHaveValue('Heat on');
+        expect(name(2)).toHaveValue('New step');
+        expect(screen.getByText('New step put back at step 2 of 3')).toBeInTheDocument();
+      });
+
+      it('Development is no place to drop a step', async () => {
+        await openWithThree();
+        await pickUp('Heat on');
+        await userEvent.keyboard('[ArrowDown][ArrowDown][ArrowDown]');
+        await userEvent.keyboard('[Space]');
+        expect(name(2)).toHaveValue('Heat on');
+        expect(name(3)).toHaveValue('Development');
+      });
+
+      it('Alt+arrows wait while a step is carried', async () => {
+        await openWithThree();
+        await pickUp('New step');
+        await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}');
+        await userEvent.keyboard('{Escape}');
+        expect(name(1)).toHaveValue('Heat on');
+        expect(name(2)).toHaveValue('New step');
+      });
+
+      it('the floating copy is only a picture, out of the way of screen readers', async () => {
+        await openWithThree();
+        await pickUp('New step');
+        expect(screen.getAllByDisplayValue('New step')).toHaveLength(2);
+        expect(screen.getAllByRole('textbox', { name: 'Step 2 name' })).toHaveLength(1);
+        await userEvent.keyboard('{Escape}');
+      });
     });
   });
 
@@ -478,6 +540,12 @@ describe('ProfilesScreen', () => {
     };
     const openRunning = (id: string) =>
       renderApp(<ProfilesScreen />, { profiles: withMine, ...settingsOn(id), ...running });
+    // The steps table has a status line of its own, for drags.
+    const lockBanner = () => {
+      const banner = screen.getByText(/^Auto is running/).closest('[role="status"]');
+      if (!banner) throw new Error('the banner is not a status');
+      return banner;
+    };
 
     it('holds Save and Delete for the one it runs, and keeps your edit', async () => {
       openRunning('custom-1');
@@ -493,7 +561,7 @@ describe('ProfilesScreen', () => {
     it('says why Save waits in a banner right under the title, gone at Drop with the edit kept', async () => {
       const { stores } = openRunning('custom-1');
       await edit('BT cap', '205');
-      const banner = screen.getByRole('status');
+      const banner = lockBanner();
       expect(banner).toHaveTextContent('Auto is running this profile · edits save after Drop');
       // Under the title, before the rest of the editor.
       const title = screen.getByRole('textbox', { name: 'Name' });
@@ -510,7 +578,7 @@ describe('ProfilesScreen', () => {
       openRunning('light-steps');
       await userEvent.click(screen.getByRole('button', { name: 'Mine' }));
       expect(screen.getByRole('button', { name: 'Use for Auto' })).toBeDisabled();
-      expect(screen.getByRole('status')).toHaveTextContent(
+      expect(lockBanner()).toHaveTextContent(
         'Auto is running another profile · Use for Auto after Drop',
       );
       await edit('BT cap', '205');
