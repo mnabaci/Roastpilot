@@ -45,7 +45,8 @@ switching roasters re-plans it.
 Each bean has its own, whichever roaster or profile roasted it: how much and how often it is bought and used.
 
 - **What counts:** purchases (Adjust stock › Add: grams and the day bought), roasts made here (the batch off green at Start; an imported roast never touched stock, so it isn't here), and adjustments: Recount keeps what it changed ("Counted"), Take out what you took and why ("Taken out · …"), and a batch given back at Clear is "Returned at Clear". An adjustment that changes nothing isn't kept.
-- **Green after each:** worked back from today's green stock, so today's is always right; when older records are missing (a deleted roast, stock set before adjustments were kept), the oldest steps are what's off. Never below 0.
+- **One log:** every movement is a row in the bean's stock log ([data-model.md](data-model.md#stock-log)). A deleted roast keeps its row, shown as "Roasted · roast deleted" with nothing to open, so the history still adds up.
+- **Green after each:** worked back from today's green stock, so today's is always right and every step after the first record adds up exactly. Only what came before the log can be missing: stock set before adjustments were kept, and roasts deleted before the log kept them; a bean that old can start off. Never below 0.
 - **Card:** "Stock history" on the bean page, under the stock cards, folded by default with one line: "Bought twice · 360 g a week" (or "3 roasts", or "Nothing yet"). Open, it shows:
   - **Facts:** Bought (times · grams), Roasted (roasts · green grams), Pace (green a week from the first roast to today, once there are two weeks of roasting), Lasts (the green left at that pace: "About 3 weeks", "Under a week", months past 12 weeks). A dash where there's nothing yet.
   - **Chart:** the green stock as steps from the first movement to today, with the low-stock line (design system: StockChart). Hover shows each movement.
