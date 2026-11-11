@@ -7,6 +7,19 @@ a roast: minor for a new roasting capability, patch for everything else
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-11-11
+
+### Changed
+
+- **Beans track green stock only:** the bean page shows what's left in the green bag; roasted
+  stock is no longer shown.
+- **Take out and Recount take a day,** as Add does, so a change you forgot to log lands on the
+  right day.
+- **Every Adjust stock tab ends with the same "Then" line** showing the green stock after the
+  change; Recount also shows how much it changes.
+- **Stock history adds up exactly:** a roast you delete stays in the history as "Roasted ·
+  roast deleted", so the green it used is still counted.
+
 ## [0.3.2] - 2026-11-09
 
 ### Added
