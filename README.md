@@ -28,16 +28,23 @@ How the app's safety rules work: [docs/spec/safety.md](docs/spec/safety.md).
 
 - **Auto:** step profiles (end temperature, duration and RoR range per step, with a planned fan) or
   curve profiles (follow a temperature curve). Between-batch preheat, dry end by temperature, drop
-  and cooling on their own. Built-in Light profile for the Skywalker; duplicate and edit your own.
-- **Manual:** heater, fan, drum and filter by hand; switch between Auto and Manual mid-roast. A live
-  coach that suggests the next setting is planned ([manual-mode.md](docs/spec/manual-mode.md)).
+  and cooling on their own, and a stall guard that adds heat if RoR fades before first crack.
+  Built-in Light Steps and Light Curve profiles for the Skywalker, tuned on real roasts; duplicate
+  and edit your own.
+- **Manual:** heater, fan, drum and filter by hand; switch between Auto and Manual mid-roast. A
+  live coach suggests what Auto would set now, and why, with a heads-up before first crack and
+  before drop.
 - **Live chart:** temperature, RoR, the profile's curve, markers (charge, turning point, dry end,
-  first crack, drop) and an outputs strip under it.
+  first crack, drop) and an outputs strip under it, with a projection of where the temperature is
+  heading, a now line and drying, Maillard and development bands.
 - **Ghost roasts:** a past roast drawn behind the live one, picked for you, changeable.
-- **Beans and stock:** a bean library, green stock that goes down with each roast, weight loss, and
-  a batch calculator.
-- **History:** every roast saved, compare two, star favourites, make a profile from a roast. Export
-  as Roastpilot files or CSV; import Roastpilot files and Artisan `.alog` roasts.
+- **Beans and stock:** a bean library with an order link to buy the same beans again, green stock
+  that goes down with each roast, Adjust stock to add, take out or recount, and a stock history
+  with your pace and how long the green lasts. Batch plans follow what's left, and each bean
+  lists its roasts with green → roasted weight and loss.
+- **History:** every roast saved and marked Auto or Manual; compare two side by side, rate with
+  stars, favourite with a heart, make a profile from a roast. Export as Roastpilot files or CSV;
+  import Roastpilot files and Artisan `.alog` roasts.
 - **Sounds:** short cues when something needs you (charge soon, listen for first crack, dump
   beans, Auto stopped), so you hear them over the roaster.
 - **Logs screen:** the app's own log, live, for when something goes wrong.
