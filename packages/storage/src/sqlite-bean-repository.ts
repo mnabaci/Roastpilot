@@ -138,9 +138,10 @@ export class SqliteBeanRepository implements BeanRepository {
   adjustStock({
     beanId,
     greenG,
-    roastedG,
+    roastedG: roastedGiven,
     reason = 'count',
     note = null,
+    adjustedOn,
   }: AdjustStock): Promise<Result<void, StorageError>> {
     return transaction(this.#db, async (tx) => {
       const before = await tx
@@ -149,6 +150,7 @@ export class SqliteBeanRepository implements BeanRepository {
         .where(eq(beans.id, beanId))
         .get();
       if (!before) return err({ kind: 'not-found', id: beanId });
+      const roastedG = roastedGiven ?? before.roastedG;
       await tx.update(beans).set({ greenG, roastedG }).where(eq(beans.id, beanId)).run();
       const change = { greenG: greenG - before.greenG, roastedG: roastedG - before.roastedG };
       if (change.greenG !== 0 || change.roastedG !== 0) {
@@ -156,7 +158,8 @@ export class SqliteBeanRepository implements BeanRepository {
           .insert(beanStockAdjustments)
           .values({
             beanId,
-            adjustedAt: new Date().toISOString(),
+            // A day you picked sorts like a purchase: before that day's roasts.
+            adjustedAt: adjustedOn ?? new Date().toISOString(),
             reason,
             note: note === '' ? null : note,
             ...change,

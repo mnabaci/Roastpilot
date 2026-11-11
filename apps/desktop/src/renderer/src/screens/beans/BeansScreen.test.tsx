@@ -105,6 +105,11 @@ describe('BeansScreen', () => {
     expect(screen.queryByRole('menuitem', { name: 'Adjust stock' })).toBeNull();
   });
 
+  it('shows green stock only, never a roasted figure', () => {
+    show();
+    expect(screen.queryByText('Roasted')).toBeNull();
+  });
+
   it('recounts stock by hand', async () => {
     const user = userEvent.setup();
     const { api } = show();
@@ -114,9 +119,32 @@ describe('BeansScreen', () => {
     const green = form.getByLabelText('Green');
     await user.clear(green);
     await user.type(green, '250');
+    expect(form.getByText(/^50 g less than the app had · /)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => {
-      expect(api.adjustStock).toHaveBeenCalledWith({ beanId: 1, greenG: 250, roastedG: 100 });
+      expect(api.adjustStock).toHaveBeenCalledWith({ beanId: 1, greenG: 250 });
+    });
+  });
+
+  it('keeps a stock change on the day you pick, never after today', async () => {
+    const user = userEvent.setup();
+    const { api } = show();
+    await user.click(screen.getByRole('button', { name: 'Adjust stock' }));
+    await user.click(screen.getByRole('radio', { name: 'Take out' }));
+    const form = within(screen.getByRole('dialog', { name: 'Adjust stock' }));
+    await user.type(form.getByLabelText('Weight'), '50');
+    const day = form.getByLabelText('Taken out on');
+    await user.clear(day);
+    await user.type(day, '2999-01-01');
+    expect(form.getByText(/not after today/)).toBeInTheDocument();
+    expect(form.getByRole('button', { name: 'Take out 50 g' })).toBeDisabled();
+    await user.clear(day);
+    await user.type(day, '2026-11-02');
+    await user.click(form.getByRole('button', { name: 'Take out 50 g' }));
+    await waitFor(() => {
+      expect(api.adjustStock).toHaveBeenCalledWith(
+        expect.objectContaining({ greenG: 250, reason: 'taken', adjustedOn: '2026-11-02' }),
+      );
     });
   });
 
@@ -132,13 +160,12 @@ describe('BeansScreen', () => {
     await user.clear(form.getByLabelText('Weight'));
     await user.type(form.getByLabelText('Weight'), '50');
     await user.type(form.getByLabelText('Why'), ' Gave some to Sam ');
-    expect(form.getByText('Then 250 g green')).toBeInTheDocument();
+    expect(form.getByText(/^Then 250 g green · /)).toBeInTheDocument();
     await user.click(form.getByRole('button', { name: 'Take out 50 g' }));
     await waitFor(() => {
       expect(api.adjustStock).toHaveBeenCalledWith({
         beanId: 1,
         greenG: 250,
-        roastedG: 100,
         reason: 'taken',
         note: 'Gave some to Sam',
       });
@@ -185,7 +212,7 @@ describe('BeansScreen', () => {
     const date = screen.getByLabelText('Bought on');
     await user.clear(date);
     await user.type(date, 'last week');
-    expect(screen.getByText(/Enter a date like/)).toBeTruthy();
+    expect(screen.getByText(/Enter a day like .*, not after today/)).toBeTruthy();
     const add = screen.getByRole('button', { name: 'Add 1,000 g' });
     expect((add as HTMLButtonElement).disabled).toBe(true);
     await user.clear(date);

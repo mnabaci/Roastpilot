@@ -491,7 +491,6 @@ describe('RoastScreen', () => {
       expect(api.adjustStock).toHaveBeenCalledWith({
         beanId: 1,
         greenG: 850,
-        roastedG: 0,
         reason: 'returned',
       });
       expect(api.roastAction).toHaveBeenCalledWith('clear');

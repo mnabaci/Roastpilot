@@ -35,7 +35,6 @@ export function ClearRoast() {
           const returned = await api.adjustStock({
             beanId: bean.id,
             greenG: bean.greenG + batchG,
-            roastedG: bean.roastedG,
             reason: 'returned',
           });
           // Keep the roast on screen, so Clear can be tried again or the stock kept deducted.

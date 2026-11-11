@@ -9,7 +9,7 @@ import { BeanEditor } from './BeanEditor';
 import { BeanFacts } from './BeanFacts';
 import { BeanRoasts } from './BeanRoasts';
 import { StockHistory } from './StockHistory';
-import { AdjustStockDialog } from './StockForms';
+import { AdjustStockDialog } from './AdjustStockDialog';
 import { useLibraryFiles } from '../../features/use-library-files';
 import { useBeanActions } from './use-bean-actions';
 
@@ -100,7 +100,7 @@ export function BeanDetail({
           />
         </div>
       </header>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-4">
         <StatCard
           label="Green"
           value={formatNumber(bean.greenG, 0)}
@@ -112,7 +112,6 @@ export function BeanDetail({
               : 'Add a roaster to plan its batches'
           }
         />
-        <StatCard label="Roasted" value={formatNumber(bean.roastedG, 0)} unit="g" />
         <StatCard
           label="Weight loss"
           value={formatNumber(bean.avgLossPct, 1)}

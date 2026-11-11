@@ -103,6 +103,22 @@ describe('SqliteBeanRepository', () => {
     expect(await one(beans)).toMatchObject({ greenG: 321, roastedG: 45 });
   });
 
+  it('keeps an adjustment on the day it was picked', async () => {
+    const { beans } = setup();
+    const beanId = await added(beans);
+    await beans.adjustStock({ beanId, greenG: 900, reason: 'taken', adjustedOn: '2026-11-02' });
+    const history = await beans.stockHistory(beanId);
+    expect(history.ok && history.value.at(-1)).toMatchObject({ at: '2026-11-02', kind: 'taken' });
+  });
+
+  it('keeps roasted stock as it is when an adjustment leaves it out', async () => {
+    const { beans } = setup();
+    const beanId = await added(beans);
+    await beans.adjustStock({ beanId, greenG: 321, roastedG: 45 });
+    await beans.adjustStock({ beanId, greenG: 300 });
+    expect(await one(beans)).toMatchObject({ greenG: 300, roastedG: 45 });
+  });
+
   it('keeps what an adjustment changed, and nothing when it changed nothing', async () => {
     const { beans } = setup();
     const beanId = await added(beans);
