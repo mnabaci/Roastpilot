@@ -1,8 +1,9 @@
 import type { StockStep, StockSummary } from '@roastpilot/core';
-import type { StockMovement } from '@roastpilot/shared';
+import type { StockKind, StockMovement } from '@roastpilot/shared';
 import { formatGrams } from './batch-format';
 
-const KIND: Record<StockMovement['kind'], string> = {
+/** Every stock log kind's label, the one place a new kind adds one. */
+const KIND: Record<StockKind, string> = {
   bought: 'Bought',
   roasted: 'Roasted',
   counted: 'Counted',
@@ -35,9 +36,17 @@ export function signedGrams(g: number): string {
   return `${rounded > 0 ? '+' : '−'}${formatGrams(Math.abs(rounded))}`;
 }
 
-/** What moved the stock: "Roasted", or "Taken out · Gave 200 g to Sam" with its note. */
-export const stockKind = (step: Pick<StockMovement, 'kind' | 'note'>): string =>
-  step.note ? `${KIND[step.kind]} · ${step.note}` : KIND[step.kind];
+/** What a roasted row says once its roast is deleted: its grams stay in the history. */
+const ROAST_DELETED = 'roast deleted';
+
+/**
+ * What moved the stock: "Roasted", "Roasted · roast deleted", or "Taken out · Gave 200 g to Sam"
+ * with its note.
+ */
+export function stockKind(step: Pick<StockMovement, 'kind' | 'note' | 'roastId'>): string {
+  const detail = step.kind === 'roasted' && step.roastId === null ? ROAST_DELETED : step.note;
+  return detail ? `${KIND[step.kind]} · ${detail}` : KIND[step.kind];
+}
 
 /** "Roasted · −400 g", for the chart's tooltip. */
 export const stockWhat = (step: StockStep): string =>

@@ -37,7 +37,12 @@ export const roasts = sqliteTable(
     /** Came from a file (Roastpilot or Artisan): its bean's stock never moves. */
     imported: integer('imported', { mode: 'boolean' }).notNull().default(false),
   },
-  (table) => [index('roasts_started_at').on(table.startedAt)],
+  (table) => [
+    index('roasts_started_at').on(table.startedAt),
+    index('roasts_bean').on(table.beanId),
+    index('roasts_roaster').on(table.roasterId),
+    index('roasts_ghost_roast').on(table.ghostRoastId),
+  ],
 );
 
 export const roastSamples = sqliteTable(

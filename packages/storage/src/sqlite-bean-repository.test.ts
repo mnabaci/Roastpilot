@@ -30,7 +30,7 @@ function setup() {
   const db = drizzleOn(opened.value);
   return {
     sqlite: opened.value,
-    beans: new SqliteBeanRepository(db),
+    beans: new SqliteBeanRepository(db, logger),
     roasts: new SqliteRoastRepository(db, logger),
   };
 }

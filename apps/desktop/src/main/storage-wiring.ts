@@ -61,7 +61,7 @@ export function openStores(
     roasts: new SqliteRoastRepository(db, logger),
     profileStore: new SqliteProfileRepository(db, clock, logger),
     roasterStore: new SqliteRoasterRepository(db, logger),
-    beanStore: new SqliteBeanRepository(db),
+    beanStore: new SqliteBeanRepository(db, logger),
     close: () => {
       database.value.close();
     },

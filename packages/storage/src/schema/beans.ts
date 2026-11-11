@@ -1,4 +1,4 @@
-// Beans and purchases (docs/spec/data-model.md). Change only through a new migration (add-migration skill).
+// Beans (docs/spec/data-model.md); their stock log is in stock-movements.ts. Change only through a new migration (add-migration skill).
 import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const beans = sqliteTable('beans', {
@@ -21,27 +21,4 @@ export const beans = sqliteTable('beans', {
   lowStockG: real('low_stock_g').notNull().default(500),
   archived: integer('archived', { mode: 'boolean' }).notNull().default(false),
   notes: text('notes'),
-});
-
-export const beanPurchases = sqliteTable('bean_purchases', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  beanId: integer('bean_id')
-    .notNull()
-    .references(() => beans.id, { onDelete: 'cascade' }),
-  purchasedAt: text('purchased_at').notNull(),
-  grams: real('grams').notNull(),
-});
-
-/** What a recount, a take-out or a batch given back at Clear changed: differences in grams. */
-export const beanStockAdjustments = sqliteTable('bean_stock_adjustments', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  beanId: integer('bean_id')
-    .notNull()
-    .references(() => beans.id, { onDelete: 'cascade' }),
-  adjustedAt: text('adjusted_at').notNull(),
-  greenG: real('green_g').notNull(),
-  roastedG: real('roasted_g').notNull(),
-  reason: text('reason', { enum: ['count', 'returned', 'taken'] }).notNull(),
-  /** Why stock was taken out, in your words: "Gave 200 g to Sam". */
-  note: text('note'),
 });

@@ -17,12 +17,12 @@ import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy';
 import { attempt } from './attempt';
 import {
   eventDetailJson,
-  stockColumns,
   summaryColumns,
   toSavedEvents,
   toSavedProfile,
   toSavedSamples,
 } from './roast-rows';
+import { moveRoastToBean, saveRoastResult, syncRoastMovement } from './roast-stock';
 import { moveStock } from './stock';
 import { roastEvents, roasts, roastSamples } from './schema/roasts';
 import { transaction } from './transaction';
@@ -40,7 +40,7 @@ export class SqliteRoastRepository implements RoastRepository {
     this.#logger = logger;
   }
 
-  /** The roast row and the batch off the bean's green stock, all or nothing. */
+  /** The roast row, the batch off the bean's green stock and its stock log row, all or nothing. */
   create(roast: NewRoast): Promise<Result<RoastId, StorageError>> {
     const values = {
       startedAt: roast.startedAt,
@@ -57,6 +57,7 @@ export class SqliteRoastRepository implements RoastRepository {
       if (!values.imported && roast.beanId !== null && roast.batchG !== null) {
         const moved = await moveStock(tx, roast.beanId, { greenG: -roast.batchG });
         if (!moved.ok) return moved;
+        await syncRoastMovement(tx, row.id);
       }
       return ok(row.id);
     });
@@ -101,39 +102,14 @@ export class SqliteRoastRepository implements RoastRepository {
     });
   }
 
-  /** Saves what you say about the roast; stock moves only by what changed, all or nothing. */
-  saveResult({ id, ...result }: RoastResult): Promise<Result<void, StorageError>> {
-    return transaction(this.#db, async (tx) => {
-      const row = await tx.select(stockColumns).from(roasts).where(eq(roasts.id, id)).get();
-      if (!row) return err({ kind: 'not-found', id });
-      await tx.update(roasts).set(result).where(eq(roasts.id, id)).run();
-      if (row.beanId === null || row.imported) return ok(undefined);
-      return moveStock(tx, row.beanId, {
-        greenG: (row.batchG ?? 0) - (result.batchG ?? 0),
-        roastedG: (result.roastedG ?? 0) - (row.roastedG ?? 0),
-      });
-    });
+  /** Saves what you say about the roast; stock and its log row move by what changed. */
+  saveResult(result: RoastResult): Promise<Result<void, StorageError>> {
+    return transaction(this.#db, (tx) => saveRoastResult(tx, result));
   }
 
-  /** Links the roast to another bean, moving its weights between the two, all or nothing. */
+  /** Links the roast to another bean, moving its weights and its stock log row, all or nothing. */
   setBean(id: RoastId, beanId: BeanId | null): Promise<Result<void, StorageError>> {
-    return transaction(this.#db, async (tx) => {
-      const row = await tx.select(stockColumns).from(roasts).where(eq(roasts.id, id)).get();
-      if (!row) return err({ kind: 'not-found', id });
-      await tx.update(roasts).set({ beanId }).where(eq(roasts.id, id)).run();
-      if (row.imported || row.beanId === beanId) return ok(undefined);
-      // The beans went from one bag to the other: give them back, then take them again.
-      const moved = { greenG: row.batchG ?? 0, roastedG: row.roastedG ?? 0 };
-      if (row.beanId !== null) {
-        const back = await moveStock(tx, row.beanId, {
-          greenG: moved.greenG,
-          roastedG: -moved.roastedG,
-        });
-        if (!back.ok) return back;
-      }
-      if (beanId === null) return ok(undefined);
-      return moveStock(tx, beanId, { greenG: -moved.greenG, roastedG: moved.roastedG });
-    });
+    return transaction(this.#db, (tx) => moveRoastToBean(tx, id, beanId));
   }
 
   list(): Promise<Result<RoastSummary[], StorageError>> {
@@ -185,6 +161,7 @@ export class SqliteRoastRepository implements RoastRepository {
     return { summary, samples, events };
   }
 
+  /** Its stock log row stays, with no roast (ON DELETE SET NULL), so the history adds up. */
   async delete(id: RoastId): Promise<Result<void, StorageError>> {
     const deleted = await attempt(() =>
       this.#db.delete(roasts).where(eq(roasts.id, id)).returning({ id: roasts.id }).all(),

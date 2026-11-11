@@ -1,88 +1,6 @@
-import { createLogger, ManualClock } from '@roastpilot/core';
 import { describe, expect, it } from 'vitest';
-import { openDatabase } from './open-database';
-import { drizzleOn } from './proxy-db';
-import { SqliteBeanRepository } from './sqlite-bean-repository';
-import { SqliteProfileRepository } from './sqlite-profile-repository';
-import { SqliteRoastRepository } from './sqlite-roast-repository';
-import { SqliteRoasterRepository } from './sqlite-roaster-repository';
+import { BEAN, failed, newRoast, result, roastOn, setup } from './test-stores';
 import { TEST_PROFILE } from './test-profile';
-
-/** Two beans with 1000 g green each, and a way to make a later statement fail. */
-function setup() {
-  const logger = createLogger({ write: () => undefined }, 'storage');
-  const opened = openDatabase(':memory:', logger);
-  if (!opened.ok) throw new Error(opened.error.kind);
-  const sqlite = opened.value;
-  sqlite.exec(`INSERT INTO beans (name, origin, process, green_g) VALUES
-    ('Ethiopia', 'Ethiopia', 'Washed', 1000), ('Colombia', 'Colombia', 'Natural', 1000)`);
-  const db = drizzleOn(sqlite);
-  /** Everything a stock write can touch, to compare before and after. */
-  const snapshot = () => ({
-    beans: sqlite.prepare('SELECT id, green_g, roasted_g FROM beans ORDER BY id').all(),
-    roasts: sqlite.prepare('SELECT * FROM roasts ORDER BY id').all(),
-    samples: sqlite.prepare('SELECT count(*) AS n FROM roast_samples').get(),
-    purchases: sqlite.prepare('SELECT * FROM bean_purchases ORDER BY id').all(),
-    roasters: sqlite.prepare('SELECT id, name, is_active FROM roasters ORDER BY id').all(),
-    profiles: sqlite.prepare('SELECT id FROM profiles ORDER BY id').all(),
-  });
-  /** From now on, `event` on `table` fails (when `when` holds), as a broken statement would. */
-  const failOn = (event: string, table: string, when = '1') => {
-    sqlite.exec(`CREATE TRIGGER fail_${table} BEFORE ${event} ON ${table} WHEN ${when}
-      BEGIN SELECT RAISE(ABORT, 'disk said no'); END`);
-  };
-  return {
-    sqlite,
-    snapshot,
-    failOn,
-    roasts: new SqliteRoastRepository(db, logger),
-    beans: new SqliteBeanRepository(db),
-    roasters: new SqliteRoasterRepository(db, logger),
-    profiles: new SqliteProfileRepository(db, new ManualClock(0), logger),
-  };
-}
-
-const failed = { ok: false, error: { kind: 'storage-failed' } };
-const BEAN = {
-  name: 'Guji',
-  origin: 'Ethiopia',
-  process: 'washed',
-  species: null,
-  variety: null,
-  altitudeM: null,
-  densityGL: null,
-  moisturePct: null,
-  screen: null,
-  decaf: false,
-  supplier: null,
-  link: null,
-  lowStockG: 500,
-  notes: null,
-} as const;
-const newRoast = {
-  startedAt: '2026-11-04T10:00:00.000Z',
-  mode: 'manual',
-  profile: null,
-  roasterId: null,
-  ghostRoastId: null,
-  beanId: 1,
-  batchG: 400,
-} as const;
-const result = (id: number, roastedG: number | null) => ({
-  id,
-  batchG: 400,
-  roastedG,
-  rating: null,
-  isFavourite: false,
-  notes: null,
-});
-
-async function roastOn(env: ReturnType<typeof setup>) {
-  const made = await env.roasts.create(newRoast);
-  if (!made.ok) throw new Error('create failed');
-  await env.roasts.saveResult(result(made.value, 340));
-  return made.value;
-}
 
 describe('all-or-nothing writes', () => {
   it('create: no roast row when taking the batch off stock fails', async () => {
@@ -112,10 +30,46 @@ describe('all-or-nothing writes', () => {
     expect(env.snapshot()).toEqual(before);
   });
 
-  it('addStock: no stock without its purchase row', async () => {
+  it('create: no roast and no stock moved when writing its stock log row fails', async () => {
     const env = setup();
     const before = env.snapshot();
-    env.failOn('INSERT', 'bean_purchases');
+    env.failOn('INSERT', 'bean_stock_movements');
+    expect(await env.roasts.create(newRoast)).toMatchObject(failed);
+    expect(env.snapshot()).toEqual(before);
+  });
+
+  it('saveResult: neither the weights nor the stock change when its log row fails', async () => {
+    const env = setup();
+    const id = await roastOn(env);
+    const before = env.snapshot();
+    env.failOn('UPDATE', 'bean_stock_movements');
+    expect(await env.roasts.saveResult(result(id, 300))).toMatchObject(failed);
+    expect(env.snapshot()).toEqual(before);
+  });
+
+  it('setBean: the roast stays on its bean when moving its log row fails', async () => {
+    const env = setup();
+    const id = await roastOn(env);
+    const before = env.snapshot();
+    env.failOn('UPDATE', 'bean_stock_movements');
+    expect(await env.roasts.setBean(id, 2)).toMatchObject(failed);
+    expect(env.snapshot()).toEqual(before);
+  });
+
+  it('adjustStock: the stock stays when writing what changed fails', async () => {
+    const env = setup();
+    const before = env.snapshot();
+    env.failOn('INSERT', 'bean_stock_movements');
+    expect(await env.beans.adjustStock({ beanId: 1, greenG: 800, reason: 'taken' })).toMatchObject(
+      failed,
+    );
+    expect(env.snapshot()).toEqual(before);
+  });
+
+  it('addStock: no stock without its stock log row', async () => {
+    const env = setup();
+    const before = env.snapshot();
+    env.failOn('INSERT', 'bean_stock_movements');
     expect(await env.beans.addStock({ beanId: 1, grams: 500, purchasedAt: 'x' })).toMatchObject(
       failed,
     );

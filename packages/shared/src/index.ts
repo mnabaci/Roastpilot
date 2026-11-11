@@ -274,6 +274,7 @@ export {
   RoastSetupSchema,
   SetArchivedSchema,
   StockAdjustReasonSchema,
+  StockKindSchema,
   StockMovementSchema,
   UpdateBeanSchema,
   type AddStock,
@@ -286,6 +287,7 @@ export {
   type OpenBeanLinkError,
   type RoastSetup,
   type StockAdjustReason,
+  type StockKind,
   type StockMovement,
   type UpdateBean,
 } from './bean';
