@@ -47,6 +47,16 @@ describe('StockHistory', () => {
     ]);
   });
 
+  it('keeps a deleted roast as "Roasted · roast deleted", so the stock adds up', async () => {
+    show([...MOVEMENTS.slice(0, 1), { ...MOVEMENTS[1], roastId: null } as StockMovement], 1600);
+    await userEvent.click(await screen.findByRole('button', { name: 'Stock history' }));
+    const rows = within(screen.getByRole('table', { name: 'Stock movements' })).getAllByRole('row');
+    expect(rows.slice(1).map((row) => row.textContent)).toEqual([
+      '12 OctRoasted · roast deleted−400 g1,600 g',
+      '1 SeptBought+2,000 g2,000 g',
+    ]);
+  });
+
   it('says how it starts with no history', async () => {
     show([], 0);
     expect(
