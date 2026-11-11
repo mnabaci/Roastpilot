@@ -80,16 +80,22 @@ export const AdjustStockSchema = z.object({
 });
 
 /**
- * One thing that moved a bean's stock (docs/spec/batch-and-stock.md, Stock history), with what it
+ * What moved a bean's stock. Stored as plain text (docs/spec/data-model.md, Stock log), so a new
+ * kind is a value here and its label, with no migration.
+ */
+export const StockKindSchema = z.enum(['bought', 'roasted', 'counted', 'returned', 'taken']);
+
+/**
+ * One row of a bean's stock log (docs/spec/batch-and-stock.md, Stock history), with what it
  * changed in grams: a purchase, a roast made here, or an adjustment.
  */
 export const StockMovementSchema = z.object({
-  /** A purchase's date, or the moment of a roast or adjustment (ISO). */
+  /** A day (`2026-11-07`) for a purchase or a change dated another day, else the moment (ISO). */
   at: z.string(),
-  kind: z.enum(['bought', 'roasted', 'counted', 'returned', 'taken']),
+  kind: StockKindSchema,
   greenG: z.number(),
   roastedG: z.number(),
-  /** The roast, for `roasted`. */
+  /** The roast, for `roasted`; null once that roast is deleted. */
   roastId: z.number().int().positive().nullable(),
   /** Why, for `taken`, when you said. */
   note: z.string().nullable(),
@@ -133,6 +139,7 @@ export type Bean = z.infer<typeof BeanSchema>;
 export type AddStock = z.infer<typeof AddStockSchema>;
 export type AdjustStock = z.input<typeof AdjustStockSchema>;
 export type StockAdjustReason = z.infer<typeof StockAdjustReasonSchema>;
+export type StockKind = z.infer<typeof StockKindSchema>;
 export type StockMovement = z.infer<typeof StockMovementSchema>;
 export type UpdateBean = z.infer<typeof UpdateBeanSchema>;
 export type RoastSetup = z.infer<typeof RoastSetupSchema>;

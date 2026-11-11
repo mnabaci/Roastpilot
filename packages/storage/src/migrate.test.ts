@@ -38,13 +38,13 @@ describe('migrate', () => {
           '0008_bean_species',
           '0009_drop_purchase_batch_plan',
           '0010_bean_stock_adjustments',
+          '0011_stock_movements',
         ],
       },
     });
     expect(tables(db)).toEqual(
       expect.arrayContaining([
-        'bean_purchases',
-        'bean_stock_adjustments',
+        'bean_stock_movements',
         'beans',
         'profiles',
         'roast_events',
@@ -75,6 +75,7 @@ describe('migrate', () => {
           '0008_bean_species',
           '0009_drop_purchase_batch_plan',
           '0010_bean_stock_adjustments',
+          '0011_stock_movements',
         ],
       },
     });
@@ -167,7 +168,7 @@ describe('migrate', () => {
     db.exec(
       `INSERT INTO bean_purchases (bean_id, purchased_at, grams, batch_plan) VALUES (1, '2026-11-01', 2000, '{"kind":"equal","batchesG":[400,400,400,400,400]}')`,
     );
-    migrate(db);
+    migrate(db, MIGRATIONS.slice(0, 10));
     expect(db.prepare('SELECT * FROM bean_purchases').all()).toEqual([
       { id: 1, bean_id: 1, purchased_at: '2026-11-01', grams: 2000 },
     ]);
@@ -182,7 +183,7 @@ describe('migrate', () => {
     db.exec(
       `INSERT INTO bean_purchases (bean_id, purchased_at, grams) VALUES (1, '2026-11-01', 2000)`,
     );
-    migrate(db);
+    migrate(db, MIGRATIONS.slice(0, 11));
     expect(db.prepare('SELECT id, green_g FROM beans').all()).toEqual([{ id: 1, green_g: 1500 }]);
     expect(db.prepare('SELECT grams FROM bean_purchases').all()).toEqual([{ grams: 2000 }]);
     expect(db.prepare('SELECT * FROM bean_stock_adjustments').all()).toEqual([]);
@@ -235,6 +236,7 @@ describe('migrate', () => {
         '0008_bean_species',
         '0009_drop_purchase_batch_plan',
         '0010_bean_stock_adjustments',
+        '0011_stock_movements',
       ]);
       expect(schemaVersion(db)).toBe(5);
     });

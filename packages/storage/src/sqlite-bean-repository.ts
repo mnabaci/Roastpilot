@@ -1,4 +1,4 @@
-import type { BeanRepository } from '@roastpilot/core';
+import type { BeanRepository, Logger } from '@roastpilot/core';
 import {
   err,
   ok,
@@ -12,22 +12,26 @@ import {
   type StockMovement,
   type StorageError,
 } from '@roastpilot/shared';
-import { and, asc, eq, isNotNull, not, sql } from 'drizzle-orm';
+import { and, asc, eq, isNotNull, sql } from 'drizzle-orm';
 import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy';
 import { attempt } from './attempt';
-import { beanPurchases, beans, beanStockAdjustments } from './schema/beans';
+import { beans } from './schema/beans';
 import { roasts } from './schema/roasts';
+import { beanStockMovements } from './schema/stock-movements';
+import { toStockMovements } from './stock-rows';
 import { transaction } from './transaction';
 
-/** An adjustment's reason as a stock history kind. */
+/** An adjustment's reason as a stock log kind. */
 const ADJUSTED = { count: 'counted', returned: 'returned', taken: 'taken' } as const;
 
 /** Beans and stock in SQLite (docs/spec/data-model.md, Roasters and beans). */
 export class SqliteBeanRepository implements BeanRepository {
   readonly #db: SqliteRemoteDatabase;
+  readonly #logger: Logger;
 
-  constructor(db: SqliteRemoteDatabase) {
+  constructor(db: SqliteRemoteDatabase, logger: Logger) {
     this.#db = db;
+    this.#logger = logger;
   }
 
   list(): Promise<Result<Bean[], StorageError>> {
@@ -119,7 +123,7 @@ export class SqliteBeanRepository implements BeanRepository {
     );
   }
 
-  /** More green stock and its purchase row, all or nothing. */
+  /** More green stock and its `bought` row in the stock log, all or nothing. */
   addStock({ beanId, grams, purchasedAt }: AddStock): Promise<Result<void, StorageError>> {
     return transaction(this.#db, async (tx) => {
       const added = await tx
@@ -129,12 +133,15 @@ export class SqliteBeanRepository implements BeanRepository {
         .returning({ id: beans.id })
         .all();
       if (added.length === 0) return err({ kind: 'not-found', id: beanId });
-      await tx.insert(beanPurchases).values({ beanId, grams, purchasedAt }).run();
+      await tx
+        .insert(beanStockMovements)
+        .values({ beanId, at: purchasedAt, kind: 'bought', greenG: grams, roastedG: 0 })
+        .run();
       return ok(undefined);
     });
   }
 
-  /** The new stock and, when it changed, what changed as an adjustment, all or nothing. */
+  /** The new stock and, when it changed, what changed as a stock log row, all or nothing. */
   adjustStock({
     beanId,
     greenG,
@@ -155,12 +162,12 @@ export class SqliteBeanRepository implements BeanRepository {
       const change = { greenG: greenG - before.greenG, roastedG: roastedG - before.roastedG };
       if (change.greenG !== 0 || change.roastedG !== 0) {
         await tx
-          .insert(beanStockAdjustments)
+          .insert(beanStockMovements)
           .values({
             beanId,
             // A day you picked sorts like a purchase: before that day's roasts.
-            adjustedAt: adjustedOn ?? new Date().toISOString(),
-            reason,
+            at: adjustedOn ?? new Date().toISOString(),
+            kind: ADJUSTED[reason],
             note: note === '' ? null : note,
             ...change,
           })
@@ -171,60 +178,22 @@ export class SqliteBeanRepository implements BeanRepository {
   }
 
   /**
-   * Everything that moved the bean's stock, oldest first: its purchases, the roasts made here
-   * (an imported one never touched stock) and its adjustments.
+   * The bean's stock log, oldest first. A day sorts before that day's moments (ISO text sorts by
+   * time), and ties keep the order they were written. A row that doesn't check out is skipped and
+   * logged.
    */
   stockHistory(id: BeanId): Promise<Result<StockMovement[], StorageError>> {
     return attempt(async () => {
-      const bought = await this.#db
-        .select({ at: beanPurchases.purchasedAt, grams: beanPurchases.grams })
-        .from(beanPurchases)
-        .where(eq(beanPurchases.beanId, id))
-        .all();
-      const roasted = await this.#db
-        .select({
-          id: roasts.id,
-          at: roasts.startedAt,
-          batchG: roasts.batchG,
-          roastedG: roasts.roastedG,
-        })
-        .from(roasts)
-        .where(and(eq(roasts.beanId, id), not(roasts.imported), isNotNull(roasts.batchG)))
-        .all();
-      const adjusted = await this.#db
+      const rows = await this.#db
         .select()
-        .from(beanStockAdjustments)
-        .where(eq(beanStockAdjustments.beanId, id))
+        .from(beanStockMovements)
+        .where(eq(beanStockMovements.beanId, id))
+        .orderBy(asc(beanStockMovements.at), asc(beanStockMovements.id))
         .all();
-      const movements: StockMovement[] = [
-        ...bought.map((p) => ({
-          at: p.at,
-          kind: 'bought' as const,
-          greenG: p.grams,
-          roastedG: 0,
-          roastId: null,
-          note: null,
-        })),
-        ...roasted.map((r) => ({
-          at: r.at,
-          kind: 'roasted' as const,
-          greenG: -(r.batchG ?? 0),
-          roastedG: r.roastedG ?? 0,
-          roastId: r.id,
-          note: null,
-        })),
-        ...adjusted.map((a) => ({
-          at: a.adjustedAt,
-          kind: ADJUSTED[a.reason],
-          greenG: a.greenG,
-          roastedG: a.roastedG,
-          roastId: null,
-          note: a.note,
-        })),
-      ];
-      // A purchase's date sorts before that day's roasts: the bag came first. ISO strings sort
-      // by time as text.
-      return movements.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
+      const movements = toStockMovements(rows);
+      const skipped = rows.length - movements.length;
+      if (skipped > 0) this.#logger.warn('storage.stock-row-unreadable', { beanId: id, skipped });
+      return movements;
     });
   }
 }
