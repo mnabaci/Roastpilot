@@ -32,9 +32,10 @@ switching roasters re-plans it.
 ## Stock
 
 - Green stock per bean drops by the batch weight at Start.
-- After cooling, the app asks for the roasted weight and logs weight loss % and roasted stock.
+- After cooling, the app asks for the roasted weight and logs the roast's weight loss %.
+- **Green only:** stock is the green beans in your bags. Roasted coffee is drunk, sold and given away without the app knowing, so no roasted stock is shown or asked for; each roast keeps its roasted weight and loss.
 - Low-stock badge below a threshold (default 500 g). Adjust by hand any time.
-- Skipping the roasted weight is fine: the roast shows no weight loss and roasted stock doesn't change.
+- Skipping the roasted weight is fine: the roast shows no weight loss.
 - A bean's average weight loss comes from its roasts with a roasted weight; 15% until it has one.
 - A batch bigger than the green stock left is allowed, with a one-line warning, as your count may be off; stock stops at 0.
 - Clear after a finished roast can give its batch back to the green stock: it goes back on top of what is there, never in place of it.
@@ -52,10 +53,10 @@ Each bean has its own, whichever roaster or profile roasted it: how much and how
 
 ## Adjust stock
 
-One button on the bean's header, beside Roast this bean, for every change to its stock. It opens a dialog (design system: Dialog) titled Adjust stock, with the bean's name and stock under the title ("African Moon · 1,664 g green · 911 g roasted") and three changes to pick from (a segmented control), Add first each time it opens:
+One button on the bean's header, beside Roast this bean, for every change to its stock. It opens a dialog (design system: Dialog) titled Adjust stock, with the bean's name and stock under the title ("African Moon · 1,664 g green") and three changes to pick from (a segmented control), Add first each time it opens:
 
 - **Add:** new green stock, as above; it is a purchase in the stock history.
-- **Take out:** green beans that leave the bag for any reason but a roast: given away, spilled, a sample for a friend. Weight (g) and Why (optional, up to 120 characters, "Gave some to a friend"), then "Then 1,384 g green". More than the green stock is refused under the field: "Only 1,784 g green left". The primary reads "Take out 400 g". Kept as an adjustment with reason `taken` and your words; Stock history shows "Taken out · Gave some to a friend". Roasted stock doesn't move.
-- **Recount:** green and roasted as your count says; kept as "Counted" with what it changed.
+- **Take out:** green beans that leave the bag for any reason but a roast: given away, spilled, a sample for a friend. Weight (g), Taken out on and Why (optional, up to 120 characters, "Gave some to a friend"), then the Then line ("Then 1,384 g green · 4 batches · 4 × 346 g"). More than the green stock is refused under the field: "Only 1,784 g green left". The primary reads "Take out 400 g". Kept as an adjustment with reason `taken` and your words; Stock history shows "Taken out · Gave some to a friend".
+- **Recount:** green as your count says and Counted on; the line under them says what it changes before you save ("84 g less than the app had · 4 batches · 4 × 395 g", or "Same as the app has"); kept as "Counted" with what it changed.
 
-Each has Cancel and its own primary; switching keeps nothing typed in the other. Saving closes the dialog, and the bean page shows the new stock and its history at once; Escape, Close or a click outside closes it without saving.
+**The same in each:** a date (Bought on, Taken out on, Counted on), today unless you change it, a real day and never after today ("Enter a day like 2026-11-07, not after today"), so a change written down later still lands on its day in Stock history and its pace; and one line under the fields with the green it leaves and what that splits into, as on the Green card. Each has Cancel and its own primary; switching keeps nothing typed in the other. Saving closes the dialog, and the bean page shows the new stock and its history at once; Escape, Close or a click outside closes it without saving.

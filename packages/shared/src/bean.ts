@@ -67,8 +67,14 @@ export const StockAdjustReasonSchema = z.enum(['count', 'returned', 'taken']);
 export const AdjustStockSchema = z.object({
   beanId: BeanIdSchema,
   greenG: z.number().nonnegative(),
-  roastedG: z.number().nonnegative(),
+  /** Kept, not shown (green only, docs/spec/batch-and-stock.md); left out, it doesn't change. */
+  roastedG: z.number().nonnegative().optional(),
   reason: StockAdjustReasonSchema.default('count'),
+  /** The day it happened (`2026-11-07`), when it wasn't today; left out, now. */
+  adjustedOn: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   /** In your words, for `taken`: "Gave 200 g to Sam". */
   note: z.string().trim().max(120).nullable().default(null),
 });
