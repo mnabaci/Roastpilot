@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react';
 import { Button, formatClock, NumberField, RoastChart } from '@roastpilot/ui';
 import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
+import { upsertProfile } from '../../stores/auto-store';
 import { useRun } from '../../features/use-run';
 import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import {
@@ -37,7 +38,7 @@ export function MilestoneBuilder({
   onCreated: (id: string) => void;
   onCancel: () => void;
 }) {
-  const { api, logger } = useDeps();
+  const { api, stores, logger } = useDeps();
   const run = useRun();
   const unit = useTemperatureUnit();
   const [draft, setDraft] = useState(() => toMilestoneDraft(milestonesFrom(base), unit));
@@ -70,6 +71,7 @@ export function MilestoneBuilder({
             setProblem("Couldn't save that · see the log");
             return;
           }
+          upsertProfile(stores.auto, saved.value);
           onCreated(saved.value.profile.id);
         } finally {
           setBusy(false);

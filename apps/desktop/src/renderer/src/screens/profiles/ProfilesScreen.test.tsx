@@ -81,6 +81,76 @@ describe('ProfilesScreen', () => {
     });
   });
 
+  describe('when the reply comes before the pushed list', () => {
+    it('a duplicate opens at once, and the push that follows changes nothing', async () => {
+      const api = fakeApi({ duplicateProfile: vi.fn(() => Promise.resolve(ok(OWN))) });
+      const { stores } = open(api, BUILT_INS, 'light-steps');
+      await userEvent.click(screen.getByRole('button', { name: 'Duplicate' }));
+      await waitFor(() => {
+        expect(profileTitle()).toHaveTextContent('Mine');
+      });
+      expect(stores.auto.getState().profiles.map((e) => e.profile.id)).toContain('custom-1');
+      pushProfiles(stores, withMine);
+      expect(profileTitle()).toHaveTextContent('Mine');
+      expect(stores.auto.getState().profiles).toHaveLength(withMine.length);
+    });
+
+    it('a delete goes back to the one Auto uses at once, and the push changes nothing', async () => {
+      const api = fakeApi({ deleteProfile: vi.fn(() => Promise.resolve(ok(undefined))) });
+      const { stores } = open(api, withMine, 'light-steps');
+      await userEvent.click(screen.getByRole('button', { name: 'Mine' }));
+      await userEvent.click(screen.getByRole('button', { name: /^More for (?!Profiles$)/ }));
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+      const confirm = screen.getByRole('alertdialog', { name: 'Delete this profile?' });
+      await userEvent.click(within(confirm).getByRole('button', { name: 'Delete' }));
+      await waitFor(() => {
+        expect(profileTitle()).toHaveTextContent('Light · Steps');
+      });
+      pushProfiles(stores, BUILT_INS);
+      expect(profileTitle()).toHaveTextContent('Light · Steps');
+      expect(stores.auto.getState().profiles).toEqual(BUILT_INS);
+    });
+
+    it('a save shows the saved values at once, without waiting for the push', async () => {
+      const { stores } = open();
+      await edit('BT cap', '205');
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      await waitFor(() => {
+        expect(
+          stores.auto.getState().profiles.find((e) => e.profile.id === 'custom-1')?.profile.capC,
+        ).toBe(205);
+      });
+      expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
+    });
+
+    it('an import opens the newest once the pushed list brings it', async () => {
+      const imported = { ...STEPS, id: 'custom-9', name: 'From a friend' };
+      const api = fakeApi({
+        importLibrary: vi.fn(() =>
+          Promise.resolve(
+            ok({
+              status: 'imported' as const,
+              added: 1,
+              skipped: 0,
+              archived: 0,
+              newestId: 'custom-9',
+            }),
+          ),
+        ),
+      });
+      const { stores } = open(api);
+      await userEvent.click(screen.getByRole('button', { name: 'More for Profiles' }));
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Import a Roastpilot file' }));
+      await waitFor(() => {
+        expect(api.importLibrary).toHaveBeenCalled();
+      });
+      pushProfiles(stores, [...withMine, { profile: imported, builtIn: false }]);
+      await waitFor(() => {
+        expect(profileTitle()).toHaveTextContent('From a friend');
+      });
+    });
+  });
+
   it('Use for Auto saves the choice', async () => {
     const { api } = open(fakeApi(), withMine, 'light-steps');
     await userEvent.click(screen.getByRole('button', { name: 'Mine' }));

@@ -2,6 +2,7 @@ import { suggestProfile } from '@roastpilot/core';
 import type { Bean, RoastSummary } from '@roastpilot/shared';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
+import { upsertProfile } from '../../stores/auto-store';
 import { useRun } from '../../features/use-run';
 import { activeRoaster } from '../../stores/roasters-store';
 import { activeEntry } from '../roast/use-active-profile';
@@ -91,6 +92,7 @@ export function useBeanActions({
           setProblem("Couldn't make the profile · see Logs");
           return;
         }
+        upsertProfile(stores.auto, made.value);
         onOpenProfile(made.value.profile.id);
       },
       { failed: "Couldn't make the profile · try again" },

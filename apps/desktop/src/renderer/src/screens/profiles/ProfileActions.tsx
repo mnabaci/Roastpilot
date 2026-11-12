@@ -2,6 +2,7 @@ import type { ProfileEntry } from '@roastpilot/shared';
 import { Badge, Button, ConfirmDialog, Menu, type MenuItem } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
+import { removeProfiles, upsertProfile } from '../../stores/auto-store';
 import { EditActions } from '../../features/EditActions';
 import { useLibraryFiles } from '../../features/use-library-files';
 import { IN_USE } from '../../features/profile-messages';
@@ -32,7 +33,7 @@ export function ProfileActions({
   onSelect: (id: string) => void;
   onCopied: (message: string) => void;
 }) {
-  const { api, logger } = useDeps();
+  const { api, stores, logger } = useDeps();
   const run = useRun();
   const saveSettings = useSaveSettings();
   const [problem, setProblem] = useState<string>();
@@ -57,6 +58,7 @@ export function ProfileActions({
           return;
         }
         setProblem(undefined);
+        upsertProfile(stores.auto, saved.value);
         state.discard();
         onEditingChange(false);
       },
@@ -73,6 +75,7 @@ export function ProfileActions({
           return;
         }
         setProblem(undefined);
+        upsertProfile(stores.auto, copy.value);
         onSelect(copy.value.profile.id);
       },
       { failed: "Couldn't duplicate the profile · try again" },
@@ -112,6 +115,7 @@ export function ProfileActions({
           return;
         }
         setProblem(undefined);
+        upsertProfile(stores.auto, saved.value);
       },
       { failed: "Couldn't change the profile · try again" },
     );
@@ -130,6 +134,7 @@ export function ProfileActions({
           refused(deleted.error);
           return;
         }
+        removeProfiles(stores.auto, [id]);
         state.discard();
       },
       { failed: "Couldn't delete the profile · try again" },
