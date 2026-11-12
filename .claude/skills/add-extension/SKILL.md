@@ -26,3 +26,10 @@ Extension points are listed in `docs/spec/extensibility.md`. Each is an interfac
 - `safeStop()` must work with a half-broken connection; test it.
 - Keep the watchdog alive (Skywalker: a command at least every few seconds).
 - Add a roaster record default in `docs/spec/roasters.md`.
+
+## Roaster models specifically
+
+- A model is one `RoasterModelDefinition` file in `packages/drivers/src/models/` (facts, channels, built-in profiles, tuning, batch, `createDriver`), ADR 0024.
+- Add its id and facts (label, limits, drum kind, connection kind) to `ROASTER_MODEL_FACTS` in `packages/shared/src/roaster.ts`: the one hand-edited list of model ids.
+- Register it in `apps/desktop/src/main/roaster-models.ts`; tsc fails until every id has a definition.
+- No migration: the model column is plain text.
