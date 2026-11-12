@@ -20,12 +20,11 @@ import { EMERGENCY_STOP, SafetyMonitor, type COMPUTER_SLEEP } from '../safety/sa
 import { lostConnectionRule } from '../safety/rules/lost-connection';
 import { BEAN_TEMP } from '../safety/safety-rule';
 import { logSafetyEvent } from '../safety/log-safety-event';
+import { DisconnectSequence } from './disconnect-sequence';
+
+export { CLOSE_TIMEOUT_MS, SAFE_STOP_TIMEOUT_MS } from './disconnect-sequence';
 
 export const POLL_MS = 1_000;
-/** How long quit and disconnect wait for the safe stop before going on (docs/spec/architecture.md). */
-export const SAFE_STOP_TIMEOUT_MS = 2_000;
-/** How long disconnect waits for the port to close, so an adapter that never answers can't hold up quit. */
-export const CLOSE_TIMEOUT_MS = 2_000;
 
 export interface RoasterSessionOptions {
   clock: Clock;
@@ -58,8 +57,7 @@ export class RoasterSession {
   #driver: SafetyGuardedDriver | undefined;
   /** Bumped on every connect and disconnect, so loops from an older connection stop. */
   #generation = 0;
-  /** Output commands sent but not settled yet: the disconnect's safe stop goes after them. */
-  readonly #outputsInFlight = new Set<Promise<unknown>>();
+  readonly #outputs: DisconnectSequence;
   /** The disconnect under way, so a second disconnect or a connect waits for it. */
   #disconnecting: Promise<void> | undefined;
 
@@ -79,6 +77,7 @@ export class RoasterSession {
       onSafetyEvent: guard('onSafetyEvent', options.onSafetyEvent),
     };
     this.#reads = new FailureStreak(this.#logger, 'session.read');
+    this.#outputs = new DisconnectSequence(options.clock, this.#logger);
     this.#monitor = new SafetyMonitor({
       clock: options.clock,
       safeStop: () => this.#inner?.safeStop() ?? Promise.resolve(),
@@ -151,7 +150,7 @@ export class RoasterSession {
   async setOutput(channel: string, value: number): Promise<Result<void, DriverError>> {
     const driver = this.#driver;
     const result = driver
-      ? await this.#send(driver, channel, value)
+      ? await this.#outputs.send(driver, channel, value)
       : err({ kind: 'disconnected' as const });
     if (!result.ok)
       this.#logger.warn('session.set-output-failed', { channel, value, error: result.error });
@@ -226,37 +225,10 @@ export class RoasterSession {
     }
   }
 
-  async #send(
-    driver: RoasterDriver,
-    channel: string,
-    value: number,
-  ): Promise<Result<void, DriverError>> {
-    const sending = driver.setOutput(channel, value);
-    this.#outputsInFlight.add(sending);
-    try {
-      return await sending;
-    } finally {
-      this.#outputsInFlight.delete(sending);
-    }
-  }
-
   async #stopAndClose(driver: RoasterDriver): Promise<void> {
-    // An output sent before the disconnect could otherwise reach the roaster after the safe stop.
-    const outputs = Promise.allSettled([...this.#outputsInFlight]);
-    if (!(await this.#within(outputs, SAFE_STOP_TIMEOUT_MS)))
-      this.#logger.warn('session.outputs-timed-out', { timeoutMs: SAFE_STOP_TIMEOUT_MS });
-    if (!(await this.#within(driver.safeStop(), SAFE_STOP_TIMEOUT_MS)))
-      this.#logger.warn('session.safe-stop-timed-out', { timeoutMs: SAFE_STOP_TIMEOUT_MS });
-    if (!(await this.#within(driver.disconnect(), CLOSE_TIMEOUT_MS)))
-      this.#logger.error('session.close-timed-out', { timeoutMs: CLOSE_TIMEOUT_MS });
+    await this.#outputs.stopAndClose(driver);
     this.#logger.info('session.disconnected');
     this.#publish.onConnection({ status: 'disconnected' });
-  }
-
-  /** Waits for `work`, but no longer than `ms` of clock time: true when it finished in time. */
-  async #within(work: Promise<unknown>, ms: number): Promise<boolean> {
-    const timedOut = this.#clock.delay(ms).then(() => false);
-    return Promise.race([work.then(() => true), timedOut]);
   }
 
   #followLostConnection(event: SafetyEvent): void {
