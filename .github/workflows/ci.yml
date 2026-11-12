@@ -12,12 +12,12 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-# The steps of `pnpm check` run as parallel jobs. Format, lint and typecheck give the same answer on
+# The steps of `pnpm check` run as parallel jobs. Format, lint, dead-code check (knip) and typecheck give the same answer on
 # every OS, so they run on Ubuntu; tests run on Ubuntu, Windows and macOS, the build on Ubuntu and Windows. "Check (<os>)"
 # sums them up: those are the required checks.
 jobs:
   static:
-    name: Format and lint
+    name: Format, lint and dead code
     runs-on: ubuntu-latest
     env:
       ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
@@ -34,6 +34,7 @@ jobs:
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm format:check
       - run: pnpm lint
+      - run: pnpm knip
 
   typecheck:
     name: Typecheck

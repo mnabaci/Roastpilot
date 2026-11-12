@@ -138,7 +138,6 @@ export type BeanFields = z.infer<typeof BeanFieldsSchema>;
 export type Bean = z.infer<typeof BeanSchema>;
 export type AddStock = z.infer<typeof AddStockSchema>;
 export type AdjustStock = z.input<typeof AdjustStockSchema>;
-export type StockAdjustReason = z.infer<typeof StockAdjustReasonSchema>;
 export type StockKind = z.infer<typeof StockKindSchema>;
 export type StockMovement = z.infer<typeof StockMovementSchema>;
 export type UpdateBean = z.infer<typeof UpdateBeanSchema>;

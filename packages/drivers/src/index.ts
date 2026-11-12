@@ -1,12 +1,6 @@
 export { listSerialPorts } from './list-serial-ports';
-export { SerialTransport, type SerialTransportOptions } from './serial-transport';
-export {
-  SIMULATOR_CHANNELS,
-  SimulatedDriver,
-  type SimulatedDriverOptions,
-} from './simulated/simulated-driver';
-export { DEFAULT_THERMAL_CONSTANTS, type ThermalConstants } from './simulated/thermal-model';
-export { SKYWALKER_CHANNELS, SKYWALKER_PROTOCOL_VERSION } from './skywalker';
-export { Tc4SkywalkerDriver, type Tc4SkywalkerDriverOptions } from './tc4/tc4-skywalker-driver';
-export { SKYWALKER_PROFILES, SKYWALKER_TUNING } from './skywalker-profiles';
+export { SerialTransport } from './serial-transport';
+export { SimulatedDriver } from './simulated/simulated-driver';
+export { Tc4SkywalkerDriver } from './tc4/tc4-skywalker-driver';
+export { SKYWALKER_PROFILES } from './skywalker-profiles';
 export { BUILT_IN_ROASTERS, newRoaster, ROASTER_MODELS } from './roaster-models';

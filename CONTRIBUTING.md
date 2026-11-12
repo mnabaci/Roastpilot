@@ -20,7 +20,7 @@ No roaster? Connect the **Simulator** on the Roasters screen.
 ## Commands
 
 ```sh
-pnpm check          # format check, lint, typecheck, test: run before every commit
+pnpm check          # format check, lint, typecheck, dead-code check (knip), test: run before every commit
 pnpm test:watch     # tests in watch mode
 pnpm test:coverage  # tests with coverage
 pnpm storybook      # component workshop at http://localhost:6006

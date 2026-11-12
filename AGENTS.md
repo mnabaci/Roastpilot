@@ -68,7 +68,7 @@ ESLint enforces these.
 ```sh
 pnpm install        # install
 pnpm dev            # run the app (rebuilds native modules for Electron first)
-pnpm check          # format check, lint, typecheck, test: run before every commit
+pnpm check          # format check, lint, typecheck, dead-code check (knip), test: run before every commit
 pnpm test:watch     # tests in watch mode
 pnpm test:coverage  # tests with coverage
 pnpm storybook      # component workshop at http://localhost:6006 (dark/light switch in the toolbar)

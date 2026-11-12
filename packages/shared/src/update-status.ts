@@ -64,8 +64,6 @@ export const OpenReleasePageErrorSchema = z.object({
 });
 
 export type UpdateStatus = z.infer<typeof UpdateStatusSchema>;
-export type UpdateBlockedReason = z.infer<typeof UpdateBlockedReasonSchema>;
-export type UpdateStage = z.infer<typeof UpdateStageSchema>;
 export type AppInfo = z.infer<typeof AppInfoSchema>;
 export type RestartToUpdateError = z.infer<typeof RestartToUpdateErrorSchema>;
 export type ReleasePage = z.infer<typeof ReleasePageSchema>;
