@@ -57,6 +57,10 @@ export function createAppServices({
     inUse: () => session.connection.status !== 'disconnected',
     onChange: (list) => {
       publish(IPC_CHANNELS.roastersChanged, list);
+      // Profiles belong to a roaster, so the window's list follows the active one.
+      profiles.refresh().catch((error: unknown) => {
+        logger.error('profiles.refresh-failed', { error: serializeError(error) });
+      });
     },
     logger: logger.child('roasters'),
   });
@@ -86,6 +90,9 @@ export function createAppServices({
     roaster: (id) => roasters.all.find((r) => r.id === id),
     // A deleted profile's beans lost their link: the Beans screen reads them again.
     onDeleted: refreshBeans,
+    onChange: (list) => {
+      publish(IPC_CHANNELS.profilesChanged, list);
+    },
     logger: logger.child('profiles'),
   });
   // Before the first roast, so a chosen profile of your own is there without opening a window.

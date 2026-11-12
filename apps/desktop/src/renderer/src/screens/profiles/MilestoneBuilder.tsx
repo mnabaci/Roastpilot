@@ -37,7 +37,7 @@ export function MilestoneBuilder({
   onCreated: (id: string) => void;
   onCancel: () => void;
 }) {
-  const { api, stores, logger } = useDeps();
+  const { api, logger } = useDeps();
   const run = useRun();
   const unit = useTemperatureUnit();
   const [draft, setDraft] = useState(() => toMilestoneDraft(milestonesFrom(base), unit));
@@ -70,7 +70,6 @@ export function MilestoneBuilder({
             setProblem("Couldn't save that · see the log");
             return;
           }
-          stores.auto.setState({ profiles: await api.listProfiles() });
           onCreated(saved.value.profile.id);
         } finally {
           setBusy(false);

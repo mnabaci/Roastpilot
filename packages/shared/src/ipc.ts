@@ -4,7 +4,7 @@ import { CoachStatusSchema, type CoachStatus } from './coach';
 import { RoastSetupSchema, type Bean } from './bean';
 import { ReadingSchema, type Reading } from './channels';
 import { ConnectionStateSchema, type ConnectionState } from './connection';
-import { PREHEAT_HOLD } from './profile';
+import { PREHEAT_HOLD, type ProfileEntry } from './profile';
 import type { LogRecord } from './log-record';
 import type { Roaster } from './roaster';
 import { RoastStateSchema, type RoastState } from './roast';
@@ -67,6 +67,7 @@ export const IPC_CHANNELS = {
   deleteProfiles: 'profiles:delete-many',
   copyProfile: 'profiles:copy',
   makeProfileFromMilestones: 'profiles:make-from-milestones',
+  profilesChanged: 'profiles:changed',
   listRoasters: 'roasters:list',
   addRoaster: 'roasters:add',
   saveRoaster: 'roasters:save',
@@ -121,6 +122,7 @@ export interface IpcEventPayloads {
   [IPC_CHANNELS.roastsChanged]: RoastsChange;
   [IPC_CHANNELS.autoStatus]: AutoStatus;
   [IPC_CHANNELS.coachStatus]: CoachStatus;
+  [IPC_CHANNELS.profilesChanged]: ProfileEntry[];
   [IPC_CHANNELS.roastersChanged]: Roaster[];
   [IPC_CHANNELS.beansChanged]: Bean[];
   [IPC_CHANNELS.updateStatus]: UpdateStatus;

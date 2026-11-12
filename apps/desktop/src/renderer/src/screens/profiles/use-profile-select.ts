@@ -54,10 +54,8 @@ export function useProfileSelect(
           );
           return;
         }
-        const listed = await api.listProfiles();
         // Unsaved edits of a deleted profile go with it.
         stores.auto.setState((s) => ({
-          profiles: listed,
           drafts: Object.fromEntries(Object.entries(s.drafts).filter(([id]) => !ids.includes(id))),
         }));
         selection.done();

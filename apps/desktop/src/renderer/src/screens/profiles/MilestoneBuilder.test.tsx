@@ -1,5 +1,5 @@
 import { DEFAULT_SETTINGS, err, ok, type AutoProfile } from '@roastpilot/shared';
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { BUILT_INS, CURVE, STEPS } from '../../test/profiles';
@@ -9,12 +9,11 @@ import { ProfilesScreen } from './ProfilesScreen';
 const MADE: AutoProfile = { ...CURVE, id: 'custom-9', name: 'Milestones' };
 
 function open(api = fakeApi()) {
-  renderApp(
+  return renderApp(
     <ProfilesScreen />,
     { profiles: BUILT_INS, settings: { ...DEFAULT_SETTINGS, autoProfile: 'light-steps' } },
     api,
   );
-  return api;
 }
 
 async function startBuilding(user = userEvent.setup()) {
@@ -42,13 +41,15 @@ describe('MilestoneBuilder', () => {
   });
 
   it('creates the profile from what you typed, then opens it', async () => {
-    const api = fakeApi({
-      makeProfileFromMilestones: vi.fn(() =>
-        Promise.resolve(ok({ profile: MADE, builtIn: false })),
-      ),
-      listProfiles: vi.fn(() => Promise.resolve([...BUILT_INS, { profile: MADE, builtIn: false }])),
+    const api = fakeApi();
+    const { stores } = open(api);
+    // Main pushes the new list before the call returns.
+    api.makeProfileFromMilestones.mockImplementation(() => {
+      act(() => {
+        stores.auto.setState({ profiles: [...BUILT_INS, { profile: MADE, builtIn: false }] });
+      });
+      return Promise.resolve(ok({ profile: MADE, builtIn: false }));
     });
-    open(api);
     const table = await startBuilding();
     await retype(table.getByLabelText('Drop temperature'), '201');
     await userEvent.click(screen.getByRole('button', { name: 'Create' }));

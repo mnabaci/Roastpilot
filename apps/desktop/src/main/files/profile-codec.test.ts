@@ -34,6 +34,7 @@ function setup(own: AutoProfile[] = [], limits: Partial<Roaster> = {}, saveFails
     store,
     newId: () => 'unused',
     chosenId: () => 'light-steps',
+    onChange: () => undefined,
     activeRoaster: () => ({ id: 1, model: 'skywalker' }),
     roaster: () => ({ name: 'Skywalker', model: 'skywalker' }),
     logger: silentLogger,

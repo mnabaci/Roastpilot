@@ -32,7 +32,7 @@ export function ProfileActions({
   onSelect: (id: string) => void;
   onCopied: (message: string) => void;
 }) {
-  const { api, stores, logger } = useDeps();
+  const { api, logger } = useDeps();
   const run = useRun();
   const saveSettings = useSaveSettings();
   const [problem, setProblem] = useState<string>();
@@ -41,9 +41,6 @@ export function ProfileActions({
   const others = useRoasters((s) => s.roasters).filter((r) => !r.active);
   const files = useLibraryFiles('profiles');
   const toast = useToast();
-  const refresh = async () => {
-    stores.auto.setState({ profiles: await api.listProfiles() });
-  };
   const refused = (error: { kind: string; message?: string }) => {
     logger.warn('profiles.refused', { ...error });
     setProblem(error.message ?? "That didn't work · see the log");
@@ -60,7 +57,6 @@ export function ProfileActions({
           return;
         }
         setProblem(undefined);
-        await refresh();
         state.discard();
         onEditingChange(false);
       },
@@ -77,7 +73,6 @@ export function ProfileActions({
           return;
         }
         setProblem(undefined);
-        await refresh();
         onSelect(copy.value.profile.id);
       },
       { failed: "Couldn't duplicate the profile · try again" },
@@ -117,7 +112,6 @@ export function ProfileActions({
           return;
         }
         setProblem(undefined);
-        await refresh();
       },
       { failed: "Couldn't change the profile · try again" },
     );
@@ -137,7 +131,6 @@ export function ProfileActions({
           return;
         }
         state.discard();
-        await refresh();
       },
       { failed: "Couldn't delete the profile · try again" },
     );

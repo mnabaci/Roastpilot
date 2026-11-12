@@ -91,7 +91,6 @@ export function useBeanActions({
           setProblem("Couldn't make the profile · see Logs");
           return;
         }
-        stores.auto.setState({ profiles: await api.listProfiles() });
         onOpenProfile(made.value.profile.id);
       },
       { failed: "Couldn't make the profile · try again" },
