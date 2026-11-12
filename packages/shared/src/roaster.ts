@@ -1,27 +1,50 @@
 import { z } from 'zod';
-import { ConnectTargetSchema } from './connection';
+import { ConnectTargetSchema, type ConnectTarget } from './connection';
 import { AutoTuningSchema, ProfileIdSchema } from './profile';
 import { diffInText, tempInText } from './units';
 
-/** Which driver and built-in profiles a roaster uses (docs/spec/roasters.md). */
-export const RoasterModelSchema = z.enum(['skywalker', 'simulator']);
-
-/** A record's limits can only be set at or below its model's. */
-export const MODEL_LIMITS: Readonly<
-  Record<z.infer<typeof RoasterModelSchema>, { maxTempC: number; maxTimeS: number }>
-> = {
-  skywalker: { maxTempC: 240, maxTimeS: 20 * 60 },
-  simulator: { maxTempC: 240, maxTimeS: 20 * 60 },
-};
+/** What the app knows about a roaster model without its driver (ADR 0024). */
+export interface RoasterModelFacts {
+  /** How the model is named on screen. */
+  readonly label: string;
+  /** A record's limits can only be set at or below these. */
+  readonly limits: { readonly maxTempC: number; readonly maxTimeS: number };
+  /** Its drum has a speed rather than only on/off, so the Roasters page offers Drum speed. */
+  readonly drumSpeed: boolean;
+  /** The kind of connection its driver uses. */
+  readonly connection: ConnectTarget['kind'];
+}
 
 /**
- * Whether a model's drum has a speed rather than only on/off, known without connecting, so the
- * Roasters page can offer Drum speed. Matches the drivers' channels (roaster-models.test.ts).
+ * Every roaster model, by id: the one hand-edited list of models (ADR 0024). zod, the database
+ * and the screens read it; everything else about a model is its definition in `drivers`, which a
+ * test holds to these facts.
  */
-export const MODEL_DRUM_SPEED: Readonly<Record<z.infer<typeof RoasterModelSchema>, boolean>> = {
-  skywalker: false,
-  simulator: true,
-};
+export const ROASTER_MODEL_FACTS = {
+  skywalker: {
+    label: 'Skywalker',
+    limits: { maxTempC: 240, maxTimeS: 20 * 60 },
+    drumSpeed: false,
+    connection: 'serial',
+  },
+  simulator: {
+    label: 'Simulator',
+    limits: { maxTempC: 240, maxTimeS: 20 * 60 },
+    drumSpeed: true,
+    connection: 'simulator',
+  },
+} as const satisfies Readonly<Record<string, RoasterModelFacts>>;
+
+type ModelId = keyof typeof ROASTER_MODEL_FACTS;
+
+/** The model ids, the facts' keys, for zod and the database column. */
+export const ROASTER_MODEL_IDS = Object.keys(ROASTER_MODEL_FACTS) as [ModelId, ...ModelId[]];
+
+/** Which driver and built-in profiles a roaster uses (docs/spec/roasters.md). */
+export const RoasterModelSchema = z.enum(ROASTER_MODEL_IDS);
+
+/** A known model's facts. */
+export const modelFacts = (model: ModelId): RoasterModelFacts => ROASTER_MODEL_FACTS[model];
 
 export const RoasterIdSchema = z.number().int().positive();
 
@@ -67,7 +90,7 @@ export function checkRoaster(roaster: RoasterRuleShape, ctx: z.RefinementCtx): v
   const issue = (field: string, message: string) => {
     ctx.addIssue({ code: 'custom', path: [field], message });
   };
-  const limits = MODEL_LIMITS[roaster.model];
+  const { limits } = modelFacts(roaster.model);
   if (roaster.maxTempC > limits.maxTempC) {
     issue('maxTempC', `At most ${tempInText(limits.maxTempC)} on this model`);
   }

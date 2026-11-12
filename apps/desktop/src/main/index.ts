@@ -3,7 +3,7 @@
 import { userDataChoice } from './user-data-override';
 import { serializeError } from '@roastpilot/core';
 import { listSerialPorts } from '@roastpilot/drivers';
-import { IPC_CHANNELS, isRoastRunning } from '@roastpilot/shared';
+import { IPC_CHANNELS, isRoastRunning, ok } from '@roastpilot/shared';
 import {
   app,
   BrowserWindow,
@@ -278,8 +278,14 @@ app
           nowMs: () => systemClock.now(),
           snapshot,
           listPorts: () => listSerialPorts(),
-          createDriver: (target) =>
-            simulatorBeans.attach(createDriver(target, systemClock, logger.child('driver'))),
+          // Connect uses the active roaster (docs/spec/roasters.md): its model picks the driver.
+          createDriver: (target) => {
+            const made = createDriver(roasters.active(), target, {
+              clock: systemClock,
+              logger: logger.child('driver'),
+            });
+            return made.ok ? ok(simulatorBeans.attach(made.value)) : made;
+          },
           updates,
           logs: {
             listDays: () => listLogDays(logDir),
