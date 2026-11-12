@@ -1,7 +1,7 @@
 import type { Logger } from '@roastpilot/core';
 import type { IpcEventChannel, IpcEventPayloads } from '@roastpilot/shared';
 import { BrowserWindow, ipcMain, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
-import type { IpcCaller, IpcHandler } from './ipc-handlers';
+import type { AnyIpcHandler, IpcCaller } from './ipc-handlers';
 import { isAppPage, type AppPage } from './window-navigation';
 
 /** A call that didn't come from the app's own page in one of its windows: refused, never run. */
@@ -38,7 +38,7 @@ function callerOf(
 
 /** Every invoke channel, each run only for calls from the app's own page (docs/spec/architecture.md). */
 export function registerIpcHandlers(
-  handlers: Record<string, IpcHandler>,
+  handlers: Readonly<Record<string, AnyIpcHandler>>,
   check: SenderCheck,
 ): void {
   for (const [channel, handler] of Object.entries(handlers)) {

@@ -6,6 +6,7 @@ import {
   NO_ROAST_SETUP,
   DEFAULT_SETTINGS,
   err,
+  INVOKE_CHANNEL_LIST,
   IPC_CHANNELS,
   ok,
   READY_ROAST,
@@ -19,7 +20,7 @@ import {
   withErrorLogging,
   type IpcCaller,
   type IpcDeps,
-  type IpcHandler,
+  type AnyIpcHandler,
 } from './ipc-handlers';
 
 /** The app window a call came from (checked in ipc.ts); file dialogs open on it. */
@@ -27,7 +28,7 @@ const CALLER: IpcCaller = { window: { id: 7 } as unknown as IpcCaller['window'] 
 
 /** Handlers called as if from the app's window, so a test passes only the payload. */
 function fromAppWindow(
-  handlers: Record<string, IpcHandler>,
+  handlers: Readonly<Record<string, AnyIpcHandler>>,
 ): Record<string, (payload?: unknown) => Promise<unknown>> {
   return Object.fromEntries(
     Object.entries(handlers).map(([channel, run]) => [
@@ -275,7 +276,11 @@ function setup() {
   return { handlers: fromAppWindow(createIpcHandlers(deps)), calls, driver };
 }
 
-const handle = (handlers: Record<string, IpcHandler>, channel: string, payload?: unknown) => {
+const handle = (
+  handlers: Readonly<Record<string, AnyIpcHandler>>,
+  channel: string,
+  payload?: unknown,
+) => {
   const handler = handlers[channel];
   if (!handler) throw new Error(`no handler for ${channel}`);
   return handler(payload, CALLER);
@@ -284,66 +289,7 @@ const handle = (handlers: Record<string, IpcHandler>, channel: string, payload?:
 describe('createIpcHandlers', () => {
   it('has a handler for every invoke channel', () => {
     const { handlers } = setup();
-    expect(Object.keys(handlers).sort()).toEqual(
-      [
-        IPC_CHANNELS.listPorts,
-        IPC_CHANNELS.connect,
-        IPC_CHANNELS.disconnect,
-        IPC_CHANNELS.setOutput,
-        IPC_CHANNELS.coachApply,
-        IPC_CHANNELS.coachDismiss,
-        IPC_CHANNELS.emergencyStop,
-        IPC_CHANNELS.acknowledgeSafety,
-        IPC_CHANNELS.getSnapshot,
-        IPC_CHANNELS.roastAction,
-        IPC_CHANNELS.getSettings,
-        IPC_CHANNELS.setSettings,
-        IPC_CHANNELS.listLogDays,
-        IPC_CHANNELS.readLogDay,
-        IPC_CHANNELS.openLogFolder,
-        IPC_CHANNELS.listRoasts,
-        IPC_CHANNELS.getRoast,
-        IPC_CHANNELS.deleteRoast,
-        IPC_CHANNELS.exportRoasts,
-        IPC_CHANNELS.importRoasts,
-        IPC_CHANNELS.setRoastBean,
-        IPC_CHANNELS.importArtisan,
-        IPC_CHANNELS.exportLibrary,
-        IPC_CHANNELS.importLibrary,
-        IPC_CHANNELS.autoChargeSoon,
-        IPC_CHANNELS.autoResume,
-        IPC_CHANNELS.autoSetPreheatHold,
-        IPC_CHANNELS.listProfiles,
-        IPC_CHANNELS.duplicateProfile,
-        IPC_CHANNELS.saveProfile,
-        IPC_CHANNELS.deleteProfile,
-        IPC_CHANNELS.deleteProfiles,
-        IPC_CHANNELS.copyProfile,
-        IPC_CHANNELS.makeProfileFromMilestones,
-        IPC_CHANNELS.listRoasters,
-        IPC_CHANNELS.addRoaster,
-        IPC_CHANNELS.saveRoaster,
-        IPC_CHANNELS.deleteRoaster,
-        IPC_CHANNELS.setActiveRoaster,
-        IPC_CHANNELS.chooseConnection,
-        IPC_CHANNELS.listBeans,
-        IPC_CHANNELS.addBean,
-        IPC_CHANNELS.updateBean,
-        IPC_CHANNELS.setBeanArchived,
-        IPC_CHANNELS.openBeanLink,
-        IPC_CHANNELS.addStock,
-        IPC_CHANNELS.adjustStock,
-        IPC_CHANNELS.stockHistory,
-        IPC_CHANNELS.setRoastSetup,
-        IPC_CHANNELS.saveRoastResult,
-        IPC_CHANNELS.makeProfileFromRoast,
-        IPC_CHANNELS.makeBeanProfile,
-        IPC_CHANNELS.getAppInfo,
-        IPC_CHANNELS.checkForUpdates,
-        IPC_CHANNELS.restartToUpdate,
-        IPC_CHANNELS.openReleasePage,
-      ].sort(),
-    );
+    expect(Object.keys(handlers).sort()).toEqual([...INVOKE_CHANNEL_LIST].sort());
   });
 
   describe('updates', () => {

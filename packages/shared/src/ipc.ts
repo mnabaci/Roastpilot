@@ -20,29 +20,21 @@ export interface RoastsChange {
   current?: boolean;
 }
 
-/** Every IPC channel, in one place (docs/spec/architecture.md, IPC contract). */
-export const IPC_CHANNELS = {
+/** Renderer → main calls that answer: each has its payload and result in `InvokeContract`. */
+export const INVOKE_CHANNELS = {
   listPorts: 'roaster:list-ports',
   connect: 'roaster:connect',
   disconnect: 'roaster:disconnect',
   setOutput: 'roaster:set-output',
   emergencyStop: 'roaster:emergency-stop',
   acknowledgeSafety: 'safety:acknowledge',
-  reading: 'roaster:reading',
-  connection: 'roaster:connection',
-  safetyEvent: 'safety:event',
-  log: 'app:log',
   getSnapshot: 'app:get-snapshot',
   roastAction: 'roast:action',
-  roast: 'roast:state',
   getSettings: 'settings:get',
   setSettings: 'settings:set',
   listLogDays: 'logs:list-days',
   readLogDay: 'logs:read-day',
-  logEntries: 'logs:entries',
   openLogFolder: 'logs:open-folder',
-  navigate: 'app:navigate',
-  showSafetyNotice: 'app:show-safety-notice',
   listRoasts: 'history:list',
   getRoast: 'history:get',
   deleteRoast: 'history:delete',
@@ -52,12 +44,9 @@ export const IPC_CHANNELS = {
   importArtisan: 'history:import-artisan',
   exportLibrary: 'library:export',
   importLibrary: 'library:import',
-  roastsChanged: 'history:changed',
-  autoStatus: 'auto:status',
   autoChargeSoon: 'auto:charge-soon',
   autoResume: 'auto:resume',
   autoSetPreheatHold: 'auto:set-preheat-hold',
-  coachStatus: 'coach:status',
   coachApply: 'coach:apply',
   coachDismiss: 'coach:dismiss',
   listProfiles: 'profiles:list',
@@ -67,14 +56,12 @@ export const IPC_CHANNELS = {
   deleteProfiles: 'profiles:delete-many',
   copyProfile: 'profiles:copy',
   makeProfileFromMilestones: 'profiles:make-from-milestones',
-  profilesChanged: 'profiles:changed',
   listRoasters: 'roasters:list',
   addRoaster: 'roasters:add',
   saveRoaster: 'roasters:save',
   deleteRoaster: 'roasters:delete',
   setActiveRoaster: 'roasters:set-active',
   chooseConnection: 'roasters:choose-connection',
-  roastersChanged: 'roasters:changed',
   listBeans: 'beans:list',
   addBean: 'beans:add',
   updateBean: 'beans:update',
@@ -83,7 +70,6 @@ export const IPC_CHANNELS = {
   addStock: 'beans:add-stock',
   adjustStock: 'beans:adjust-stock',
   stockHistory: 'beans:stock-history',
-  beansChanged: 'beans:changed',
   makeBeanProfile: 'beans:make-profile',
   setRoastSetup: 'roast:set-setup',
   saveRoastResult: 'history:save-result',
@@ -92,7 +78,36 @@ export const IPC_CHANNELS = {
   checkForUpdates: 'updates:check',
   restartToUpdate: 'updates:restart',
   openReleasePage: 'updates:open-release-page',
+} as const;
+
+/** Main → renderer events: each has its payload in `IpcEventPayloads`. */
+export const EVENT_CHANNELS = {
+  reading: 'roaster:reading',
+  connection: 'roaster:connection',
+  safetyEvent: 'safety:event',
+  roast: 'roast:state',
+  logEntries: 'logs:entries',
+  navigate: 'app:navigate',
+  showSafetyNotice: 'app:show-safety-notice',
+  roastsChanged: 'history:changed',
+  autoStatus: 'auto:status',
+  coachStatus: 'coach:status',
+  profilesChanged: 'profiles:changed',
+  roastersChanged: 'roasters:changed',
+  beansChanged: 'beans:changed',
   updateStatus: 'updates:status',
+} as const;
+
+/** Renderer → main messages with no answer: the renderer's log. */
+export const SEND_CHANNELS = {
+  log: 'app:log',
+} as const;
+
+/** Every IPC channel, in one place (docs/spec/architecture.md, IPC contract). */
+export const IPC_CHANNELS = {
+  ...INVOKE_CHANNELS,
+  ...EVENT_CHANNELS,
+  ...SEND_CHANNELS,
 } as const;
 
 /** Everything a window needs when it opens or reloads mid-roast. */
@@ -112,20 +127,20 @@ export type Snapshot = z.infer<typeof SnapshotSchema>;
 
 /** Payload of each main → renderer event, so senders and listeners share one type. */
 export interface IpcEventPayloads {
-  [IPC_CHANNELS.reading]: Reading;
-  [IPC_CHANNELS.connection]: ConnectionState;
-  [IPC_CHANNELS.safetyEvent]: SafetyEvent;
-  [IPC_CHANNELS.roast]: RoastState;
-  [IPC_CHANNELS.logEntries]: LogRecord[];
-  [IPC_CHANNELS.navigate]: Screen;
-  [IPC_CHANNELS.showSafetyNotice]: null;
-  [IPC_CHANNELS.roastsChanged]: RoastsChange;
-  [IPC_CHANNELS.autoStatus]: AutoStatus;
-  [IPC_CHANNELS.coachStatus]: CoachStatus;
-  [IPC_CHANNELS.profilesChanged]: ProfileEntry[];
-  [IPC_CHANNELS.roastersChanged]: Roaster[];
-  [IPC_CHANNELS.beansChanged]: Bean[];
-  [IPC_CHANNELS.updateStatus]: UpdateStatus;
+  [EVENT_CHANNELS.reading]: Reading;
+  [EVENT_CHANNELS.connection]: ConnectionState;
+  [EVENT_CHANNELS.safetyEvent]: SafetyEvent;
+  [EVENT_CHANNELS.roast]: RoastState;
+  [EVENT_CHANNELS.logEntries]: LogRecord[];
+  [EVENT_CHANNELS.navigate]: Screen;
+  [EVENT_CHANNELS.showSafetyNotice]: null;
+  [EVENT_CHANNELS.roastsChanged]: RoastsChange;
+  [EVENT_CHANNELS.autoStatus]: AutoStatus;
+  [EVENT_CHANNELS.coachStatus]: CoachStatus;
+  [EVENT_CHANNELS.profilesChanged]: ProfileEntry[];
+  [EVENT_CHANNELS.roastersChanged]: Roaster[];
+  [EVENT_CHANNELS.beansChanged]: Bean[];
+  [EVENT_CHANNELS.updateStatus]: UpdateStatus;
 }
 export type IpcEventChannel = keyof IpcEventPayloads;
 

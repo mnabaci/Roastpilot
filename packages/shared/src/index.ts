@@ -58,7 +58,10 @@ export {
   type DriverError,
 } from './driver-error';
 export {
+  EVENT_CHANNELS,
+  INVOKE_CHANNELS,
   IPC_CHANNELS,
+  SEND_CHANNELS,
   SnapshotSchema,
   type Snapshot,
   type IpcEventChannel,
@@ -68,6 +71,22 @@ export {
   PreheatHoldRequestSchema,
   type PreheatHoldRequest,
 } from './ipc';
+export {
+  INVOKE_CHANNEL_LIST,
+  type ContractMatchesChannels,
+  type ExportRoastsError,
+  type ExportRoastsResult,
+  type ImportArtisanError,
+  type ImportArtisanResult,
+  type ImportRoastsError,
+  type ImportRoastsResult,
+  type Invoke,
+  type InvokeArgs,
+  type InvokeChannel,
+  type InvokeContract,
+  type InvokePayload,
+  type InvokeResult,
+} from './ipc-contract';
 export type {
   AppApi,
   AutoApi,
@@ -77,12 +96,6 @@ export type {
   RoastersApi,
   ProfilesApi,
   HistoryApi,
-  ExportRoastsError,
-  ExportRoastsResult,
-  ImportArtisanError,
-  ImportArtisanResult,
-  ImportRoastsError,
-  ImportRoastsResult,
   LogsApi,
   RoastApi,
   RoasterApi,
