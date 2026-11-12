@@ -39,8 +39,9 @@ classes into the window.
 
 ## Consequences
 
-- A new model is one entry in `shared`, one definition file (plus its driver, if it is new
-  hardware) and one line in the registry. No migration: the model column is plain text.
+- A new model is one entry in `shared`, one definition file and its export in `drivers` (plus its
+  driver, if it is new hardware) and one line in the registry: four files where it was seven. No
+  migration: the model column is plain text.
 - A model's label and limits sit in `shared` rather than next to its driver; a test holds each
   definition's channels to its drum fact.
 - Connecting with a target the active roaster's model doesn't use is now refused instead of
