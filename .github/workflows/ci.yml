@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 # The steps of `pnpm check` run as parallel jobs. Format, lint and typecheck give the same answer on
-# every OS, so they run on Ubuntu; tests and the build run on Ubuntu and Windows. "Check (<os>)"
+# every OS, so they run on Ubuntu; tests run on Ubuntu, Windows and macOS, the build on Ubuntu and Windows. "Check (<os>)"
 # sums them up: those are the required checks.
 jobs:
   static:
@@ -81,7 +81,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     env:
       ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
