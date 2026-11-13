@@ -13,7 +13,7 @@ import { ManualClock } from '../clock';
 import { createLogger } from '../logging/logger';
 import { DEFAULT_SAFETY_LIMITS } from '../safety/safety-limits';
 import type { DriverError, RoasterDriver } from '../roaster-driver';
-import { RoasterSession, SAFE_STOP_TIMEOUT_MS } from './roaster-session';
+import { CLOSE_TIMEOUT_MS, RoasterSession, SAFE_STOP_TIMEOUT_MS } from './roaster-session';
 
 const TARGET = { kind: 'serial', path: '/dev/cu.test' } as const;
 
@@ -29,6 +29,12 @@ class FakeRoaster implements RoasterDriver {
   bt = 25;
   hangReads = false;
   hangSafeStop = false;
+  /** While set, outputs wait for `releaseOutputs` and reach the log only then. */
+  holdOutputs = false;
+  /** While set, the close waits for `finishClose`. */
+  hangClose = false;
+  #heldOutputs: (() => void)[] = [];
+  #closes: (() => void)[] = [];
   #connected = false;
   readonly #clock: ManualClock;
 
@@ -50,8 +56,21 @@ class FakeRoaster implements RoasterDriver {
   }
 
   setOutput(channel: string, value: number): Promise<Result<void, DriverError>> {
-    this.log.push(`${channel}=${String(value)}`);
-    return Promise.resolve(ok(undefined));
+    const entry = `${channel}=${String(value)}`;
+    if (!this.holdOutputs) {
+      this.log.push(entry);
+      return Promise.resolve(ok(undefined));
+    }
+    return new Promise((resolve) => {
+      this.#heldOutputs.push(() => {
+        this.log.push(entry);
+        resolve(ok(undefined));
+      });
+    });
+  }
+
+  releaseOutputs(): void {
+    for (const release of this.#heldOutputs.splice(0)) release();
   }
 
   safeStop(): Promise<void> {
@@ -62,7 +81,12 @@ class FakeRoaster implements RoasterDriver {
   disconnect(): Promise<void> {
     this.log.push('disconnect');
     this.#connected = false;
-    return Promise.resolve();
+    if (!this.hangClose) return Promise.resolve();
+    return new Promise((resolve) => this.#closes.push(resolve));
+  }
+
+  finishClose(): void {
+    for (const finish of this.#closes.splice(0)) finish();
   }
 
   unplug(): void {
@@ -142,6 +166,115 @@ describe('RoasterSession', () => {
     await clock.runFor(SAFE_STOP_TIMEOUT_MS);
     await done;
     expect(roaster.log.at(-1)).toBe('disconnect');
+  });
+
+  describe('while a disconnect is under way', () => {
+    it('refuses heater commands and never sends them to the roaster', async () => {
+      const { clock, roaster, session } = setup();
+      await session.connect(roaster, TARGET);
+      roaster.hangSafeStop = true;
+      const done = session.disconnect();
+      expect(await session.setOutput('heater', 80)).toEqual(err({ kind: 'disconnected' }));
+      await clock.runFor(SAFE_STOP_TIMEOUT_MS);
+      await done;
+      expect(roaster.log).not.toContain('heater=80');
+    });
+
+    it('sends the safe stop only after an output sent before it has reached the roaster', async () => {
+      const { clock, roaster, session } = setup();
+      await session.connect(roaster, TARGET);
+      roaster.holdOutputs = true;
+      const sending = session.setOutput('heater', 80);
+      const done = session.disconnect();
+      await clock.runFor(100);
+      expect(roaster.log).not.toContain('safeStop');
+      roaster.releaseOutputs();
+      await done;
+      expect(await sending).toEqual(ok(undefined));
+      expect(roaster.log.slice(-3)).toEqual(['heater=80', 'safeStop', 'disconnect']);
+    });
+
+    it('still safe-stops when an earlier output never settles', async () => {
+      const { clock, roaster, session } = setup();
+      await session.connect(roaster, TARGET);
+      roaster.holdOutputs = true;
+      void session.setOutput('heater', 80);
+      const done = session.disconnect();
+      await clock.runFor(SAFE_STOP_TIMEOUT_MS);
+      await done;
+      expect(roaster.log.slice(-2)).toEqual(['safeStop', 'disconnect']);
+    });
+
+    it('runs one safe stop and one close for a second disconnect', async () => {
+      const { clock, roaster, session, states } = setup();
+      await session.connect(roaster, TARGET);
+      roaster.hangSafeStop = true;
+      const first = session.disconnect();
+      const second = session.disconnect();
+      await clock.runFor(SAFE_STOP_TIMEOUT_MS);
+      await Promise.all([first, second]);
+      expect(roaster.count('safeStop')).toBe(1);
+      expect(roaster.count('disconnect')).toBe(1);
+      expect(states.filter((s) => s === 'disconnected')).toEqual(['disconnected']);
+    });
+
+    it('connects the next roaster only after the old one is closed', async () => {
+      const { clock, roaster, session, states } = setup();
+      await session.connect(roaster, TARGET);
+      roaster.hangSafeStop = true;
+      const done = session.disconnect();
+      const second = new FakeRoaster(clock);
+      const connecting = session.connect(second, TARGET);
+      await clock.runFor(100);
+      expect(second.log).toEqual([]);
+      await clock.runFor(SAFE_STOP_TIMEOUT_MS);
+      await Promise.all([done, connecting]);
+      expect(roaster.log.at(-1)).toBe('disconnect');
+      expect(second.log).toContain('connect');
+      expect(states.slice(-3)).toEqual(['disconnected', 'connecting', 'connected']);
+    });
+
+    it('still sends the safe stop and locks the heater on emergency stop', async () => {
+      const { clock, roaster, session } = setup();
+      await session.connect(roaster, TARGET);
+      roaster.hangSafeStop = true;
+      const done = session.disconnect();
+      await clock.runFor(100);
+      session.emergencyStop();
+      expect(roaster.count('safeStop')).toBe(2);
+      await clock.runFor(SAFE_STOP_TIMEOUT_MS);
+      await done;
+      expect(session.safetyStatus.locked).toBe(true);
+    });
+  });
+
+  describe('a close that never finishes', () => {
+    it('gives the close 2 s, then publishes disconnected without a lost-connection alarm', async () => {
+      const { clock, roaster, session, states, events } = setup();
+      await session.connect(roaster, TARGET);
+      roaster.hangClose = true;
+      const done = session.disconnect();
+      await clock.runFor(CLOSE_TIMEOUT_MS);
+      await done;
+      expect(states.at(-1)).toBe('disconnected');
+      await clock.runFor(10_000);
+      expect(events).toEqual([]);
+    });
+
+    it('does not disarm the next connection when it finishes late', async () => {
+      const { clock, roaster, session, tripped } = setup();
+      await session.connect(roaster, TARGET);
+      roaster.hangClose = true;
+      const done = session.disconnect();
+      await clock.runFor(CLOSE_TIMEOUT_MS);
+      await done;
+      const second = new FakeRoaster(clock);
+      await session.connect(second, TARGET);
+      roaster.finishClose();
+      second.unplug();
+      await clock.runFor(5_000);
+      expect(tripped()).toEqual(['lost-connection']);
+    });
   });
 
   describe('lost connection', () => {
@@ -302,6 +435,27 @@ describe('RoasterSession error handling and logging', () => {
     await clock.runFor(3_000);
     expect(events()).toContain('error:session.listener-failed');
     expect(roaster.count('read')).toBeGreaterThanOrEqual(3);
+  });
+
+  it('logs each disconnect step that ran out of time', async () => {
+    const { clock, roaster, session, entries, events } = logged();
+    await session.connect(roaster, TARGET);
+    roaster.holdOutputs = true;
+    roaster.hangSafeStop = true;
+    roaster.hangClose = true;
+    void session.setOutput('heater', 80);
+    const done = session.disconnect();
+    await clock.runFor(SAFE_STOP_TIMEOUT_MS * 2 + CLOSE_TIMEOUT_MS);
+    await done;
+    expect(events().slice(-4)).toEqual([
+      'warn:session.outputs-timed-out',
+      'warn:session.safe-stop-timed-out',
+      'error:session.close-timed-out',
+      'info:session.disconnected',
+    ]);
+    expect(entries.find((e) => e.event === 'session.close-timed-out')).toMatchObject({
+      context: { timeoutMs: CLOSE_TIMEOUT_MS },
+    });
   });
 
   it('logs refused outputs and acknowledgements', async () => {
