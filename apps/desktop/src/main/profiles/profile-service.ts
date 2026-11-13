@@ -31,6 +31,8 @@ export interface ProfileServiceDeps {
   roaster: (id: RoasterId) => Pick<Roaster, 'name' | 'model'> | undefined;
   /** After a delete: the beans it unlinked are read again. */
   onDeleted?: () => void;
+  /** The list on the active roaster, after every write and `refresh()`: the window follows it. */
+  onChange: (profiles: ProfileEntry[]) => void;
   logger: Logger;
 }
 
@@ -85,6 +87,15 @@ export class ProfileService {
     const read = await this.#deps.store.list();
     if (read.ok) this.#own = read.value;
     else this.#deps.logger.warn('profiles.list-failed', { error: read.error });
+    return this.#entries();
+  }
+
+  /** The list changed outside a write: the active roaster did, and profiles belong to a roaster. */
+  async refresh(): Promise<void> {
+    this.#deps.onChange(await this.list());
+  }
+
+  #entries(): ProfileEntry[] {
     return [
       ...this.#builtIns().map((profile) => ({ profile, builtIn: true })),
       ...this.#ownHere().map((profile) => ({ profile, builtIn: false })),
@@ -157,6 +168,7 @@ export class ProfileService {
     if (!saved.ok) return this.#failed(saved.error);
     this.#remember(profiles, roasterId);
     this.#deps.logger.info('profiles.imported', { ids: profiles.map((p) => p.id), roasterId });
+    this.#deps.onChange(this.#entries());
     return ok(undefined);
   }
 
@@ -188,6 +200,7 @@ export class ProfileService {
     if (deleted.value === 0) return err({ kind: 'not-found', id: ids.join(', ') });
     this.#own = this.#own.filter((own) => !ids.includes(own.profile.id));
     this.#deps.logger.info('profiles.deleted', { ids });
+    this.#deps.onChange(this.#entries());
     this.#deps.onDeleted?.();
     return ok(undefined);
   }
@@ -200,6 +213,7 @@ export class ProfileService {
     if (!saved.ok) return this.#failed(saved.error);
     this.#remember([profile], roasterId);
     this.#deps.logger.info('profiles.saved', { id: profile.id, roasterId });
+    this.#deps.onChange(this.#entries());
     return ok({ profile, builtIn: false });
   }
 

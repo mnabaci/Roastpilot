@@ -1,5 +1,6 @@
 import type { ProfileEntry, ProfileId } from '@roastpilot/shared';
 import { useDeps } from '../../app/app-context';
+import { removeProfiles } from '../../stores/auto-store';
 import { IN_USE } from '../../features/profile-messages';
 import { useLibraryFiles } from '../../features/use-library-files';
 import { useRun } from '../../features/use-run';
@@ -54,10 +55,9 @@ export function useProfileSelect(
           );
           return;
         }
-        const listed = await api.listProfiles();
+        removeProfiles(stores.auto, ids);
         // Unsaved edits of a deleted profile go with it.
         stores.auto.setState((s) => ({
-          profiles: listed,
           drafts: Object.fromEntries(Object.entries(s.drafts).filter(([id]) => !ids.includes(id))),
         }));
         selection.done();

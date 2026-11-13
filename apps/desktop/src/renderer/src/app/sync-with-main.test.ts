@@ -151,27 +151,39 @@ describe('syncWithMain', () => {
     expect(current()).toBeNull();
   });
 
-  it('keeps the newest profile list when an older answer arrives late', async () => {
-    let roastersChanged: (roasters: never[]) => void = () => undefined;
-    const answers: ((profiles: typeof BUILT_INS) => void)[] = [];
+  it('follows the profile list main pushes', () => {
+    let pushed: (profiles: typeof BUILT_INS) => void = () => undefined;
     const api = fakeApi({
-      onRoasters: vi.fn((listener: typeof roastersChanged) => {
-        roastersChanged = listener;
+      onProfiles: vi.fn((listener: typeof pushed) => {
+        pushed = listener;
+        return () => undefined;
+      }),
+    });
+    const stores = createStores();
+    syncWithMain(api, stores, logger());
+    pushed(BUILT_INS.slice(1));
+    expect(stores.auto.getState().profiles).toEqual(BUILT_INS.slice(1));
+  });
+
+  it('keeps a pushed profile list when the first load answers late with an older one', async () => {
+    let pushed: (profiles: typeof BUILT_INS) => void = () => undefined;
+    let answer: (profiles: typeof BUILT_INS) => void = () => undefined;
+    const api = fakeApi({
+      onProfiles: vi.fn((listener: typeof pushed) => {
+        pushed = listener;
         return () => undefined;
       }),
       listProfiles: vi.fn(
         () =>
           new Promise<typeof BUILT_INS>((resolve) => {
-            answers.push(resolve);
+            answer = resolve;
           }),
       ),
     });
     const stores = createStores();
     syncWithMain(api, stores, logger());
-    roastersChanged([]);
-    // The newer list (after the roaster switch) lands first, then the snapshot's older one.
-    answers[1]?.(BUILT_INS.slice(1));
-    answers[0]?.(BUILT_INS);
+    pushed(BUILT_INS.slice(1));
+    answer(BUILT_INS);
     await vi.waitFor(() => {
       expect(stores.sync.getState().ready).toBe(true);
     });

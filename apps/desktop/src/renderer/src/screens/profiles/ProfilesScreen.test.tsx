@@ -5,6 +5,7 @@ import {
   ok,
   READY_ROAST,
   type AutoProfile,
+  type ProfileEntry,
 } from '@roastpilot/shared';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -20,6 +21,12 @@ const withMine = [...BUILT_INS, OWN];
 const settingsOn = (autoProfile: string) => ({ settings: { ...DEFAULT_SETTINGS, autoProfile } });
 const open = (api = fakeApi(), profiles = withMine, id = 'custom-1') =>
   renderApp(<ProfilesScreen />, { profiles, ...settingsOn(id) }, api);
+/** What main does after a write: pushes the new list to the window. */
+const pushProfiles = (stores: ReturnType<typeof renderApp>['stores'], profiles: ProfileEntry[]) => {
+  act(() => {
+    stores.auto.setState({ profiles });
+  });
+};
 /** The open profile's name, its title. */
 const profileTitle = () =>
   screen.getByRole('region', { name: 'Profile' }).querySelector('h2') ?? document.body;
@@ -54,11 +61,12 @@ describe('ProfilesScreen', () => {
   });
 
   it('a built-in cannot be edited, only duplicated', async () => {
-    const api = fakeApi({
-      duplicateProfile: vi.fn(() => Promise.resolve(ok(OWN))),
-      listProfiles: vi.fn(() => Promise.resolve(withMine)),
+    const api = fakeApi();
+    const { stores } = open(api, BUILT_INS, 'light-steps');
+    api.duplicateProfile.mockImplementation(() => {
+      pushProfiles(stores, withMine);
+      return Promise.resolve(ok(OWN));
     });
-    open(api, BUILT_INS, 'light-steps');
     expect(screen.queryByRole('textbox')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: /^More for (?!Profiles$)/ }));
@@ -70,6 +78,76 @@ describe('ProfilesScreen', () => {
     expect(api.duplicateProfile).toHaveBeenCalledWith('light-steps');
     await waitFor(() => {
       expect(profileTitle()).toHaveTextContent('Mine');
+    });
+  });
+
+  describe('when the reply comes before the pushed list', () => {
+    it('a duplicate opens at once, and the push that follows changes nothing', async () => {
+      const api = fakeApi({ duplicateProfile: vi.fn(() => Promise.resolve(ok(OWN))) });
+      const { stores } = open(api, BUILT_INS, 'light-steps');
+      await userEvent.click(screen.getByRole('button', { name: 'Duplicate' }));
+      await waitFor(() => {
+        expect(profileTitle()).toHaveTextContent('Mine');
+      });
+      expect(stores.auto.getState().profiles.map((e) => e.profile.id)).toContain('custom-1');
+      pushProfiles(stores, withMine);
+      expect(profileTitle()).toHaveTextContent('Mine');
+      expect(stores.auto.getState().profiles).toHaveLength(withMine.length);
+    });
+
+    it('a delete goes back to the one Auto uses at once, and the push changes nothing', async () => {
+      const api = fakeApi({ deleteProfile: vi.fn(() => Promise.resolve(ok(undefined))) });
+      const { stores } = open(api, withMine, 'light-steps');
+      await userEvent.click(screen.getByRole('button', { name: 'Mine' }));
+      await userEvent.click(screen.getByRole('button', { name: /^More for (?!Profiles$)/ }));
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+      const confirm = screen.getByRole('alertdialog', { name: 'Delete this profile?' });
+      await userEvent.click(within(confirm).getByRole('button', { name: 'Delete' }));
+      await waitFor(() => {
+        expect(profileTitle()).toHaveTextContent('Light · Steps');
+      });
+      pushProfiles(stores, BUILT_INS);
+      expect(profileTitle()).toHaveTextContent('Light · Steps');
+      expect(stores.auto.getState().profiles).toEqual(BUILT_INS);
+    });
+
+    it('a save shows the saved values at once, without waiting for the push', async () => {
+      const { stores } = open();
+      await edit('BT cap', '205');
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      await waitFor(() => {
+        expect(
+          stores.auto.getState().profiles.find((e) => e.profile.id === 'custom-1')?.profile.capC,
+        ).toBe(205);
+      });
+      expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
+    });
+
+    it('an import opens the newest once the pushed list brings it', async () => {
+      const imported = { ...STEPS, id: 'custom-9', name: 'From a friend' };
+      const api = fakeApi({
+        importLibrary: vi.fn(() =>
+          Promise.resolve(
+            ok({
+              status: 'imported' as const,
+              added: 1,
+              skipped: 0,
+              archived: 0,
+              newestId: 'custom-9',
+            }),
+          ),
+        ),
+      });
+      const { stores } = open(api);
+      await userEvent.click(screen.getByRole('button', { name: 'More for Profiles' }));
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Import a Roastpilot file' }));
+      await waitFor(() => {
+        expect(api.importLibrary).toHaveBeenCalled();
+      });
+      pushProfiles(stores, [...withMine, { profile: imported, builtIn: false }]);
+      await waitFor(() => {
+        expect(profileTitle()).toHaveTextContent('From a friend');
+      });
     });
   });
 
@@ -434,8 +512,12 @@ describe('ProfilesScreen', () => {
   });
 
   it('asks once before deleting, then goes back to the one Auto uses', async () => {
-    const api = fakeApi({ listProfiles: vi.fn(() => Promise.resolve(BUILT_INS)) });
-    open(api, withMine, 'light-steps');
+    const api = fakeApi();
+    const { stores } = open(api, withMine, 'light-steps');
+    api.deleteProfile.mockImplementation(() => {
+      pushProfiles(stores, BUILT_INS);
+      return Promise.resolve(ok(undefined));
+    });
     await userEvent.click(screen.getByRole('button', { name: 'Mine' }));
     await userEvent.click(screen.getByRole('button', { name: /^More for (?!Profiles$)/ }));
     await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
@@ -515,12 +597,12 @@ describe('ProfilesScreen', () => {
 
     it('Mark as calibrated saves only that, and keeps an unsaved edit', async () => {
       const calibrated = { ...MINE, needsCalibration: false };
-      const api = fakeApi({
-        listProfiles: vi.fn(() =>
-          Promise.resolve([...BUILT_INS, { profile: calibrated, builtIn: false }]),
-        ),
+      const api = fakeApi();
+      const { stores } = open(api);
+      api.saveProfile.mockImplementation((profile) => {
+        pushProfiles(stores, [...BUILT_INS, { profile, builtIn: false }]);
+        return Promise.resolve(ok({ profile, builtIn: false }));
       });
-      open(api);
       expect(header().getByText('Needs calibration')).toBeInTheDocument();
       await edit('BT cap', '205');
       await choose('Mark as calibrated');
@@ -675,23 +757,20 @@ describe('ProfilesScreen', () => {
 
     it('an import reloads the list and opens the newest profile added', async () => {
       const imported = { ...STEPS, id: 'custom-9', name: 'From a friend', needsCalibration: true };
-      const api = fakeApi({
-        importLibrary: vi.fn(() =>
-          Promise.resolve(
-            ok({
-              status: 'imported' as const,
-              added: 1,
-              skipped: 0,
-              archived: 0,
-              newestId: 'custom-9',
-            }),
-          ),
-        ),
-        listProfiles: vi.fn(() =>
-          Promise.resolve([...withMine, { profile: imported, builtIn: false }]),
-        ),
-      });
+      const api = fakeApi();
       const { stores } = open(api);
+      api.importLibrary.mockImplementation(() => {
+        pushProfiles(stores, [...withMine, { profile: imported, builtIn: false }]);
+        return Promise.resolve(
+          ok({
+            status: 'imported' as const,
+            added: 1,
+            skipped: 0,
+            archived: 0,
+            newestId: 'custom-9',
+          }),
+        );
+      });
       await userEvent.click(screen.getByRole('button', { name: 'More for Profiles' }));
       await userEvent.click(screen.getByRole('menuitem', { name: 'Import a Roastpilot file' }));
       expect(api.importLibrary).toHaveBeenCalledWith('profiles');
@@ -764,15 +843,16 @@ describe('ProfilesScreen', () => {
     });
 
     it('deletes the ticked ones after asking once, then opens the one Auto uses', async () => {
-      const api = fakeApi({
-        deleteProfiles: vi.fn(() => Promise.resolve(ok(undefined))),
-        listProfiles: vi.fn(() => Promise.resolve(withMine)),
-      });
+      const api = fakeApi();
       const { stores } = renderApp(
         <ProfilesScreen />,
         { profiles: many, ...settingsOn('custom-1') },
         api,
       );
+      api.deleteProfiles.mockImplementation(() => {
+        pushProfiles(stores, withMine);
+        return Promise.resolve(ok(undefined));
+      });
       // An unsaved edit of one that goes, goes with it.
       await userEvent.click(list().getByRole('button', { name: 'Two' }));
       await edit('BT cap', '205');

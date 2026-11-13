@@ -177,6 +177,8 @@ export interface ProfilesApi {
   }): Promise<Result<ProfileEntry, ProfileError>>;
   /** A new curve profile of your own on the active roaster, from the milestone builder. */
   makeProfileFromMilestones(milestones: Milestones): Promise<Result<ProfileEntry, ProfileError>>;
+  /** The list changed: a write, or another roaster became active. The stores follow it. */
+  onProfiles(listener: (profiles: ProfileEntry[]) => void): Unsubscribe;
 }
 
 /** Beans and stock (docs/spec/batch-and-stock.md). The stores follow `onBeans`. */

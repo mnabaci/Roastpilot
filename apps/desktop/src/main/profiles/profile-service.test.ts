@@ -1,6 +1,6 @@
 import { milestonesFrom, silentLogger, type ProfileRepository } from '@roastpilot/core';
 import { SKYWALKER_PROFILES } from '@roastpilot/drivers';
-import { err, ok, type AutoProfile } from '@roastpilot/shared';
+import { err, ok, type AutoProfile, type ProfileEntry } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { ProfileService } from './profile-service';
 
@@ -38,6 +38,7 @@ function setup(start: AutoProfile[] = []) {
     },
   };
   let deleted = 0;
+  const changes: ProfileEntry[][] = [];
   const service = new ProfileService({
     store,
     newId: () => 'custom-new',
@@ -47,11 +48,15 @@ function setup(start: AutoProfile[] = []) {
     onDeleted: () => {
       deleted += 1;
     },
+    onChange: (list) => {
+      changes.push(list);
+    },
     logger: silentLogger,
   });
   return {
     service,
     deletions: () => deleted,
+    changes,
     stored: () => stored,
     useRoaster: (id: number) => {
       roasterId = id;
@@ -61,6 +66,89 @@ function setup(start: AutoProfile[] = []) {
     },
   };
 }
+
+const ownIds = (list: ProfileEntry[] | undefined) =>
+  (list ?? []).filter((e) => !e.builtIn).map((e) => e.profile.id);
+
+describe('ProfileService onChange', () => {
+  it('fires with the new list after a save, a duplicate and a milestones profile', async () => {
+    const { service, changes } = setup();
+    await service.duplicate('light-steps');
+    expect(ownIds(changes.at(-1))).toEqual(['custom-new']);
+    await service.save({ ...MINE, id: 'custom-new', name: 'Renamed' });
+    expect(changes).toHaveLength(2);
+    expect(changes.at(-1)?.find((e) => e.profile.id === 'custom-new')?.profile.name).toBe(
+      'Renamed',
+    );
+    await service.fromMilestones(milestonesFrom(SKYWALKER_PROFILES['light-curve']));
+    expect(changes).toHaveLength(3);
+  });
+
+  it('fires after an import and after a profile made elsewhere', async () => {
+    const { service, changes } = setup();
+    await service.addAll([MINE]);
+    expect(ownIds(changes.at(-1))).toEqual(['custom-a']);
+    await service.addOn({ ...MINE, id: 'custom-b' }, 1);
+    expect(ownIds(changes.at(-1))).toEqual(['custom-a', 'custom-b']);
+  });
+
+  it('fires after a delete, with the profile gone', async () => {
+    const { service, changes } = setup([MINE]);
+    await service.list();
+    expect(await service.delete('custom-a')).toEqual(ok(undefined));
+    expect(changes).toHaveLength(1);
+    expect(ownIds(changes[0])).toEqual([]);
+  });
+
+  it('fires after a copy to another roaster, with the active roaster list unchanged', async () => {
+    const { service, changes } = setup([MINE]);
+    await service.list();
+    await service.copyTo('custom-a', 2);
+    expect(changes).toHaveLength(1);
+    expect(ownIds(changes[0])).toEqual(['custom-a']);
+  });
+
+  it('stays quiet when a write is refused or fails', async () => {
+    const { service, changes } = setup([MINE]);
+    await service.list();
+    await service.save(SKYWALKER_PROFILES['light-steps']);
+    await service.delete('light-steps');
+    await service.duplicate('missing');
+    expect(changes).toEqual([]);
+    const failing: ProfileRepository = {
+      list: () => Promise.resolve(ok([])),
+      save: () => Promise.resolve(err({ kind: 'storage-failed', message: 'gone' })),
+      saveAll: () => Promise.resolve(err({ kind: 'storage-failed', message: 'gone' })),
+      deleteMany: () => Promise.resolve(err({ kind: 'storage-failed', message: 'gone' })),
+    };
+    const heard: ProfileEntry[][] = [];
+    const broken = new ProfileService({
+      store: failing,
+      newId: () => 'x',
+      chosenId: () => 'light-steps',
+      activeRoaster: () => ({ id: 1, model: 'skywalker' }),
+      roaster: (id) => ROASTERS.get(id),
+      onChange: (list) => {
+        heard.push(list);
+      },
+      logger: silentLogger,
+    });
+    await broken.duplicate('light-steps');
+    await broken.addAll([MINE]);
+    await broken.delete('custom-a');
+    expect(heard).toEqual([]);
+  });
+
+  it('refresh pushes the list of the roaster that is active now', async () => {
+    const { service, changes, useRoaster } = setup([MINE]);
+    await service.refresh();
+    expect(ownIds(changes.at(-1))).toEqual(['custom-a']);
+    useRoaster(2);
+    await service.refresh();
+    expect(ownIds(changes.at(-1))).toEqual([]);
+    expect(changes).toHaveLength(2);
+  });
+});
 
 describe('ProfileService', () => {
   it('adds imported profiles to the active roaster at once', async () => {
@@ -87,6 +175,7 @@ describe('ProfileService', () => {
       chosenId: () => 'light-steps',
       activeRoaster: () => ({ id: 1, model: 'skywalker' }),
       roaster: (id) => ROASTERS.get(id),
+      onChange: () => undefined,
       logger: silentLogger,
     });
     expect(await service.addAll([MINE])).toEqual(err({ kind: 'storage-failed', message: 'full' }));
@@ -116,6 +205,7 @@ describe('ProfileService', () => {
       chosenId: () => 'light-steps',
       activeRoaster: () => ({ id: 1, model: 'skywalker' }),
       roaster: (id) => ROASTERS.get(id),
+      onChange: () => undefined,
       logger: silentLogger,
     });
     expect(await service.list()).toHaveLength(2);
@@ -253,6 +343,7 @@ describe('ProfileService', () => {
       chosenId: () => 'light-steps',
       activeRoaster: () => ({ id: 1, model: 'skywalker' }),
       roaster: (id) => ROASTERS.get(id),
+      onChange: () => undefined,
       logger: silentLogger,
     });
     await service.list();
