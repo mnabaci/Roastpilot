@@ -20,10 +20,11 @@ import { EMERGENCY_STOP, SafetyMonitor, type COMPUTER_SLEEP } from '../safety/sa
 import { lostConnectionRule } from '../safety/rules/lost-connection';
 import { BEAN_TEMP } from '../safety/safety-rule';
 import { logSafetyEvent } from '../safety/log-safety-event';
+import { DisconnectSequence } from './disconnect-sequence';
+
+export { CLOSE_TIMEOUT_MS, SAFE_STOP_TIMEOUT_MS } from './disconnect-sequence';
 
 export const POLL_MS = 1_000;
-/** How long quit and disconnect wait for the safe stop before going on (docs/spec/architecture.md). */
-export const SAFE_STOP_TIMEOUT_MS = 2_000;
 
 export interface RoasterSessionOptions {
   clock: Clock;
@@ -56,6 +57,9 @@ export class RoasterSession {
   #driver: SafetyGuardedDriver | undefined;
   /** Bumped on every connect and disconnect, so loops from an older connection stop. */
   #generation = 0;
+  readonly #outputs: DisconnectSequence;
+  /** The disconnect under way, so a second disconnect or a connect waits for it. */
+  #disconnecting: Promise<void> | undefined;
 
   constructor(options: RoasterSessionOptions) {
     this.#clock = options.clock;
@@ -73,6 +77,7 @@ export class RoasterSession {
       onSafetyEvent: guard('onSafetyEvent', options.onSafetyEvent),
     };
     this.#reads = new FailureStreak(this.#logger, 'session.read');
+    this.#outputs = new DisconnectSequence(options.clock, this.#logger);
     this.#monitor = new SafetyMonitor({
       clock: options.clock,
       safeStop: () => this.#inner?.safeStop() ?? Promise.resolve(),
@@ -90,7 +95,7 @@ export class RoasterSession {
   async connect(driver: RoasterDriver, target: ConnectTarget): Promise<Result<void, DriverError>> {
     // A connect that came in while this one waited has set its driver: close that one too, or its
     // port stays open with nothing polling or safe-stopping it.
-    while (this.#driver) await this.disconnect();
+    while (this.#driver || this.#disconnecting) await this.disconnect();
     const generation = ++this.#generation;
     this.#inner = driver;
     this.#driver = new SafetyGuardedDriver(driver, this.#monitor);
@@ -121,23 +126,32 @@ export class RoasterSession {
     return connected;
   }
 
-  /** Safe stop, then close. Does nothing when not connected. */
-  async disconnect(): Promise<void> {
+  /**
+   * Safe stop, then close, each given a time limit. Does nothing when not connected; a second call
+   * waits for the first. Outputs are refused from the moment it starts, so the safe stop is last.
+   */
+  disconnect(): Promise<void> {
+    if (this.#disconnecting) return this.#disconnecting;
     const driver = this.#driver;
-    if (!driver) return;
+    if (!driver) return Promise.resolve();
     this.#generation++;
-    await this.#safeStopWithin(driver);
-    // Forget the driver first, so the lost-connection clear this causes isn't reported as "connected".
-    this.#inner = undefined;
+    // Forget the driver first: setOutput refuses from now on, and the lost-connection clear this
+    // causes isn't reported as "connected". `#inner` stays until closed, so an emergency stop
+    // meanwhile still reaches the roaster.
     this.#driver = undefined;
     this.#target = undefined;
-    await driver.disconnect();
-    this.#logger.info('session.disconnected');
-    this.#publish.onConnection({ status: 'disconnected' });
+    this.#disconnecting = this.#stopAndClose(driver).finally(() => {
+      this.#inner = undefined;
+      this.#disconnecting = undefined;
+    });
+    return this.#disconnecting;
   }
 
   async setOutput(channel: string, value: number): Promise<Result<void, DriverError>> {
-    const result = (await this.#driver?.setOutput(channel, value)) ?? err({ kind: 'disconnected' });
+    const driver = this.#driver;
+    const result = driver
+      ? await this.#outputs.send(driver, channel, value)
+      : err({ kind: 'disconnected' as const });
     if (!result.ok)
       this.#logger.warn('session.set-output-failed', { channel, value, error: result.error });
     return result;
@@ -211,8 +225,10 @@ export class RoasterSession {
     }
   }
 
-  async #safeStopWithin(driver: RoasterDriver): Promise<void> {
-    await Promise.race([driver.safeStop(), this.#clock.delay(SAFE_STOP_TIMEOUT_MS)]);
+  async #stopAndClose(driver: RoasterDriver): Promise<void> {
+    await this.#outputs.stopAndClose(driver);
+    this.#logger.info('session.disconnected');
+    this.#publish.onConnection({ status: 'disconnected' });
   }
 
   #followLostConnection(event: SafetyEvent): void {

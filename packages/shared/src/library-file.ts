@@ -96,4 +96,3 @@ export type FileBean = z.infer<typeof FileBeanSchema>;
 export type FileProfile = z.infer<typeof FileProfileSchema>;
 export type FileRoaster = z.infer<typeof FileRoasterSchema>;
 export type ExportLibraryRequest = z.infer<typeof ExportLibraryRequestSchema>;
-export type ImportLibraryRequest = z.infer<typeof ImportLibraryRequestSchema>;

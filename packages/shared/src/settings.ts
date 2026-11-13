@@ -90,7 +90,6 @@ export type ControlsLevel = z.infer<typeof ControlsLevelSchema>;
 export type ChartSmoothing = z.infer<typeof ChartSmoothingSchema>;
 export type CoolingTime = z.infer<typeof CoolingTimeSchema>;
 export type RoasterCoolTo = z.infer<typeof RoasterCoolToSchema>;
-export type RoastMode = z.infer<typeof RoastModeSchema>;
 export type Theme = z.infer<typeof ThemeSchema>;
 export type Settings = z.infer<typeof SettingsSchema>;
 export type SettingsWriteError = z.infer<typeof SettingsWriteErrorSchema>;
