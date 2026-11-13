@@ -169,6 +169,7 @@ export const INVOKE_CHANNEL_LIST: readonly InvokeChannel[] = Object.values(INVOK
 type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 type Assert<T extends true> = T;
 type ChannelOf<T> = T[keyof T];
+/** @public compile-time check, never imported. */
 export type ContractMatchesChannels = [
   Assert<Same<InvokeChannel, ChannelOf<typeof INVOKE_CHANNELS>>>,
   Assert<Same<IpcEventChannel, ChannelOf<typeof EVENT_CHANNELS>>>,

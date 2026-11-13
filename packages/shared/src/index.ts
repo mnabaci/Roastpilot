@@ -35,8 +35,6 @@ export {
 } from './connection';
 export { type ConnectError, type DriverError } from './driver-error';
 export {
-  EVENT_CHANNELS,
-  INVOKE_CHANNELS,
   IPC_CHANNELS,
   type Snapshot,
   type IpcEventChannel,
@@ -46,18 +44,14 @@ export {
 } from './ipc';
 export {
   INVOKE_CHANNEL_LIST,
-  type ContractMatchesChannels,
   type ExportRoastsError,
   type ExportRoastsResult,
   type ImportArtisanError,
   type ImportArtisanResult,
   type ImportRoastsError,
   type ImportRoastsResult,
-  type Invoke,
   type InvokeArgs,
   type InvokeChannel,
-  type InvokeContract,
-  type InvokePayload,
   type InvokeResult,
 } from './ipc-contract';
 export type {
