@@ -1,6 +1,6 @@
 import type { ProfileRepository } from '@roastpilot/core';
-import { ROASTER_MODELS } from '@roastpilot/drivers';
 import { ok, type ProfileId, type Result, type StorageError } from '@roastpilot/shared';
+import { ROASTER_MODELS } from '../roaster-models';
 
 /**
  * Every profile's name by id: each model's built-ins, and your own on any roaster. Read straight
@@ -11,7 +11,7 @@ export async function allProfileNames(
 ): Promise<Result<Map<ProfileId, string>, StorageError>> {
   const read = await store.list();
   if (!read.ok) return read;
-  const builtIns = Object.values(ROASTER_MODELS).flatMap((model) => model.profiles);
+  const builtIns = ROASTER_MODELS.all.flatMap((model) => model.profiles);
   const all = [...builtIns, ...read.value.map((own) => own.profile)];
   return ok(new Map(all.map((profile) => [profile.id, profile.name])));
 }

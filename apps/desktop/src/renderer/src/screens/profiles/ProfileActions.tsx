@@ -2,6 +2,7 @@ import type { ProfileEntry } from '@roastpilot/shared';
 import { Badge, Button, ConfirmDialog, Menu, type MenuItem } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
+import { removeProfiles, upsertProfile } from '../../stores/auto-store';
 import { EditActions } from '../../features/EditActions';
 import { useLibraryFiles } from '../../features/use-library-files';
 import { IN_USE } from '../../features/profile-messages';
@@ -41,9 +42,6 @@ export function ProfileActions({
   const others = useRoasters((s) => s.roasters).filter((r) => !r.active);
   const files = useLibraryFiles('profiles');
   const toast = useToast();
-  const refresh = async () => {
-    stores.auto.setState({ profiles: await api.listProfiles() });
-  };
   const refused = (error: { kind: string; message?: string }) => {
     logger.warn('profiles.refused', { ...error });
     setProblem(error.message ?? "That didn't work · see the log");
@@ -60,7 +58,7 @@ export function ProfileActions({
           return;
         }
         setProblem(undefined);
-        await refresh();
+        upsertProfile(stores.auto, saved.value);
         state.discard();
         onEditingChange(false);
       },
@@ -77,7 +75,7 @@ export function ProfileActions({
           return;
         }
         setProblem(undefined);
-        await refresh();
+        upsertProfile(stores.auto, copy.value);
         onSelect(copy.value.profile.id);
       },
       { failed: "Couldn't duplicate the profile · try again" },
@@ -117,7 +115,7 @@ export function ProfileActions({
           return;
         }
         setProblem(undefined);
-        await refresh();
+        upsertProfile(stores.auto, saved.value);
       },
       { failed: "Couldn't change the profile · try again" },
     );
@@ -136,8 +134,8 @@ export function ProfileActions({
           refused(deleted.error);
           return;
         }
+        removeProfiles(stores.auto, [id]);
         state.discard();
-        await refresh();
       },
       { failed: "Couldn't delete the profile · try again" },
     );

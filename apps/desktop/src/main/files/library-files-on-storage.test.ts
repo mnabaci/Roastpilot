@@ -40,6 +40,7 @@ async function computer() {
     store: stores.profileStore,
     newId: () => `custom-${String(++n)}`,
     chosenId: () => 'light-steps',
+    onChange: () => undefined,
     activeRoaster: () => roasters.active(),
     roaster: (id) => roasters.all.find((r) => r.id === id),
     logger: silentLogger,

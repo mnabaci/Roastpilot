@@ -51,6 +51,8 @@ export {
 export { profileFromRoast } from './profiles/profile-from-roast';
 export type { ProfileRepository } from './profiles/profile-repository';
 export type { RoasterRepository } from './roasters/roaster-repository';
+export type { DriverDeps, RoasterModelDefinition } from './roasters/roaster-model-definition';
+export { createDriver, newRoaster, roasterModels } from './roasters/roaster-models';
 export { soakLengthS, withCapUnder } from './auto/phase-plan';
 export { clampBatch, expectedRoastedG, splitStock } from './beans/batch-plans';
 export { beanHints } from './beans/bean-hints';

@@ -13,7 +13,7 @@ export function useMakeProfile(onOpenProfile: (id: string) => void): {
   make: (roastId: RoastId, style: ProfileStyle) => void;
   noteFor: (roastId: RoastId | undefined) => string | undefined;
 } {
-  const { api, stores, logger } = useDeps();
+  const { api, logger } = useDeps();
   const run = useRun();
   const [note, setNote] = useState<{ roastId: RoastId; text: string }>();
   const make = (roastId: RoastId, style: ProfileStyle) => {
@@ -33,8 +33,8 @@ export function useMakeProfile(onOpenProfile: (id: string) => void): {
           });
           return;
         }
+        // It may belong to another roaster than the active one: ask main for the active roaster's list.
         const profiles = await api.listProfiles();
-        stores.auto.setState({ profiles });
         const { id } = made.value.profile;
         if (profiles.some((e) => e.profile.id === id)) onOpenProfile(id);
         else

@@ -270,7 +270,8 @@ describe('BeansScreen', () => {
     expect(api.duplicateProfile).not.toHaveBeenCalled();
     expect(api.saveProfile).not.toHaveBeenCalled();
     expect(api.updateBean).not.toHaveBeenCalled();
-    expect(api.listProfiles).toHaveBeenCalled();
+    // The new profile reaches the list through main's push, not a refetch.
+    expect(api.listProfiles).not.toHaveBeenCalled();
   });
 
   it('says so in one line when main could not make it, and opens nothing', async () => {

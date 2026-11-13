@@ -17,3 +17,18 @@ export const DriverErrorSchema = z.discriminatedUnion('kind', [
 ]);
 
 export type DriverError = z.infer<typeof DriverErrorSchema>;
+
+/**
+ * Why Connect failed: the driver's own errors, or a target the active roaster's model doesn't use
+ * (a port for the Simulator; ADR 0024).
+ */
+export const ConnectErrorSchema = z.union([
+  DriverErrorSchema,
+  z.object({
+    kind: z.literal('wrong-connection'),
+    model: z.string(),
+    expected: z.enum(['serial', 'simulator']),
+  }),
+]);
+
+export type ConnectError = z.infer<typeof ConnectErrorSchema>;

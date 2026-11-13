@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react';
 import { Button, formatClock, NumberField, RoastChart } from '@roastpilot/ui';
 import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
+import { upsertProfile } from '../../stores/auto-store';
 import { useRun } from '../../features/use-run';
 import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import {
@@ -70,7 +71,7 @@ export function MilestoneBuilder({
             setProblem("Couldn't save that · see the log");
             return;
           }
-          stores.auto.setState({ profiles: await api.listProfiles() });
+          upsertProfile(stores.auto, saved.value);
           onCreated(saved.value.profile.id);
         } finally {
           setBusy(false);

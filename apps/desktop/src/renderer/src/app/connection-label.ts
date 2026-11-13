@@ -1,4 +1,4 @@
-import type { ConnectTarget, Roaster } from '@roastpilot/shared';
+import { modelFacts, type ConnectTarget, type Roaster } from '@roastpilot/shared';
 
 /**
  * A short name for what the app is connected to: "Simulator", or the port without its folder and
@@ -15,7 +15,6 @@ export function targetLabel(target: ConnectTarget): string {
  * as Connect always uses the active roaster; its port only when no record of that kind is active.
  */
 export function connectedName(target: ConnectTarget, active: Roaster | undefined): string {
-  const matches =
-    active !== undefined && (active.model === 'simulator') === (target.kind === 'simulator');
+  const matches = active !== undefined && modelFacts(active.model).connection === target.kind;
   return matches ? active.name : targetLabel(target);
 }

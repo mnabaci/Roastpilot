@@ -1,8 +1,7 @@
 import { ManualClock, silentLogger } from '@roastpilot/core';
-import { SimulatedDriver } from '@roastpilot/drivers';
+import { SimulatedDriver, skywalkerModel } from '@roastpilot/drivers';
 import { READY_ROAST, type RoastPhase } from '@roastpilot/shared';
 import { describe, expect, it, vi } from 'vitest';
-import { createDriver } from './driver-factory';
 import { SimulatorBeans } from './simulator-beans';
 
 const at = (phase: RoastPhase) => ({ ...READY_ROAST, phase });
@@ -43,7 +42,10 @@ describe('SimulatorBeans', () => {
 
   it('passes a real driver through and leaves it alone', () => {
     const beans = new SimulatorBeans();
-    const driver = createDriver({ kind: 'serial', path: 'COM3' }, new ManualClock(), silentLogger);
+    const driver = skywalkerModel.createDriver(
+      { kind: 'serial', path: 'COM3' },
+      { clock: new ManualClock(), logger: silentLogger },
+    );
     expect(beans.attach(driver)).toBe(driver);
     expect(() => {
       beans.onRoast(at('roasting'));

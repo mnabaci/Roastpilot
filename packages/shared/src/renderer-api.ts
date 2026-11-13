@@ -13,7 +13,7 @@ import type {
 import type { Reading } from './channels';
 import type { CoachApplyError, CoachRequest, CoachStatus } from './coach';
 import type { ConnectionState, ConnectTarget, SerialPortInfo } from './connection';
-import type { DriverError } from './driver-error';
+import type { ConnectError, DriverError } from './driver-error';
 import type { PreheatHoldRequest, RoastsChange, SetOutputRequest, Snapshot } from './ipc';
 import type { RendererLogEntry } from './log-entry';
 import type { LogDay, LogDayRead, LogRecord } from './log-record';
@@ -67,7 +67,7 @@ export type Unsubscribe = () => void;
 /** The roaster connection and its outputs. */
 export interface RoasterApi {
   listPorts(): Promise<SerialPortInfo[]>;
-  connect(target: ConnectTarget): Promise<Result<void, DriverError>>;
+  connect(target: ConnectTarget): Promise<Result<void, ConnectError>>;
   /** Safe stop, then close the port. */
   disconnect(): Promise<void>;
   setOutput(request: SetOutputRequest): Promise<Result<void, DriverError>>;
@@ -177,6 +177,8 @@ export interface ProfilesApi {
   }): Promise<Result<ProfileEntry, ProfileError>>;
   /** A new curve profile of your own on the active roaster, from the milestone builder. */
   makeProfileFromMilestones(milestones: Milestones): Promise<Result<ProfileEntry, ProfileError>>;
+  /** The list changed: a write, or another roaster became active. The stores follow it. */
+  onProfiles(listener: (profiles: ProfileEntry[]) => void): Unsubscribe;
 }
 
 /** Beans and stock (docs/spec/batch-and-stock.md). The stores follow `onBeans`. */

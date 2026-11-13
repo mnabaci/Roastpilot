@@ -241,7 +241,9 @@ function setup() {
     listPorts: () => Promise.resolve([{ path: 'COM3' }]),
     createDriver: (target) => {
       calls.push(['createDriver', target]);
-      return driver;
+      return target.kind === 'serial' && target.path === 'WRONG'
+        ? err({ kind: 'wrong-connection', model: 'simulator', expected: 'simulator' })
+        : ok(driver);
     },
     updates: {
       info: () => ({ version: '0.1.0', update: { state: 'ready', version: '0.2.0' } }),
@@ -386,6 +388,15 @@ describe('createIpcHandlers', () => {
       ['createDriver', { kind: 'simulator' }],
       ['connect', driver, { kind: 'simulator' }],
     ]);
+  });
+
+  it("returns the factory's refusal and connects nothing", async () => {
+    const { handlers, calls } = setup();
+    const target = { kind: 'serial', path: 'WRONG' };
+    expect(await handle(handlers, IPC_CHANNELS.connect, target)).toEqual(
+      err({ kind: 'wrong-connection', model: 'simulator', expected: 'simulator' }),
+    );
+    expect(calls).toEqual([['createDriver', target]]);
   });
 
   it.each([
