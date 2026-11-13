@@ -23,7 +23,8 @@ and never move between roasters on their own (see [roast-control.md](roast-contr
 - **Drum kinds:** a model's drum is either on/off (Skywalker) or has a speed in % (Simulator). Each model declares its channels without connecting, so the Roasters page knows which it has.
 - **Drum speed:** on a roaster whose drum has a speed, its usual speed, 5–100 % in steps of 5 (default 60 %). "Drum on" means this speed everywhere: Preheat, Start, bean and drum cooling, and outputs restored after a reconnect. The Roast screen slider changes it for the roast that's running; the next roast starts at the usual speed again. Hidden for an on/off drum.
 - **Later:** a drum speed per profile step, so Auto can change it during the roast, once a real roaster with drum speed is tuned.
-- Adding a roaster = pick an existing driver and fill in the record. A new kind of hardware = one new driver class (`add-extension` skill).
+- Adding a roaster = pick an existing model and fill in the record. A new model = one model definition, its facts entry and one registry line ([extensibility.md](extensibility.md), Roaster models); a new kind of hardware also needs its driver class (`add-extension` skill).
+- **The driver follows the model:** Connect builds the active roaster's model's driver. A connection of the wrong kind for that model (a port for the Simulator) is refused.
 
 ## First version (milestone 5)
 

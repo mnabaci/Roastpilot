@@ -1,4 +1,9 @@
-import type { ConnectTarget, Roaster, SerialPortInfo } from '@roastpilot/shared';
+import {
+  modelFacts,
+  type ConnectTarget,
+  type Roaster,
+  type SerialPortInfo,
+} from '@roastpilot/shared';
 import { useCallback, useEffect, useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
@@ -22,7 +27,7 @@ export function useConnectControls(roaster: Roaster) {
   const connection = useConnection((s) => s.connection);
   const { status } = connection;
   const usedTarget = connection.status === 'disconnected' ? undefined : connection.target;
-  const isSimulator = roaster.model === 'simulator';
+  const isSimulator = modelFacts(roaster.model).connection === 'simulator';
   const target = isSimulator ? SIMULATOR : roaster.connection;
   // Connect uses the active roaster, so while one is in use it is that one.
   const inUse = usedTarget !== undefined && active?.id === roaster.id;

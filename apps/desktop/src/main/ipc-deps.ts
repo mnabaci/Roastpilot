@@ -1,6 +1,7 @@
 import type { AutoPilot, ManualRoast, RoasterDriver, RoasterSession } from '@roastpilot/core';
 import type {
   BeanId,
+  ConnectError,
   ConnectTarget,
   LogDay,
   LogDayRead,
@@ -67,7 +68,8 @@ export interface IpcDeps {
   nowMs: () => number;
   snapshot: () => Snapshot;
   listPorts: () => Promise<SerialPortInfo[]>;
-  createDriver: (target: ConnectTarget) => RoasterDriver;
+  /** The active roaster's model's driver for the target, or why not (ADR 0024). */
+  createDriver: (target: ConnectTarget) => Result<RoasterDriver, ConnectError>;
   updates: Pick<Updates, 'info' | 'check' | 'restart' | 'openReleasePage'>;
   logs: {
     listDays: () => Promise<LogDay[]>;

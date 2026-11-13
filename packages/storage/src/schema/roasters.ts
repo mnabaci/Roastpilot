@@ -1,10 +1,12 @@
 // Roaster records (docs/spec/data-model.md). Change only through a new migration (add-migration skill).
+import { ROASTER_MODEL_IDS } from '@roastpilot/shared';
 import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const roasters = sqliteTable('roasters', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
-  model: text('model', { enum: ['skywalker', 'simulator'] }).notNull(),
+  /** Plain text in SQLite: the ids are checked in code (ADR 0024), so a new model needs no migration. */
+  model: text('model', { enum: ROASTER_MODEL_IDS }).notNull(),
   /** JSON ConnectTarget. */
   connection: text('connection'),
   batchMinG: real('batch_min_g').notNull(),

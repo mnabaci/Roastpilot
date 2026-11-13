@@ -77,6 +77,15 @@ export {
 export { profileFromRoast, type ProfileStyle } from './profiles/profile-from-roast';
 export type { ProfileRepository } from './profiles/profile-repository';
 export type { RoasterRepository } from './roasters/roaster-repository';
+export type { DriverDeps, RoasterModelDefinition } from './roasters/roaster-model-definition';
+export {
+  createDriver,
+  newRoaster,
+  roasterModels,
+  type RoasterModelMap,
+  type RoasterModels,
+  type UnknownModelError,
+} from './roasters/roaster-models';
 export { CAP_BELOW_MAX_C, soakLengthS, withCapUnder } from './auto/phase-plan';
 export {
   clampBatch,

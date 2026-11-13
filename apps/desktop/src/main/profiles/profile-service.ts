@@ -4,7 +4,6 @@ import {
   type Logger,
   type ProfileRepository,
 } from '@roastpilot/core';
-import { ROASTER_MODELS } from '@roastpilot/drivers';
 import {
   err,
   ok,
@@ -17,6 +16,7 @@ import {
   type Roaster,
   type RoasterId,
 } from '@roastpilot/shared';
+import { ROASTER_MODELS } from '../roaster-models';
 import { deleteRefusal } from './delete-guard';
 import { freeName, planCopy } from './profile-copy';
 
@@ -56,7 +56,7 @@ export class ProfileService {
   }
 
   #builtIns(): readonly AutoProfile[] {
-    return ROASTER_MODELS[this.#deps.activeRoaster().model].profiles;
+    return ROASTER_MODELS.get(this.#deps.activeRoaster().model).profiles;
   }
 
   #ownHere(): AutoProfile[] {
@@ -140,7 +140,7 @@ export class ProfileService {
     if (!source || !target) return err({ kind: 'not-found', id });
     const there = this.#own.filter((own) => own.roasterId === roasterId).map((own) => own.profile);
     const from = this.#deps.roaster(this.#deps.activeRoaster().id)?.name;
-    const plan = planCopy(source, there, ROASTER_MODELS[target.model].profiles, from);
+    const plan = planCopy(source, there, ROASTER_MODELS.get(target.model).profiles, from);
     if (plan.kind === 'already-copied') {
       return err({ kind: 'already-copied', id: plan.profile.id, name: plan.profile.name });
     }
