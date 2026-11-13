@@ -1,7 +1,8 @@
-import type { Logger, RoasterRepository } from '@roastpilot/core';
-import { BUILT_IN_ROASTERS, newRoaster } from '@roastpilot/drivers';
+import { newRoaster, type Logger, type RoasterRepository } from '@roastpilot/core';
+import { BUILT_IN_ROASTERS } from '@roastpilot/drivers';
 import {
   err,
+  modelFacts,
   ok,
   type ConnectTarget,
   type NewRoaster,
@@ -11,6 +12,7 @@ import {
   type RoasterId,
   type StorageError,
 } from '@roastpilot/shared';
+import { ROASTER_MODELS } from '../roaster-models';
 
 export interface RoasterServiceDeps {
   repository: RoasterRepository;
@@ -58,7 +60,9 @@ export class RoasterService {
   }
 
   async add(request: NewRoaster): Promise<Result<Roaster, RoasterError>> {
-    const added = await this.#deps.repository.add(newRoaster(request.name, request.model));
+    const added = await this.#deps.repository.add(
+      newRoaster(request.name, ROASTER_MODELS.get(request.model)),
+    );
     if (!added.ok) return this.#refused(added.error);
     this.#deps.logger.info('roasters.added', { id: added.value.id, model: added.value.model });
     this.#set([...this.#roasters, added.value]);
@@ -114,8 +118,7 @@ export class RoasterService {
 
   /** A port or the Simulator was picked: the roaster of that kind becomes active and keeps it. */
   async chooseConnection(target: ConnectTarget): Promise<Result<void, RoasterError>> {
-    const isSimulator = target.kind === 'simulator';
-    const fits = (r: Roaster) => (r.model === 'simulator') === isSimulator;
+    const fits = (r: Roaster) => modelFacts(r.model).connection === target.kind;
     const active = this.active();
     const roaster = fits(active) ? active : this.#roasters.find(fits);
     if (!roaster) return err({ kind: 'not-found', id: active.id });

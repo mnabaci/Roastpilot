@@ -51,7 +51,12 @@ export {
   type ConnectTarget,
   type SerialPortInfo,
 } from './connection';
-export { DriverErrorSchema, type DriverError } from './driver-error';
+export {
+  ConnectErrorSchema,
+  DriverErrorSchema,
+  type ConnectError,
+  type DriverError,
+} from './driver-error';
 export {
   IPC_CHANNELS,
   SnapshotSchema,
@@ -245,8 +250,9 @@ export {
 export {
   CopyProfileRequestSchema,
   DRUM_SPEED,
-  MODEL_DRUM_SPEED,
-  MODEL_LIMITS,
+  ROASTER_MODEL_FACTS,
+  ROASTER_MODEL_IDS,
+  modelFacts,
   NewRoasterSchema,
   RoasterErrorSchema,
   RoasterIdSchema,
@@ -259,6 +265,7 @@ export {
   type RoasterError,
   type RoasterId,
   type RoasterModel,
+  type RoasterModelFacts,
 } from './roaster';
 export {
   AddStockSchema,

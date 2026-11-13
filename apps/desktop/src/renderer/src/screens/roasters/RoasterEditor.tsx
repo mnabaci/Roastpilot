@@ -1,4 +1,4 @@
-import { MODEL_DRUM_SPEED, type Roaster } from '@roastpilot/shared';
+import { modelFacts, type Roaster } from '@roastpilot/shared';
 import { Button, NumberField, Switch, TextField } from '@roastpilot/ui';
 import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
@@ -72,7 +72,7 @@ export function RoasterEditor({
         </div>
       ) : null}
       {everydayFields(unit).map(fields)}
-      {MODEL_DRUM_SPEED[roaster.model] ? fields(DRUM_FIELDS) : null}
+      {modelFacts(roaster.model).drumSpeed ? fields(DRUM_FIELDS) : null}
       <fieldset className="flex flex-col gap-2">
         <legend className="pb-1 text-body font-semibold">Cooling</legend>
         <div className="flex items-center justify-between gap-3">

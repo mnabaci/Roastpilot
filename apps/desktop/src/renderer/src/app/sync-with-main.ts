@@ -9,6 +9,7 @@ type SyncApi = Pick<
   | 'getSnapshot'
   | 'getSettings'
   | 'listProfiles'
+  | 'onProfiles'
   | 'listRoasters'
   | 'listBeans'
   | 'onBeans'
@@ -29,8 +30,8 @@ type SyncApi = Pick<
  * happens in between is lost (the snapshot already includes it).
  */
 export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsubscribe {
-  // Counts profile lists asked for, so an answer that arrives after a newer one is dropped.
-  let profilesAsked = 0;
+  // A pushed profile list is newer than the one the first load asked for.
+  let profilesHeard = false;
   // An update status that arrives before the app info is newer than the info's.
   let updateHeard = false;
   const stops = [
@@ -70,16 +71,10 @@ export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsu
     }),
     api.onRoasters((roasters) => {
       stores.roasters.setState({ roasters });
-      // Profiles belong to a roaster, so the list follows the active one.
-      const asked = ++profilesAsked;
-      api
-        .listProfiles()
-        .then((profiles) => {
-          if (asked === profilesAsked) stores.auto.setState({ profiles });
-        })
-        .catch((error: unknown) => {
-          logger.error('sync.profiles-failed', { error: serializeError(error) });
-        });
+    }),
+    api.onProfiles((profiles) => {
+      profilesHeard = true;
+      stores.auto.setState({ profiles });
     }),
   ];
   api
@@ -102,9 +97,9 @@ export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsu
       stores.roast.setState({ roast: snapshot.roast, readings: [...snapshot.readings] });
       stores.safety.setState(snapshot.safety, true);
       stores.settings.setState({ settings });
-      // A roaster switched meanwhile has asked for its own list; this one would be stale.
+      // A list pushed meanwhile (a write, a roaster switch) is newer than this one.
       stores.auto.setState(
-        profilesAsked === 0 ? { status: snapshot.auto, profiles } : { status: snapshot.auto },
+        profilesHeard ? { status: snapshot.auto } : { status: snapshot.auto, profiles },
       );
       stores.coach.setState({ status: snapshot.coach });
       stores.roasters.setState({ roasters });

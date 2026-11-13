@@ -73,7 +73,8 @@ export function createIpcHandlers({
     [IPC_CHANNELS.listPorts]: handler(() => listPorts()),
     [IPC_CHANNELS.connect]: handler((payload) => {
       const target = ConnectTargetSchema.parse(payload);
-      return session.connect(createDriver(target), target);
+      const driver = createDriver(target);
+      return driver.ok ? session.connect(driver.value, target) : driver;
     }),
     [IPC_CHANNELS.disconnect]: handler(() => session.disconnect()),
     [IPC_CHANNELS.setOutput]: handler((payload) => {

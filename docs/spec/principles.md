@@ -25,7 +25,7 @@ TypeScript everywhere, React for the renderer.
 
 Patterns used: **State** (roast phases), **Strategy** (end rules, fan schedules), **Observer**
 (readings via events), **Repository** (SQLite access), **Adapter** (one driver per device),
-**Facade** (the preload API), **Factory** (picks the driver from Settings), **Registry**
+**Facade** (the preload API), **Factory** (picks the driver by the active roaster's model), **Registry**
 (extension points), **event bus** (domain events).
 
 Reusable UI components: `Button`, `StatCard`, `OutputControl` (slider + Auto/Manual badge),

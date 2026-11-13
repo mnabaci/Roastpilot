@@ -1,13 +1,20 @@
-import { RoasterModelSchema, type RoasterId, type RoasterModel } from '@roastpilot/shared';
+import {
+  modelFacts,
+  RoasterModelSchema,
+  type RoasterId,
+  type RoasterModel,
+} from '@roastpilot/shared';
 import { Button, cn, SelectField, TextField } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
-import { MODEL_LABEL } from './roaster-model';
 import { refusalText } from './roaster-refusal';
 import { PAGE_WIDTH } from '../../lib/page-width';
 
-const MODELS = RoasterModelSchema.options.map((value) => ({ value, label: MODEL_LABEL[value] }));
+const MODELS = RoasterModelSchema.options.map((value) => ({
+  value,
+  label: modelFacts(value).label,
+}));
 
 /** A name and a model, then Add; the new roaster opens (docs/spec/ui.md, Roasters screen). */
 export function AddRoaster({ onAdded }: { onAdded: (id: RoasterId) => void }) {

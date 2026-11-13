@@ -27,6 +27,7 @@ function setup(own: AutoProfile[], saveFails = false) {
     store,
     newId: () => 'x',
     chosenId: () => 'light-steps',
+    onChange: () => undefined,
     activeRoaster: () => ({ id: 1, model: 'skywalker' }),
     roaster: () => undefined,
     logger: silentLogger,
