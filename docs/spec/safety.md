@@ -48,7 +48,7 @@ Auto never turns the heater back on by itself after a stop. Time limits on the p
 
 ## How it works
 
-- **One path to the roaster.** The app only ever talks to `SafetyGuardedDriver`, which wraps the real driver. Every reading and read failure passes through the `SafetyMonitor`, so no caller can skip it.
+- **One path to the roaster.** The app only ever talks to `SafetyGuardedDriver`, which wraps the real driver (with `FanInterlockDriver` between them on a roaster whose minimum fan is on: `SafetyGuardedDriver` → `FanInterlockDriver` → driver, so a safe stop also waits behind any heater command in flight). Every reading and read failure passes through the `SafetyMonitor`, so no caller can skip it. One side path, read only: the Roasters page reads a generic TC4's four inputs straight from its driver (`RoasterInputs`), only while connected and no roast or drum cooling runs. It sends `CHAN` and `READ`, never an output; a restore that fails leaves the board on the wrong channels, which the next poll sees as a bad reading and lost connection trips.
 - **Checked every reading and every second.** The app also calls `check()` on its own 1 s timer, so lost connection trips even if polling stops.
 - **Trips on the edge.** A rule trips when its condition becomes true and clears when it becomes false. Each trip and clear is an event (`SafetyTripped`, `SafetyCleared`) for the roast log and the UI.
 - **Heater locked after a safe stop.** While locked, any heater value above 0 is refused with `safety-locked`; fan, bean cooler, drum and filter still work. The lock lifts only when you acknowledge and no safe-stop rule is still tripped. Max roast time stays tripped until the roast ends.
