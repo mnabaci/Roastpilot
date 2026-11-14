@@ -23,8 +23,8 @@ flowchart TB
   - Drivers clamp and round every value to the channel's range and step before sending.
   - Time comes from an injected `Clock` (`now`, `delay`), so drivers and the simulator run on fake time in tests.
   - `Transport` (`open`, `write`, `onLine`, `onClose`, `close`) only moves lines of text: `SerialTransport` now, Wi-Fi or Bluetooth later.
-  - `Tc4SkywalkerDriver` is the Adapter for the current ESP32 mod; `SimulatedDriver` fakes a roaster for development and tests.
-  - `createDriver` builds the driver of the active roaster's model from its `RoasterModelDefinition` ([ADR 0024](../adr/0024-one-definition-per-roaster-model.md)): `Tc4SkywalkerDriver` over `SerialTransport` for a Skywalker, `SimulatedDriver` for the Simulator. A target of the wrong kind for the model is a typed `wrong-connection` error.
+  - `Tc4Driver` is the Adapter for boards that speak Artisan's TC4 protocol, each in its dialect ([ADR 0026](../adr/0026-one-tc4-driver-with-dialects.md)): SkyCommand for the current ESP32 mod; `SimulatedDriver` fakes a roaster for development and tests.
+  - `createDriver` builds the driver of the active roaster's model from its `RoasterModelDefinition` ([ADR 0024](../adr/0024-one-definition-per-roaster-model.md)): `Tc4Driver` with the SkyCommand dialect over `SerialTransport` for a Skywalker, `SimulatedDriver` for the Simulator. A target of the wrong kind for the model is a typed `wrong-connection` error.
 - **Roaster session:** `RoasterSession` in `core` owns the connected roaster: it wraps the driver in `SafetyGuardedDriver`, polls `READ` every 1 s, runs the safety `check()` on its own 1 s loop, reconnects by itself after a lost connection, and publishes readings, safety events and connection changes. One session lives for the whole app, so the heater lock survives a reconnect.
 - **Controller:** runs the roast state machine (preheat → charge → phases → drop → cool), the planned heat and fan steps and the PID trim.
 - **Safety monitor:** watches every reading and can force a safe stop, whatever the controller is doing.

@@ -13,13 +13,14 @@ Extension points are listed in `docs/spec/extensibility.md`. Each is an interfac
    - hardware drivers and transports → `packages/drivers`
    - exporters/importers that touch files → `apps/desktop/src/main` (or `storage` for DB-backed ones)
    - chart layers → `packages/ui`
-3. One class or function per file, named for what it does (`DevTimeEndRule`, `Tc4SkywalkerDriver`).
+3. One class or function per file, named for what it does (`DevTimeEndRule`, `Tc4Driver`).
 4. Register it in the composition root (`apps/desktop/src/main`), never with a switch inside core.
 5. Tests: behaviour against the interface contract; drivers also against `SimulatedDriver` scenarios.
 6. Update the table in `docs/spec/extensibility.md`.
 
 ## Drivers specifically
 
+- A board that speaks Artisan's TC4 text protocol (`READ`, `OT1`, …) is a new `Tc4Dialect` in `packages/drivers/src/tc4/`, not a driver class (ADR 0026): its channels, output commands, handshake, `READ` parser and safe stop. Run the `Tc4Driver` tests against it. Any other protocol gets its own driver class.
 - Implement `RoasterDriver`: `channels`, `connect`, `read`, `setOutput(channel, value)`, `safeStop`, `disconnect`.
 - Declare channels (id, unit, range, step, read/control) so the UI adapts; never hard-code UI for a roaster.
 - Parse and validate every incoming line; reject garbage without throwing in the read loop.

@@ -16,35 +16,24 @@ import {
   type Reading,
   type Result,
 } from '@roastpilot/shared';
-import { SKYWALKER_CHANNELS, SKYWALKER_PROTOCOL_VERSION, SKYWALKER_SAFE_STOP } from '../skywalker';
 import { CommandQueue } from './command-queue';
-import {
-  isReadReplyShape,
-  isVersionReplyShape,
-  parseReadReply,
-  parseVersionReply,
-  type ReadReply,
-} from './replies';
+import type { Tc4Dialect, Tc4Reply } from './tc4-dialect';
 
-/** Sketch command for each output channel (docs/spec/hardware.md, Commands). */
-const OUTPUT_COMMANDS: Readonly<Record<string, string>> = {
-  heater: 'OT1',
-  fan: 'OT2',
-  cooling: 'COOL',
-  filter: 'FILTER',
-  drum: 'DRUM',
-};
-
-export interface Tc4SkywalkerDriverOptions {
+export interface Tc4DriverOptions {
+  dialect: Tc4Dialect;
   transport: Transport;
   clock: Clock;
   logger?: Logger;
 }
 
-/** Adapter for the Skywalker roaster through the SkyCommand sketch over a line transport. */
-export class Tc4SkywalkerDriver implements RoasterDriver {
-  readonly channels: readonly Channel[] = SKYWALKER_CHANNELS;
+/**
+ * Adapter for a board that speaks Artisan's TC4 text protocol over a line transport (ADR 0026).
+ * What differs between boards is its dialect; the queue, polling and checks are the same for all.
+ */
+export class Tc4Driver implements RoasterDriver {
+  readonly channels: readonly Channel[];
 
+  readonly #dialect: Tc4Dialect;
   readonly #transport: Transport;
   readonly #clock: Clock;
   readonly #queue: CommandQueue;
@@ -56,7 +45,9 @@ export class Tc4SkywalkerDriver implements RoasterDriver {
   readonly #boardChanged = new Set<string>();
   #connected = false;
 
-  constructor(options: Tc4SkywalkerDriverOptions) {
+  constructor(options: Tc4DriverOptions) {
+    this.#dialect = options.dialect;
+    this.channels = options.dialect.channels;
     this.#transport = options.transport;
     this.#clock = options.clock;
     this.#logger = options.logger ?? silentLogger;
@@ -72,7 +63,7 @@ export class Tc4SkywalkerDriver implements RoasterDriver {
     });
   }
 
-  /** Opens the port, switches to °C, checks the protocol version and takes one reading. */
+  /** Opens the port, runs the dialect's handshake and takes one reading. */
   async connect(): Promise<Result<void, DriverError>> {
     this.#connected = false;
     const opened = await this.#transport.open();
@@ -96,7 +87,12 @@ export class Tc4SkywalkerDriver implements RoasterDriver {
     // Every channel in every reading (docs/spec/hardware.md): the reply wins for what it reports.
     return ok({
       atMs: this.#clock.now(),
-      values: { ...Object.fromEntries(this.#sent), ...reply },
+      values: {
+        ...Object.fromEntries(this.#sent),
+        ...reply.sensors,
+        heater: reply.heater,
+        fan: reply.fan,
+      },
     });
   }
 
@@ -105,27 +101,27 @@ export class Tc4SkywalkerDriver implements RoasterDriver {
     return this.#sendOutput(channel, value);
   }
 
-  /** Heater off, fan and cooling up; ESTOP if any step fails. Tries even when not connected. */
+  /** The dialect's safe-stop sequence; its fallback if any step fails. Tries even when not connected. */
   async safeStop(): Promise<void> {
     try {
       let allSent = true;
-      for (const [channel, value] of SKYWALKER_SAFE_STOP) {
+      for (const [channel, value] of this.#dialect.safeStop) {
         const sent = await this.#sendOutput(channel, value);
         allSent &&= sent.ok;
       }
       if (!allSent) {
-        this.#logger.warn('driver.safe-stop-incomplete', { fallback: 'ESTOP' });
-        const estop = await this.#queue.send('ESTOP');
-        if (estop.ok) {
-          this.#sent.set('heater', 0);
-          this.#sent.set('fan', 100);
+        const { command, leaves } = this.#dialect.fallbackStop;
+        this.#logger.warn('driver.safe-stop-incomplete', { fallback: command });
+        const fallback = await this.#queue.send(command);
+        if (fallback.ok) {
+          for (const [channel, value] of Object.entries(leaves)) this.#sent.set(channel, value);
         } else {
-          // Only the sketch's 10 s watchdog can switch the heater off now.
-          this.#logger.error('driver.estop-failed', { error: estop.error });
+          // Nothing more to send: only a board watchdog, where it has one, or a person can stop it now.
+          this.#logger.error('driver.estop-failed', { command, error: fallback.error });
         }
       }
     } catch (error) {
-      // Nothing more to do from here: the sketch's 10 s watchdog switches everything off.
+      // Nothing more to do from here: the safety rules keep the heater locked in the app.
       this.#logger.error('driver.safe-stop-threw', { error: serializeError(error) });
     }
   }
@@ -136,42 +132,25 @@ export class Tc4SkywalkerDriver implements RoasterDriver {
   }
 
   async #handshake(): Promise<Result<void, DriverError>> {
-    const units = await this.#queue.send('UNITS;C');
-    if (!units.ok) return units;
-
-    const version = await this.#queue.request('VERSION', isVersionReplyShape);
-    if (!version.ok) {
-      return version.error.kind === 'no-reply'
-        ? err({ kind: 'version-mismatch', expected: SKYWALKER_PROTOCOL_VERSION, actual: null })
-        : version;
-    }
-    const parsed = parseVersionReply(version.value);
-    if (!parsed.ok) return parsed;
-    if (parsed.value !== SKYWALKER_PROTOCOL_VERSION) {
-      return err({
-        kind: 'version-mismatch',
-        expected: SKYWALKER_PROTOCOL_VERSION,
-        actual: parsed.value,
-      });
-    }
-
+    const ready = await this.#dialect.handshake(this.#queue, this.#clock);
+    if (!ready.ok) return ready;
     const reading = await this.#readOnce();
     return reading.ok ? ok(undefined) : reading;
   }
 
-  async #readOnce(): Promise<Result<{ reply: ReadReply; line: string }, DriverError>> {
-    const answer = await this.#queue.request('READ', isReadReplyShape);
+  async #readOnce(): Promise<Result<{ reply: Tc4Reply; line: string }, DriverError>> {
+    const answer = await this.#queue.request('READ', this.#dialect.isReadReply);
     if (!answer.ok) return answer;
-    const parsed = parseReadReply(answer.value);
+    const parsed = this.#dialect.parseRead(answer.value);
     return parsed.ok ? ok({ reply: parsed.value, line: answer.value }) : parsed;
   }
 
   /**
-   * The sketch echoes the heater and fan it is sending the roaster. When that isn't what we sent,
-   * something else changed it (the sketch's own failsafe, or a garbled reply): log it with the raw
+   * The board echoes the heater and fan it is sending. When that isn't what we sent, something
+   * else changed it (the board's own failsafe, or a garbled reply): log it with the raw
    * line, once per change, so the cause can be found (docs/spec/hardware.md).
    */
-  #noteBoardChanges(reply: ReadReply, line: string): void {
+  #noteBoardChanges(reply: Tc4Reply, line: string): void {
     for (const channel of ['heater', 'fan'] as const) {
       const sent = this.#sent.get(channel);
       const reported = reply[channel];
@@ -186,7 +165,7 @@ export class Tc4SkywalkerDriver implements RoasterDriver {
 
   async #sendOutput(channel: string, value: number): Promise<Result<void, DriverError>> {
     const output = this.#outputs.get(channel);
-    const command = OUTPUT_COMMANDS[channel];
+    const command = this.#dialect.outputCommands[channel];
     if (!output || !command) return err({ kind: 'unknown-channel', channel });
     const quantized = quantize(output, value);
     const sent = await this.#queue.send(`${command};${String(quantized)}`);

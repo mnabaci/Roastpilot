@@ -3,7 +3,8 @@ import { err, type LogEntry } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { COMMAND_GAP_MS } from './command-queue';
 import { FakeTransport } from './fake-transport';
-import { Tc4SkywalkerDriver } from './tc4-skywalker-driver';
+import { skyCommandDialect } from './sky-command-dialect';
+import { Tc4Driver } from './tc4-driver';
 
 const READ_REPLY = '0.00,42.39,42.39,30,0,0';
 
@@ -20,7 +21,11 @@ function setup(reply = sketch()) {
   const clock = new ManualClock();
   const transport = new FakeTransport(clock);
   transport.reply = reply;
-  const driver = new Tc4SkywalkerDriver({ transport, clock });
+  const driver = new Tc4Driver({
+    dialect: skyCommandDialect,
+    transport,
+    clock,
+  });
   /** Runs a driver call to completion on fake time. */
   async function run<T>(call: Promise<T>): Promise<T> {
     await clock.runFor(5000);
@@ -36,7 +41,7 @@ async function connected(reply = sketch()) {
   return ctx;
 }
 
-describe('Tc4SkywalkerDriver', () => {
+describe('Tc4Driver with the SkyCommand dialect', () => {
   describe('connect', () => {
     it('switches to °C, checks the version, then takes a reading', async () => {
       const { transport, driver, run } = setup();
@@ -109,7 +114,8 @@ describe('Tc4SkywalkerDriver', () => {
       let line = '0.00,40.00,40.00,30,60,0';
       transport.reply = (command) =>
         command === 'VERSION' ? '1' : command === 'READ' ? line : undefined;
-      const driver = new Tc4SkywalkerDriver({
+      const driver = new Tc4Driver({
+        dialect: skyCommandDialect,
         transport,
         clock,
         logger: createLogger({ write: (e) => entries.push(e) }, 'driver'),
@@ -224,7 +230,8 @@ describe('Tc4SkywalkerDriver', () => {
       const clock = new ManualClock();
       const transport = new FakeTransport(clock);
       transport.reply = sketch();
-      const driver = new Tc4SkywalkerDriver({
+      const driver = new Tc4Driver({
+        dialect: skyCommandDialect,
         transport,
         clock,
         logger: createLogger({ write: (e) => entries.push(e) }, 'driver'),
@@ -268,7 +275,8 @@ describe('Tc4SkywalkerDriver', () => {
       const clock = new ManualClock();
       const transport = new FakeTransport(clock);
       transport.reply = sketch();
-      const driver = new Tc4SkywalkerDriver({
+      const driver = new Tc4Driver({
+        dialect: skyCommandDialect,
         transport,
         clock,
         logger: createLogger({ write: (e) => entries.push(e) }, 'driver'),

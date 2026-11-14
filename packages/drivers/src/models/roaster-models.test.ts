@@ -3,7 +3,7 @@ import { ROASTER_MODEL_FACTS, RoasterSchema } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { BUILT_IN_ROASTERS } from '../built-in-roasters';
 import { SimulatedDriver } from '../simulated/simulated-driver';
-import { Tc4SkywalkerDriver } from '../tc4/tc4-skywalker-driver';
+import { Tc4Driver } from '../tc4/tc4-driver';
 import { simulatorModel } from './simulator-model';
 import { skywalkerModel } from './skywalker-model';
 
@@ -32,7 +32,7 @@ describe('model definitions', () => {
 
   it('a Skywalker builds the TC4 driver for a serial port', () => {
     expect(skywalkerModel.createDriver({ kind: 'serial', path: 'COM3' }, deps)).toBeInstanceOf(
-      Tc4SkywalkerDriver,
+      Tc4Driver,
     );
   });
 

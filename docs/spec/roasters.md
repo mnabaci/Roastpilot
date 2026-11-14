@@ -6,7 +6,7 @@ and never move between roasters on their own (see [roast-control.md](roast-contr
 
 | Roaster setting                  | Skywalker starting value                                                            |
 | -------------------------------- | ----------------------------------------------------------------------------------- |
-| Driver + connection              | `Tc4SkywalkerDriver` over USB serial                                                |
+| Driver + connection              | `Tc4Driver`, SkyCommand dialect, over USB serial                                    |
 | Capabilities                     | Heater, fan, drum, cooling, filter                                                  |
 | Batch size min / ideal / max (g) | 250 / 375 / 400                                                                     |
 | Safety limits                    | 240 °C, 20 min                                                                      |

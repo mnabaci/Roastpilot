@@ -1,6 +1,6 @@
 # packages/drivers
 
-RoasterDriver and Transport implementations: Skywalker TC4 adapter, simulator, serial transport.
+RoasterDriver and Transport implementations: the TC4 driver and its dialects (SkyCommand for the Skywalker), simulator, serial transport.
 
 May import: `core`, `shared`.
 
