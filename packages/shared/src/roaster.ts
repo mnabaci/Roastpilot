@@ -18,6 +18,8 @@ export interface RoasterModelFacts {
   readonly wiring: boolean;
   /** It has a bean cooler (a tray fan), so the record offers "Bean cooler helps cool the drum". */
   readonly beanCooler: boolean;
+  /** What its board runs, for connect errors ("is SkyCommand flashed…"); none for the Simulator. */
+  readonly firmware: string | null;
 }
 
 /**
@@ -33,6 +35,7 @@ export const ROASTER_MODEL_FACTS = {
     connection: 'serial',
     wiring: false,
     beanCooler: true,
+    firmware: 'SkyCommand',
   },
   tc4: {
     label: 'Generic TC4',
@@ -41,6 +44,7 @@ export const ROASTER_MODEL_FACTS = {
     connection: 'serial',
     wiring: true,
     beanCooler: false,
+    firmware: 'aArtisanQ_PID',
   },
   simulator: {
     label: 'Simulator',
@@ -49,6 +53,7 @@ export const ROASTER_MODEL_FACTS = {
     connection: 'simulator',
     wiring: false,
     beanCooler: true,
+    firmware: null,
   },
 } as const satisfies Readonly<Record<string, RoasterModelFacts>>;
 

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DriverErrorSchema } from './driver-error';
+import { ConnectErrorSchema, DriverErrorSchema } from './driver-error';
 import { RoasterErrorSchema, RoasterIdSchema } from './roaster';
 import { MIN_FAN_HEATING, Tc4WiringSchema } from './tc4-wiring';
 
@@ -28,6 +28,8 @@ export const ReadInputsErrorSchema = z.union([
 export const SaveWiringErrorSchema = z.union([
   RoasterErrorSchema,
   z.object({ kind: z.literal('roasting') }),
+  /** Saved, but the connected roaster didn't come back with it: why, as Connect would say. */
+  z.object({ kind: z.literal('reconnect-failed'), error: ConnectErrorSchema }),
 ]);
 
 export type SaveWiringRequest = z.infer<typeof SaveWiringRequestSchema>;
