@@ -16,7 +16,6 @@ import {
 import {
   DEFAULT_ENVIRONMENT_CONSTANTS,
   stepEnvironment,
-  type EnvironmentConstants,
   type EnvironmentTemps,
 } from './environment-temp';
 import {
@@ -33,8 +32,6 @@ const STEP_MS = 100;
 export interface SimulatedDriverOptions {
   clock: Clock;
   constants?: Partial<ThermalConstants>;
-  /** The air in the drum, for ET; not fitted (docs/spec/hardware.md, Simulator). */
-  environment?: Partial<EnvironmentConstants>;
   /** What the simulated sketch replies to VERSION. Set another value to test a mismatch. */
   protocolVersion?: number;
 }
@@ -45,7 +42,6 @@ export class SimulatedDriver implements RoasterDriver {
 
   readonly #clock: Clock;
   readonly #constants: ThermalConstants;
-  readonly #environment: EnvironmentConstants;
   readonly #protocolVersion: number;
   readonly #outputs = new Map<string, OutputChannel>();
   readonly #values = new Map<string, number>();
@@ -60,7 +56,6 @@ export class SimulatedDriver implements RoasterDriver {
   constructor(options: SimulatedDriverOptions) {
     this.#clock = options.clock;
     this.#constants = { ...DEFAULT_THERMAL_CONSTANTS, ...options.constants };
-    this.#environment = { ...DEFAULT_ENVIRONMENT_CONSTANTS, ...options.environment };
     this.#protocolVersion = options.protocolVersion ?? SKYWALKER_PROTOCOL_VERSION;
     const ambient = this.#constants.ambientC;
     this.#temps = { drumC: ambient, beansC: undefined, probeC: ambient };
@@ -188,7 +183,7 @@ export class SimulatedDriver implements RoasterDriver {
         this.#air,
         this.#temps.drumC,
         inputs,
-        this.#environment,
+        DEFAULT_ENVIRONMENT_CONSTANTS,
         dtMs / 1000,
       );
       if (this.#temps.probeC > SKYWALKER_ESTOP_C) {
