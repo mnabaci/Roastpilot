@@ -72,22 +72,24 @@ Gene Café mods). Checked against the firmware source and Artisan's own TC4 code
 - **Wiring is on the record**, because every build differs ([roasters.md](roasters.md#generic-tc4)): BT input, ET input, heater output, fan output, baud. Defaults match the firmware's and Artisan's.
 - **Delimiters:** the firmware takes `;`, `,`, space or `=`; the driver sends `;` as for SkyCommand.
 
-| Command     | Sets                                                                 | Values                                         |
-| ----------- | -------------------------------------------------------------------- | ---------------------------------------------- |
-| `CHAN;ebxx` | Which TC input (1–4) is logical channel 1 (ET) and 2 (BT); `0` = off | `CHAN;1200` by default; `CHAN;0200` with no ET |
-| `UNITS;C`   | Report °C                                                            | –                                              |
-| `READ`      | Replies with a status line (below)                                   | –                                              |
-| `OT1;n`     | Heater on OT1 (the usual output)                                     | 0–100                                          |
-| `IO3;n`     | Heater on IO3 (a heater-on-IO3 build), or a DC fan on IO3            | 0–100                                          |
-| `OT2;n`     | AC fan on OT2 (the firmware's default build)                         | 0–100                                          |
-| `PID;STOP`  | Heater off and PID off, fan to the build's auto-cool level           | –                                              |
+| Command     | Sets                                                                                                     | Values                                         |
+| ----------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `CHAN;ebxx` | Which TC input (1–4) is logical channel 1 (ET) and 2 (BT); `0` = off                                     | `CHAN;1200` by default; `CHAN;0200` with no ET |
+| `UNITS;C`   | Report °C                                                                                                | –                                              |
+| `READ`      | Replies with a status line (below)                                                                       | –                                              |
+| `OT1;n`     | Heater on OT1 (the usual output)                                                                         | 0–100                                          |
+| `IO3;n`     | Heater on IO3 (a heater-on-IO3 build), or a DC fan on IO3; not in the PAC3 build                         | 0–100                                          |
+| `OT2;n`     | AC fan on OT2 (the firmware's default build)                                                             | 0–100                                          |
+| `PID;STOP`  | PID and OT1 off, fan to the build's auto-cool level; leaves IO3 alone, or sets it to 100, in most builds | –                                              |
 
 - **READ reply:** `ambient,ch1,ch2,…,heater,fan,setpoint` in the order of `CHAN`; with `CHAN;eb00` that's `ambient,ET,BT,heater,fan,0`, the same six fields as SkyCommand's. With no ET (`CHAN;0b00`) it's five: `ambient,BT,heater,fan,0`. An empty field is no value. Heater and fan echo the firmware's duty, so the board-echo check works as for SkyCommand.
 - **Acknowledgements:** `CHAN` always replies `# Active channels set to …`; other commands only on a build with acks on. The driver drops every line that starts with `#` (debug log), so none answers a `READ`.
-- **Connect:** open the port at the record's baud (default 115200), wait 1.5 s (the Arduino restarts when the port opens; Artisan waits 1 s), send `CHAN`, `UNITS;C`, then `READ`. No reply within 1.5 s is retried once (still booting), then a `no-reply` error. A reply that doesn't parse is `bad-reply`, with the banner "Not a TC4 reply · check the baud and the firmware". There is no version check: the stock firmware has none.
-- **Live inputs:** on the roaster's page, while connected and no roast or drum cooling runs, the driver switches to `CHAN;1234`, reads `ambient,TC1,TC2,TC3,TC4,heater,fan,setpoint`, then sends the record's `CHAN` again, even when the read failed ([roasters.md](roasters.md#generic-tc4)). Reads run one at a time, so a poll never lands between the two `CHAN`s.
+- **Boot defaults:** the firmware starts with TC2 as channel 1 and TC1 as channel 2, in °F. A `CHAN` the board misses while it boots would leave BT and ET swapped and in °F, so connect never goes on without its acknowledgement.
+- **Connect:** open the port at the record's baud (default 115200), wait 1.5 s (the Arduino restarts when the port opens; Artisan waits 1 s), then send `CHAN` until the board acknowledges it (3 tries, 1.5 s each; none is a `no-reply` error). Then `OT1;0`, `OT2;0`, `IO3;0`, every output the firmware has whatever the wiring, so nothing runs unseen on a board that didn't restart; then `UNITS;C` and `READ` (retried once). A reply that doesn't parse is `bad-reply`. Connect errors name the firmware and the baud ("No reply · check the baud, and that aArtisanQ_PID is flashed"). There is no version check: the stock firmware has none.
+- **Live inputs:** on the roaster's page, while connected and no roast or drum cooling runs, the driver switches to `CHAN;1234`, reads `ambient,TC1,TC2,TC3,TC4,heater,fan,setpoint`, then sends the record's `CHAN` again, even when the read failed ([roasters.md](roasters.md#generic-tc4)). Reads run one at a time, so a poll never lands between the two `CHAN`s; a safe stop is never held back by a probe. If putting `CHAN` back fails, polling reads `bad-reply` until the lost-connection rule trips: it fails safe.
 - **Outputs:** clean integers 0–100 in steps of 5, as for SkyCommand. Heater and fan never share an output; the record refuses it.
-- **No watchdog:** the firmware keeps its last outputs forever. If the app crashes or the cable is pulled, the heater stays on until someone switches it off. Safe stop from the app: heater 0, then fan 100; `PID;STOP` as the fallback.
+- **No watchdog:** the firmware keeps its last outputs forever. If the app crashes or the cable is pulled, the heater stays on until someone switches it off. Safe stop from the app: heater 0, then fan 100. Fallback: `PID;STOP` for a heater on OT1; for a heater on IO3, `IO3;0` again, as `PID;STOP` leaves IO3 alone or turns it fully on in most builds.
+- **Firmware's own limits:** `MIN_IO3` can raise a small non-zero IO3 value (the board-echo check logs it); `HTR_CUTOFF_FAN_VAL` (0 by default) is the firmware's own minimum fan, which the app's doesn't rely on.
 - **Ambient** (field 1, the board's own sensor) is not a channel: not shown, not saved.
 
 ## Simulator
