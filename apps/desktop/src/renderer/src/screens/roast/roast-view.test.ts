@@ -133,6 +133,11 @@ describe('roastView', () => {
     expect(roastView(input({ lines: [live(), ghost] })).temperatureFloorC).toBe(50);
   });
 
+  it('keeps an ET line below the floor in view, even when BT is above it', () => {
+    const et: LineLayer = { ...live(65), id: 'et', label: 'ET', tone: 'env', width: 2 };
+    expect(roastView(input({ lines: [live(), et] })).temperatureFloorC).toBe(50);
+  });
+
   it('never raises the floor during the roast', () => {
     const view = roastView(input({ expectedTpC: 120, previous: held({ floorC: 50 }) }));
     expect(view.temperatureFloorC).toBe(50);
