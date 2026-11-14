@@ -20,7 +20,9 @@ export {
   type CoachStatus,
 } from './coach';
 export {
+  DEFAULT_ET_NAMES,
   DEFAULT_TEMP_NAMES,
+  optionalSensorNames,
   sensorNames,
   type Channel,
   type OutputChannel,
