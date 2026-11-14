@@ -7,6 +7,42 @@ import type { RoastNumbers } from './roast-numbers';
 const clock = (s: number | undefined) =>
   s === undefined || !Number.isFinite(s) ? undefined : formatClock(s);
 
+/** The temperature, with ET on its label row on a roaster that has one. */
+function TemperatureCard({
+  bt,
+  et,
+  tempName,
+  etShort,
+  tempLine,
+}: {
+  bt: number | undefined;
+  et: number | undefined;
+  tempName: string;
+  etShort: string | undefined;
+  tempLine: string | undefined;
+}) {
+  const unit = useTemperatureUnit();
+  return (
+    <StatCard
+      label={tempName}
+      value={bt === undefined ? undefined : tempNumber(bt, unit, 1)}
+      unit={tempSymbol(unit)}
+      tone="heat"
+      {...(tempLine ? { context: tempLine } : {})}
+      {...(etShort
+        ? {
+            secondary: {
+              label: etShort,
+              value: et === undefined ? undefined : tempNumber(et, unit, 1),
+              // No unit: the big number beside it says it, and the card stays narrow enough.
+              tone: 'env' as const,
+            },
+          }
+        : {})}
+    />
+  );
+}
+
 /** Temperature (with ET beside it where there is one), RoR, time (in preheat, then since charge) and development: numbers first (docs/spec/manual-mode.md). */
 export function RoastNumbersRow({
   numbers,
@@ -28,22 +64,12 @@ export function RoastNumbersRow({
   const unit = useTemperatureUnit();
   return (
     <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-      <StatCard
-        label={tempName}
-        value={numbers.bt === undefined ? undefined : tempNumber(numbers.bt, unit, 1)}
-        unit={tempSymbol(unit)}
-        tone="heat"
-        {...(tempLine ? { context: tempLine } : {})}
-        {...(etShort
-          ? {
-              secondary: {
-                label: etShort,
-                value: numbers.et === undefined ? undefined : tempNumber(numbers.et, unit, 1),
-                // No unit: the big number beside it says it, and the card stays narrow enough.
-                tone: 'env' as const,
-              },
-            }
-          : {})}
+      <TemperatureCard
+        bt={numbers.bt}
+        et={numbers.et}
+        tempName={tempName}
+        etShort={etShort}
+        tempLine={tempLine}
       />
       <StatCard
         label="RoR"
