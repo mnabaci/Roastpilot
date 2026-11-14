@@ -1,47 +1,8 @@
-import { createLogger, ManualClock } from '@roastpilot/core';
-import { err, type LogEntry } from '@roastpilot/shared';
+import { err } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import { COMMAND_GAP_MS } from './command-queue';
-import { FakeTransport } from './fake-transport';
-import { skyCommandDialect } from './sky-command-dialect';
-import { Tc4Driver } from './tc4-driver';
+import { connected, READ_REPLY, setup, sketch } from './sky-command-fixture';
 
-const READ_REPLY = '0.00,42.39,42.39,30,0,0';
-
-/** Answers like the real sketch, from the bench session on 2026-11-02. */
-function sketch(version = '1') {
-  return (line: string): string | undefined => {
-    if (line === 'VERSION') return version;
-    if (line === 'READ') return READ_REPLY;
-    return undefined;
-  };
-}
-
-function setup(reply = sketch()) {
-  const clock = new ManualClock();
-  const transport = new FakeTransport(clock);
-  transport.reply = reply;
-  const driver = new Tc4Driver({
-    dialect: skyCommandDialect,
-    transport,
-    clock,
-  });
-  /** Runs a driver call to completion on fake time. */
-  async function run<T>(call: Promise<T>): Promise<T> {
-    await clock.runFor(5000);
-    return call;
-  }
-  return { clock, transport, driver, run };
-}
-
-async function connected(reply = sketch()) {
-  const ctx = setup(reply);
-  expect(await ctx.run(ctx.driver.connect())).toEqual({ ok: true, value: undefined });
-  ctx.transport.sent.length = 0;
-  return ctx;
-}
-
-describe('Tc4Driver with the SkyCommand dialect', () => {
+describe('Tc4Driver with the SkyCommand dialect: connect and read', () => {
   describe('connect', () => {
     it('switches to °C, checks the version, then takes a reading', async () => {
       const { transport, driver, run } = setup();
@@ -108,23 +69,10 @@ describe('Tc4Driver with the SkyCommand dialect', () => {
     });
 
     it('logs once when the board reports a heater or fan we did not send, and once when it matches again', async () => {
-      const entries: LogEntry[] = [];
-      const clock = new ManualClock();
-      const transport = new FakeTransport(clock);
       let line = '0.00,40.00,40.00,30,60,0';
-      transport.reply = (command) =>
-        command === 'VERSION' ? '1' : command === 'READ' ? line : undefined;
-      const driver = new Tc4Driver({
-        dialect: skyCommandDialect,
-        transport,
-        clock,
-        logger: createLogger({ write: (e) => entries.push(e) }, 'driver'),
-      });
-      const run = async <T>(call: Promise<T>) => {
-        await clock.runFor(5000);
-        return call;
-      };
-      await run(driver.connect());
+      const { driver, run, entries } = await connected((command) =>
+        command === 'VERSION' ? '1' : command === 'READ' ? line : undefined,
+      );
       await run(driver.setOutput('heater', 30));
       await run(driver.setOutput('fan', 60));
       await run(driver.read());
@@ -167,139 +115,6 @@ describe('Tc4Driver with the SkyCommand dialect', () => {
       expect(await run(driver.read())).toEqual(err({ kind: 'disconnected' }));
       expect((await run(driver.connect())).ok).toBe(true);
       expect((await run(driver.read())).ok).toBe(true);
-    });
-  });
-
-  describe('setOutput', () => {
-    it.each([
-      ['heater', 43, 'OT1;45'],
-      ['fan', 150, 'OT2;100'],
-      ['cooling', 100, 'COOL;100'],
-      ['filter', 2, 'FILTER;2'],
-      ['drum', 1, 'DRUM;1'],
-      ['drum', 0, 'DRUM;0'],
-    ])('sends %s %d as %s', async (channel, value, line) => {
-      const { transport, driver, run } = await connected();
-      expect((await run(driver.setOutput(channel, value))).ok).toBe(true);
-      expect(transport.sentLines()).toEqual([line]);
-    });
-
-    it('keeps the filter to levels 0–4 and cooling to 0 or 100, the only values the roaster takes', async () => {
-      const { transport, driver, run } = await connected();
-      await run(driver.setOutput('filter', 100));
-      await run(driver.setOutput('filter', 1));
-      await run(driver.setOutput('cooling', 60));
-      await run(driver.setOutput('cooling', 30));
-      expect(transport.sent.map((s) => s.line)).toEqual([
-        'FILTER;4',
-        'FILTER;1',
-        'COOL;100',
-        'COOL;0',
-      ]);
-    });
-
-    it('rejects unknown channels and the sensor without sending anything', async () => {
-      const { transport, driver, run } = await connected();
-      expect(await run(driver.setOutput('boost', 50))).toEqual(
-        err({ kind: 'unknown-channel', channel: 'boost' }),
-      );
-      expect(await run(driver.setOutput('bt', 50))).toEqual(
-        err({ kind: 'unknown-channel', channel: 'bt' }),
-      );
-      expect(transport.sent).toEqual([]);
-    });
-
-    it('refuses before connect', async () => {
-      const { transport, driver, run } = setup();
-      expect(await run(driver.setOutput('heater', 50))).toEqual(err({ kind: 'disconnected' }));
-      expect(transport.sent).toEqual([]);
-    });
-  });
-
-  describe('safeStop', () => {
-    it('sends heater 0, fan 100, cooling 100 in order, spaced by the gap', async () => {
-      const { transport, driver, run } = await connected();
-      await run(driver.safeStop());
-      expect(transport.sentLines()).toEqual(['OT1;0', 'OT2;100', 'COOL;100']);
-      const gaps = transport.sent.slice(1).map((s, i) => s.atMs - (transport.sent[i]?.atMs ?? 0));
-      expect(gaps.every((gap) => gap >= COMMAND_GAP_MS)).toBe(true);
-    });
-
-    it('logs when the safe stop needed the ESTOP fallback', async () => {
-      const entries: LogEntry[] = [];
-      const clock = new ManualClock();
-      const transport = new FakeTransport(clock);
-      transport.reply = sketch();
-      const driver = new Tc4Driver({
-        dialect: skyCommandDialect,
-        transport,
-        clock,
-        logger: createLogger({ write: (e) => entries.push(e) }, 'driver'),
-      });
-      const done = driver.connect();
-      await clock.runFor(5000);
-      await done;
-      transport.failWrite = (line) => line === 'OT1;0';
-      const stop = driver.safeStop();
-      await clock.runFor(5000);
-      await stop;
-      expect(entries.map((e) => e.event)).toEqual(['driver.safe-stop-incomplete']);
-    });
-
-    it('falls back to ESTOP when a safe-stop command fails', async () => {
-      const { transport, driver, run } = await connected();
-      transport.failWrite = (line) => line === 'OT2;100';
-      await run(driver.safeStop());
-      expect(transport.sentLines()).toEqual(['OT1;0', 'COOL;100', 'ESTOP']);
-    });
-
-    it('still tries when the driver thinks it is disconnected', async () => {
-      const { transport, driver, run } = await connected();
-      // A failed handshake leaves the driver disconnected but the port may still work.
-      transport.reply = sketch('2');
-      await run(driver.connect());
-      await transport.open();
-      transport.sent.length = 0;
-      await run(driver.safeStop());
-      expect(transport.sentLines()).toEqual(['OT1;0', 'OT2;100', 'COOL;100']);
-    });
-
-    it('resolves without throwing when the cable is pulled', async () => {
-      const { transport, driver, run } = await connected();
-      transport.drop();
-      await expect(run(driver.safeStop())).resolves.toBeUndefined();
-    });
-
-    it('logs an error when the ESTOP fallback fails too', async () => {
-      const entries: LogEntry[] = [];
-      const clock = new ManualClock();
-      const transport = new FakeTransport(clock);
-      transport.reply = sketch();
-      const driver = new Tc4Driver({
-        dialect: skyCommandDialect,
-        transport,
-        clock,
-        logger: createLogger({ write: (e) => entries.push(e) }, 'driver'),
-      });
-      const done = driver.connect();
-      await clock.runFor(5000);
-      await done;
-      transport.drop();
-      const stop = driver.safeStop();
-      await clock.runFor(5000);
-      await stop;
-      expect(entries.map((e) => [e.level, e.event])).toEqual([
-        ['warn', 'driver.safe-stop-incomplete'],
-        ['error', 'driver.estop-failed'],
-      ]);
-    });
-
-    it('waits behind a pending read instead of merging with it', async () => {
-      const { transport, driver, run } = await connected();
-      const reading = driver.read();
-      const stop = driver.safeStop();
-      await run(Promise.all([reading, stop]));
-      expect(transport.sentLines()).toEqual(['READ', 'OT1;0', 'OT2;100', 'COOL;100']);
     });
   });
 

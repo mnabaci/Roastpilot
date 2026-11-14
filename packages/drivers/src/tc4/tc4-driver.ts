@@ -102,7 +102,11 @@ export class Tc4Driver implements RoasterDriver {
     return this.#sendOutput(channel, value);
   }
 
-  /** The dialect's safe-stop sequence; its fallback if any step fails. Tries even when not connected. */
+  /**
+   * The dialect's safe-stop sequence; its fallback if any step fails. Tries even when not connected.
+   * When even that fails there is nothing more to send: only a board watchdog, where it has one, or
+   * a person can stop it now.
+   */
   async safeStop(): Promise<void> {
     try {
       let allSent = true;
@@ -117,12 +121,10 @@ export class Tc4Driver implements RoasterDriver {
         if (fallback.ok) {
           for (const [channel, value] of Object.entries(leaves)) this.#sent.set(channel, value);
         } else {
-          // Nothing more to send: only a board watchdog, where it has one, or a person can stop it now.
-          this.#logger.error('driver.estop-failed', { command, error: fallback.error });
+          this.#logger.error('driver.fallback-stop-failed', { command, error: fallback.error });
         }
       }
     } catch (error) {
-      // Nothing more to send: only a board watchdog, where it has one, or a person can stop it now.
       this.#logger.error('driver.safe-stop-threw', { error: serializeError(error) });
     }
   }
