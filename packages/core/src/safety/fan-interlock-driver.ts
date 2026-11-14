@@ -14,9 +14,15 @@ export class FanInterlockDriver implements RoasterDriver {
   readonly #inner: RoasterDriver;
   readonly #minFanPct: number;
   readonly #logger: Logger;
+  /**
+   * What the board may be running, pessimistically: a heater command counts from the moment it is
+   * sent (a timed-out write may still arrive), a fan only once it surely took the higher value.
+   */
   #heater = 0;
   #fan = 0;
   #holding = false;
+  /** One output command at a time, safe stop included, so two can't each see the other's old value. */
+  #chain: Promise<unknown> = Promise.resolve();
 
   constructor(inner: RoasterDriver, minFanPct: number, logger: Logger) {
     this.#inner = inner;
@@ -29,8 +35,8 @@ export class FanInterlockDriver implements RoasterDriver {
   }
 
   async connect(): Promise<Result<void, DriverError>> {
-    // What the board runs now is unknown until we set it: assume off, so the first heater
-    // command raises the fan.
+    // The board's outputs are off after its handshake (a TC4 dialect switches them off), so the
+    // first heater command raises the fan.
     this.#heater = 0;
     this.#fan = 0;
     this.#holding = false;
@@ -41,20 +47,30 @@ export class FanInterlockDriver implements RoasterDriver {
     return this.#inner.read();
   }
 
-  async setOutput(channel: string, value: number): Promise<Result<void, DriverError>> {
-    if (channel === HEATER) return this.#setHeater(value);
-    if (channel === FAN) return this.#setFan(value);
+  setOutput(channel: string, value: number): Promise<Result<void, DriverError>> {
+    if (channel === HEATER) return this.#oneAtATime(() => this.#setHeater(value));
+    if (channel === FAN) return this.#oneAtATime(() => this.#setFan(value));
     return this.#inner.setOutput(channel, value);
   }
 
-  async safeStop(): Promise<void> {
-    await this.#inner.safeStop();
-    this.#heater = 0;
-    this.#holding = false;
+  safeStop(): Promise<void> {
+    // In line with the outputs: a heater command sent before it can't land after it.
+    return this.#oneAtATime(async () => {
+      await this.#inner.safeStop();
+      this.#heater = 0;
+      this.#holding = false;
+    });
   }
 
   disconnect(): Promise<void> {
     return this.#inner.disconnect();
+  }
+
+  #oneAtATime<T>(task: () => Promise<T>): Promise<T> {
+    const run = this.#chain.then(task);
+    // A command that fails must not jam the ones after it.
+    this.#chain = run.catch(() => undefined);
+    return run;
   }
 
   async #setHeater(value: number): Promise<Result<void, DriverError>> {
@@ -65,6 +81,7 @@ export class FanInterlockDriver implements RoasterDriver {
       if (!raised.ok) return raised;
       this.#fan = this.#minFanPct;
     }
+    if (value > 0) this.#heater = Math.max(this.#heater, value);
     const sent = await this.#inner.setOutput(HEATER, value);
     if (sent.ok) {
       this.#heater = value;
@@ -77,6 +94,8 @@ export class FanInterlockDriver implements RoasterDriver {
     const held = this.#heater > 0 && value < this.#minFanPct;
     if (held) this.#hold(value);
     const fan = held ? this.#minFanPct : value;
+    // Lower at once, higher only once it surely took: the board may be at either.
+    this.#fan = Math.min(this.#fan, fan);
     const sent = await this.#inner.setOutput(FAN, fan);
     if (sent.ok) this.#fan = fan;
     return sent;

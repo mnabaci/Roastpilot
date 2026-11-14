@@ -116,6 +116,57 @@ describe('FanInterlockDriver', () => {
     ]);
   });
 
+  it('never ends with the heater on and the fan below the minimum, when two commands race', async () => {
+    const { inner, driver } = await setup();
+    await driver.setOutput('fan', 50);
+    await Promise.all([driver.setOutput('fan', 10), driver.setOutput('heater', 80)]);
+    const last = (channel: string) => inner.sent.filter(([c]) => c === channel).at(-1)?.[1];
+    expect(last('heater')).toBe(80);
+    expect(last('fan')).toBeGreaterThanOrEqual(40);
+  });
+
+  it('counts a heater command that failed as maybe on: a lower fan is still held', async () => {
+    const { inner, driver } = await setup();
+    await driver.setOutput('fan', 50);
+    inner.failing.add('heater');
+    await driver.setOutput('heater', 80);
+    inner.failing.delete('heater');
+    inner.sent.length = 0;
+    await driver.setOutput('fan', 0);
+    expect(inner.sent).toEqual([['fan', 40]]);
+  });
+
+  it('counts a fan command that failed as maybe lower: the next heater command raises it', async () => {
+    const { inner, driver } = await setup();
+    await driver.setOutput('fan', 70);
+    inner.failing.add('fan');
+    await driver.setOutput('fan', 0);
+    inner.failing.delete('fan');
+    inner.sent.length = 0;
+    await driver.setOutput('heater', 60);
+    expect(inner.sent).toEqual([
+      ['fan', 40],
+      ['heater', 60],
+    ]);
+  });
+
+  it('keeps a safe stop in line behind a heater command sent before it', async () => {
+    const { inner, driver } = await setup();
+    const order: string[] = [];
+    const originalStop = inner.safeStop.bind(inner);
+    inner.safeStop = () => {
+      order.push('safe-stop');
+      return originalStop();
+    };
+    const originalSet = inner.setOutput.bind(inner);
+    inner.setOutput = (channel, value) => {
+      order.push(`${channel}=${String(value)}`);
+      return originalSet(channel, value);
+    };
+    await Promise.all([driver.setOutput('heater', 60), driver.safeStop()]);
+    expect(order).toEqual(['fan=40', 'heater=60', 'safe-stop']);
+  });
+
   it('passes safe stop and other outputs straight through', async () => {
     const { inner, driver } = await setup();
     await driver.setOutput('drum', 1);
