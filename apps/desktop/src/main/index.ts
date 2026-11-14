@@ -1,79 +1,27 @@
 // Composition root: wires core, drivers, logging and IPC (docs/spec/architecture.md).
 // First: a development run may move the data folder before anything reads it.
-import { userDataChoice } from './user-data-override';
+import './user-data-override';
 import { serializeError } from '@roastpilot/core';
-import { listSerialPorts } from '@roastpilot/drivers';
-import { IPC_CHANNELS, isRoastRunning } from '@roastpilot/shared';
-import {
-  app,
-  BrowserWindow,
-  dialog,
-  Menu,
-  powerMonitor,
-  powerSaveBlocker,
-  shell,
-  systemPreferences,
-} from 'electron';
+import { IPC_CHANNELS } from '@roastpilot/shared';
+import { app, BrowserWindow, powerMonitor, powerSaveBlocker } from 'electron';
 import { randomUUID } from 'node:crypto';
-import { readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { buildAppMenu, hideMacEditExtras } from './app-menu';
 import { createAppServices } from './app-services';
-import { installCrashHandlers } from './crash-handlers';
-import { connectWiring } from './connect-wiring';
 import { SimulatorBeans } from './simulator-beans';
-import { createRoastFiles } from './history/roast-files';
 import { broadcast, registerIpcHandlers, registerIpcListener } from './ipc';
 import { createIpcHandlers, handleRendererLog, withErrorLogging } from './ipc-handlers';
+import { buildIpcDeps } from './ipc-wiring';
+import { installAppMenu } from './install-app-menu';
 import { appPage, createMainWindow, devIcon } from './main-window';
 import { installWindowTheme } from './window-theme';
-import { createAppLogger } from './logging/app-logger';
-import { listLogDays, readLogDay } from './logging/log-reader';
-import { pruneOldLogsLater } from './logging/prune';
-import { makeProfileFromRoast } from './profiles/make-profile';
-import { pathChoosers } from './files/file-dialogs';
-import { createLibraryFileActions } from './files/library-file-actions';
-import { createLibraryKinds } from './files/library-wiring';
-import { makeBeanProfile } from './beans/make-bean-profile';
-import { openBeanLink } from './beans/open-bean-link';
 import { createPowerGuard } from './power-guard';
-import { createQuitGuard } from './quit-guard';
 import { JsonSettingsStore } from './settings/json-settings-store';
+import { startLogging } from './start-logging';
+import { wireShutdown } from './shutdown-wiring';
 import { openStores } from './storage-wiring';
 import { systemClock, wallClock } from './system-clock';
-import electronUpdater from 'electron-updater';
-import { macEnvironment } from './updates/mac/mac-environment';
-import { createUpdates } from './updates/update-wiring';
 
-const logDir = app.getPath('logs');
-const logs = createAppLogger({
-  dir: logDir,
-  dev: !app.isPackaged,
-  publish: (records) => {
-    broadcast(IPC_CHANNELS.logEntries, records);
-  },
-});
-const logger = logs.logger;
-logger.info('app.started', {
-  version: app.getVersion(),
-  platform: process.platform,
-  arch: process.arch,
-});
-if (userDataChoice.kind === 'override') {
-  logger.info('app.user-data-override', { dir: userDataChoice.dir });
-} else if (userDataChoice.kind === 'ignored') {
-  logger.warn('app.user-data-override-ignored', {
-    reason: userDataChoice.reason,
-    value: userDataChoice.value,
-  });
-}
-pruneOldLogsLater(logDir, logger);
-
-async function openLogFolder(): Promise<void> {
-  // openPath resolves with an error message, or '' when it worked.
-  const failure = await shell.openPath(logDir);
-  if (failure) throw new Error(`Couldn't open the log folder: ${failure}`);
-}
+const { logger, flush: flushLogs, logDir, openLogFolder } = startLogging();
 
 // Saved data (docs/spec/data-model.md). Without a database the app still roasts; History says why.
 // A database about to be migrated is backed up first (docs/spec/install-and-update.md).
@@ -98,21 +46,7 @@ const simulatorBeans = new SimulatorBeans();
 // The Theme setting: Electron's theme and the window colour (docs/spec/ui.md, Settings).
 const applyTheme = installWindowTheme();
 
-const {
-  session,
-  roast,
-  settings,
-  history,
-  roastFiles: roastFileService,
-  recorder,
-  pilot,
-  coachActions,
-  setOutputByHand,
-  profiles,
-  roasters,
-  beans,
-  snapshot,
-} = createAppServices({
+const services = createAppServices({
   clock: systemClock,
   logger,
   settingsStore: new JsonSettingsStore(join(app.getPath('userData'), 'settings.json'), {
@@ -137,70 +71,15 @@ const {
   publish: broadcast,
 });
 
-// Shared by quit and crash, in this order: safe stop first, then saving, logs last.
-const stopRoaster = () => session.disconnect();
-const saveRoast = () => recorder.flush();
-const flushLogs = () => logs.flush();
+const { session, roast, recorder } = services;
 
-installCrashHandlers({
-  process,
-  logger,
-  stopRoaster,
-  emergencyStop: () => {
-    session.emergencyStop();
-  },
-  saveRoast,
+const updates = wireShutdown({
+  session,
+  recorder,
+  roastState: () => roast.state,
+  closeDatabase: stores.close,
   flushLogs,
-  exit: (code) => {
-    app.exit(code);
-  },
-});
-
-// Safe stop before anything else on quit (docs/spec/safety.md).
-const quitGuard = createQuitGuard({
   logger,
-  steps: [
-    { name: 'safe-stop', run: stopRoaster },
-    { name: 'save-roast', run: saveRoast },
-    { name: 'close-database', run: stores.close },
-    // macOS: starts the installer once the app is shut down, if an update is ready (ADR 0018).
-    // Before the logs are flushed, so a helper that won't start is in the log.
-    {
-      name: 'install-update',
-      run: () => {
-        updates.installOnQuit();
-      },
-    },
-    { name: 'flush-logs', run: flushLogs },
-  ],
-  quit: () => {
-    app.quit();
-  },
-});
-app.on('before-quit', quitGuard);
-
-// Updates never touch a roast: Restart to update waits for it to end (ADRs 0017, 0018).
-const updates = createUpdates({
-  packaged: app.isPackaged,
-  platform: process.platform,
-  version: app.getVersion(),
-  updater: () => electronUpdater.autoUpdater,
-  clock: systemClock,
-  wallNowMs: () => Date.now(),
-  isRoasting: () => isRoastRunning(roast.state),
-  publish: (status) => {
-    broadcast(IPC_CHANNELS.updateStatus, status);
-  },
-  // Restart to update: the same shutdown as quitting, then the installer (docs/spec/safety.md).
-  shutdownThen: (finish) => {
-    quitGuard.shutdownThen(finish);
-  },
-  quit: () => {
-    app.quit();
-  },
-  openExternal: (url) => shell.openExternal(url),
-  mac: macEnvironment,
-  logger: logger.child('updates'),
 });
 
 const DEV_ICON = devIcon();
@@ -214,90 +93,16 @@ app
     const ipcLogger = logger.child('ipc');
     // Only the app's own page, in one of its windows, may call main (docs/spec/architecture.md).
     const senderCheck = { page: appPage(), logger: ipcLogger };
-    const historyLogger = logger.child('history');
-    const filesLogger = logger.child('files');
-    // One file dialog at a time, whichever screen asks.
-    const choosers = pathChoosers({ dialogs: dialog, now: () => new Date(), logger: filesLogger });
-    // The file you picked, as files/picked-file.ts reads and writes it.
-    const pickedFiles = {
-      readText: (path: string) => readFile(path, 'utf8'),
-      writeText: (path: string, text: string) => writeFile(path, text, 'utf8'),
-      sizeOf: async (path: string) => (await stat(path)).size,
-      rename,
-      remove: (path: string) => rm(path, { force: true }),
-    };
-    registerIpcHandlers(
-      withErrorLogging(
-        createIpcHandlers({
-          session,
-          roast,
-          setOutputByHand,
-          coach: coachActions,
-          settings,
-          history,
-          roastFiles: createRoastFiles({
-            history,
-            files: roastFileService,
-            ...choosers,
-            ...pickedFiles,
-            logger: historyLogger,
-          }),
-          libraryFiles: createLibraryFileActions({
-            kinds: createLibraryKinds({
-              beans,
-              profiles,
-              profileStore: stores.profileStore,
-              roasters,
-              newProfileId: () => `custom-${randomUUID()}`,
-              now: () => new Date(),
-              logger: filesLogger,
-            }),
-            ...choosers,
-            ...pickedFiles,
-            logger: filesLogger,
-          }),
-          pilot,
-          profiles,
-          roasters,
-          beans,
-          makeProfile: (request) =>
-            makeProfileFromRoast(request, {
-              history,
-              profiles,
-              activeRoaster: () => roasters.active(),
-              newId: () => `custom-${randomUUID()}`,
-            }),
-          makeBeanProfile: (request) =>
-            makeBeanProfile(request, { beans, profiles, logger: logger.child('beans') }),
-          openBeanLink: (id) =>
-            openBeanLink(id, {
-              beans,
-              openExternal: (url) => shell.openExternal(url),
-              logger: logger.child('beans'),
-            }),
-          nowMs: () => systemClock.now(),
-          snapshot,
-          listPorts: () => listSerialPorts(),
-          // Connect uses the active roaster (docs/spec/roasters.md): its model picks the driver.
-          ...connectWiring({
-            roasters,
-            session,
-            roast,
-            attach: (driver) => simulatorBeans.attach(driver),
-            clock: systemClock,
-            logger,
-          }),
-          updates,
-          logs: {
-            listDays: () => listLogDays(logDir),
-            readDay: (day) => readLogDay(logDir, day),
-            openFolder: openLogFolder,
-          },
-        }),
-        ipcLogger,
-      ),
-      senderCheck,
-    );
+    const deps = buildIpcDeps({
+      services,
+      profileStore: stores.profileStore,
+      simulatorBeans,
+      updates,
+      logDir,
+      openLogFolder,
+      logger,
+    });
+    registerIpcHandlers(withErrorLogging(createIpcHandlers(deps), ipcLogger), senderCheck);
     const rendererLogger = logger.child('renderer');
     registerIpcListener(
       IPC_CHANNELS.log,
@@ -306,32 +111,7 @@ app
       },
       senderCheck,
     );
-    // macOS adds Dictation, Emoji & Symbols and AutoFill to any Edit menu; read when it builds one.
-    if (process.platform === 'darwin') {
-      hideMacEditExtras((key, type, value) => {
-        systemPreferences.setUserDefault(key, type, value);
-      });
-    }
-    Menu.setApplicationMenu(
-      Menu.buildFromTemplate(
-        buildAppMenu({
-          appName: app.name,
-          platform: process.platform,
-          dev: !app.isPackaged,
-          navigate: (screen) => {
-            broadcast(IPC_CHANNELS.navigate, screen);
-          },
-          showSafetyNotice: () => {
-            broadcast(IPC_CHANNELS.showSafetyNotice, null);
-          },
-          openLogFolder: () => {
-            openLogFolder().catch((error: unknown) => {
-              logger.error('menu.open-log-folder-failed', { error: serializeError(error) });
-            });
-          },
-        }),
-      ),
-    );
+    installAppMenu({ openLogFolder, logger });
     powerMonitor.on('suspend', () => {
       power.onSuspend();
     });
