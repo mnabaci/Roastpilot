@@ -26,7 +26,10 @@ export interface Tc4Dialect {
   readonly channels: readonly Channel[];
   /** The command for each output channel id, sent as `<command>;<value>`. */
   readonly outputCommands: Readonly<Record<string, string>>;
-  /** Runs after the port opens and before the first `READ`; an error closes the port. */
+  /**
+   * Runs after the port opens and before the first `READ`; an error closes the port. `clock` is for
+   * boards that reset when the port opens and need a wait (the stock TC4 firmware).
+   */
   handshake(link: Tc4Link, clock: Clock): Promise<Result<void, DriverError>>;
   /** The handshake switched every output off, so the driver's last-sent values start at 0. */
   readonly outputsOffAfterHandshake: boolean;
@@ -57,7 +60,8 @@ export interface Tc4InputProbe {
 
 /**
  * A dialect's safety data must name its own outputs (ADR 0026): a typo would turn every safe stop
- * into the fallback, or put a stray value into every reading. A programmer error, so it throws.
+ * into the fallback, or put a stray value into every reading. `READ` echoes the heater and fan, so
+ * both must be outputs. A programmer error, so it throws.
  */
 export function checkDialect(dialect: Tc4Dialect): void {
   const outputs = new Set(dialect.channels.filter((c) => c.kind === 'output').map((c) => c.id));
@@ -65,6 +69,7 @@ export function checkDialect(dialect: Tc4Dialect): void {
   const drives = (channel: string) =>
     outputs.has(channel) && dialect.outputCommands[channel] !== undefined;
   const problems = [
+    ...['heater', 'fan'].filter((id) => !drives(id)).map((id) => `no ${id} output`),
     ...dialect.safeStop.filter(([channel]) => !drives(channel)).map(([c]) => `safe stop: ${c}`),
     ...Object.keys(dialect.fallbackStop.leaves)
       .filter((channel) => !outputs.has(channel))
@@ -73,6 +78,7 @@ export function checkDialect(dialect: Tc4Dialect): void {
     ...(dialect.safeStop.some(([channel, value]) => channel === 'heater' && value === 0)
       ? []
       : ['safe stop never sets the heater to 0']),
+    ...(dialect.fallbackStop.leaves.heater === 0 ? [] : ['fallback never leaves the heater at 0']),
   ];
   if (problems.length > 0) throw new Error(`Bad TC4 dialect: ${problems.join('; ')}`);
 }

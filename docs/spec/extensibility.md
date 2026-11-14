@@ -14,7 +14,7 @@ extension point is a small interface plus a registry the app fills at startup.
 | Phase markers      | `PhaseMarker`            | Dry end by temperature                                                                   | Other automatic markers                                      |
 | Profile suggestion | `SuggestionStrategy`     | Same bean, then similar beans                                                            | Smarter matching                                             |
 | Manual coach       | `CoachRule`              | Auto's setting, first crack soon, drop soon                                              | New tips                                                     |
-| Chart layers       | `ChartLayer`             | Temp, Target, RoR, Ghost, Events, Heater, Fan; Projection, Now line, Phase bands         | Extra probes, annotations                                    |
+| Chart layers       | `ChartLayer`             | Temp, ET, Target, RoR, Ghost, Events, Heater, Fan; Projection, Now line, Phase bands     | Other probes, annotations                                    |
 | Import / export    | `Exporter`, `Importer`   | Roastpilot files (roasts, beans, profiles, roasters), CSV export, Artisan `.alog` import | Artisan export, a whole-library backup                       |
 | Sync               | `SyncTarget`             | None (local only)                                                                        | Cloud Postgres for the phone                                 |
 | Alerts             | `Notifier`               | Banner + sound                                                                           | Phone push                                                   |

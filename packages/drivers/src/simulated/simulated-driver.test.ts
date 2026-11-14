@@ -1,34 +1,7 @@
 import { ManualClock } from '@roastpilot/core';
-import type { Reading } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import { SimulatedDriver, type SimulatedDriverOptions } from './simulated-driver';
-
-async function connected(options: Partial<SimulatedDriverOptions> = {}) {
-  const clock = new ManualClock();
-  const driver = new SimulatedDriver({ clock, ...options });
-  expect(await driver.connect()).toEqual({ ok: true, value: undefined });
-  return { clock, driver };
-}
-
-async function readValues(driver: SimulatedDriver): Promise<Reading['values']> {
-  const result = await driver.read();
-  if (!result.ok) throw new Error(`read failed: ${result.error.kind}`);
-  return result.value.values;
-}
-
-/** Polls READ every second like the app, which also keeps the watchdog fed. */
-async function pollFor(
-  clock: ManualClock,
-  driver: SimulatedDriver,
-  seconds: number,
-): Promise<number> {
-  let bt = Number.NaN;
-  for (let i = 0; i < seconds; i++) {
-    clock.advance(1000);
-    bt = (await readValues(driver)).bt ?? Number.NaN;
-  }
-  return bt;
-}
+import { connected, pollFor, readValues } from './simulated-driver-fixture';
+import { SimulatedDriver } from './simulated-driver';
 
 describe('SimulatedDriver', () => {
   it('declares the Skywalker channels plus an ET', () => {
@@ -100,48 +73,6 @@ describe('SimulatedDriver', () => {
       return pollFor(clock, driver, 120);
     };
     expect(await runOnce()).toBe(await runOnce());
-  });
-
-  describe('ET', () => {
-    it('leads BT when the heater comes on', async () => {
-      const { clock, driver } = await connected();
-      await driver.setOutput('heater', 100);
-      await pollFor(clock, driver, 10);
-      const values = await readValues(driver);
-      expect((values.et ?? 0) - (values.bt ?? 0)).toBeGreaterThan(10);
-    });
-
-    it('reads above BT through a whole preheat climb', async () => {
-      const { clock, driver } = await connected();
-      await driver.setOutput('heater', 80);
-      await driver.setOutput('fan', 30);
-      for (let s = 1; s <= 420; s++) {
-        clock.advance(1000);
-        const values = await readValues(driver);
-        if (s > 30) expect(values.et ?? 0).toBeGreaterThan(values.bt ?? 0);
-      }
-    });
-
-    it('dips far less than BT at charge, through the turning point', async () => {
-      const { clock, driver } = await connected();
-      await driver.setOutput('heater', 60);
-      await driver.setOutput('fan', 30);
-      await pollFor(clock, driver, 900);
-      const before = await readValues(driver);
-      driver.chargeBeans();
-      let lowBt = Infinity;
-      let lowEt = Infinity;
-      for (let s = 0; s < 120; s++) {
-        clock.advance(1000);
-        const values = await readValues(driver);
-        lowBt = Math.min(lowBt, values.bt ?? Infinity);
-        lowEt = Math.min(lowEt, values.et ?? Infinity);
-      }
-      const btDip = (before.bt ?? 0) - lowBt;
-      const etDip = (before.et ?? 0) - lowEt;
-      expect(btDip).toBeGreaterThan(50);
-      expect(etDip).toBeLessThan(btDip / 2);
-    });
   });
 
   describe('safe stop', () => {
