@@ -1,5 +1,5 @@
 import { err, ok, type RoastpilotApi } from '@roastpilot/shared';
-import { act, screen, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { ACCEPTED_SETTINGS, CONNECTED, fakeApi, renderApp } from '../../test/render-app';
@@ -356,7 +356,11 @@ describe('RoastersScreen', () => {
   describe('the record', () => {
     it('saves an edit, and holds Save back while a cell has a problem', async () => {
       const { api } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
-      expect(screen.getByLabelText('Max temp')).toHaveTextContent('240 °C');
+      // Folded until opened: its header sums it up.
+      expect(screen.queryByLabelText('Max temp')).toBeNull();
+      expect(
+        screen.getByRole('button', { name: 'Limits and calibration' }),
+      ).toHaveAccessibleDescription('240 °C max · 20 min max · 0 °C offset');
       await edit();
       const maxTemp = screen.getByRole('textbox', { name: 'Max temp' });
       await userEvent.clear(maxTemp);
@@ -405,10 +409,10 @@ describe('RoastersScreen', () => {
 
     it('offers Drum speed only on a roaster whose drum has one, and saves it', async () => {
       const { api } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
-      expect(screen.queryByRole('group', { name: 'Drum' })).toBeNull();
+      expect(screen.queryByRole('region', { name: 'Drum' })).toBeNull();
       await userEvent.click(sidebar().getByRole('button', { name: /^Simulator/ }));
       await edit();
-      const drum = within(screen.getByRole('group', { name: 'Drum' }));
+      const drum = within(screen.getByRole('region', { name: 'Drum' }));
       expect(drum.getByText('Usual speed · from Preheat, and while cooling')).toBeInTheDocument();
       const speed = drum.getByLabelText('Drum speed');
       expect(speed).toHaveValue('60');
@@ -418,6 +422,30 @@ describe('RoastersScreen', () => {
       expect(api.saveRoaster).toHaveBeenCalledWith(
         expect.objectContaining({ model: 'simulator', drumSpeedPct: 45 }),
       );
+    });
+
+    it('folds each card to its summary, and keeps which are open', async () => {
+      const { api } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
+      const batch = screen.getByRole('button', { name: 'Batch size' });
+      expect(batch).toHaveAttribute('aria-expanded', 'false');
+      expect(batch).toHaveAccessibleDescription('375 g ideal · 250–400 g');
+      await userEvent.click(batch);
+      await waitFor(() => {
+        expect(api.setSettings).toHaveBeenCalledWith(
+          expect.objectContaining({ roasterSectionsOpen: ['batch'] }),
+        );
+      });
+      expect(batch).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('opens the cards you type in while editing, without saving that', async () => {
+      const { api } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
+      await edit();
+      for (const name of ['Batch size', 'Limits and calibration', 'Preheat hold']) {
+        expect(screen.getByRole('button', { name })).toHaveAttribute('aria-expanded', 'true');
+      }
+      // Folded or open while editing isn't saved.
+      expect(api.setSettings).not.toHaveBeenCalled();
     });
 
     it('keeps the tuning closed, in plain words, until asked', async () => {

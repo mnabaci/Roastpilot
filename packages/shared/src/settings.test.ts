@@ -23,6 +23,7 @@ const ROAST_DEFAULTS = {
   temperatureUnit: 'c',
   theme: 'dark',
   historyDetailsOpen: true,
+  roasterSectionsOpen: [],
   safetyNoticeAccepted: 0,
 };
 
@@ -72,6 +73,14 @@ describe('SettingsSchema', () => {
     expect(SettingsSchema.parse({ historyDetailsOpen: 'no' }).historyDetailsOpen).toBe(true);
   });
 
+  it('keeps which roaster cards are open, all folded by default', () => {
+    expect(DEFAULT_SETTINGS.roasterSectionsOpen).toEqual([]);
+    expect(SettingsSchema.parse({ roasterSectionsOpen: ['batch'] }).roasterSectionsOpen).toEqual([
+      'batch',
+    ]);
+    expect(SettingsSchema.parse({ roasterSectionsOpen: 'batch' }).roasterSectionsOpen).toEqual([]);
+  });
+
   it('shows °C unless you choose °F, and reads an older file or an unknown unit as °C', () => {
     expect(DEFAULT_SETTINGS.temperatureUnit).toBe('c');
     expect(SettingsSchema.parse({ theme: 'light' }).temperatureUnit).toBe('c');
@@ -114,6 +123,7 @@ describe('SettingsSchema', () => {
       temperatureUnit: 'f',
       theme: 'system',
       historyDetailsOpen: false,
+      roasterSectionsOpen: ['batch', 'tuning'],
       safetyNoticeAccepted: 1,
     };
     expect(SettingsSchema.parse(settings)).toEqual(settings);

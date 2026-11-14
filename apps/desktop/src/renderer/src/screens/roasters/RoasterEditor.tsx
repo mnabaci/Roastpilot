@@ -1,7 +1,8 @@
 import { modelFacts, type Roaster } from '@roastpilot/shared';
-import { Button, NumberField, Switch, TextField } from '@roastpilot/ui';
-import { ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { CollapsibleCard, NumberField, Switch, TextField } from '@roastpilot/ui';
+import { useState, type ReactNode } from 'react';
+import { useSettings } from '../../stores/use-stores';
+import { useSaveSettings } from '../settings/use-save-settings';
 import {
   DRUM_FIELDS,
   everydayFields,
@@ -9,11 +10,14 @@ import {
   tuningHint,
   type FieldGroup,
 } from './roaster-fields';
+import { sectionSummary, type RoasterSection } from './roaster-summaries';
 import type { RoasterDraftState } from './use-roaster-draft';
 
 /**
- * One roaster's record (docs/spec/roasters.md): read until Edit, then a form whose Cancel and Save
- * sit in the page's header.
+ * One roaster's record (docs/spec/ui.md, Roasters screen) as cards that fold to a one-line
+ * summary: read until Edit, then fields whose Cancel and Save sit in the page's header. Which
+ * cards are open is a setting; Edit opens the ones you'd type in, and a card with a problem stays
+ * open, so a held-back Save is never unexplained.
  */
 export function RoasterEditor({
   roaster,
@@ -26,13 +30,48 @@ export function RoasterEditor({
 }) {
   const { draft, setDraft, errors, problem, unit } = state;
   const readOnly = !editing;
-  const [showTuning, setShowTuning] = useState(false);
-  // A problem in a tuning number opens the section, so a held-back Save is never unexplained.
-  const tuningShown =
-    showTuning || TUNING_FIELDS.some((g) => g.cells.some((c) => Boolean(errors[c.key])));
-  const fields = ({ title, hint, cells }: FieldGroup) => (
-    <fieldset key={title} className="flex flex-col gap-2">
-      <legend className="pb-1 text-body font-semibold">{title}</legend>
+  const facts = modelFacts(roaster.model);
+  const groups = [...everydayFields(unit), ...(facts.drumSpeed ? [DRUM_FIELDS] : [])];
+  const savedOpen = useSettings((s) => s.settings.roasterSectionsOpen);
+  const saveSettings = useSaveSettings();
+  // While editing, the open cards are this edit's own, not the saved choice.
+  const [editOpen, setEditOpen] = useState<readonly string[]>([]);
+  const [wasEditing, setWasEditing] = useState(editing);
+  if (editing !== wasEditing) {
+    setWasEditing(editing);
+    if (editing) {
+      setEditOpen([
+        ...groups.flatMap((g) => (g.section ? [g.section] : [])),
+        ...(facts.beanCooler ? ['cooling'] : []),
+        ...(savedOpen.includes('tuning') ? ['tuning'] : []),
+      ]);
+    }
+  }
+  const openList = editing ? editOpen : savedOpen;
+  const hasProblem = (gs: readonly FieldGroup[]) =>
+    gs.some((g) => g.cells.some((c) => Boolean(errors[c.key])));
+  const card = (
+    section: RoasterSection,
+    title: string,
+    withProblem: boolean,
+    children: ReactNode,
+  ) => (
+    <CollapsibleCard
+      key={section}
+      title={title}
+      summary={sectionSummary(section, draft, unit)}
+      open={withProblem || openList.includes(section)}
+      onOpenChange={(open) => {
+        const next = [...openList.filter((s) => s !== section), ...(open ? [section] : [])];
+        if (editing) setEditOpen(next);
+        else saveSettings({ roasterSectionsOpen: next });
+      }}
+    >
+      {children}
+    </CollapsibleCard>
+  );
+  const cells = ({ hint, cells }: FieldGroup) => (
+    <>
       {hint ? <p className="text-label text-ink-muted">{hint}</p> : null}
       <div className="grid grid-cols-3 items-start gap-3">
         {cells.map(({ key, label, unit }) => (
@@ -50,17 +89,17 @@ export function RoasterEditor({
           />
         ))}
       </div>
-    </fieldset>
+    </>
   );
   return (
-    <div className="flex flex-col gap-5 rounded-xl bg-surface px-5 py-4.5">
+    <>
       {problem ? (
         <p role="alert" className="text-label text-critical-text">
           {problem}
         </p>
       ) : null}
       {editing ? (
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1.5 rounded-xl bg-surface px-5 py-4.5">
           <TextField
             label="Name"
             value={draft.name}
@@ -71,55 +110,49 @@ export function RoasterEditor({
           {errors.name ? <p className="text-label text-critical-text">{errors.name}</p> : null}
         </div>
       ) : null}
-      {everydayFields(unit).map(fields)}
-      {modelFacts(roaster.model).drumSpeed ? fields(DRUM_FIELDS) : null}
-      {modelFacts(roaster.model).beanCooler ? (
-        <fieldset className="flex flex-col gap-2">
-          <legend className="pb-1 text-body font-semibold">Cooling</legend>
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-body">Bean cooler helps cool the drum</p>
-              <p className="text-label text-ink-muted">
-                Tray fan under the drum · stays on while the drum cools
-              </p>
-            </div>
-            {readOnly ? (
-              <p className="text-body text-ink">{draft.coolerHelpsDrum ? 'On' : 'Off'}</p>
-            ) : (
-              <Switch
-                aria-label="Bean cooler helps cool the drum"
-                checked={draft.coolerHelpsDrum}
-                onChange={(on) => {
-                  setDraft({ ...draft, coolerHelpsDrum: on });
-                }}
-              />
-            )}
-          </div>
-        </fieldset>
-      ) : null}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="-ml-3.5 self-start"
-        aria-expanded={tuningShown}
-        icon={
-          <ChevronDown
-            aria-hidden="true"
-            className={tuningShown ? 'rotate-180 transition-transform' : 'transition-transform'}
-          />
-        }
-        onClick={() => {
-          setShowTuning(!showTuning);
-        }}
-      >
-        Advanced tuning
-      </Button>
-      {tuningShown ? (
-        <div className="flex flex-col gap-4">
+      {groups.map((group) =>
+        group.section ? card(group.section, group.title, hasProblem([group]), cells(group)) : null,
+      )}
+      {facts.beanCooler
+        ? card(
+            'cooling',
+            'Cooling',
+            false,
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-body">Bean cooler helps cool the drum</p>
+                <p className="text-label text-ink-muted">
+                  Tray fan under the drum · stays on while the drum cools
+                </p>
+              </div>
+              {readOnly ? (
+                <p className="text-body text-ink">{draft.coolerHelpsDrum ? 'On' : 'Off'}</p>
+              ) : (
+                <Switch
+                  aria-label="Bean cooler helps cool the drum"
+                  checked={draft.coolerHelpsDrum}
+                  onChange={(on) => {
+                    setDraft({ ...draft, coolerHelpsDrum: on });
+                  }}
+                />
+              )}
+            </div>,
+          )
+        : null}
+      {card(
+        'tuning',
+        'Advanced tuning',
+        hasProblem(TUNING_FIELDS),
+        <>
           <p className="text-label text-ink-muted">{tuningHint(unit)}</p>
-          {TUNING_FIELDS.map(fields)}
-        </div>
-      ) : null}
-    </div>
+          {TUNING_FIELDS.map((group) => (
+            <fieldset key={group.title} className="flex flex-col gap-2 pt-2">
+              <legend className="pb-1 text-body font-semibold">{group.title}</legend>
+              {cells(group)}
+            </fieldset>
+          ))}
+        </>,
+      )}
+    </>
   );
 }

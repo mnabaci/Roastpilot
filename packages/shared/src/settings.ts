@@ -71,6 +71,8 @@ export const SettingsSchema = z.object({
   theme: ThemeSchema.catch('dark').default('dark'),
   /** History's Roast details card open or folded, for every roast (docs/spec/ui.md, History). */
   historyDetailsOpen: z.boolean().catch(true).default(true),
+  /** The roaster page's record cards you keep open, by name; the rest folded (ui.md, Roasters). */
+  roasterSectionsOpen: z.array(z.string().max(32)).max(16).catch([]).default([]),
   /** The safety notice version you accepted; 0 until you do (docs/spec/safety.md, Safety notice). */
   safetyNoticeAccepted: z.number().int().min(0).catch(0).default(0),
 });
