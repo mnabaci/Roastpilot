@@ -1,4 +1,4 @@
-import type { RoastState } from '@roastpilot/shared';
+import { isRoastPhaseRunning, type RoastState } from '@roastpilot/shared';
 
 /** What may be running that the wiring waits for (`isRoastRunning` split in its two causes). */
 export interface WiringWait {
@@ -9,7 +9,7 @@ export interface WiringWait {
 }
 
 export const wiringWait = (roast: RoastState, otherName: string | undefined): WiringWait => ({
-  roasting: roast.phase !== 'ready' && roast.phase !== 'done',
+  roasting: isRoastPhaseRunning(roast.phase),
   drumCooling: roast.roasterCoolingSinceMs !== null,
   otherName,
 });

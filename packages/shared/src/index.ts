@@ -137,6 +137,7 @@ export { err, ok, type Result } from './result';
 export {
   RoastActionSchema,
   READY_ROAST,
+  isRoastPhaseRunning,
   isRoastRunning,
   type RoastAction,
   type RoastActionError,

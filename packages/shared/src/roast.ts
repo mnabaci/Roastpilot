@@ -93,7 +93,12 @@ const RUNNING_PHASES: ReadonlySet<z.infer<typeof RoastPhaseSchema>> = new Set([
  * stays on, the roast strip shows, and updates wait (docs/spec/install-and-update.md).
  */
 export function isRoastRunning(roast: RoastState): boolean {
-  return RUNNING_PHASES.has(roast.phase) || roast.roasterCoolingSinceMs !== null;
+  return isRoastPhaseRunning(roast.phase) || roast.roasterCoolingSinceMs !== null;
+}
+
+/** The roast itself runs: Preheat to Cooling, drum cooling left out. */
+export function isRoastPhaseRunning(phase: z.infer<typeof RoastPhaseSchema>): boolean {
+  return RUNNING_PHASES.has(phase);
 }
 
 export const RoastActionErrorSchema = z.object({
