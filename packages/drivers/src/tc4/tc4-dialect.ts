@@ -38,4 +38,17 @@ export interface Tc4Dialect {
     readonly command: string;
     readonly leaves: Readonly<Record<string, number>>;
   };
+  /** How to read every input at once, on a board whose wiring is the user's to find out. */
+  readonly inputProbe?: Tc4InputProbe;
+}
+
+/** Switch to all inputs, read them, switch back (docs/spec/roasters.md, Generic TC4). */
+export interface Tc4InputProbe {
+  /** Makes every input a logical channel, e.g. `CHAN;1234`. */
+  readonly select: string;
+  /** Puts the record's channels back. */
+  readonly restore: string;
+  readonly isReply: ReplyMatcher;
+  /** °C per input; null for one with no value. */
+  parse(line: string): Result<(number | null)[], DriverError>;
 }

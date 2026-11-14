@@ -1,13 +1,15 @@
 import { ManualClock, silentLogger, type RoasterModelDefinition } from '@roastpilot/core';
-import { ROASTER_MODEL_FACTS, RoasterSchema } from '@roastpilot/shared';
+import { DEFAULT_TC4_WIRING, ROASTER_MODEL_FACTS, RoasterSchema } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { BUILT_IN_ROASTERS } from '../built-in-roasters';
 import { SimulatedDriver } from '../simulated/simulated-driver';
 import { Tc4Driver } from '../tc4/tc4-driver';
 import { simulatorModel } from './simulator-model';
 import { skywalkerModel } from './skywalker-model';
+import { tc4Model } from './tc4-model';
 
-const MODELS: readonly RoasterModelDefinition[] = [skywalkerModel, simulatorModel];
+const MODELS: readonly RoasterModelDefinition[] = [skywalkerModel, tc4Model, simulatorModel];
+const NO_WIRING = { wiring: null };
 const deps = { clock: new ManualClock(), logger: silentLogger };
 const drum = (model: RoasterModelDefinition) => model.channels.find((c) => c.id === 'drum');
 
@@ -21,6 +23,12 @@ describe('model definitions', () => {
   it("know each model's drum without connecting: on/off on a Skywalker, a speed on the Simulator", () => {
     expect(drum(skywalkerModel)).toMatchObject({ unit: 'on-off', max: 1 });
     expect(drum(simulatorModel)).toMatchObject({ unit: 'percent', min: 0, max: 100, step: 5 });
+  });
+
+  it('have a bean cooler exactly when the record offers one', () => {
+    for (const model of MODELS) {
+      expect(model.channels.some((c) => c.id === 'cooling')).toBe(model.beanCooler);
+    }
   });
 
   it('agree with what the screens know about each drum', () => {
@@ -38,6 +46,21 @@ describe('model definitions', () => {
 
   it('a Skywalker given anything but a port is a programmer error', () => {
     expect(() => skywalkerModel.createDriver({ kind: 'simulator' }, deps)).toThrow(/serial/);
+  });
+
+  it('a generic TC4 builds the TC4 driver from its wiring, and has no drum', () => {
+    const driver = tc4Model.createDriver({ kind: 'serial', path: 'COM3' }, deps, {
+      wiring: { ...DEFAULT_TC4_WIRING, etInput: 0 },
+    });
+    expect(driver).toBeInstanceOf(Tc4Driver);
+    expect(driver.channels.map((c) => c.id)).toEqual(['bt', 'heater', 'fan']);
+    expect(drum(tc4Model)).toBeUndefined();
+  });
+
+  it('a generic TC4 without its wiring is a programmer error', () => {
+    expect(() => tc4Model.createDriver({ kind: 'serial', path: 'COM3' }, deps, NO_WIRING)).toThrow(
+      /wiring/,
+    );
   });
 
   it('the Simulator builds the simulated driver', () => {

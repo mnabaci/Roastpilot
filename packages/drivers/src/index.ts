@@ -5,3 +5,4 @@ export { SKYWALKER_PROFILES } from './skywalker-profiles';
 export { BUILT_IN_ROASTERS } from './built-in-roasters';
 export { simulatorModel } from './models/simulator-model';
 export { skywalkerModel } from './models/skywalker-model';
+export { tc4Model } from './models/tc4-model';

@@ -16,7 +16,9 @@ import {
   type Reading,
   type Result,
 } from '@roastpilot/shared';
+import { BoardEcho } from './board-echo';
 import { CommandQueue } from './command-queue';
+import { readAllInputs } from './read-all-inputs';
 import type { Tc4Dialect, Tc4Reply } from './tc4-dialect';
 
 export interface Tc4DriverOptions {
@@ -41,9 +43,11 @@ export class Tc4Driver implements RoasterDriver {
   readonly #outputs = new Map<string, OutputChannel>();
   /** Last value sent per output. READ only echoes heater and fan, so the rest come from here. */
   readonly #sent = new Map<string, number>();
-  /** Echoed outputs that differ from what was sent: logged once when it starts and when it ends. */
-  readonly #boardChanged = new Set<string>();
+  readonly #echo: BoardEcho;
   #connected = false;
+  /** Reads run one at a time, so a poll never lands between a probe's `CHAN` and its `READ`. */
+  #reads: Promise<unknown> = Promise.resolve();
+  #pendingReads = 0;
 
   constructor(options: Tc4DriverOptions) {
     this.#dialect = options.dialect;
@@ -51,6 +55,7 @@ export class Tc4Driver implements RoasterDriver {
     this.#transport = options.transport;
     this.#clock = options.clock;
     this.#logger = options.logger ?? silentLogger;
+    this.#echo = new BoardEcho(this.#logger);
     this.#queue = new CommandQueue(options.transport, options.clock, this.#logger);
     for (const channel of this.channels) {
       if (channel.kind === 'output') {
@@ -78,12 +83,29 @@ export class Tc4Driver implements RoasterDriver {
     return ok(undefined);
   }
 
-  async read(): Promise<Result<Reading, DriverError>> {
+  read(): Promise<Result<Reading, DriverError>> {
+    return this.#oneRead(() => this.#read());
+  }
+
+  /**
+   * Every input's temperature, for picking probes by their readings (docs/spec/roasters.md): the
+   * dialect's probe, then its channels back. `unknown-channel` on a board that has no probe.
+   */
+  readInputs(): Promise<Result<(number | null)[], DriverError>> {
+    return this.#oneRead(async () => {
+      const probe = this.#dialect.inputProbe;
+      if (!probe) return err({ kind: 'unknown-channel', channel: 'inputs' });
+      if (!this.#connected) return err({ kind: 'disconnected' });
+      return readAllInputs(this.#queue, probe);
+    });
+  }
+
+  async #read(): Promise<Result<Reading, DriverError>> {
     if (!this.#connected) return err({ kind: 'disconnected' });
     const parsed = await this.#readOnce();
     if (!parsed.ok) return parsed;
     const { reply, line } = parsed.value;
-    this.#noteBoardChanges(reply, line);
+    this.#echo.note(reply, this.#sent, line);
     // Every channel in every reading (docs/spec/hardware.md): the reply wins for what it reports.
     return ok({
       atMs: this.#clock.now(),
@@ -126,6 +148,19 @@ export class Tc4Driver implements RoasterDriver {
     }
   }
 
+  /** Starts at once when no read is pending, so a read keeps its place in the command queue. */
+  #oneRead<T>(task: () => Promise<T>): Promise<T> {
+    const run = this.#pendingReads === 0 ? task() : this.#reads.then(task);
+    this.#pendingReads++;
+    // A read that fails must not jam the ones after it.
+    this.#reads = run
+      .catch(() => undefined)
+      .finally(() => {
+        this.#pendingReads--;
+      });
+    return run;
+  }
+
   async disconnect(): Promise<void> {
     this.#connected = false;
     await this.#transport.close();
@@ -143,24 +178,6 @@ export class Tc4Driver implements RoasterDriver {
     if (!answer.ok) return answer;
     const parsed = this.#dialect.parseRead(answer.value);
     return parsed.ok ? ok({ reply: parsed.value, line: answer.value }) : parsed;
-  }
-
-  /**
-   * The board echoes the heater and fan it is sending. When that isn't what we sent, something
-   * else changed it (the board's own failsafe, or a garbled reply): log it with the raw
-   * line, once per change, so the cause can be found (docs/spec/hardware.md).
-   */
-  #noteBoardChanges(reply: Tc4Reply, line: string): void {
-    for (const channel of ['heater', 'fan'] as const) {
-      const sent = this.#sent.get(channel);
-      const reported = reply[channel];
-      if (reported !== sent && !this.#boardChanged.has(channel)) {
-        this.#boardChanged.add(channel);
-        this.#logger.warn('driver.output-changed-by-board', { channel, sent, reported, line });
-      } else if (reported === sent && this.#boardChanged.delete(channel)) {
-        this.#logger.info('driver.output-matches-again', { channel, value: reported });
-      }
-    }
   }
 
   async #sendOutput(channel: string, value: number): Promise<Result<void, DriverError>> {

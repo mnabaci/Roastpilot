@@ -303,6 +303,16 @@ describe('Tc4Driver with the SkyCommand dialect', () => {
     });
   });
 
+  describe('readInputs', () => {
+    it('is not offered: the SkyCommand sketch has no inputs to pick', async () => {
+      const { transport, driver, run } = await connected();
+      expect(await run(driver.readInputs())).toEqual(
+        err({ kind: 'unknown-channel', channel: 'inputs' }),
+      );
+      expect(transport.sent).toEqual([]);
+    });
+  });
+
   describe('disconnect', () => {
     it('closes the port and refuses calls until connect', async () => {
       const { transport, driver, run } = await connected();
