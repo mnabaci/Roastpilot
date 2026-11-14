@@ -12,6 +12,7 @@ import beanSpecies0008 from './migrations/0008_bean_species.sql?raw';
 import dropPurchaseBatchPlan0009 from './migrations/0009_drop_purchase_batch_plan.sql?raw';
 import beanStockAdjustments0010 from './migrations/0010_bean_stock_adjustments.sql?raw';
 import stockMovements0011 from './migrations/0011_stock_movements.sql?raw';
+import tc4Wiring0012 from './migrations/0012_tc4_wiring.sql?raw';
 
 interface Migration {
   tag: string;
@@ -35,6 +36,7 @@ export const MIGRATIONS: readonly Migration[] = [
   { tag: '0009_drop_purchase_batch_plan', sql: dropPurchaseBatchPlan0009 },
   { tag: '0010_bean_stock_adjustments', sql: beanStockAdjustments0010 },
   { tag: '0011_stock_movements', sql: stockMovements0011 },
+  { tag: '0012_tc4_wiring', sql: tc4Wiring0012 },
 ];
 
 /** How many migrations the database has had (`PRAGMA user_version`); 0 for a new one. */

@@ -54,7 +54,10 @@ describe('migration 0011: one stock log', () => {
 
   it('copies purchases, roasts made here and adjustments exactly, then drops the old tables', () => {
     const db = at0010();
-    expect(migrate(db)).toEqual({ ok: true, value: { applied: ['0011_stock_movements'] } });
+    expect(migrate(db, MIGRATIONS.slice(0, 12))).toEqual({
+      ok: true,
+      value: { applied: ['0011_stock_movements'] },
+    });
     expect(
       db
         .prepare(

@@ -4,7 +4,9 @@ import {
   ConnectTargetSchema,
   err,
   ok,
+  modelFacts,
   RoasterModelSchema,
+  Tc4WiringSchema,
   type Result,
   type Roaster,
   type RoasterId,
@@ -20,9 +22,10 @@ import { transaction } from './transaction';
 
 type Row = typeof roasters.$inferSelect;
 
-const toColumns = ({ tuning, connection, active, ...plain }: Omit<Roaster, 'id'>) => ({
+const toColumns = ({ tuning, connection, wiring, active, ...plain }: Omit<Roaster, 'id'>) => ({
   ...plain,
   connection: connection && JSON.stringify(connection),
+  wiring: wiring && JSON.stringify(wiring),
   pid: JSON.stringify(tuning),
   isActive: active,
 });
@@ -38,11 +41,16 @@ export class SqliteRoasterRepository implements RoasterRepository {
   }
 
   #toRoaster(row: Row): Roaster[] {
-    const { pid, connection, isActive, model, ...plain } = row;
+    const { pid, connection, wiring, isActive, model, ...plain } = row;
     const tuning = AutoTuningSchema.safeParse(parseJson(pid));
     // SQLite doesn't check the enum: a model from a newer app has no driver or limits here.
     const knownModel = RoasterModelSchema.safeParse(model);
-    if (!tuning.success || !knownModel.success) {
+    // Wiring decides which output is the heater: one that doesn't read is never guessed.
+    const wired =
+      knownModel.success && modelFacts(knownModel.data).wiring
+        ? Tc4WiringSchema.safeParse(wiring === null ? undefined : parseJson(wiring))
+        : undefined;
+    if (!tuning.success || !knownModel.success || wired?.success === false) {
       this.#logger.warn('storage.roaster-unreadable', { id: row.id, model });
       return [];
     }
@@ -57,6 +65,7 @@ export class SqliteRoasterRepository implements RoasterRepository {
         ...plain,
         model: knownModel.data,
         tuning: tuning.data,
+        wiring: wired?.success ? wired.data : null,
         connection: target?.success ? target.data : null,
         active: isActive,
       },
