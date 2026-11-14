@@ -57,4 +57,9 @@ describe('environment temperature', () => {
     const { etC } = run({ baseC: 200, etC: 200 }, 150, 0, 0, 30);
     expect(200 - etC).toBeLessThan(20);
   });
+
+  it('never overshoots on a step longer than its lag', () => {
+    const jumped = stepEnvironment({ baseC: 20, etC: 20 }, 200, inputs(100, 0), constants, 120);
+    expect(jumped).toEqual({ baseC: 200, etC: 225 });
+  });
 });
