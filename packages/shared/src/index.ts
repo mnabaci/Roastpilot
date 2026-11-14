@@ -289,3 +289,18 @@ export {
   toUnit,
   type TemperatureUnit,
 } from './units';
+export {
+  DEFAULT_TC4_WIRING,
+  MIN_FAN_HEATING,
+  TC4_BAUDS,
+  TC4_INPUTS,
+  Tc4WiringSchema,
+  type Tc4Wiring,
+} from './tc4-wiring';
+export {
+  SaveWiringRequestSchema,
+  type SaveWiringRequest,
+  type SaveWiringError,
+  type ReadInputsError,
+  type Tc4Inputs,
+} from './tc4-wiring-ipc';

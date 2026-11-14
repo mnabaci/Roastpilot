@@ -159,6 +159,10 @@ export interface RoastersApi {
   setActiveRoaster: Invoke<typeof C.setActiveRoaster>;
   /** Picks a port or the Simulator: the roaster of that kind becomes active and keeps it. */
   chooseConnection: Invoke<typeof C.chooseConnection>;
+  /** A generic TC4's wiring: also while it is connected (not while roasting); then it reconnects. */
+  saveRoasterWiring: Invoke<typeof C.saveRoasterWiring>;
+  /** TC1–TC4 of the connected TC4 board, to pick a probe by its reading. */
+  readRoasterInputs: Invoke<typeof C.readRoasterInputs>;
   onRoasters(listener: (roasters: Roaster[]) => void): Unsubscribe;
 }
 

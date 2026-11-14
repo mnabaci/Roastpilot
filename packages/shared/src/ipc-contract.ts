@@ -45,6 +45,12 @@ import type { EnvelopeProblem } from './roastpilot-file';
 import type { NewRoaster, Roaster, RoasterError, RoasterId } from './roaster';
 import type { AcknowledgeError } from './safety-event';
 import type {
+  ReadInputsError,
+  SaveWiringError,
+  SaveWiringRequest,
+  Tc4Inputs,
+} from './tc4-wiring-ipc';
+import type {
   DeleteRoastError,
   RoastDetail,
   RoastId,
@@ -130,6 +136,8 @@ export interface InvokeContract {
   [C.deleteRoaster]: Call<RoasterId, Result<void, RoasterError>>;
   [C.setActiveRoaster]: Call<RoasterId, Result<void, RoasterError>>;
   [C.chooseConnection]: Call<ConnectTarget, Result<void, RoasterError>>;
+  [C.saveRoasterWiring]: Call<SaveWiringRequest, Result<Roaster, SaveWiringError>>;
+  [C.readRoasterInputs]: Call<undefined, Result<Tc4Inputs, ReadInputsError>>;
   [C.listBeans]: Call<undefined, Bean[]>;
   [C.addBean]: Call<BeanFields, Result<BeanId, StorageError>>;
   [C.updateBean]: Call<UpdateBean, Result<void, StorageError>>;
