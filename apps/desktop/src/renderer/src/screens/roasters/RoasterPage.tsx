@@ -87,7 +87,7 @@ export function RoasterPage({ roaster, onDeleted }: { roaster: Roaster; onDelete
     },
   ];
   return (
-    <div className={cn('flex flex-col gap-6', PAGE_WIDTH)}>
+    <div className={cn('flex flex-col gap-4', PAGE_WIDTH)}>
       <header className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 flex-col gap-1">
           {/* As tall as the sidebar's title row, so both titles share a line. */}
