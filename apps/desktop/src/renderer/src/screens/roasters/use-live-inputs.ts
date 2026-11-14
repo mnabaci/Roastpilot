@@ -13,6 +13,10 @@ export interface LiveInputs {
 }
 
 const NOTHING: LiveInputs = { inputs: undefined, problem: undefined };
+const FAILED: LiveInputs = {
+  inputs: undefined,
+  problem: "Couldn't read the inputs · check the board",
+};
 
 /**
  * TC1–TC4 of the connected board while `enabled` (connected, this roaster, no roast running), so a
@@ -42,11 +46,13 @@ export function useLiveInputs(enabled: boolean): LiveInputs {
           if (result.error.kind === 'roasting' || result.error.kind === 'unavailable') return;
           if (!failing) logger.warn('roasters.inputs-failed', { ...result.error });
           failing = true;
-          setLive({ inputs: undefined, problem: "Couldn't read the inputs · check the board" });
+          setLive(FAILED);
         })
         .catch((error: unknown) => {
           if (!failing) logger.error('roasters.inputs-failed', { error: serializeError(error) });
           failing = true;
+          // Never leave the last values up as if they were live.
+          if (!stopped) setLive(FAILED);
         })
         .finally(() => {
           if (!stopped) timer = setTimeout(read, LIVE_INPUTS_MS);

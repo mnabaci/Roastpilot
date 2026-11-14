@@ -29,7 +29,13 @@ export function useSaveWiring(roaster: Roaster) {
         try {
           const saved = await api.saveRoasterWiring({ id: roaster.id, wiring, minFanHeatingPct });
           if (saved.ok) return;
-          logger.warn('roasters.refused', { ...saved.error });
+          // A failed reconnect still saved the wiring: not a refusal.
+          logger.warn(
+            saved.error.kind === 'reconnect-failed'
+              ? 'roasters.wiring-reconnect-failed'
+              : 'roasters.refused',
+            { ...saved.error },
+          );
           setProblem(saveWiringRefusal(saved.error, roaster));
         } finally {
           setSaving(false);
