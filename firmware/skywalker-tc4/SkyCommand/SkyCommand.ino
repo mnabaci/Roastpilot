@@ -4,7 +4,8 @@
 
 #include <limits.h>
 
-// Protocol version: bump together with Tc4SkywalkerDriver and firmware/skywalker-tc4/README.md
+// Protocol version: bump together with SKYWALKER_PROTOCOL_VERSION (packages/drivers/src/skywalker.ts)
+// and firmware/skywalker-tc4/README.md
 // whenever the serial protocol changes (see the firmware-change skill).
 const char* PROTOCOL_VERSION = "1";
 // Serial is read without blocking and every received line runs as its own command,
