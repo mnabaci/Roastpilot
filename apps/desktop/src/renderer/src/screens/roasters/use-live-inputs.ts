@@ -45,7 +45,8 @@ export function useLiveInputs(enabled: boolean): LiveInputs {
           setLive({ inputs: undefined, problem: "Couldn't read the inputs · check the board" });
         })
         .catch((error: unknown) => {
-          logger.error('roasters.inputs-failed', { error: serializeError(error) });
+          if (!failing) logger.error('roasters.inputs-failed', { error: serializeError(error) });
+          failing = true;
         })
         .finally(() => {
           if (!stopped) timer = setTimeout(read, LIVE_INPUTS_MS);

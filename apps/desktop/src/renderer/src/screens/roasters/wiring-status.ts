@@ -15,7 +15,7 @@ export const wiringWait = (roast: RoastState, otherName: string | undefined): Wi
 });
 
 /** The card's one line under its title: when picks save, or what they wait for. */
-export function wiringStatus(wait: WiringWait, connected: boolean): string {
+export function wiringStatus(wait: WiringWait, inUse: boolean): string {
   if (wait.roasting) {
     return wait.otherName
       ? `Waits until ${wait.otherName}'s roast ends`
@@ -26,7 +26,7 @@ export function wiringStatus(wait: WiringWait, connected: boolean): string {
       ? `Waits until ${wait.otherName}'s drum has cooled`
       : 'Waits until the drum has cooled';
   }
-  return connected ? 'Saves as you pick · reconnects the roaster' : 'Saves as you pick';
+  return inUse ? 'Saves as you pick · reconnects the roaster' : 'Saves as you pick';
 }
 
 export const isWaiting = (wait: WiringWait) => wait.roasting || wait.drumCooling;

@@ -2,6 +2,7 @@ import { DEFAULT_TC4_WIRING, err, ok, READY_ROAST } from '@roastpilot/shared';
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { silentLogger } from '@roastpilot/core';
 import { CONNECTED, fakeApi, renderApp } from '../../test/render-app';
 import { POPPER, SKYWALKER } from '../../test/roasters';
 import { RoastersScreen } from './RoastersScreen';
@@ -40,6 +41,41 @@ describe('WiringCard', () => {
     expect(await inputs.findByText('165.2')).toBeInTheDocument();
     const tiles = inputs.getAllByRole('listitem').map((tile) => tile.textContent);
     expect(tiles).toEqual(['TC1212.4°CET', 'TC2165.2°CBT', 'TC321.9°C\u00a0', 'TC422.1°C\u00a0']);
+  });
+
+  it('reads one at a time, never stacking calls, and logs a failing board once', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      let pending = 0;
+      let most = 0;
+      const api = fakeApi({
+        readRoasterInputs: vi.fn(async () => {
+          pending++;
+          most = Math.max(most, pending);
+          // Slower than the 2 s between reads.
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+          pending--;
+          return err({ kind: 'no-reply' as const, command: 'READ' });
+        }),
+      });
+      const warn = vi.fn();
+      renderApp(<RoastersScreen />, { connection: CONNECTED, roasters }, api, {
+        ...silentLogger,
+        warn,
+        child: () => ({ ...silentLogger, warn }),
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(16_000);
+      });
+      expect(most).toBe(1);
+      expect(vi.mocked(api.readRoasterInputs).mock.calls.length).toBeGreaterThan(2);
+      expect(warn.mock.calls.filter(([event]) => event === 'roasters.inputs-failed')).toHaveLength(
+        1,
+      );
+      expect(card().getByText("Couldn't read the inputs · check the board")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('has no live readings while disconnected', () => {

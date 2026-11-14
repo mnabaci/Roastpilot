@@ -36,19 +36,21 @@ const FAN_OUTPUTS: readonly SegmentedOption<Tc4Wiring['fanOutput']>[] = [
  * reconnects with the new wiring; nothing changes while a roast or drum cooling runs.
  */
 export function WiringCard({ roaster }: { roaster: Roaster & { wiring: Tc4Wiring } }) {
-  const inUse = useRoasters((s) => activeRoaster(s.roasters));
+  const active = useRoasters((s) => activeRoaster(s.roasters));
   const busy = useRoast((s) => isRoastRunning(s.roast));
   const wait = wiringWait(
     useRoast((s) => s.roast),
-    busy && inUse && inUse.id !== roaster.id ? inUse.name : undefined,
+    busy && active && active.id !== roaster.id ? active.name : undefined,
   );
   const connected = useConnection((s) => s.connection.status === 'connected') && roaster.active;
+  // Connecting, or lost and retrying: a save reconnects then too.
+  const inUse = useConnection((s) => s.connection.status !== 'disconnected') && roaster.active;
   const live = useLiveInputs(connected && !busy);
   const { save, saving, problem } = useSaveWiring(roaster);
   const { wiring } = roaster;
   const disabled = isWaiting(wait) || saving;
   return (
-    <SettingRows title="Wiring" hint={wiringStatus(wait, connected)}>
+    <SettingRows title="Wiring" hint={wiringStatus(wait, inUse)}>
       {problem ? (
         <p role="alert" className="pt-2 text-label text-critical-text">
           {problem}
