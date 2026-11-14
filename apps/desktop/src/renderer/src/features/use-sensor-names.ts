@@ -1,5 +1,6 @@
 import {
   DEFAULT_TEMP_NAMES,
+  optionalSensorNames,
   sensorNames,
   type Channel,
   type SensorNames,
@@ -21,8 +22,7 @@ export function useSensorNames(id = 'bt'): SensorNames {
  */
 export function useOptionalSensor(id: string): SensorNames | undefined {
   const channels = useConnectedChannels();
-  const sensor = channels?.find((c) => c.id === id && c.kind === 'sensor');
-  return sensor?.kind === 'sensor' ? { name: sensor.name, short: sensor.short } : undefined;
+  return channels ? optionalSensorNames(channels, id) : undefined;
 }
 
 function useConnectedChannels(): readonly Channel[] | undefined {

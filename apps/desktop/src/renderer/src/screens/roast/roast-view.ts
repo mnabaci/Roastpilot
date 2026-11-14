@@ -111,7 +111,7 @@ function aidsOf(input: RoastViewInput, window: TimeWindow, nowS: number): ChartA
   ];
 }
 
-/** The coolest temperature drawn in the window: live, ghost, plan and projection. */
+/** The coolest temperature drawn in the window: live, ET, ghost, plan and projection. */
 function lowestInView(
   lines: readonly LineLayer[],
   aids: readonly ChartAid[],

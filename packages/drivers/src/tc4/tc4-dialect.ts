@@ -52,3 +52,25 @@ export interface Tc4InputProbe {
   /** °C per input; null for one with no value. */
   parse(line: string): Result<(number | null)[], DriverError>;
 }
+
+/**
+ * A dialect's safety data must name its own outputs (ADR 0026): a typo would turn every safe stop
+ * into the fallback, or put a stray value into every reading. A programmer error, so it throws.
+ */
+export function checkDialect(dialect: Tc4Dialect): void {
+  const outputs = new Set(dialect.channels.filter((c) => c.kind === 'output').map((c) => c.id));
+  const sensors = dialect.channels.filter((c) => c.kind === 'sensor').map((c) => c.id);
+  const drives = (channel: string) =>
+    outputs.has(channel) && dialect.outputCommands[channel] !== undefined;
+  const problems = [
+    ...dialect.safeStop.filter(([channel]) => !drives(channel)).map(([c]) => `safe stop: ${c}`),
+    ...Object.keys(dialect.fallbackStop.leaves)
+      .filter((channel) => !outputs.has(channel))
+      .map((c) => `fallback leaves: ${c}`),
+    ...sensors.filter((id) => outputs.has(id)).map((id) => `sensor named like an output: ${id}`),
+    ...(dialect.safeStop.some(([channel, value]) => channel === 'heater' && value === 0)
+      ? []
+      : ['safe stop never sets the heater to 0']),
+  ];
+  if (problems.length > 0) throw new Error(`Bad TC4 dialect: ${problems.join('; ')}`);
+}

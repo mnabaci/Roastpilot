@@ -41,7 +41,8 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
   const lost = useConnection((s) => s.connection.status === 'lost');
   const numbers = useMemo(() => roastNumbers(roast, readings), [roast, readings]);
   // With no roaster, the last temperature would look live: show dashes instead.
-  const shown = connected ? numbers : { ...numbers, bt: undefined, et: undefined, ror: undefined };
+  // ET needs no dash here: it only shows while the connected roaster has one (useOptionalSensor).
+  const shown = connected ? numbers : { ...numbers, bt: undefined, ror: undefined };
   const smoothingS = useSettings((s) => s.settings.chartSmoothingS);
   const unit = useTemperatureUnit();
   const temp = useSensorNames();

@@ -19,7 +19,7 @@ import {
 import { BoardEcho } from './board-echo';
 import { CommandQueue } from './command-queue';
 import { readAllInputs } from './read-all-inputs';
-import type { Tc4Dialect, Tc4Reply } from './tc4-dialect';
+import { checkDialect, type Tc4Dialect, type Tc4Reply } from './tc4-dialect';
 
 export interface Tc4DriverOptions {
   dialect: Tc4Dialect;
@@ -50,6 +50,7 @@ export class Tc4Driver implements RoasterDriver {
   #pendingReads = 0;
 
   constructor(options: Tc4DriverOptions) {
+    checkDialect(options.dialect);
     this.#dialect = options.dialect;
     this.channels = options.dialect.channels;
     this.#transport = options.transport;
@@ -143,7 +144,7 @@ export class Tc4Driver implements RoasterDriver {
         }
       }
     } catch (error) {
-      // Nothing more to do from here: the safety rules keep the heater locked in the app.
+      // Nothing more to send: only a board watchdog, where it has one, or a person can stop it now.
       this.#logger.error('driver.safe-stop-threw', { error: serializeError(error) });
     }
   }

@@ -2,10 +2,11 @@ import type { ComponentProps } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../lib/utils';
 
+/** What a reading's colour means (design system: Colour): heat, air, ET, or plain. */
+const TONE_TEXT = { heat: 'text-heat', air: 'text-air', env: 'text-env', ink: 'text-ink' } as const;
+
 const valueVariants = cva('text-readout-xl tabular-nums', {
-  variants: {
-    tone: { heat: 'text-heat', air: 'text-air', env: 'text-env', ink: 'text-ink' },
-  },
+  variants: { tone: TONE_TEXT },
   defaultVariants: { tone: 'ink' },
 });
 
@@ -29,10 +30,10 @@ export interface StatCardProps
   };
 }
 
-const secondaryVariants = cva('text-heading tabular-nums', {
-  variants: {
-    tone: { heat: 'text-heat', air: 'text-air', env: 'text-env', ink: 'text-ink' },
-  },
+// `leading-none`: the reading sits in the label's line, so the card's readout stays level with the
+// cards beside it.
+const secondaryVariants = cva('text-heading leading-none tabular-nums', {
+  variants: { tone: TONE_TEXT },
   defaultVariants: { tone: 'ink' },
 });
 
@@ -63,9 +64,9 @@ export function StatCard({
       {...props}
     >
       {secondary ? (
-        <div className="flex items-baseline justify-between gap-3">
-          <p className="text-label text-ink-muted">{label}</p>
-          <p className="flex items-baseline gap-1.5">
+        <div className="flex min-w-0 items-baseline justify-between gap-3">
+          <p className="truncate text-label text-ink-muted">{label}</p>
+          <p className="flex shrink-0 items-baseline gap-1.5">
             <span className="text-label text-ink-muted">{secondary.label}</span>
             <span className={secondaryVariants({ tone: secondary.tone })}>
               {isKnown(secondary.value) ? withMinus(secondary.value) : '—'}

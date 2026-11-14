@@ -43,12 +43,21 @@ export type SensorNames = Pick<SensorChannel, 'name' | 'short'>;
 /** What the screen calls the temperature when no roaster names it (History, disconnected). */
 export const DEFAULT_TEMP_NAMES: SensorNames = { name: 'Temperature', short: 'Temp' };
 
+/** What a saved ET line is called when the roaster that recorded it isn't connected (History). */
+export const DEFAULT_ET_NAMES: SensorNames = { name: 'Environment temperature', short: 'ET' };
+
+/** The names a roaster gives sensor `id`, if it has that sensor (ET is optional). */
+export function optionalSensorNames(
+  channels: readonly Channel[],
+  id: string,
+): SensorNames | undefined {
+  const sensor = channels.find((c) => c.id === id && c.kind === 'sensor');
+  return sensor?.kind === 'sensor' ? { name: sensor.name, short: sensor.short } : undefined;
+}
+
 /** The names a roaster gives sensor `id`, or the neutral ones when it has none. */
 export function sensorNames(channels: readonly Channel[], id: string): SensorNames {
-  const sensor = channels.find((c) => c.id === id && c.kind === 'sensor');
-  return sensor?.kind === 'sensor'
-    ? { name: sensor.name, short: sensor.short }
-    : DEFAULT_TEMP_NAMES;
+  return optionalSensorNames(channels, id) ?? DEFAULT_TEMP_NAMES;
 }
 export type OutputChannel = z.infer<typeof OutputChannelSchema>;
 export type Channel = z.infer<typeof ChannelSchema>;
