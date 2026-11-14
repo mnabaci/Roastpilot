@@ -86,8 +86,15 @@ export class RoasterService {
     if (this.#deps.inUse()) return err({ kind: 'in-use' });
     const known = this.#roasters.find((r) => r.id === roaster.id);
     if (!known) return err({ kind: 'not-found', id: roaster.id });
-    // `active` only changes through setActive, and a model never changes.
-    const next = { ...roaster, active: known.active, model: known.model };
+    // `active` only changes through setActive, the wiring and minimum fan through saveWiring, and a
+    // model never changes: a stale record can't undo which output is the heater.
+    const next = {
+      ...roaster,
+      active: known.active,
+      model: known.model,
+      wiring: known.wiring,
+      minFanHeatingPct: known.minFanHeatingPct,
+    };
     const saved = await this.#deps.repository.save(next);
     if (!saved.ok) return this.#refused(saved.error);
     this.#deps.logger.info('roasters.saved', { id: next.id });
