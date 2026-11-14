@@ -1,5 +1,5 @@
 import type { Roaster } from '@roastpilot/shared';
-import { cn, ConfirmDialog, Menu } from '@roastpilot/ui';
+import { cn, ConfirmDialog, Menu, TitleField } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useConnection } from '../../stores/use-stores';
 import { ConnectPanel } from './ConnectPanel';
@@ -26,10 +26,20 @@ export function RoasterPage({ roaster, onDeleted }: { roaster: Roaster; onDelete
   return (
     <div className={cn('flex flex-col gap-4', PAGE_WIDTH)}>
       <header className="flex items-start justify-between gap-4">
-        <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
           {/* As tall as the sidebar's title row, so both titles share a line. */}
           <div className="flex min-h-control-sm min-w-0 items-center">
-            <h2 className="truncate text-title">{roaster.name}</h2>
+            {editing ? (
+              <TitleField
+                value={record.draft.name}
+                invalid={Boolean(record.errors.name)}
+                onChange={(name) => {
+                  record.setDraft({ ...record.draft, name });
+                }}
+              />
+            ) : (
+              <h2 className="truncate text-title">{roaster.name}</h2>
+            )}
           </div>
           {note ? <p className="text-label text-ink-muted">{note}</p> : null}
         </div>
@@ -73,6 +83,11 @@ export function RoasterPage({ roaster, onDeleted }: { roaster: Roaster; onDelete
           </div>
         )}
       </header>
+      {editing && record.errors.name ? (
+        <p role="alert" className="text-label text-critical-text">
+          Name: {record.errors.name}
+        </p>
+      ) : null}
       {actions.problem ? (
         <p role="alert" className="text-label text-critical-text">
           {actions.problem}

@@ -1,5 +1,13 @@
 import type { Bean, BeanId, BeanProcess, BeanSpecies } from '@roastpilot/shared';
-import { Button, cn, NumberField, SegmentedControl, SelectField, TextField } from '@roastpilot/ui';
+import {
+  Button,
+  cn,
+  NumberField,
+  SegmentedControl,
+  SelectField,
+  TextField,
+  TitleField,
+} from '@roastpilot/ui';
 import { ExternalLink } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
@@ -75,7 +83,7 @@ export function BeanEditor({
       { failed: "Couldn't save the bean · try again" },
     );
   };
-  const textCell = (key: 'name' | 'origin' | 'variety' | 'supplier' | 'link', label: string) => (
+  const textCell = (key: 'origin' | 'variety' | 'supplier' | 'link', label: string) => (
     <div className="flex flex-col gap-1">
       <TextField
         label={label}
@@ -111,7 +119,17 @@ export function BeanEditor({
       className={cn('flex flex-col gap-4', PAGE_WIDTH)}
     >
       <header className="flex min-h-control-sm min-w-0 items-center gap-3">
-        <h2 className="min-w-0 truncate text-title">{bean ? `Edit ${bean.name}` : 'Add a bean'}</h2>
+        {/* The name is the title, as on Profiles and Roasters: a field here. */}
+        <div className="flex min-w-0 flex-1">
+          <TitleField
+            value={draft.name}
+            placeholder="Name this bean"
+            invalid={Boolean(errors.name) && draft.name !== initial.name}
+            onChange={(name) => {
+              change({ name });
+            }}
+          />
+        </div>
         <EditActions
           onCancel={onDone}
           onSave={save}
@@ -119,6 +137,11 @@ export function BeanEditor({
           saveLabel={bean ? 'Save' : 'Add bean'}
         />
       </header>
+      {errors.name && draft.name !== initial.name ? (
+        <p role="alert" className="text-label text-critical-text">
+          Name: {errors.name}
+        </p>
+      ) : null}
       {problem ? (
         <p role="alert" className="text-label text-critical-text">
           {problem}
@@ -126,8 +149,8 @@ export function BeanEditor({
       ) : null}
       {/* One 6-column grid for every row, so the columns line up from top to bottom. */}
       <div className="grid grid-cols-6 gap-x-3 gap-y-4">
-        <div className="col-span-3">{textCell('name', 'Name')}</div>
         <div className="col-span-3">{textCell('origin', 'Origin')}</div>
+        <div className="col-span-3">{textCell('variety', 'Variety')}</div>
         <SelectField
           label="Species"
           value={draft.species}
@@ -135,7 +158,7 @@ export function BeanEditor({
           onChange={(species) => {
             change({ species });
           }}
-          className="col-span-2"
+          className="col-span-3"
         />
         <SelectField
           label="Process"
@@ -144,9 +167,8 @@ export function BeanEditor({
           onChange={(process) => {
             change({ process });
           }}
-          className="col-span-2"
+          className="col-span-3"
         />
-        <div className="col-span-2">{textCell('variety', 'Variety')}</div>
         <div className="col-span-2">{numberCell('altitudeM')}</div>
         <div className="col-span-2">{numberCell('screen')}</div>
         <div className="col-span-2 flex flex-col gap-1.5">

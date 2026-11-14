@@ -1,5 +1,5 @@
 import type { ProfileEntry } from '@roastpilot/shared';
-import { AlertBanner, Badge } from '@roastpilot/ui';
+import { AlertBanner, Badge, TitleField } from '@roastpilot/ui';
 import { useState } from 'react';
 import { ProfileActions } from './ProfileActions';
 import type { ProfileDraftState } from './use-profile-draft';
@@ -31,14 +31,12 @@ export function ProfileHeader({
         <div className="flex min-w-60 flex-1 flex-col gap-1">
           {/* The name is the title; in Edit it is a field to rename it. */}
           {editing ? (
-            <input
-              aria-label="Name"
+            <TitleField
               value={draft.name}
-              aria-invalid={Boolean(errors.name) || undefined}
-              onChange={(event) => {
-                change({ ...draft, name: event.target.value });
+              invalid={Boolean(errors.name)}
+              onChange={(name) => {
+                change({ ...draft, name });
               }}
-              className="-mx-2 h-control-sm w-full truncate rounded-md border border-border bg-surface px-2 text-title text-ink hover:border-border-strong focus-visible:outline-2 focus-visible:outline-focus"
             />
           ) : (
             <h2 className="flex h-control-sm min-w-0 items-center truncate text-title text-ink">

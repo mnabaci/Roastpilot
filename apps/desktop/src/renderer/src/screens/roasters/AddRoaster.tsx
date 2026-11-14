@@ -4,7 +4,7 @@ import {
   type RoasterId,
   type RoasterModel,
 } from '@roastpilot/shared';
-import { Button, cn, SelectField, TextField } from '@roastpilot/ui';
+import { Button, cn, SelectField, TitleField } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
@@ -40,22 +40,22 @@ export function AddRoaster({ onAdded }: { onAdded: (id: RoasterId) => void }) {
   };
   return (
     <section aria-label="Add roaster" className={cn('flex flex-col gap-4', PAGE_WIDTH)}>
-      <div className="flex min-h-control-sm min-w-0 items-center">
-        <h2 className="truncate text-title">Add roaster</h2>
-      </div>
-      <div className="flex flex-wrap items-end gap-2">
-        <TextField label="Name" className="min-w-40 flex-1" value={name} onChange={setName} />
-        <SelectField
-          label="Model"
-          className="min-w-32"
-          value={model}
-          options={MODELS}
-          onChange={setModel}
-        />
+      {/* The name is the title, as on every record's page: a field here, Add at the right. */}
+      <header className="flex min-h-control-sm min-w-0 items-center gap-3">
+        <div className="flex min-w-0 flex-1">
+          <TitleField value={name} placeholder="Name this roaster" onChange={setName} />
+        </div>
         <Button size="sm" variant="primary" disabled={name.trim() === ''} onClick={add}>
           Add
         </Button>
-      </div>
+      </header>
+      <SelectField
+        label="Model"
+        className="max-w-80"
+        value={model}
+        options={MODELS}
+        onChange={setModel}
+      />
       {problem ? (
         <p role="alert" className="text-label text-critical-text">
           {problem}

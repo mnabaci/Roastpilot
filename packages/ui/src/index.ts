@@ -20,6 +20,7 @@ export {
 export { PlotEngineProvider, type PlotEngine } from './components/roast-chart/plot-engine';
 export { formatClock, formatNumber } from './lib/format';
 export { TextField } from './components/TextField';
+export { TitleField } from './components/TitleField';
 export { TextAreaField } from './components/TextAreaField';
 export { CollapsibleCard } from './components/CollapsibleCard';
 export { RoastList, type RoastListItem } from './components/RoastList';

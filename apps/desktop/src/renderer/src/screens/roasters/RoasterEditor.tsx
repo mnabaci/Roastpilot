@@ -1,5 +1,5 @@
 import { modelFacts, type Roaster } from '@roastpilot/shared';
-import { CollapsibleCard, NumberField, Switch, TextField } from '@roastpilot/ui';
+import { CollapsibleCard, NumberField, Switch } from '@roastpilot/ui';
 import { useState, type ReactNode } from 'react';
 import { useSettings } from '../../stores/use-stores';
 import { useSaveSettings } from '../settings/use-save-settings';
@@ -15,7 +15,8 @@ import type { RoasterDraftState } from './use-roaster-draft';
 
 /**
  * One roaster's record (docs/spec/ui.md, Roasters screen) as cards that fold to a one-line
- * summary: read until Edit, then fields whose Cancel and Save sit in the page's header. Which
+ * summary: read until Edit, then fields whose name (the title), Cancel and Save sit in the page's
+ * header. Which
  * cards are open is a setting; Edit opens the ones you'd type in, and a card with a problem stays
  * open, so a held-back Save is never unexplained.
  */
@@ -97,18 +98,6 @@ export function RoasterEditor({
         <p role="alert" className="text-label text-critical-text">
           {problem}
         </p>
-      ) : null}
-      {editing ? (
-        <div className="flex flex-col gap-1.5 rounded-xl bg-surface px-5 py-4.5">
-          <TextField
-            label="Name"
-            value={draft.name}
-            onChange={(name) => {
-              setDraft({ ...draft, name });
-            }}
-          />
-          {errors.name ? <p className="text-label text-critical-text">{errors.name}</p> : null}
-        </div>
       ) : null}
       {groups.map((group) =>
         group.section ? card(group.section, group.title, hasProblem([group]), cells(group)) : null,
