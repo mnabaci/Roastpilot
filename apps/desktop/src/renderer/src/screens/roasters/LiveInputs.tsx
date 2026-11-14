@@ -21,7 +21,7 @@ export function LiveInputs({
 }) {
   const unit = useTemperatureUnit();
   return (
-    <div className="flex flex-col gap-2 py-4">
+    <div className="flex flex-col gap-2">
       <ul aria-label="Inputs now" className="grid grid-cols-4 gap-3">
         {[1, 2, 3, 4].map((input, i) => {
           const value = inputs?.[i];

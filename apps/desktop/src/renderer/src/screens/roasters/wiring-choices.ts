@@ -70,3 +70,18 @@ export function inputRole(wiring: Tc4Wiring, input: number): 'BT' | 'ET' | undef
 
 export const isInput = (value: number): value is Input =>
   (TC4_INPUTS as readonly number[]).includes(value);
+
+/**
+ * The folded Wiring card's line (docs/spec/ui.md, Roasters screen): every setting, numbers first;
+ * the minimum fan only when it is on, as Off says nothing.
+ */
+export function wiringSummary(wiring: Tc4Wiring, minFanHeatingPct: number): string {
+  return [
+    `BT ${inputName(wiring.btInput)}`,
+    wiring.etInput > 0 ? `ET ${inputName(wiring.etInput)}` : 'No ET',
+    `Heater ${wiring.heaterOutput}`,
+    `Fan ${wiring.fanOutput}`,
+    wiring.baud.toLocaleString('en-GB'),
+    ...(minFanHeatingPct > 0 ? [`Min fan ${String(minFanHeatingPct)} %`] : []),
+  ].join(' · ');
+}

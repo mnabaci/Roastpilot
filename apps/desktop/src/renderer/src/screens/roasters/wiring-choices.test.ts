@@ -8,6 +8,7 @@ import {
   withBt,
   withFan,
   withHeater,
+  wiringSummary,
 } from './wiring-choices';
 
 describe('wiring choices', () => {
@@ -51,5 +52,14 @@ describe('wiring choices', () => {
   it('offers the minimum fan as Off, then 5 % steps', () => {
     expect(minFanOptions.slice(0, 3).map((o) => o.label)).toEqual(['Off', '5 %', '10 %']);
     expect(minFanOptions.at(-1)?.label).toBe('100 %');
+  });
+
+  it('sums the wiring up in one line, the minimum fan only when it is on', () => {
+    expect(wiringSummary(DEFAULT_TC4_WIRING, 0)).toBe(
+      'BT TC2 · ET TC1 · Heater OT1 · Fan OT2 · 115,200',
+    );
+    expect(wiringSummary({ ...DEFAULT_TC4_WIRING, etInput: 0, fanOutput: 'IO3' }, 40)).toBe(
+      'BT TC2 · No ET · Heater OT1 · Fan IO3 · 115,200 · Min fan 40 %',
+    );
   });
 });
