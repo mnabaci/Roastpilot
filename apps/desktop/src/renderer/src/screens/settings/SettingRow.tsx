@@ -43,13 +43,25 @@ export function SettingSection({ title, children }: { title: string; children: R
   );
 }
 
-/** Rows in one card; a second card in a section names itself with a card title. */
-export function SettingRows({ title, children }: { title?: string; children: ReactNode }) {
+/**
+ * Rows in one card; a second card in a section names itself with a card title, and may say in one
+ * line under it how its rows behave ("Saves as you pick").
+ */
+export function SettingRows({
+  title,
+  hint,
+  children,
+}: {
+  title?: string;
+  hint?: string;
+  children: ReactNode;
+}) {
   if (title === undefined)
     return <div className="flex flex-col rounded-xl bg-surface px-5">{children}</div>;
   return (
     <section aria-label={title} className="flex flex-col rounded-xl bg-surface px-5 pt-4">
       <h3 className="text-heading">{title}</h3>
+      {hint ? <p className="text-label text-ink-muted">{hint}</p> : null}
       <div className="flex flex-col">{children}</div>
     </section>
   );

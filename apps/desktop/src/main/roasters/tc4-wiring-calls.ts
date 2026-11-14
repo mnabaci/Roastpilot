@@ -1,5 +1,6 @@
 import type { Logger } from '@roastpilot/core';
 import {
+  err,
   ok,
   type ConnectError,
   type ConnectionState,
@@ -26,25 +27,29 @@ export interface Tc4WiringDeps {
 
 /**
  * The Roasters page's generic TC4 calls (docs/spec/roasters.md, Generic TC4): read every input
- * live, and save the wiring, reconnecting when that roaster is the connected one so the new wiring
- * takes over at once.
+ * live, and save the wiring, reconnecting when that roaster is in use (connected, connecting or
+ * lost and retrying), so the new wiring takes over at once.
  */
 export function tc4WiringCalls(deps: Tc4WiringDeps) {
   const connected = () => deps.connection().status === 'connected';
+  const inUse = () => deps.connection().status !== 'disconnected';
   return {
     readInputs: (): Promise<Result<Tc4Inputs, ReadInputsError>> =>
       deps.inputs.read({ connected: connected(), roasting: deps.roasting() }),
 
     saveWiring: async (request: SaveWiringRequest): Promise<Result<Roaster, SaveWiringError>> => {
-      const inUse = connected() && deps.roasters.active().id === request.id;
+      const applies = inUse() && deps.roasters.active().id === request.id;
       const saved = await deps.roasters.saveWiring(request, deps.roasting());
-      if (!saved.ok || !inUse) return saved;
-      const reconnected = await deps.reconnect();
-      // The wiring is saved either way; the connection card shows a failed reconnect.
-      if (!reconnected.ok) {
-        deps.logger.warn('roasters.wiring-reconnect-failed', { error: reconnected.error });
+      if (!saved.ok || !applies) return saved;
+      // A roast started while it saved: never safe-stop it; the wiring applies on the next Connect.
+      if (deps.roasting()) {
+        deps.logger.info('roasters.wiring-reconnect-deferred', { id: request.id });
+        return saved;
       }
-      return ok(saved.value);
+      const reconnected = await deps.reconnect();
+      if (reconnected.ok) return ok(saved.value);
+      deps.logger.warn('roasters.wiring-reconnect-failed', { error: reconnected.error });
+      return err({ kind: 'reconnect-failed', error: reconnected.error });
     },
   };
 }

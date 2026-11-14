@@ -1,4 +1,4 @@
-import { DEFAULT_TC4_WIRING, ok, READY_ROAST } from '@roastpilot/shared';
+import { DEFAULT_TC4_WIRING, err, ok, READY_ROAST } from '@roastpilot/shared';
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -37,9 +37,9 @@ describe('WiringCard', () => {
   it('shows TC1–TC4 live while connected, with BT and ET under theirs', async () => {
     renderApp(<RoastersScreen />, { connection: CONNECTED, roasters }, withInputs());
     const inputs = within(await screen.findByRole('list', { name: 'Inputs now' }));
-    expect(await inputs.findByText('165.2 °C')).toBeInTheDocument();
+    expect(await inputs.findByText('165.2')).toBeInTheDocument();
     const tiles = inputs.getAllByRole('listitem').map((tile) => tile.textContent);
-    expect(tiles).toEqual(['TC1212.4 °CET', 'TC2165.2 °CBT', 'TC321.9 °C ', 'TC422.1 °C ']);
+    expect(tiles).toEqual(['TC1212.4°CET', 'TC2165.2°CBT', 'TC321.9°C\u00a0', 'TC422.1°C\u00a0']);
   });
 
   it('has no live readings while disconnected', () => {
@@ -60,6 +60,48 @@ describe('WiringCard', () => {
       'aria-disabled',
       'true',
     );
+  });
+
+  it('says it saved but the roaster did not come back, and why', async () => {
+    const api = fakeApi({
+      saveRoasterWiring: vi.fn(() =>
+        Promise.resolve(
+          err({
+            kind: 'reconnect-failed' as const,
+            error: { kind: 'no-reply' as const, command: 'CHAN;1200' },
+          }),
+        ),
+      ),
+    });
+    renderApp(<RoastersScreen />, { connection: CONNECTED, roasters }, api);
+    await act(async () => {
+      await userEvent.click(card().getByRole('radio', { name: 'IO3' }));
+    });
+    expect(await card().findByRole('alert')).toHaveTextContent(
+      'Saved · No reply · check the baud, and that aArtisanQ_PID is flashed',
+    );
+  });
+
+  it("names the other roaster when it is that one's roast the wiring waits for", async () => {
+    const simulatorActive = [
+      { ...SKYWALKER, name: 'Simulator', active: true },
+      { ...POPPER, active: false },
+    ];
+    renderApp(
+      <RoastersScreen />,
+      {
+        connection: CONNECTED,
+        roasters: simulatorActive,
+        roast: { ...READY_ROAST, phase: 'roasting' },
+      },
+      withInputs(),
+    );
+    await userEvent.click(
+      within(screen.getByRole('list', { name: 'Roasters' })).getByRole('button', {
+        name: /Popper/,
+      }),
+    );
+    expect(card().getByText("Waits until Simulator's roast ends")).toBeInTheDocument();
   });
 
   it('says when main refused the save', async () => {

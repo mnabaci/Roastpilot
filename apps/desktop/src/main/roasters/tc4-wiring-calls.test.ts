@@ -55,10 +55,40 @@ describe('tc4WiringCalls', () => {
     expect(reconnect).not.toHaveBeenCalled();
   });
 
-  it('keeps the saved wiring when the reconnect fails', async () => {
-    const { calls, reconnect } = setup();
+  it('says why the roaster did not come back after saving', async () => {
+    const { calls, saveWiring, reconnect } = setup();
     reconnect.mockResolvedValueOnce(err({ kind: 'no-reply', command: 'READ' }) as never);
+    expect(await calls.saveWiring(request)).toEqual(
+      err({ kind: 'reconnect-failed', error: { kind: 'no-reply', command: 'READ' } }),
+    );
+    expect(saveWiring).toHaveBeenCalledOnce();
+  });
+
+  it('reconnects a roaster that is lost and retrying too, so the old wiring never comes back', async () => {
+    const { calls, reconnect } = setup({
+      connection: { status: 'lost', target: { kind: 'serial', path: 'COM3' } },
+    });
+    await calls.saveWiring(request);
+    expect(reconnect).toHaveBeenCalledOnce();
+  });
+
+  it('never reconnects when a roast started while it saved', async () => {
+    let roasting = false;
+    const ctx = setup();
+    ctx.saveWiring.mockImplementationOnce(() => {
+      roasting = true;
+      return Promise.resolve(ok({ ...popper, ...request }));
+    });
+    const calls = tc4WiringCalls({
+      roasters: { saveWiring: ctx.saveWiring, active: () => popper },
+      inputs: { read: ctx.read },
+      connection: () => CONNECTED,
+      roasting: () => roasting,
+      reconnect: ctx.reconnect,
+      logger: silentLogger,
+    });
     expect((await calls.saveWiring(request)).ok).toBe(true);
+    expect(ctx.reconnect).not.toHaveBeenCalled();
   });
 
   it('reads the inputs with whether a roast runs', async () => {
