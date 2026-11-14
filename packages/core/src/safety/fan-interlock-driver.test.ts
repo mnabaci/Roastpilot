@@ -125,6 +125,38 @@ describe('FanInterlockDriver', () => {
     expect(last('fan')).toBeGreaterThanOrEqual(40);
   });
 
+  it('raises the fan for a heater that races a lower fan from a standstill', async () => {
+    const { inner, driver } = await setup();
+    await Promise.all([driver.setOutput('heater', 80), driver.setOutput('fan', 10)]);
+    expect(inner.sent).toEqual([
+      ['fan', 40],
+      ['heater', 80],
+      ['fan', 40],
+    ]);
+  });
+
+  it('still holds the fan after a safe stop, as that may not have reached the board', async () => {
+    const { inner, driver } = await setup();
+    await driver.setOutput('heater', 60);
+    await driver.safeStop();
+    inner.sent.length = 0;
+    await driver.setOutput('fan', 0);
+    expect(inner.sent).toEqual([['fan', 40]]);
+  });
+
+  it('resets only once a reconnect worked, after anything still in flight', async () => {
+    const { inner, driver } = await setup();
+    await driver.setOutput('fan', 70);
+    const late = driver.setOutput('fan', 70);
+    await Promise.all([late, driver.connect()]);
+    inner.sent.length = 0;
+    await driver.setOutput('heater', 60);
+    expect(inner.sent).toEqual([
+      ['fan', 40],
+      ['heater', 60],
+    ]);
+  });
+
   it('counts a heater command that failed as maybe on: a lower fan is still held', async () => {
     const { inner, driver } = await setup();
     await driver.setOutput('fan', 50);

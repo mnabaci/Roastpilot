@@ -34,13 +34,19 @@ export class FanInterlockDriver implements RoasterDriver {
     return this.#inner.channels;
   }
 
-  async connect(): Promise<Result<void, DriverError>> {
-    // The board's outputs are off after its handshake (a TC4 dialect switches them off), so the
-    // first heater command raises the fan.
-    this.#heater = 0;
-    this.#fan = 0;
-    this.#holding = false;
-    return this.#inner.connect();
+  connect(): Promise<Result<void, DriverError>> {
+    // In line with the outputs, so a command still in flight can't land after the reset. The
+    // board's outputs are off after its handshake (the stock TC4 dialect switches them off), so
+    // the first heater command raises the fan.
+    return this.#oneAtATime(async () => {
+      const connected = await this.#inner.connect();
+      if (connected.ok) {
+        this.#heater = 0;
+        this.#fan = 0;
+        this.#holding = false;
+      }
+      return connected;
+    });
   }
 
   read(): Promise<Result<Reading, DriverError>> {
@@ -54,12 +60,9 @@ export class FanInterlockDriver implements RoasterDriver {
   }
 
   safeStop(): Promise<void> {
-    // In line with the outputs: a heater command sent before it can't land after it.
-    return this.#oneAtATime(async () => {
-      await this.#inner.safeStop();
-      this.#heater = 0;
-      this.#holding = false;
-    });
+    // In line with the outputs: a heater command sent before it can't land after it. The heater
+    // stays counted as maybe on (a safe stop can fail unseen); only a heater 0 that took clears it.
+    return this.#oneAtATime(() => this.#inner.safeStop());
   }
 
   disconnect(): Promise<void> {
