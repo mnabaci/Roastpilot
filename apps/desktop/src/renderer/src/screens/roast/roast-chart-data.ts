@@ -6,6 +6,7 @@ import {
   smoothCurve,
 } from '@roastpilot/core';
 import {
+  DEFAULT_ET_NAMES,
   DEFAULT_TEMP_NAMES,
   type CurvePoint,
   type Reading,
@@ -115,9 +116,6 @@ function untilRoastEnd(roast: RoastState, readings: readonly Reading[]): readonl
   return ended ? readings.filter((r) => r.atMs <= ended.atMs) : readings;
 }
 
-/** What the ET line is called when the roaster that recorded it isn't connected (History). */
-const DEFAULT_ET_NAME = 'ET';
-
 /**
  * Temperature (as the roaster names it), ET where it was recorded, RoR, heater and fan layers plus
  * event markers, in seconds since charge (or since the first reading). Missing readings are breaks;
@@ -129,7 +127,7 @@ export function roastChartData(
   {
     smoothingS,
     tempName = DEFAULT_TEMP_NAMES.name,
-    etName = DEFAULT_ET_NAME,
+    etName = DEFAULT_ET_NAMES.short,
     plan,
   }: {
     smoothingS: number;

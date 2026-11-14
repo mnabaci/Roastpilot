@@ -39,7 +39,7 @@ export function RoastNumbersRow({
               secondary: {
                 label: etShort,
                 value: numbers.et === undefined ? undefined : tempNumber(numbers.et, unit, 1),
-                unit: tempSymbol(unit),
+                // No unit: the big number beside it says it, and the card stays narrow enough.
                 tone: 'env' as const,
               },
             }
