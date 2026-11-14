@@ -41,3 +41,14 @@ export const EtNotYetRead: Story = {
 export const NoValueYet: Story = {
   args: { label: 'Rate of rise', value: null, unit: '°C/min', context: 'Last 30 s', tone: 'air' },
 };
+/** One of a board's inputs on the Roasters page: a small tile inside a card. */
+export const Compact: Story = {
+  args: { label: 'TC1', value: '24.6', unit: '°C', context: 'BT', tone: 'heat', size: 'compact' },
+  decorators: [
+    (Story) => (
+      <div className="max-w-40 rounded-xl bg-surface p-4">
+        <Story />
+      </div>
+    ),
+  ],
+};

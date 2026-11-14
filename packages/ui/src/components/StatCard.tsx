@@ -5,9 +5,25 @@ import { cn } from '../lib/utils';
 /** What a reading's colour means (design system: Colour): heat, air, ET, or plain. */
 const TONE_TEXT = { heat: 'text-heat', air: 'text-air', env: 'text-env', ink: 'text-ink' } as const;
 
-const valueVariants = cva('text-readout-xl tabular-nums', {
-  variants: { tone: TONE_TEXT },
-  defaultVariants: { tone: 'ink' },
+const valueVariants = cva('tabular-nums', {
+  variants: { tone: TONE_TEXT, size: { default: 'text-readout-xl', compact: 'text-readout-lg' } },
+  defaultVariants: { tone: 'ink', size: 'default' },
+});
+
+/** Compact: a smaller tile inside a card, e.g. one of a board's inputs on the Roasters page. */
+const cardVariants = cva('flex flex-col', {
+  variants: {
+    size: {
+      default: 'gap-1.5 rounded-xl bg-surface px-5 py-4.5',
+      compact: 'gap-1 rounded-lg bg-surface-raised px-3 py-2',
+    },
+  },
+  defaultVariants: { size: 'default' },
+});
+
+const unitVariants = cva('text-ink-muted', {
+  variants: { size: { default: 'text-heading', compact: 'text-label' } },
+  defaultVariants: { size: 'default' },
 });
 
 export interface StatCardProps
@@ -28,6 +44,8 @@ export interface StatCardProps
     unit?: string;
     tone?: VariantProps<typeof valueVariants>['tone'];
   };
+  /** One of several small tiles inside a card; secondary readings are for the default size. */
+  size?: 'default' | 'compact';
 }
 
 // The row is the label's height (see below), so the card's readout stays level with the cards
@@ -64,16 +82,13 @@ export function StatCard({
   context,
   secondary,
   tone,
+  size,
   className,
   ...props
 }: StatCardProps) {
   const hasValue = isKnown(value);
   return (
-    <section
-      aria-label={label}
-      className={cn('flex flex-col gap-1.5 rounded-xl bg-surface px-5 py-4.5', className)}
-      {...props}
-    >
+    <section aria-label={label} className={cn(cardVariants({ size }), className)} {...props}>
       {secondary ? (
         <div className="flex h-(--text-label--line-height) min-w-0 items-center justify-between gap-3">
           <p className="truncate text-label text-ink-muted">{label}</p>
@@ -83,8 +98,8 @@ export function StatCard({
         <p className="text-label text-ink-muted">{label}</p>
       )}
       <p className="flex flex-wrap items-baseline gap-x-1.5">
-        <span className={valueVariants({ tone })}>{hasValue ? withMinus(value) : '—'}</span>
-        {unit && hasValue ? <span className="text-heading text-ink-muted">{unit}</span> : null}
+        <span className={valueVariants({ tone, size })}>{hasValue ? withMinus(value) : '—'}</span>
+        {unit && hasValue ? <span className={unitVariants({ size })}>{unit}</span> : null}
       </p>
       {context ? <p className="text-label text-ink-muted">{context}</p> : null}
     </section>

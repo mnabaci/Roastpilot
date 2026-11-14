@@ -57,4 +57,13 @@ describe('StatCard', () => {
     expect(card).toHaveTextContent('ET—');
     expect(card).not.toHaveTextContent('°F');
   });
+
+  it('shows a compact tile with the same value, unit and context', () => {
+    render(<StatCard label="TC1" value="24.6" unit="°C" context="BT" tone="heat" size="compact" />);
+    const tile = screen.getByRole('region', { name: 'TC1' });
+    expect(tile).toHaveTextContent('24.6');
+    expect(tile).toHaveTextContent('°C');
+    expect(tile).toHaveTextContent('BT');
+    expect(tile.className).toContain('bg-surface-raised');
+  });
 });

@@ -18,3 +18,4 @@ A big live number with a label above and one line of context below.
 ## Layout
 
 - `surface` card, `radius-xl`, padding 18px 20px. Four in a responsive grid (min 210px each), gap `space-4`.
+- **Compact** (`size="compact"`): a small tile inside a card, as for a board's inputs TC1–TC4 on the Roasters page. `surface-raised`, `radius-lg`, padding 8px 12px, gap `space-1`; value at `readout-lg`, unit in `label`. Same colour rules; every tile has its context line, so a row of them is level. No secondary reading.
