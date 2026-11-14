@@ -1,20 +1,42 @@
-import type { ProfileEntry } from '@roastpilot/shared';
-import { RoastChart } from '@roastpilot/ui';
-import { useMemo, useState } from 'react';
+import { tempSymbol, type ProfileEntry } from '@roastpilot/shared';
+import { cn, CollapsibleCard, RoastChart } from '@roastpilot/ui';
+import { useMemo, useState, type ReactNode } from 'react';
+import { useRecordCards } from '../../features/use-record-cards';
+import { PAGE_WIDTH } from '../../lib/page-width';
 import { useSettings } from '../../stores/use-stores';
 import { useProfileLocked } from '../roast/use-active-profile';
 import { CurvePointsTable } from './CurvePointsTable';
 import { movePoint } from './draft-edits';
 import { ProfileHeader } from './ProfileHeader';
-import { isStepProfile } from './profile-draft';
+import { isStepProfile, stepName, type DraftErrors, type ProfileDraft } from './profile-draft';
 import { profilePreview } from './profile-preview';
 import { StepsTable } from './StepsTable';
 import { TopValues } from './TopValues';
 import { useProfileDraft } from './use-profile-draft';
 
+/** "180 °C charge · 150 °C dry end · 1:45 development · 200 °C cap · 150 g". */
+function targetsSummary(draft: ProfileDraft): string {
+  const t = ` ${tempSymbol(draft.unit)}`;
+  return [
+    draft.chargeC.trim() && `${draft.chargeC.trim()}${t} charge`,
+    draft.dryEndC.trim() && `${draft.dryEndC.trim()}${t} dry end`,
+    draft.devTime.trim() && `${draft.devTime.trim()} development`,
+    draft.capC.trim() && `${draft.capC.trim()}${t} cap`,
+    draft.batchG.trim() && `${draft.batchG.trim()} g`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+const hasError = (errors: DraftErrors, keys: (key: string) => boolean): boolean =>
+  Object.keys(errors).some(keys);
+
+const TARGET_KEYS = new Set(['chargeC', 'dryEndC', 'devTime', 'capC', 'batchG']);
+
 /**
- * One profile: its top values, the preview right under them so what you shape stays in view, then
- * its steps (docs/spec/ui.md, Profiles screen, Layout).
+ * One profile, as every record page (docs/spec/ui.md, Read and edit, Profiles screen): its header,
+ * then its parts as cards: Targets, the preview right under them so what you shape stays in view,
+ * then its steps (and curve points). Edit works in place; which cards are open is a setting.
  */
 export function ProfileEditor({
   entry,
@@ -45,8 +67,34 @@ export function ProfileEditor({
           },
         }
       : undefined;
+  const cards = useRecordCards(!readOnly, ['profile.values', 'profile.steps', 'profile.curve']);
+  const card = (key: string, title: string, summary: string, problem: boolean, body: ReactNode) => (
+    <CollapsibleCard
+      title={title}
+      summary={summary}
+      open={cards.isOpen(key, problem)}
+      onOpenChange={(open) => {
+        cards.setOpen(key, open);
+      }}
+    >
+      {body}
+    </CollapsibleCard>
+  );
+  const stepsCard = card(
+    'profile.steps',
+    'Steps',
+    draft.steps.map((step, i) => stepName(step, i)).join(' · '),
+    hasError(errors, (k) => k.startsWith('steps.') || k.startsWith('soak')),
+    <StepsTable
+      draft={draft}
+      errors={errors}
+      steps={steps}
+      readOnly={readOnly}
+      onChange={change}
+    />,
+  );
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-5">
+    <div className={cn('flex min-w-0 flex-1 flex-col gap-4', PAGE_WIDTH)}>
       <ProfileHeader
         entry={entry}
         state={state}
@@ -56,14 +104,20 @@ export function ProfileEditor({
         onEditingChange={setEditing}
         onSelect={onSelect}
       />
-      <TopValues
-        draft={draft}
-        errors={errors}
-        readOnly={readOnly}
-        onChange={(part) => {
-          change({ ...draft, ...part });
-        }}
-      />
+      {card(
+        'profile.values',
+        'Targets',
+        targetsSummary(draft),
+        hasError(errors, (k) => TARGET_KEYS.has(k)),
+        <TopValues
+          draft={draft}
+          errors={errors}
+          readOnly={readOnly}
+          onChange={(part) => {
+            change({ ...draft, ...part });
+          }}
+        />,
+      )}
       <RoastChart
         title="Preview"
         height={200}
@@ -73,19 +127,23 @@ export function ProfileEditor({
         temperatureUnit={draft.unit}
       />
       {steps ? (
-        <StepsTable draft={draft} errors={errors} steps readOnly={readOnly} onChange={change} />
+        stepsCard
       ) : (
         // Steps and curve points side by side, Steps the wider; stacked in a narrower window.
         <div className="grid items-start gap-4 xl:grid-cols-3">
-          <StepsTable
-            className="xl:col-span-2"
-            draft={draft}
-            errors={errors}
-            steps={false}
-            readOnly={readOnly}
-            onChange={change}
-          />
-          <CurvePointsTable draft={draft} errors={errors} readOnly={readOnly} onChange={change} />
+          <div className="xl:col-span-2">{stepsCard}</div>
+          {card(
+            'profile.curve',
+            'Curve points',
+            `${String(draft.points.length)} points`,
+            hasError(errors, (k) => k.startsWith('points.')),
+            <CurvePointsTable
+              draft={draft}
+              errors={errors}
+              readOnly={readOnly}
+              onChange={change}
+            />,
+          )}
         </div>
       )}
     </div>

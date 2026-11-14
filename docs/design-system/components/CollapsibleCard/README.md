@@ -1,6 +1,6 @@
 # CollapsibleCard
 
-A card whose content folds away under its header row, which then says in one line what's inside. History's Roast details: bean, weights, rating and notes under the stat cards. Roasters' Wiring on a Generic TC4: set once, so folded to its summary.
+A card whose content folds away under its header row, which then says in one line what's inside. History's Roast details: bean, weights, rating and notes under the stat cards. Roasters' Wiring on a Generic TC4: set once, so folded to its summary. A roaster's record, one card per part (Batch size, Limits and calibration, Preheat hold…), each folded to its values.
 
 ## Anatomy
 
@@ -19,5 +19,5 @@ A card whose content folds away under its header row, which then says in one lin
 ## Rules
 
 - A real `<button>` with `aria-expanded` and `aria-controls` pointing at the content; its name is the title, the summary its description.
-- The screen keeps open or folded (History saves it as a setting), not the card.
+- The screen keeps open or folded (History and Roasters save it as a setting), not the card.
 - The summary lists only the parts that exist, numbers before words; leave it out when there's nothing to say.

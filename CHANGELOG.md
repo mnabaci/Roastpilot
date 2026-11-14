@@ -7,6 +7,22 @@ a roast: minor for a new roasting capability, patch for everything else
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-11-14
+
+### Changed
+
+- **Beans, profiles and roasters share one page:** the name is the title, and you edit it in
+  place; actions sit on the right, and Cancel and Save replace them while you edit.
+- **Edit in place, nothing lost:** there's no separate editor page any more. Save waits until
+  something changes, and an edit you leave unsaved is kept ("Not saved" on the page, "Edited" in
+  the list).
+- **Every section is a card that folds** to a one-line summary, and Roastpilot remembers which
+  ones you keep open.
+- **A bean reads at a glance:** compact tiles with only the values it has, the shop's site
+  under the supplier, and tasting notes as chips. Editing is one five-column grid.
+- **Copy a profile to another roaster from a picker** once you have more than two roasters, so
+  the "⋯" menu stays short.
+
 ## [0.3.3] - 2026-11-11
 
 ### Changed

@@ -12,7 +12,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BUILT_INS, CURVE, STEPS } from '../../test/profiles';
 import { fakeApi, renderApp } from '../../test/render-app';
-import { roastersWith } from '../../test/roasters';
+import { roastersWith, SIMULATOR } from '../../test/roasters';
 import { ProfilesScreen } from './ProfilesScreen';
 
 const MINE: AutoProfile = { ...STEPS, id: 'custom-1', name: 'Mine' };
@@ -339,7 +339,7 @@ describe('ProfilesScreen', () => {
   it('a curve profile has curve points and no durations', () => {
     const curve = { profile: { ...CURVE, id: 'custom-c', name: 'My curve' }, builtIn: false };
     open(fakeApi(), [...BUILT_INS, curve], 'custom-c');
-    expect(screen.getByRole('heading', { name: 'Curve points' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Curve points' })).toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: /^RoR/ })).toBeNull();
   });
 
@@ -502,8 +502,11 @@ describe('ProfilesScreen', () => {
   it('shows the preview right under the top values, then the steps, then the curve points', async () => {
     const curve = { profile: { ...CURVE, id: 'custom-c', name: 'My curve' }, builtIn: false };
     open(fakeApi(), [...BUILT_INS, curve], 'custom-c');
-    const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
-    expect(headings).toEqual(['My curve', 'Preview', 'Steps', 'Curve points']);
+    // The header, then the cards in order, each named by its title.
+    const parts = screen
+      .getAllByRole('region')
+      .map((r) => r.getAttribute('aria-label') ?? r.querySelector('[id]')?.textContent);
+    expect(parts).toEqual(['Profile', 'Targets', 'Preview', 'Steps', 'Curve points']);
     await startEditing();
     const batch = screen.getByRole('textbox', { name: 'Tuned for' });
     expect(batch).toHaveAccessibleDescription('Batch size');
@@ -595,7 +598,7 @@ describe('ProfilesScreen', () => {
       await userEvent.click(screen.getByRole('menuitem', { name: item }));
     };
 
-    it('Mark as calibrated saves only that, and keeps an unsaved edit', async () => {
+    it('Mark as calibrated saves only that', async () => {
       const calibrated = { ...MINE, needsCalibration: false };
       const api = fakeApi();
       const { stores } = open(api);
@@ -604,14 +607,11 @@ describe('ProfilesScreen', () => {
         return Promise.resolve(ok({ profile, builtIn: false }));
       });
       expect(header().getByText('Needs calibration')).toBeInTheDocument();
-      await edit('BT cap', '205');
       await choose('Mark as calibrated');
       expect(api.saveProfile).toHaveBeenCalledWith(calibrated);
       await waitFor(() => {
         expect(header().queryByText('Needs calibration')).toBeNull();
       });
-      expect(screen.getByRole('textbox', { name: 'BT cap' })).toHaveValue('205');
-      expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
     });
 
     it('can be undone with Mark as needs calibration', async () => {
@@ -707,6 +707,31 @@ describe('ProfilesScreen', () => {
     expect(
       screen.getByRole('button', { name: /^More for (?!Profiles$)/ }).parentElement,
     ).not.toContainElement(message);
+  });
+
+  it('with two other roasters, one Copy item opens a picker', async () => {
+    const api = fakeApi({ copyProfile: vi.fn(() => Promise.resolve(ok(OWN))) });
+    const third = { ...SIMULATOR, id: 3, name: 'Popcorn' };
+    renderApp(
+      <ProfilesScreen />,
+      {
+        profiles: withMine,
+        ...settingsOn('light-steps'),
+        roasters: [...roastersWith(null), third],
+      },
+      api,
+    );
+    await userEvent.click(screen.getByRole('button', { name: /^More for (?!Profiles$)/ }));
+    const items = screen.getAllByRole('menuitem').map((item) => item.textContent);
+    expect(items.filter((label) => label.startsWith('Copy to'))).toEqual([
+      'Copy to another roaster…',
+    ]);
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Copy to another roaster…' }));
+    const dialog = within(screen.getByRole('dialog', { name: 'Copy to another roaster' }));
+    await userEvent.click(dialog.getByRole('button', { name: 'Roaster' }));
+    await userEvent.click(screen.getByRole('option', { name: 'Popcorn' }));
+    await userEvent.click(dialog.getByRole('button', { name: 'Copy' }));
+    expect(api.copyProfile).toHaveBeenCalledWith({ id: 'light-steps', roasterId: 3 });
   });
 
   it('names the copy a roaster already has instead of making another', async () => {

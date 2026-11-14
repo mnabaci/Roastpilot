@@ -23,6 +23,7 @@ const ROAST_DEFAULTS = {
   temperatureUnit: 'c',
   theme: 'dark',
   historyDetailsOpen: true,
+  openCards: ['bean.about', 'profile.values', 'profile.preview', 'profile.steps'],
   safetyNoticeAccepted: 0,
 };
 
@@ -72,6 +73,15 @@ describe('SettingsSchema', () => {
     expect(SettingsSchema.parse({ historyDetailsOpen: 'no' }).historyDetailsOpen).toBe(true);
   });
 
+  it('keeps which record cards are open: what a record is about by default', () => {
+    expect(DEFAULT_SETTINGS.openCards).toContain('bean.about');
+    expect(DEFAULT_SETTINGS.openCards).not.toContain('roaster.batch');
+    expect(SettingsSchema.parse({ openCards: ['roaster.batch'] }).openCards).toEqual([
+      'roaster.batch',
+    ]);
+    expect(SettingsSchema.parse({ openCards: 'x' }).openCards).toEqual(DEFAULT_SETTINGS.openCards);
+  });
+
   it('shows °C unless you choose °F, and reads an older file or an unknown unit as °C', () => {
     expect(DEFAULT_SETTINGS.temperatureUnit).toBe('c');
     expect(SettingsSchema.parse({ theme: 'light' }).temperatureUnit).toBe('c');
@@ -114,6 +124,7 @@ describe('SettingsSchema', () => {
       temperatureUnit: 'f',
       theme: 'system',
       historyDetailsOpen: false,
+      openCards: ['roaster.batch', 'roaster.tuning'],
       safetyNoticeAccepted: 1,
     };
     expect(SettingsSchema.parse(settings)).toEqual(settings);

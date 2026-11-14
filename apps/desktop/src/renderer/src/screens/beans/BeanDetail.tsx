@@ -1,21 +1,27 @@
 import type { Bean, RoastSummary } from '@roastpilot/shared';
-import { Badge, Button, Menu, formatNumber, StatCard } from '@roastpilot/ui';
+import { Badge, Button, cn, Menu, formatNumber, StatCard } from '@roastpilot/ui';
 import { ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 import { planLine } from './batch-format';
 import { beanPlan } from './bean-plan';
 import { usePlanContext } from './use-plan-context';
-import { BeanEditor } from './BeanEditor';
-import { BeanFacts } from './BeanFacts';
+import { BeanAbout } from './BeanAbout';
+import { useBeanDraft } from './use-bean-draft';
+import { RecordHeader } from '../../features/RecordHeader';
+import { useRecordCards } from '../../features/use-record-cards';
+import { PAGE_WIDTH } from '../../lib/page-width';
 import { BeanRoasts } from './BeanRoasts';
 import { StockHistory } from './StockHistory';
 import { AdjustStockDialog } from './AdjustStockDialog';
 import { useLibraryFiles } from '../../features/use-library-files';
 import { useBeanActions } from './use-bean-actions';
 
-type Panel = 'none' | 'edit' | 'adjust-stock';
+type Panel = 'none' | 'adjust-stock';
 
-/** One bean: its record, stock, roasts and what you can do with it (docs/spec/ui.md, Beans screen). */
+/**
+ * One bean: its record, stock, roasts and what you can do with it (docs/spec/ui.md, Beans screen).
+ * Edit works in place, as on Profiles and Roasters: the same cards, the record's values as fields.
+ */
 export function BeanDetail({
   bean,
   beans,
@@ -38,68 +44,100 @@ export function BeanDetail({
   const close = () => {
     setPanel('none');
   };
-
-  if (panel === 'edit') return <BeanEditor bean={bean} onDone={close} onAdded={close} />;
+  const record = useBeanDraft(bean);
+  // An unsaved edit kept from before opens in Edit, so it shows (as on Profiles and Roasters).
+  const [editing, setEditing] = useState(record.edited);
+  const cards = useRecordCards(editing, ['bean.about']);
 
   const low = bean.greenG < bean.lowStockG;
   return (
-    <section aria-label={bean.name} className="flex flex-col gap-5">
-      {/* Everything for this bean in one row: the two you use most, the rest behind ⋯. */}
-      <header className="flex min-h-control-sm flex-wrap items-center gap-3">
-        <h2 className="min-w-0 truncate text-title">{bean.name}</h2>
-        {low ? <Badge tone="heat">Low stock</Badge> : null}
-        {bean.archived ? <Badge>Archived</Badge> : null}
-        <div className="ml-auto flex items-center gap-2">
-          <Button
-            // One primary at a time: an open form has its own.
-            variant={panel === 'none' ? 'primary' : 'secondary'}
-            size="sm"
-            disabled={actions.roastBlocked}
-            onClick={actions.roastThis}
-          >
-            Roast this bean
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => {
-              setPanel('adjust-stock');
-            }}
-          >
-            Adjust stock
-          </Button>
-          {bean.link === null ? null : (
-            <Button variant="ghost" size="sm" icon={<ExternalLink />} onClick={actions.orderAgain}>
-              Order again
+    <section aria-label={bean.name} className={cn('flex flex-col gap-4', PAGE_WIDTH)}>
+      <RecordHeader
+        name={bean.name}
+        editing={editing}
+        badges={
+          low || bean.archived ? (
+            <>
+              {low ? <Badge tone="heat">Low stock</Badge> : null}
+              {bean.archived ? <Badge>Archived</Badge> : null}
+            </>
+          ) : undefined
+        }
+        edit={{
+          name: record.draft.name,
+          onName: (name) => {
+            record.change({ name });
+          },
+          nameError: record.errors.name,
+          edited: record.edited,
+          onCancel: () => {
+            record.cancel();
+            setEditing(false);
+          },
+          onSave: () => {
+            record.save(() => {
+              setEditing(false);
+            });
+          },
+          canSave: record.canSave,
+        }}
+        actions={
+          <>
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={actions.roastBlocked}
+              onClick={actions.roastThis}
+            >
+              Roast this bean
             </Button>
-          )}
-          {/* Edit sits in the same place on every page that has one (docs/spec/ui.md). */}
-          <Button
-            size="sm"
-            onClick={() => {
-              setPanel('edit');
-            }}
-          >
-            Edit
-          </Button>
-          <Menu
-            label={`More for ${bean.name}`}
-            items={[
-              {
-                label: bean.profileId === null ? 'Make a profile' : 'Make another profile',
-                disabled: !actions.canMakeProfile,
-                onSelect: actions.makeProfile,
-              },
-              {
-                label: 'Export this bean',
-                onSelect: () => {
-                  files.exportFile({ kind: 'beans', ids: [bean.id] });
+            <Button
+              size="sm"
+              onClick={() => {
+                setPanel('adjust-stock');
+              }}
+            >
+              Adjust stock
+            </Button>
+            {bean.link === null ? null : (
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={<ExternalLink />}
+                onClick={actions.orderAgain}
+              >
+                Order again
+              </Button>
+            )}
+            {/* Edit sits in the same place on every page that has one (docs/spec/ui.md). */}
+            <Button
+              size="sm"
+              onClick={() => {
+                setEditing(true);
+              }}
+            >
+              Edit
+            </Button>
+            <Menu
+              label={`More for ${bean.name}`}
+              items={[
+                {
+                  label: bean.profileId === null ? 'Make a profile' : 'Make another profile',
+                  disabled: !actions.canMakeProfile,
+                  onSelect: actions.makeProfile,
                 },
-              },
-              { label: bean.archived ? 'Bring back' : 'Archive', onSelect: actions.archive },
-            ]}
-          />
-        </div>
-      </header>
+                {
+                  label: 'Export this bean',
+                  onSelect: () => {
+                    files.exportFile({ kind: 'beans', ids: [bean.id] });
+                  },
+                },
+                { label: bean.archived ? 'Bring back' : 'Archive', onSelect: actions.archive },
+              ]}
+            />
+          </>
+        }
+      />
       <div className="grid grid-cols-2 gap-4">
         <StatCard
           label="Green"
@@ -119,6 +157,11 @@ export function BeanDetail({
           context={bean.avgLossPct === null ? 'Assumes 15% for now' : 'Average of its roasts'}
         />
       </div>
+      {record.problem ? (
+        <p role="alert" className="text-label text-critical-text">
+          {record.problem}
+        </p>
+      ) : null}
       {actions.problem ? (
         <p role="alert" className="text-label text-critical-text">
           {actions.problem}
@@ -126,7 +169,15 @@ export function BeanDetail({
       ) : null}
       <AdjustStockDialog bean={bean} open={panel === 'adjust-stock'} onClose={close} />
       <StockHistory bean={bean} />
-      <BeanFacts bean={bean} />
+      <BeanAbout
+        bean={bean}
+        state={record}
+        editing={editing}
+        open={cards.isOpen('bean.about', editing && Object.keys(record.errors).length > 0)}
+        onOpenChange={(open) => {
+          cards.setOpen('bean.about', open);
+        }}
+      />
       <BeanRoasts bean={bean} roasts={roasts} onOpen={onOpenRoast} />
     </section>
   );

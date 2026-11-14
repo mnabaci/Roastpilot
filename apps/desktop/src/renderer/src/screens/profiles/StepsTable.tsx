@@ -65,13 +65,8 @@ export function StepsTable({
   );
   const carried = drag.carried && draft.steps[drag.carried.index];
   return (
-    <section
-      aria-labelledby="steps-heading"
-      className={cn('flex min-w-0 flex-col gap-2', className)}
-    >
-      <h2 id="steps-heading" className="text-heading">
-        Steps
-      </h2>
+    // In the page's Steps card, which names it.
+    <div className={cn('flex min-w-0 flex-col gap-2', className)}>
       <DndContext {...drag.context}>
         <table className="w-full border-collapse">
           <StepsHead unit={draft.unit} steps={steps} readOnly={readOnly} />
@@ -144,6 +139,6 @@ export function StepsTable({
       <p className="sr-only" aria-live="polite">
         {moves.said}
       </p>
-    </section>
+    </div>
   );
 }

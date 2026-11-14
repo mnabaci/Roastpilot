@@ -1,7 +1,10 @@
 import { tempSymbol, type TemperatureUnit } from '@roastpilot/shared';
 import type { TextCell } from './roaster-draft';
+import type { RoasterSection } from './roaster-summaries';
 
 export interface FieldGroup {
+  /** Its own folding card on the page; tuning's groups share one. */
+  section?: RoasterSection;
   title: string;
   /** One line under the title. */
   hint?: string;
@@ -11,6 +14,7 @@ export interface FieldGroup {
 /** What most people set (docs/spec/ui.md, Roasters screen), temperatures in `unit`. */
 export const everydayFields = (unit: TemperatureUnit): readonly FieldGroup[] => [
   {
+    section: 'batch',
     title: 'Batch size',
     cells: [
       { key: 'batchMinG', label: 'Min', unit: 'g' },
@@ -19,6 +23,7 @@ export const everydayFields = (unit: TemperatureUnit): readonly FieldGroup[] => 
     ],
   },
   {
+    section: 'limits',
     title: 'Limits and calibration',
     cells: [
       { key: 'maxTempC', label: 'Max temp', unit: tempSymbol(unit) },
@@ -27,6 +32,7 @@ export const everydayFields = (unit: TemperatureUnit): readonly FieldGroup[] => 
     ],
   },
   {
+    section: 'preheat',
     title: 'Preheat hold',
     hint: 'Next batch: within 20 min of the last roast',
     cells: [
@@ -38,6 +44,7 @@ export const everydayFields = (unit: TemperatureUnit): readonly FieldGroup[] => 
 
 /** Only on a roaster whose drum has a speed (docs/spec/roasters.md, Drum speed). */
 export const DRUM_FIELDS: FieldGroup = {
+  section: 'drum',
   title: 'Drum',
   hint: 'Usual speed · from Preheat, and while cooling',
   cells: [{ key: 'drumSpeedPct', label: 'Drum speed', unit: '%' }],

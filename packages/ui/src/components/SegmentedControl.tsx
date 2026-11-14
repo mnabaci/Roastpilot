@@ -13,6 +13,8 @@ export interface SegmentedControlProps<T> {
   value: T;
   onChange: (value: T) => void;
   disabled?: boolean;
+  /** Takes its container's width, the options sharing it equally (a form column's Decaf). */
+  fill?: boolean;
   className?: string;
 }
 
@@ -30,6 +32,7 @@ export function SegmentedControl<T extends string | number | boolean>({
   value,
   onChange,
   disabled,
+  fill = false,
   className,
 }: SegmentedControlProps<T>) {
   const at = options.findIndex((o) => o.value === value);
@@ -53,6 +56,7 @@ export function SegmentedControl<T extends string | number | boolean>({
       aria-disabled={disabled}
       className={cn(
         'inline-flex flex-wrap gap-0.5 rounded-md bg-surface-raised p-1',
+        fill && 'flex w-full flex-nowrap',
         disabled && 'opacity-50',
         className,
       )}
@@ -76,6 +80,7 @@ export function SegmentedControl<T extends string | number | boolean>({
               // The pill is 36 px inside the group's 4 px padding; the hit area reaches into that
               // padding, so each option is a full 44 px (control-sm) target.
               'relative h-9 rounded-sm px-3 text-body font-semibold whitespace-nowrap tabular-nums before:absolute before:inset-x-0 before:-inset-y-1 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed',
+              fill && 'min-w-0 flex-1',
               chosen
                 ? 'bg-heat-tint text-heat'
                 : 'text-ink-muted hover:bg-surface-hover hover:text-ink',

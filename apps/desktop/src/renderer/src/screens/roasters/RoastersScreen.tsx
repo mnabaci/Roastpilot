@@ -9,7 +9,7 @@ import { useRun } from '../../features/use-run';
 import { useSelection } from '../../features/use-selection';
 import { useToast } from '../../features/use-toast';
 import { activeRoaster } from '../../stores/roasters-store';
-import { useConnection, useRoasters } from '../../stores/use-stores';
+import { useConnection, useEdits, useRoasters } from '../../stores/use-stores';
 import { AddRoaster } from './AddRoaster';
 import { RoasterPage } from './RoasterPage';
 import { modelNote } from './roaster-model';
@@ -22,6 +22,7 @@ export function RoastersScreen() {
   const run = useRun();
   const toast = useToast();
   const roasters = useRoasters((s) => s.roasters);
+  const edited = useEdits((s) => s.roasters);
   // Opens on the active roaster, which is the one in use while connected.
   const [open, setOpen] = useState<Open>({ kind: 'roaster', id: undefined });
   const shown =
@@ -117,7 +118,13 @@ export function RoastersScreen() {
               label: r.name,
               detail: selection.selecting && r.active ? 'Active' : modelNote(r),
               locked: r.active,
-              badge: r.active ? <Badge tone="air">Active</Badge> : undefined,
+              badge:
+                r.active || edited[r.id] ? (
+                  <span className="flex shrink-0 gap-1">
+                    {r.active ? <Badge tone="air">Active</Badge> : null}
+                    {edited[r.id] ? <Badge tone="heat">Edited</Badge> : null}
+                  </span>
+                ) : undefined,
             }))}
             openId={shown?.id}
             onOpen={openRoaster}

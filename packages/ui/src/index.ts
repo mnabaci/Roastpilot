@@ -20,6 +20,7 @@ export {
 export { PlotEngineProvider, type PlotEngine } from './components/roast-chart/plot-engine';
 export { formatClock, formatNumber } from './lib/format';
 export { TextField } from './components/TextField';
+export { TitleField } from './components/TitleField';
 export { TextAreaField } from './components/TextAreaField';
 export { CollapsibleCard } from './components/CollapsibleCard';
 export { RoastList, type RoastListItem } from './components/RoastList';
@@ -31,6 +32,7 @@ export { RoastStrip, type RoastStripProps } from './components/RoastStrip';
 export { type SelectOption } from './components/Select';
 export { SelectField } from './components/SelectField';
 export { NumberField } from './components/NumberField';
+export { ReadValue } from './components/ReadValue';
 export { Switch } from './components/Switch';
 export { SegmentedControl, type SegmentedOption } from './components/SegmentedControl';
 export { NavList } from './components/NavList';

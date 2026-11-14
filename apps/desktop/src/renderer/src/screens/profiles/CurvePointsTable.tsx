@@ -23,13 +23,8 @@ export function CurvePointsTable({
     });
   };
   return (
-    <section
-      aria-labelledby="curve-heading"
-      className="flex max-w-sm min-w-0 flex-col gap-2 xl:max-w-none"
-    >
-      <h2 id="curve-heading" className="text-heading">
-        Curve points
-      </h2>
+    // In the page's Curve points card, which names it.
+    <div className="flex max-w-sm min-w-0 flex-col gap-2 xl:max-w-none">
       <p className="text-body text-ink-muted">
         {formatClock(0)} · {draft.chargeC} {tempSymbol(draft.unit)} (charge temp)
       </p>
@@ -90,6 +85,6 @@ export function CurvePointsTable({
           Add point
         </Button>
       )}
-    </section>
+    </div>
   );
 }

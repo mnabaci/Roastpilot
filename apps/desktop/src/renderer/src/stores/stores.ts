@@ -15,6 +15,7 @@ import { createAutoStore, type AutoStore } from './auto-store';
 import { createBeansStore, type BeansStore } from './beans-store';
 import { createCoachStore, type CoachStore } from './coach-store';
 import { createConnectionStore, type ConnectionStore } from './connection-store';
+import { createEditsStore, type EditsStore } from './edits-store';
 import { createRoastersStore, type RoastersStore } from './roasters-store';
 import { createRoastStore, type RoastStore } from './roast-store';
 import { createRoastViewStore, type RoastViewStore } from './roast-view-store';
@@ -35,6 +36,8 @@ export interface Stores {
   coach: CoachStore;
   roasters: RoastersStore;
   beans: BeansStore;
+  /** Bean and roaster edits not saved yet (Profiles keeps its own in `auto`). */
+  edits: EditsStore;
   /** The installed version and updates (Settings › About, the Settings tab's dot). */
   updates: UpdatesStore;
   /** One-line notes for actions that failed where the screen shows nothing. */
@@ -76,6 +79,7 @@ export function createStores(seed: StoresSeed = {}): Stores {
     coach: createCoachStore(seed.coach),
     roasters: createRoastersStore(seed.roasters),
     beans: createBeansStore(seed.beans, seed.setup, seed.currentRoastId),
+    edits: createEditsStore(),
     updates: createUpdatesStore(seed.version, seed.update),
     toasts: createToastsStore(),
     roastView: createRoastViewStore(),

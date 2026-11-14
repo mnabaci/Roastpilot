@@ -1,0 +1,56 @@
+<!-- @dsCard group="Inputs" height=150 subtitle="A record's name in Edit, and with a problem" -->
+<!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
+<link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+  }
+  .wrap {
+    padding: 20px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 480px;
+  }
+  input {
+    height: 44px;
+    width: calc(100% + 16px);
+    margin: 0 -8px;
+    box-sizing: border-box;
+    padding: 0 8px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  input:hover {
+    border-color: var(--border-strong);
+  }
+  input:focus-visible {
+    outline: 2px solid var(--focus);
+  }
+  input.invalid {
+    border-color: var(--critical);
+  }
+  p {
+    margin: -8px 0 0;
+    font-size: 13px;
+    color: var(--critical-text);
+  }
+</style>
+<div class="wrap">
+  <input aria-label="Name" value="Skywalker" />
+  <input aria-label="Name" class="invalid" value="" aria-invalid="true" />
+  <p>Name: Needs a name</p>
+</div>

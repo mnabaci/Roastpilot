@@ -1,10 +1,14 @@
 import type { ProfileEntry } from '@roastpilot/shared';
 import { AlertBanner, Badge } from '@roastpilot/ui';
 import { useState } from 'react';
-import { ProfileActions } from './ProfileActions';
+import { RecordHeader } from '../../features/RecordHeader';
+import { useProfileActions } from './ProfileActions';
 import type { ProfileDraftState } from './use-profile-draft';
 
-/** The name as the title with its badges and actions, then what holds it back: a banner while Auto runs. */
+/**
+ * The profile's header, as every record page's (RecordHeader): its name as the title, its badges
+ * under it, its actions on the right; then what holds it back: a banner while Auto runs.
+ */
 export function ProfileHeader({
   entry,
   state,
@@ -18,52 +22,52 @@ export function ProfileHeader({
   state: ProfileDraftState;
   active: boolean;
   locked: boolean;
-  /** Edit mode: the name is a field, and Cancel and Save replace Edit. */
+  /** Edit mode: the name is a field, and Cancel and Save replace the actions. */
   editing: boolean;
   onEditingChange: (editing: boolean) => void;
   onSelect: (id: string) => void;
 }) {
   const { draft, errors, change, edited } = state;
   const [copied, setCopied] = useState<string>();
+  const actions = useProfileActions({
+    entry,
+    state,
+    active,
+    locked,
+    onEditingChange,
+    onSelect,
+    onCopied: setCopied,
+  });
+  const { builtIn } = entry;
+  const { needsCalibration } = entry.profile;
   return (
     <>
-      <header className="flex flex-wrap items-start gap-3">
-        <div className="flex min-w-60 flex-1 flex-col gap-1">
-          {/* The name is the title; in Edit it is a field to rename it. */}
-          {editing ? (
-            <input
-              aria-label="Name"
-              value={draft.name}
-              aria-invalid={Boolean(errors.name) || undefined}
-              onChange={(event) => {
-                change({ ...draft, name: event.target.value });
-              }}
-              className="-mx-2 h-control-sm w-full truncate rounded-md border border-border bg-surface px-2 text-title text-ink hover:border-border-strong focus-visible:outline-2 focus-visible:outline-focus"
-            />
-          ) : (
-            <h2 className="flex h-control-sm min-w-0 items-center truncate text-title text-ink">
-              {draft.name}
-            </h2>
-          )}
-          <div className="flex flex-wrap items-center gap-2">
-            {entry.builtIn ? <Badge tone="neutral">Built-in</Badge> : null}
-            {entry.profile.needsCalibration ? (
-              <Badge tone="neutral">Needs calibration</Badge>
-            ) : null}
-            {edited ? <Badge tone="heat">Not saved</Badge> : null}
-          </div>
-        </div>
-        <ProfileActions
-          entry={entry}
-          state={state}
-          active={active}
-          locked={locked}
-          editing={editing}
-          onEditingChange={onEditingChange}
-          onSelect={onSelect}
-          onCopied={setCopied}
-        />
-      </header>
+      <RecordHeader
+        name={draft.name}
+        editing={editing}
+        badges={
+          active || builtIn || needsCalibration ? (
+            <>
+              {active ? <Badge tone="air">Auto</Badge> : null}
+              {builtIn ? <Badge tone="neutral">Built-in</Badge> : null}
+              {needsCalibration ? <Badge tone="neutral">Needs calibration</Badge> : null}
+            </>
+          ) : undefined
+        }
+        edit={{
+          name: draft.name,
+          onName: (name) => {
+            change({ ...draft, name });
+          },
+          nameError: errors.name,
+          edited,
+          onCancel: actions.cancel,
+          onSave: actions.save,
+          canSave: actions.canSave,
+        }}
+        actions={actions.actions}
+      />
+      {actions.page}
       {/* Why Save (or Use for Auto) waits, plainly, right under the title: it goes at Drop. */}
       {locked ? (
         <AlertBanner kind="info">
@@ -73,11 +77,6 @@ export function ProfileHeader({
         </AlertBanner>
       ) : null}
       {copied ? <p className="text-label text-ink-muted">{copied}</p> : null}
-      {errors.name ? (
-        <p role="alert" className="text-label text-critical-text">
-          Name: {errors.name}
-        </p>
-      ) : null}
     </>
   );
 }

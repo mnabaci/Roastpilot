@@ -1,23 +1,30 @@
 import type { BeanId } from '@roastpilot/shared';
 import { Badge, Button, Dialog, Menu, NavList, SidebarLayout } from '@roastpilot/ui';
 import { Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useDeps } from '../../app/app-context';
 import { SelectionBar } from '../../features/SelectionBar';
 import { useLibraryFiles } from '../../features/use-library-files';
 import { useRun } from '../../features/use-run';
 import { useSelection } from '../../features/use-selection';
 import { useToast } from '../../features/use-toast';
-import { useBeans } from '../../stores/use-stores';
+import { useBeans, useEdits } from '../../stores/use-stores';
 import { useRoastList } from '../history/use-roast-list';
 import { BatchCalculator } from './BatchCalculator';
 import { beanDetail } from './bean-detail';
 import { BeanDetail } from './BeanDetail';
-import { BeanEditor } from './BeanEditor';
+import { AddBean } from './AddBean';
 
 type RightSide = { kind: 'bean' } | { kind: 'add' };
 
 /** Beans on the left, one open on the right, in the shared sidebar (docs/spec/ui.md). */
+/** A row's badges side by side; undefined with none. */
+function listBadges(...badges: (ReactNode | undefined)[]): ReactNode {
+  const shown = badges.filter((b) => b !== undefined);
+  if (shown.length === 0) return undefined;
+  return <span className="flex shrink-0 gap-1">{shown}</span>;
+}
+
 export function BeansScreen({
   onRoast,
   onOpenProfile,
@@ -32,6 +39,7 @@ export function BeansScreen({
   const run = useRun();
   const toast = useToast();
   const beans = useBeans((s) => s.beans);
+  const edited = useEdits((s) => s.beans);
   const roasts = useRoastList() ?? [];
   const [pickedId, setPickedId] = useState<BeanId>();
   const [right, setRight] = useState<RightSide>({ kind: 'bean' });
@@ -136,13 +144,16 @@ export function BeansScreen({
               detail: selection.selecting && bean.archived ? 'Archived' : beanDetail(bean),
               locked: bean.archived,
               // Shown with Show archived, an archived bean says so; in select mode its line does.
-              badge: bean.archived ? (
-                selection.selecting ? undefined : (
-                  <Badge>Archived</Badge>
-                )
-              ) : bean.greenG < bean.lowStockG ? (
-                <Badge tone="heat">Low</Badge>
-              ) : undefined,
+              badge: listBadges(
+                bean.archived ? (
+                  selection.selecting ? undefined : (
+                    <Badge>Archived</Badge>
+                  )
+                ) : bean.greenG < bean.lowStockG ? (
+                  <Badge tone="heat">Low</Badge>
+                ) : undefined,
+                edited[bean.id] ? <Badge tone="heat">Edited</Badge> : undefined,
+              ),
             }))}
             openId={right.kind === 'bean' ? open?.id : undefined}
             onOpen={showBean}
@@ -179,9 +190,8 @@ export function BeansScreen({
       }
     >
       {right.kind === 'add' ? (
-        <BeanEditor
-          bean={undefined}
-          onDone={() => {
+        <AddBean
+          onCancel={() => {
             setRight({ kind: 'bean' });
           }}
           onAdded={showBean}

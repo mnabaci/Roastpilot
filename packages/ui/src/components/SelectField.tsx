@@ -1,6 +1,7 @@
 import { ChevronDown } from 'lucide-react';
 import { useId } from 'react';
 import { cn } from '../lib/utils';
+import { ReadValue } from './ReadValue';
 import { Select, type SelectOption } from './Select';
 
 export interface SelectFieldProps<V extends string> {
@@ -16,6 +17,8 @@ export interface SelectFieldProps<V extends string> {
   /** One line under the field, like the other fields' hints ("First batch"). */
   hint?: string | undefined;
   className?: string;
+  /** Read mode: the chosen option's name as text, "–" for an empty value (ReadValue). */
+  readOnly?: boolean;
 }
 
 /** A labelled drop-down that opens the app's own panel (design system: SelectField, Select). */
@@ -29,9 +32,22 @@ export function SelectField<V extends string>({
   numeric = false,
   hint,
   className,
+  readOnly = false,
 }: SelectFieldProps<V>) {
   const id = useId();
   const current = options.find((o) => o.value === value);
+  if (readOnly) {
+    return (
+      <ReadValue
+        label={label}
+        value={value === '' ? '' : (current?.label ?? '')}
+        hideLabel={hideLabel}
+        numeric={numeric}
+        hint={hint}
+        className={className}
+      />
+    );
+  }
   return (
     <div className={cn('flex min-w-0 flex-col gap-1.5', className)}>
       <label htmlFor={id} className={hideLabel ? 'sr-only' : 'text-label text-ink-muted'}>

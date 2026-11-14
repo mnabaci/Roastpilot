@@ -1,6 +1,7 @@
 import { Search, X } from 'lucide-react';
 import { useId, type ComponentProps } from 'react';
 import { cn } from '../lib/utils';
+import { ReadValue } from './ReadValue';
 
 export interface TextFieldProps extends Omit<
   ComponentProps<'input'>,
@@ -12,6 +13,8 @@ export interface TextFieldProps extends Omit<
   onChange: (value: string) => void;
   /** `search` adds the search icon, a Clear button while there is text, and Escape to clear. */
   type?: 'text' | 'search';
+  /** Read mode: the value as text where the field would be, "–" when empty (ReadValue). */
+  readOnly?: boolean;
 }
 
 /** A labelled single-line text input (design system: TextField). */
@@ -22,9 +25,11 @@ export function TextField({
   type = 'text',
   className,
   onKeyDown,
+  readOnly = false,
   ...props
 }: TextFieldProps) {
   const id = useId();
+  if (readOnly) return <ReadValue label={label} value={value} className={className} />;
   const search = type === 'search';
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>

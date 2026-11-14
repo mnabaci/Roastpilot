@@ -1,5 +1,6 @@
 import { useId, type ComponentProps } from 'react';
 import { cn } from '../lib/utils';
+import { ReadValue } from './ReadValue';
 
 export interface NumberFieldProps extends Omit<
   ComponentProps<'input'>,
@@ -39,24 +40,15 @@ export function NumberField({
   const id = useId();
   const hintId = useId();
   if (readOnly) {
-    const shown = value.trim() === '' ? '–' : unit ? `${value} ${unit}` : value;
     return (
-      <div className={cn('flex flex-col gap-1.5', className)}>
-        <span id={id} className={hideLabel ? 'sr-only' : 'text-label text-ink-muted'}>
-          {label}
-        </span>
-        <p
-          aria-labelledby={id}
-          className={cn(
-            'flex h-control-sm items-center text-body text-ink tabular-nums',
-            // In a table the text lines up with the column's heading, as a field's would.
-            hideLabel && 'px-2.5',
-          )}
-        >
-          {shown}
-        </p>
-        {hint && !invalid ? <p className="text-label text-ink-muted">{hint}</p> : null}
-      </div>
+      <ReadValue
+        label={label}
+        value={value.trim() === '' || !unit ? value : `${value} ${unit}`}
+        hideLabel={hideLabel}
+        numeric
+        hint={invalid ? undefined : hint}
+        className={className}
+      />
     );
   }
   return (

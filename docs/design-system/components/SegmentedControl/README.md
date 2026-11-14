@@ -7,6 +7,7 @@ One choice from a short, fixed set, applied at once: Cool the beans for (2–6 m
 - **Track**: `surface-raised`, `radius-md`, 4px padding, segments side by side 2px apart; wraps onto a second line rather than scrolling.
 - **Segment**: drawn 36px tall (`control-sm` minus the track's padding), `radius-sm`, with its hit area reaching into the track's padding so it is still a full 44px target, 12px side padding, `body` text at 600 in `ink-muted`, tabular and never wrapped, value then unit (`4 min`, `50 °C`, `1:00`).
 - **Chosen**: `heat-tint` fill and `heat` text, the Button toggle look; one is always chosen.
+- **Fill**: in a form's grid (a bean's Decaf), the track takes its column's width and the segments share it equally, so it lines up with the fields beside it.
 
 ## States
 
