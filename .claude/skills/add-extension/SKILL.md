@@ -20,7 +20,7 @@ Extension points are listed in `docs/spec/extensibility.md`. Each is an interfac
 
 ## Drivers specifically
 
-- A board that speaks Artisan's TC4 text protocol (`READ`, `OT1`, …) is a new `Tc4Dialect` in `packages/drivers/src/tc4/`, not a driver class (ADR 0026): its channels, output commands, handshake, `READ` parser and safe stop. Run the `Tc4Driver` tests against it. Any other protocol gets its own driver class.
+- A board that speaks Artisan's TC4 text protocol (`READ`, `OT1`, …) is a new `Tc4Dialect` in `packages/drivers/src/tc4/`, not a driver class (ADR 0026): its channels, output commands, handshake, `READ` parser and safe stop. Give it its own `tc4-driver.<dialect>.test.ts` (handshake, READ parsing, outputs, safe stop and its fallback), modelled on `tc4-driver.sky-command.test.ts`; `Tc4Driver` checks at construction that its safe-stop data names its own outputs. Any other protocol gets its own driver class.
 - Implement `RoasterDriver`: `channels`, `connect`, `read`, `setOutput(channel, value)`, `safeStop`, `disconnect`.
 - Declare channels (id, unit, range, step, read/control) so the UI adapts; never hard-code UI for a roaster.
 - Parse and validate every incoming line; reject garbage without throwing in the read loop.
