@@ -35,6 +35,14 @@ export function createManualRoast({
     latestBt: () => history.latest()?.values.bt,
     readings: () => history.all(),
     canCoolRoaster: () => session.connection.status === 'connected' && !session.safetyStatus.locked,
+    // Nothing to an output the connected roaster lacks: a generic TC4 has no cooler or drum.
+    hasOutput: (channel) => {
+      const { connection } = session;
+      return (
+        connection.status !== 'connected' ||
+        connection.channels.some((c) => c.id === channel && c.kind === 'output')
+      );
+    },
     options: () => {
       const latest = settings.latest;
       return {

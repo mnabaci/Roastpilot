@@ -1,0 +1,73 @@
+import { DEFAULT_TC4_WIRING, ok, READY_ROAST } from '@roastpilot/shared';
+import { act, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
+import { CONNECTED, fakeApi, renderApp } from '../../test/render-app';
+import { POPPER, SKYWALKER } from '../../test/roasters';
+import { RoastersScreen } from './RoastersScreen';
+
+const roasters = [{ ...SKYWALKER, active: false }, POPPER];
+const card = () => within(screen.getByRole('region', { name: 'Wiring' }));
+
+function withInputs() {
+  return fakeApi({
+    readRoasterInputs: vi.fn(() => Promise.resolve(ok([212.4, 165.2, 21.9, 22.1]))),
+    saveRoasterWiring: vi.fn((request) => Promise.resolve(ok({ ...POPPER, ...request }))),
+  });
+}
+
+describe('WiringCard', () => {
+  it('shows only on a roaster with wiring', () => {
+    renderApp(<RoastersScreen />, { roasters: [SKYWALKER] });
+    expect(screen.queryByRole('region', { name: 'Wiring' })).toBeNull();
+  });
+
+  it('saves a pick at once, even while connected, and says it reconnects', async () => {
+    const api = withInputs();
+    renderApp(<RoastersScreen />, { connection: CONNECTED, roasters }, api);
+    expect(card().getByText('Saves as you pick · reconnects the roaster')).toBeInTheDocument();
+    await userEvent.click(card().getByRole('radio', { name: 'IO3 · DC fan' }));
+    expect(api.saveRoasterWiring).toHaveBeenCalledWith({
+      id: POPPER.id,
+      wiring: { ...DEFAULT_TC4_WIRING, fanOutput: 'IO3' },
+      minFanHeatingPct: 0,
+    });
+  });
+
+  it('shows TC1–TC4 live while connected, with BT and ET under theirs', async () => {
+    renderApp(<RoastersScreen />, { connection: CONNECTED, roasters }, withInputs());
+    const inputs = within(await screen.findByRole('list', { name: 'Inputs now' }));
+    expect(await inputs.findByText('165.2 °C')).toBeInTheDocument();
+    const tiles = inputs.getAllByRole('listitem').map((tile) => tile.textContent);
+    expect(tiles).toEqual(['TC1212.4 °CET', 'TC2165.2 °CBT', 'TC321.9 °C ', 'TC422.1 °C ']);
+  });
+
+  it('has no live readings while disconnected', () => {
+    renderApp(<RoastersScreen />, { roasters }, withInputs());
+    expect(screen.queryByRole('list', { name: 'Inputs now' })).toBeNull();
+    expect(card().getByText('Saves as you pick')).toBeInTheDocument();
+  });
+
+  it('waits while a roast runs: no readings, nothing to change', () => {
+    renderApp(
+      <RoastersScreen />,
+      { connection: CONNECTED, roasters, roast: { ...READY_ROAST, phase: 'roasting' } },
+      withInputs(),
+    );
+    expect(card().getByText('Waits until the roast ends')).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Inputs now' })).toBeNull();
+    expect(card().getByRole('radiogroup', { name: 'Heater output' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+  });
+
+  it('says when main refused the save', async () => {
+    const api = fakeApi();
+    renderApp(<RoastersScreen />, { roasters }, api);
+    await act(async () => {
+      await userEvent.click(card().getByRole('radio', { name: 'IO3' }));
+    });
+    expect(await card().findByRole('alert')).toHaveTextContent('Waits until the roast ends');
+  });
+});

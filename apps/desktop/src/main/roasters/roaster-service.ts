@@ -10,6 +10,8 @@ import {
   type Roaster,
   type RoasterError,
   type RoasterId,
+  type SaveWiringError,
+  type SaveWiringRequest,
   type StorageError,
 } from '@roastpilot/shared';
 import { ROASTER_MODELS } from '../roaster-models';
@@ -90,6 +92,29 @@ export class RoasterService {
     if (!saved.ok) return this.#refused(saved.error);
     this.#deps.logger.info('roasters.saved', { id: next.id });
     this.#set(this.#roasters.map((r) => (r.id === next.id ? next : r)));
+    return ok(next);
+  }
+
+  /**
+   * A generic TC4's wiring and minimum fan: unlike the rest of the record, also while it is
+   * connected, so a probe can be picked by its live reading, but never while roasting
+   * (docs/spec/roasters.md, Generic TC4). The caller reconnects a connected roaster.
+   */
+  async saveWiring(
+    { id, wiring, minFanHeatingPct }: SaveWiringRequest,
+    roasting: boolean,
+  ): Promise<Result<Roaster, SaveWiringError>> {
+    if (roasting) return err({ kind: 'roasting' });
+    const known = this.#roasters.find((r) => r.id === id);
+    if (!known) return err({ kind: 'not-found', id });
+    if (!modelFacts(known.model).wiring) {
+      throw new Error(`A ${known.model} roaster has no wiring to save`);
+    }
+    const next = { ...known, wiring, minFanHeatingPct };
+    const saved = await this.#deps.repository.save(next);
+    if (!saved.ok) return this.#refused(saved.error);
+    this.#deps.logger.info('roasters.wiring-saved', { id, wiring, minFanHeatingPct });
+    this.#set(this.#roasters.map((r) => (r.id === id ? next : r)));
     return ok(next);
   }
 

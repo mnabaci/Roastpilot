@@ -9,6 +9,7 @@ import { useConnection } from '../../stores/use-stores';
 import { ConnectPanel } from './ConnectPanel';
 import { EditActions } from '../../features/EditActions';
 import { RoasterEditor } from './RoasterEditor';
+import { WiringCard } from './WiringCard';
 import { useRoasterDraft } from './use-roaster-draft';
 import { WaitingButton } from '../../features/WaitingButton';
 import { useConnectControls } from './use-connect-controls';
@@ -177,6 +178,7 @@ export function RoasterPage({ roaster, onDeleted }: { roaster: Roaster; onDelete
         onConfirm={remove}
       />
       <ConnectPanel controls={connect} />
+      {roaster.wiring ? <WiringCard roaster={{ ...roaster, wiring: roaster.wiring }} /> : null}
       <RoasterEditor roaster={roaster} state={record} editing={editing} />
     </div>
   );

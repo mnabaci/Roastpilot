@@ -21,6 +21,7 @@ import {
   DeleteProfilesRequestSchema,
   RoasterIdSchema,
   RoasterSchema,
+  SaveWiringRequestSchema,
   RoastActionSchema,
   ExportLibraryRequestSchema,
   ExportRoastsRequestSchema,
@@ -70,6 +71,7 @@ export function createIpcHandlers({
   snapshot,
   listPorts,
   createDriver,
+  tc4,
   updates,
   logs,
 }: IpcDeps): IpcHandlers {
@@ -185,6 +187,10 @@ export function createIpcHandlers({
     [IPC_CHANNELS.chooseConnection]: handler((payload) =>
       roasters.chooseConnection(ConnectTargetSchema.parse(payload)),
     ),
+    [IPC_CHANNELS.saveRoasterWiring]: handler((payload) =>
+      tc4.saveWiring(SaveWiringRequestSchema.parse(payload)),
+    ),
+    [IPC_CHANNELS.readRoasterInputs]: handler(() => tc4.readInputs()),
     [IPC_CHANNELS.getAppInfo]: handler(() => updates.info()),
     [IPC_CHANNELS.checkForUpdates]: handler(() => updates.check()),
     [IPC_CHANNELS.restartToUpdate]: handler(() => updates.restart()),

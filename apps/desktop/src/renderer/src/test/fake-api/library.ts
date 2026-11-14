@@ -62,6 +62,8 @@ export const fakeRoastersApi = (): RoastersApi => ({
   deleteRoaster: accepted,
   setActiveRoaster: accepted,
   chooseConnection: accepted,
+  saveRoasterWiring: () => Promise.resolve(err({ kind: 'roasting' as const })),
+  readRoasterInputs: () => Promise.resolve(err({ kind: 'unavailable' as const })),
   onRoasters: listening,
 });
 

@@ -3,7 +3,7 @@
 import { userDataChoice } from './user-data-override';
 import { serializeError } from '@roastpilot/core';
 import { listSerialPorts } from '@roastpilot/drivers';
-import { IPC_CHANNELS, isRoastRunning, ok } from '@roastpilot/shared';
+import { IPC_CHANNELS, isRoastRunning } from '@roastpilot/shared';
 import {
   app,
   BrowserWindow,
@@ -20,7 +20,7 @@ import { join } from 'node:path';
 import { buildAppMenu, hideMacEditExtras } from './app-menu';
 import { createAppServices } from './app-services';
 import { installCrashHandlers } from './crash-handlers';
-import { createDriver } from './driver-factory';
+import { connectWiring } from './connect-wiring';
 import { SimulatorBeans } from './simulator-beans';
 import { createRoastFiles } from './history/roast-files';
 import { broadcast, registerIpcHandlers, registerIpcListener } from './ipc';
@@ -279,13 +279,14 @@ app
           snapshot,
           listPorts: () => listSerialPorts(),
           // Connect uses the active roaster (docs/spec/roasters.md): its model picks the driver.
-          createDriver: (target) => {
-            const made = createDriver(roasters.active(), target, {
-              clock: systemClock,
-              logger: logger.child('driver'),
-            });
-            return made.ok ? ok(simulatorBeans.attach(made.value)) : made;
-          },
+          ...connectWiring({
+            roasters,
+            session,
+            roast,
+            attach: (driver) => simulatorBeans.attach(driver),
+            clock: systemClock,
+            logger,
+          }),
           updates,
           logs: {
             listDays: () => listLogDays(logDir),
