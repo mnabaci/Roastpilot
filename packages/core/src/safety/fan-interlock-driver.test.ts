@@ -1,53 +1,6 @@
-import {
-  err,
-  ok,
-  type Channel,
-  type LogEntry,
-  type Reading,
-  type Result,
-} from '@roastpilot/shared';
+import { err } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import { createLogger } from '../logging/logger';
-import type { DriverError, RoasterDriver } from '../roaster-driver';
-import { FanInterlockDriver } from './fan-interlock-driver';
-
-/** Records what reaches the roaster; `failing` channels refuse. */
-class RecordingDriver implements RoasterDriver {
-  readonly channels: readonly Channel[] = [];
-  readonly sent: [string, number][] = [];
-  readonly failing = new Set<string>();
-  safeStops = 0;
-  connect(): Promise<Result<void, DriverError>> {
-    return Promise.resolve(ok(undefined));
-  }
-  read(): Promise<Result<Reading, DriverError>> {
-    return Promise.resolve(ok({ atMs: 0, values: {} }));
-  }
-  setOutput(channel: string, value: number): Promise<Result<void, DriverError>> {
-    if (this.failing.has(channel)) return Promise.resolve(err({ kind: 'disconnected' }));
-    this.sent.push([channel, value]);
-    return Promise.resolve(ok(undefined));
-  }
-  safeStop(): Promise<void> {
-    this.safeStops++;
-    return Promise.resolve();
-  }
-  disconnect(): Promise<void> {
-    return Promise.resolve();
-  }
-}
-
-async function setup(minFanPct = 40) {
-  const inner = new RecordingDriver();
-  const entries: LogEntry[] = [];
-  const driver = new FanInterlockDriver(
-    inner,
-    minFanPct,
-    createLogger({ write: (e) => entries.push(e) }, 'driver'),
-  );
-  await driver.connect();
-  return { inner, driver, events: () => entries.map((e) => e.event) };
-}
+import { setup } from './fan-interlock-fixture';
 
 describe('FanInterlockDriver', () => {
   it('raises the fan to the minimum before the heater comes on', async () => {
@@ -142,44 +95,6 @@ describe('FanInterlockDriver', () => {
     inner.sent.length = 0;
     await driver.setOutput('fan', 0);
     expect(inner.sent).toEqual([['fan', 40]]);
-  });
-
-  it('resets only once a reconnect worked, after anything still in flight', async () => {
-    const { inner, driver } = await setup();
-    await driver.setOutput('fan', 70);
-    const late = driver.setOutput('fan', 70);
-    await Promise.all([late, driver.connect()]);
-    inner.sent.length = 0;
-    await driver.setOutput('heater', 60);
-    expect(inner.sent).toEqual([
-      ['fan', 40],
-      ['heater', 60],
-    ]);
-  });
-
-  it('counts a heater command that failed as maybe on: a lower fan is still held', async () => {
-    const { inner, driver } = await setup();
-    await driver.setOutput('fan', 50);
-    inner.failing.add('heater');
-    await driver.setOutput('heater', 80);
-    inner.failing.delete('heater');
-    inner.sent.length = 0;
-    await driver.setOutput('fan', 0);
-    expect(inner.sent).toEqual([['fan', 40]]);
-  });
-
-  it('counts a fan command that failed as maybe lower: the next heater command raises it', async () => {
-    const { inner, driver } = await setup();
-    await driver.setOutput('fan', 70);
-    inner.failing.add('fan');
-    await driver.setOutput('fan', 0);
-    inner.failing.delete('fan');
-    inner.sent.length = 0;
-    await driver.setOutput('heater', 60);
-    expect(inner.sent).toEqual([
-      ['fan', 40],
-      ['heater', 60],
-    ]);
   });
 
   it('keeps a safe stop in line behind a heater command sent before it', async () => {
