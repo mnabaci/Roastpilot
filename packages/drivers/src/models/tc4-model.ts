@@ -10,14 +10,18 @@ import { skywalkerModel } from './skywalker-model';
  * Generic TC4): one model for every build, its wiring on the record. It starts from the
  * Skywalker's profiles and gains as templates, marked "needs calibration".
  */
+/** A starting range for a home-built roaster; the record is where it is made its own. */
+const TC4_BATCH = { minG: 100, idealG: 150, maxG: 250 } as const;
+
 export const tc4Model = {
   id: 'tc4',
   ...ROASTER_MODEL_FACTS.tc4,
   // Declared without connecting: the firmware's default wiring, with an ET probe.
   channels: stockTc4Dialect(DEFAULT_TC4_WIRING).channels,
-  profiles: skywalkerModel.profiles,
+  // Templates sized to its own ideal batch, so a batch plan never starts outside its range.
+  profiles: skywalkerModel.profiles.map((profile) => ({ ...profile, batchG: TC4_BATCH.idealG })),
   tuning: skywalkerModel.tuning,
-  batch: { minG: 100, idealG: 150, maxG: 250 },
+  batch: TC4_BATCH,
   coolerHelpsDrum: false,
   createDriver: (target, { clock, logger }, { wiring }) => {
     if (target.kind !== 'serial')

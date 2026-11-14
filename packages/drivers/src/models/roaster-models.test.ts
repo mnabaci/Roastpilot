@@ -57,6 +57,15 @@ describe('model definitions', () => {
     expect(drum(tc4Model)).toBeUndefined();
   });
 
+  it("starts every built-in profile inside the model's batch range", () => {
+    for (const model of MODELS) {
+      for (const profile of model.profiles) {
+        expect(profile.batchG).toBeGreaterThanOrEqual(model.batch.minG);
+        expect(profile.batchG).toBeLessThanOrEqual(model.batch.maxG);
+      }
+    }
+  });
+
   it('a generic TC4 without its wiring is a programmer error', () => {
     expect(() => tc4Model.createDriver({ kind: 'serial', path: 'COM3' }, deps, NO_WIRING)).toThrow(
       /wiring/,

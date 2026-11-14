@@ -13,6 +13,16 @@ export const TC4_BOOT_MS = 1500;
 /** Reading every input at once: TC1–TC4 as logical channels 1–4. */
 const ALL_INPUTS = 'CHAN;1234';
 
+/**
+ * `CHAN` always answers `# Active channels set to …` (cmndreader.cpp). Until it has, the board may
+ * still be starting and would keep its boot mapping (TC2, TC1) and °F: so connect waits for it.
+ */
+const CHAN_ATTEMPTS = 3;
+const isChanAck = (line: string) => line.trimStart().startsWith('# Active channels');
+
+/** Every output the firmware has, whatever the wiring: off on connect, so nothing runs unseen. */
+const ALL_OFF = ['OT1;0', 'OT2;0', 'IO3;0'];
+
 const percent = { kind: 'output', unit: 'percent', min: 0, max: 100, step: 5 } as const;
 
 /** `#` lines are the firmware's acknowledgements (`CHAN` always sends one): never a reply. */
@@ -73,7 +83,17 @@ export function parseAllInputs(line: string): Result<(number | null)[], DriverEr
   return ok(values.slice(1, 5));
 }
 
-/** First READ after the boot wait: one retry, as the board may still be starting. */
+/** `CHAN`, sent again until the board acknowledges it. */
+async function setChannels(link: Tc4Link, command: string): Promise<Result<void, DriverError>> {
+  let last: Result<string, DriverError> = err({ kind: 'no-reply', command });
+  for (let attempt = 0; attempt < CHAN_ATTEMPTS; attempt++) {
+    last = await link.request(command, isChanAck);
+    if (last.ok || last.error.kind !== 'no-reply') break;
+  }
+  return last.ok ? ok(undefined) : last;
+}
+
+/** First READ after the board answered: one retry, as for any line lost on a fresh port. */
 async function firstRead(link: Tc4Link): Promise<Result<void, DriverError>> {
   const first = await link.request('READ', isStockReadReply);
   if (first.ok || first.error.kind !== 'no-reply') return first.ok ? ok(undefined) : first;
@@ -89,10 +109,12 @@ export function stockTc4Dialect(wiring: Tc4Wiring): Tc4Dialect {
 
     async handshake(link, clock) {
       await clock.delay(TC4_BOOT_MS);
-      const chan = await link.send(chanCommand(wiring));
+      const chan = await setChannels(link, chanCommand(wiring));
       if (!chan.ok) return chan;
-      const units = await link.send('UNITS;C');
-      if (!units.ok) return units;
+      for (const command of [...ALL_OFF, 'UNITS;C']) {
+        const sent = await link.send(command);
+        if (!sent.ok) return sent;
+      }
       return firstRead(link);
     },
 
@@ -103,8 +125,12 @@ export function stockTc4Dialect(wiring: Tc4Wiring): Tc4Dialect {
       ['heater', 0],
       ['fan', 100],
     ],
-    // Heater and PID off, fan to the build's auto-cool level (100 by default).
-    fallbackStop: { command: 'PID;STOP', leaves: { heater: 0 } },
+    // PID;STOP switches OT1 off and the fan to auto-cool, but leaves IO3 alone, or sets it to 100,
+    // in most builds (cmndreader.cpp): a heater on IO3 gets its own 0 again instead.
+    fallbackStop:
+      wiring.heaterOutput === 'IO3'
+        ? { command: 'IO3;0', leaves: { heater: 0 } }
+        : { command: 'PID;STOP', leaves: { heater: 0 } },
 
     inputProbe: {
       select: ALL_INPUTS,

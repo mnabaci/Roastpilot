@@ -9,24 +9,28 @@ import { Tc4Driver } from './tc4-driver';
 const INPUTS = [212.4, 165.2, 21.9, 22.1];
 
 /**
- * Answers like aArtisanQ_PID (docs/spec/hardware.md): `CHAN` always acknowledges with a `#` line,
- * `READ` prints ambient, the active channels in `CHAN` order, heater, fan and the setpoint.
+ * Answers like aArtisanQ_PID (docs/spec/hardware.md): it boots mapping TC2, TC1 in °F, `CHAN`
+ * always acknowledges with a `#` line, `READ` prints ambient, the active channels in `CHAN` order,
+ * heater, fan and the setpoint. Lines sent before it has booted are lost.
  */
 function firmware(state = { heater: 0, fan: 0, booted: true }) {
-  let chan = '1200';
+  let chan = '2100';
+  let celsius = false;
   return (line: string): string | undefined => {
     if (!state.booted) return undefined;
     if (line.startsWith('CHAN;')) {
       chan = line.slice(5);
       return `# Active channels set to ${chan}`;
     }
+    if (line === 'UNITS;C') celsius = true;
     if (line.startsWith('OT1;')) state.heater = Number(line.slice(4));
     if (line.startsWith('OT2;') || line.startsWith('IO3;')) state.fan = Number(line.slice(4));
     if (line !== 'READ') return undefined;
     const temps = (chan.match(/\d/g) ?? [])
       .map(Number)
       .filter((input) => input > 0)
-      .map((input) => INPUTS[input - 1]);
+      .map((input) => INPUTS[input - 1] ?? 0)
+      .map((c) => (celsius ? c : c * 1.8 + 32));
     return ['23.4', ...temps.map(String), String(state.heater), String(state.fan), '0'].join(',');
   };
 }
@@ -58,11 +62,38 @@ async function connected(wiring?: Tc4Wiring, reply?: (line: string) => string | 
 
 describe('Tc4Driver with the stock TC4 dialect', () => {
   describe('connect', () => {
-    it('waits for the board to boot, maps ET and BT, switches to °C, then reads', async () => {
+    it('waits for the board, maps ET and BT, switches every output off and to °C, then reads', async () => {
       const { transport, driver, run } = setup();
       await run(driver.connect());
-      expect(transport.sentLines()).toEqual(['CHAN;1200', 'UNITS;C', 'READ', 'READ']);
+      expect(transport.sentLines()).toEqual([
+        'CHAN;1200',
+        'OT1;0',
+        'OT2;0',
+        'IO3;0',
+        'UNITS;C',
+        'READ',
+        'READ',
+      ]);
       expect(transport.sent[0]?.atMs).toBeGreaterThanOrEqual(TC4_BOOT_MS);
+    });
+
+    it('sends CHAN again until the board acknowledges it, so its boot mapping never stays', async () => {
+      const state = { heater: 0, fan: 0, booted: false };
+      const { clock, driver, run } = setup(DEFAULT_TC4_WIRING, firmware(state));
+      const connecting = driver.connect();
+      // Still starting when the first CHAN goes out; up before the second.
+      await clock.runFor(TC4_BOOT_MS + 1000);
+      state.booted = true;
+      expect(await run(connecting)).toEqual({ ok: true, value: undefined });
+      const reading = await run(driver.read());
+      // BT from TC2 and ET from TC1, in °C: not the boot mapping in °F.
+      expect(reading.ok && reading.value.values).toMatchObject({ bt: 165.2, et: 212.4 });
+    });
+
+    it('refuses a board that never acknowledges CHAN', async () => {
+      const { transport, driver, run } = setup(DEFAULT_TC4_WIRING, () => undefined);
+      expect(await run(driver.connect())).toEqual(err({ kind: 'no-reply', command: 'CHAN;1200' }));
+      expect(transport.sentLines()).toEqual(['CHAN;1200', 'CHAN;1200', 'CHAN;1200']);
     });
 
     it('maps the inputs from the wiring, with no ET as channel 0', async () => {
@@ -71,24 +102,24 @@ describe('Tc4Driver with the stock TC4 dialect', () => {
       expect(transport.sentLines()[0]).toBe('CHAN;0300');
     });
 
-    it('tries READ once more when the board is still starting', async () => {
-      const state = { heater: 0, fan: 0, booted: false };
-      const { clock, driver, run } = setup(DEFAULT_TC4_WIRING, firmware(state));
-      const connecting = driver.connect();
-      // Boots while the first READ waits in vain, before the retry.
-      await clock.runFor(TC4_BOOT_MS + 1000);
-      state.booted = true;
-      expect(await run(connecting)).toEqual({ ok: true, value: undefined });
-    });
-
-    it('refuses a board that never answers READ', async () => {
-      const { driver, run } = setup(DEFAULT_TC4_WIRING, () => undefined);
+    it('refuses a board that acknowledges CHAN but never answers READ', async () => {
+      const answer = firmware();
+      const { driver, run } = setup(DEFAULT_TC4_WIRING, (line) =>
+        line === 'READ' ? undefined : answer(line),
+      );
       expect(await run(driver.connect())).toEqual(err({ kind: 'no-reply', command: 'READ' }));
     });
 
+    it('stops at a CHAN that cannot be written', async () => {
+      const { transport, driver, run } = setup();
+      transport.failWrite = (line) => line.startsWith('CHAN;');
+      expect(await run(driver.connect())).toEqual(err({ kind: 'disconnected' }));
+    });
+
     it('refuses a reply that is not a TC4 status line', async () => {
+      const answer = firmware();
       const { driver, run } = setup(DEFAULT_TC4_WIRING, (line) =>
-        line === 'READ' ? 'hello,world' : undefined,
+        line === 'READ' ? 'hello,world' : answer(line),
       );
       expect(await run(driver.connect())).toEqual(err({ kind: 'bad-reply', line: 'hello,world' }));
     });
@@ -110,6 +141,16 @@ describe('Tc4Driver with the stock TC4 dialect', () => {
       const { driver, run } = await connected({ ...DEFAULT_TC4_WIRING, etInput: 0 });
       const reading = await run(driver.read());
       expect(reading.ok && reading.value.values).toEqual({ bt: 165.2, heater: 0, fan: 0 });
+    });
+
+    it.each([
+      ['an empty BT field', '23.4,212.4,,0,0,0'],
+      ['a field that is not a number', '23.4,212.4,abc,0,0,0'],
+      ['too few fields', '23.4,212.4,165.2,0'],
+    ])('reports a bad reply for %s', async (_case, line) => {
+      const { transport, driver, run } = await connected();
+      transport.reply = (sent) => (sent === 'READ' ? line : undefined);
+      expect(await run(driver.read())).toEqual(err({ kind: 'bad-reply', line }));
     });
 
     it('never takes an acknowledgement as the READ reply', async () => {
@@ -153,6 +194,16 @@ describe('Tc4Driver with the stock TC4 dialect', () => {
       expect(transport.sentLines()).toEqual(['OT1;0', 'OT2;100']);
     });
 
+    it('falls back to IO3;0, never PID;STOP, for a heater on IO3', async () => {
+      const { transport, driver, run } = await connected({
+        ...DEFAULT_TC4_WIRING,
+        heaterOutput: 'IO3',
+      });
+      transport.failWrite = (line) => line === 'OT2;100';
+      await run(driver.safeStop());
+      expect(transport.sentLines()).toEqual(['IO3;0', 'IO3;0']);
+    });
+
     it('falls back to PID;STOP when a step fails', async () => {
       const { transport, driver, run, entries } = await connected();
       transport.failWrite = (line) => line === 'OT1;0';
@@ -184,6 +235,30 @@ describe('Tc4Driver with the stock TC4 dialect', () => {
       transport.reply = (line) => (line === 'READ' ? undefined : answer(line));
       expect(await run(driver.readInputs())).toEqual(err({ kind: 'no-reply', command: 'READ' }));
       expect(transport.sentLines()).toEqual(['CHAN;1234', 'READ', 'CHAN;1200']);
+    });
+
+    it('reports a bad reply when the probe line has the wrong number of fields', async () => {
+      const { transport, driver, run } = await connected();
+      const answer = firmware();
+      transport.reply = (line) => (line === 'READ' ? '23.4,212.4,165.2,0,0,0' : answer(line));
+      expect(await run(driver.readInputs())).toEqual(
+        err({ kind: 'bad-reply', line: '23.4,212.4,165.2,0,0,0' }),
+      );
+    });
+
+    it('says so when the wiring could not be put back', async () => {
+      const { transport, driver, run } = await connected();
+      transport.failWrite = (line) => line === 'CHAN;1200';
+      expect(await run(driver.readInputs())).toEqual(err({ kind: 'disconnected' }));
+    });
+
+    it('never holds a safe stop back behind a probe', async () => {
+      const { transport, driver, run } = await connected();
+      const probing = driver.readInputs();
+      const stopping = driver.safeStop();
+      await run(Promise.all([probing, stopping]));
+      const lines = transport.sentLines();
+      expect(lines.indexOf('OT1;0')).toBeLessThan(lines.indexOf('CHAN;1200'));
     });
 
     it('refuses when not connected', async () => {
