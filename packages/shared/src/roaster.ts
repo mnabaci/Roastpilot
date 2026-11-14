@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ConnectTargetSchema, type ConnectTarget } from './connection';
 import { AutoTuningSchema, ProfileIdSchema } from './profile';
+import { MIN_FAN_HEATING, Tc4WiringSchema } from './tc4-wiring';
 import { diffInText, tempInText } from './units';
 
 /** What the app knows about a roaster model without its driver (ADR 0024). */
@@ -13,6 +14,12 @@ export interface RoasterModelFacts {
   readonly drumSpeed: boolean;
   /** The kind of connection its driver uses. */
   readonly connection: ConnectTarget['kind'];
+  /** Its record holds TC4 wiring (probes, outputs, baud), as a home-built roaster's does. */
+  readonly wiring: boolean;
+  /** It has a bean cooler (a tray fan), so the record offers "Bean cooler helps cool the drum". */
+  readonly beanCooler: boolean;
+  /** What its board runs, for connect errors ("is SkyCommand flashed…"); none for the Simulator. */
+  readonly firmware: string | null;
 }
 
 /**
@@ -26,12 +33,27 @@ export const ROASTER_MODEL_FACTS = {
     limits: { maxTempC: 240, maxTimeS: 20 * 60 },
     drumSpeed: false,
     connection: 'serial',
+    wiring: false,
+    beanCooler: true,
+    firmware: 'SkyCommand',
+  },
+  tc4: {
+    label: 'Generic TC4',
+    limits: { maxTempC: 250, maxTimeS: 20 * 60 },
+    drumSpeed: false,
+    connection: 'serial',
+    wiring: true,
+    beanCooler: false,
+    firmware: 'aArtisanQ_PID',
   },
   simulator: {
     label: 'Simulator',
     limits: { maxTempC: 240, maxTimeS: 20 * 60 },
     drumSpeed: true,
     connection: 'simulator',
+    wiring: false,
+    beanCooler: true,
+    firmware: null,
   },
 } as const satisfies Readonly<Record<string, RoasterModelFacts>>;
 
@@ -77,12 +99,28 @@ export const RoasterObjectSchema = z.object({
     .min(DRUM_SPEED.minPct, `At least ${String(DRUM_SPEED.minPct)} %`)
     .max(DRUM_SPEED.maxPct, `At most ${String(DRUM_SPEED.maxPct)} %`)
     .multipleOf(DRUM_SPEED.stepPct, `In steps of ${String(DRUM_SPEED.stepPct)} %`),
+  /** How a home-built TC4 roaster is wired; none for a model that has no wiring. */
+  wiring: Tc4WiringSchema.nullable().default(null),
+  /** For air roasters: while the heater is on, the fan never goes below this; 0 is off. */
+  minFanHeatingPct: z
+    .number()
+    .min(MIN_FAN_HEATING.minPct, `At least ${String(MIN_FAN_HEATING.minPct)} %`)
+    .max(MIN_FAN_HEATING.maxPct, `At most ${String(MIN_FAN_HEATING.maxPct)} %`)
+    .multipleOf(MIN_FAN_HEATING.stepPct, `In steps of ${String(MIN_FAN_HEATING.stepPct)} %`)
+    .default(0),
   active: z.boolean(),
 });
 
 type RoasterRuleShape = Pick<
   z.infer<typeof RoasterObjectSchema>,
-  'model' | 'maxTempC' | 'maxTimeS' | 'batchMinG' | 'batchIdealG' | 'batchMaxG'
+  | 'model'
+  | 'maxTempC'
+  | 'maxTimeS'
+  | 'batchMinG'
+  | 'batchIdealG'
+  | 'batchMaxG'
+  | 'wiring'
+  | 'minFanHeatingPct'
 >;
 
 /** Limits at or below the model's own, and batch sizes in order (docs/spec/roasters.md). */
@@ -99,6 +137,10 @@ export function checkRoaster(roaster: RoasterRuleShape, ctx: z.RefinementCtx): v
   }
   if (roaster.batchMinG > roaster.batchIdealG) issue('batchMinG', 'Must not be above ideal');
   if (roaster.batchIdealG > roaster.batchMaxG) issue('batchMaxG', 'Must not be below ideal');
+  const { wiring } = modelFacts(roaster.model);
+  if (wiring && roaster.wiring === null) issue('wiring', 'Choose the wiring');
+  // Only a roaster with wiring has the setting, and only its handshake leaves the outputs off.
+  if (!wiring && roaster.minFanHeatingPct > 0) issue('minFanHeatingPct', 'Not on this model');
 }
 
 export const RoasterSchema = RoasterObjectSchema.superRefine(checkRoaster);

@@ -17,7 +17,7 @@ Roastpilot is a desktop app that roasts coffee on autopilot and coaches you when
 ## Voice and copy
 
 - Sentence case everywhere except badges (`AUTO`, `MANUAL`, `BUILT-IN`).
-- Lead with the value, then the unit with a space: `212 °C`, `9.4 °C/min`, `375 g`, `1:58`. Temperatures follow Settings › Appearance › Temperature: in °F the same rule reads `414 °F`, `16.9 °F/min`, a temperature whole ([ui.md](../spec/ui.md#units)).
+- Lead with the value, then the unit with a space: `212 °C`, `9.4 °C/min`, `375 g`, `1:58`. Temperatures follow Settings › Appearance › Temperature: in °F the same rule reads `414 °F`, `16.9 °F/min`, a temperature whole ([ui.md](../spec/ui.md#units)). One exception: a stat card's secondary reading (ET under Temp) drops the unit, since the card's main value already shows it and the space is tight.
 - Times are `m:ss` (`10:18`), never `10m 18s`.
 - Verbs on buttons: Preheat, Beans in · Start, First crack, Drop now, Resume auto, Apply.
 - Hints say what to do next, in one line: "Press First crack when you hear it."
@@ -33,6 +33,7 @@ Dark is the primary theme; light mirrors it for bright rooms and outdoor roastin
 | Text         | `ink`, `ink-muted`                                                 | Values and labels                                  |
 | Heat (ember) | `heat`, `heat-fill`, `heat-fill-hover`, `heat-tint`, `on-heat`     | Temperature curve and readouts; the primary button |
 | Air (cyan)   | `air`, `air-tint`                                                  | Fan, rate of rise, Auto badge, focus ring          |
+| ET (violet)  | `env`                                                              | Environment temperature: its line and readout      |
 | Reference    | `target`, `ghost`                                                  | Target curve (dashed), ghost roast (faded)         |
 | Chart ground | `band-low`, `band-mid`, `band-high`, `chart-grid`                  | Phase bands behind the curves; the chart grid      |
 | State        | `good`, `warning`, `critical`, `critical-text`, `critical-surface` | Connected, low stock, safety                       |
@@ -42,7 +43,7 @@ Rules:
 
 - `heat-fill` is for the one primary action per screen and the heater slider. Never for decoration.
 - `critical` (the fill) is reserved for Emergency stop and safety trips. Delete buttons use `critical-text` as text only, never a red fill, so a red block still always means safety.
-- Ember and cyan sit on opposite sides of the colour wheel and differ in lightness, so they stay distinct for colour-blind users.
+- Ember and cyan sit on opposite sides of the colour wheel and differ in lightness, so they stay distinct for colour-blind users. Violet (`env`, ET) is far from ember in hue and darker than cyan, its line is thinner than the temperature's and it shares the temperature axis, while RoR has its own on the right, so ET never passes for BT or RoR.
 - Neutrals are cool graphite with no brown or cream: warmth comes only from the ember accent.
 
 ## Elevation
@@ -96,6 +97,7 @@ Inter, one family, with tabular numerals (`font-variant-numeric: tabular-nums`) 
 | ------------------------- | ----------------------------------- | -------------------------------- |
 | Live temperature          | `heat`                              | 3.5px solid                      |
 | Target curve              | `target`                            | 2px dashed 6 6                   |
+| Environment temperature   | `env`                               | 2px solid, behind live           |
 | Rate of rise (right axis) | `air`                               | 2px solid                        |
 | Ghost temperature and RoR | `ghost`                             | 2px solid, behind live           |
 | Compared roast's outputs  | `heat`, `air`, `ink-muted`          | 2px dashed 4 4, 55 % opacity     |

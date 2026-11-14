@@ -62,6 +62,8 @@ export const INVOKE_CHANNELS = {
   deleteRoaster: 'roasters:delete',
   setActiveRoaster: 'roasters:set-active',
   chooseConnection: 'roasters:choose-connection',
+  saveRoasterWiring: 'roasters:save-wiring',
+  readRoasterInputs: 'roasters:read-inputs',
   listBeans: 'beans:list',
   addBean: 'beans:add',
   updateBean: 'beans:update',

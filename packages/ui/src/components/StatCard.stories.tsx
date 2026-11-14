@@ -5,7 +5,7 @@ const meta = {
   title: 'Data/StatCard',
   component: StatCard,
   args: { label: 'Temperature', value: 198, unit: '°C', context: 'Target 196 °C', tone: 'heat' },
-  argTypes: { tone: { control: 'inline-radio', options: ['heat', 'air', 'ink'] } },
+  argTypes: { tone: { control: 'inline-radio', options: ['heat', 'air', 'env', 'ink'] } },
   decorators: [
     (Story) => (
       <div className="max-w-xs">
@@ -31,6 +31,24 @@ export const Development: Story = {
     tone: 'ink',
   },
 };
+/** On a roaster with an ET probe: ET beside the temperature's label. */
+export const TemperatureWithEt: Story = {
+  args: { secondary: { label: 'ET', value: '212.4', unit: '°C', tone: 'env' } },
+};
+export const EtNotYetRead: Story = {
+  args: { secondary: { label: 'ET', value: undefined, unit: '°C', tone: 'env' } },
+};
 export const NoValueYet: Story = {
   args: { label: 'Rate of rise', value: null, unit: '°C/min', context: 'Last 30 s', tone: 'air' },
+};
+/** One of a board's inputs on the Roasters page: a small tile inside a card. */
+export const Compact: Story = {
+  args: { label: 'TC1', value: '24.6', unit: '°C', context: 'BT', tone: 'heat', size: 'compact' },
+  decorators: [
+    (Story) => (
+      <div className="max-w-40 rounded-xl bg-surface p-4">
+        <Story />
+      </div>
+    ),
+  ],
 };

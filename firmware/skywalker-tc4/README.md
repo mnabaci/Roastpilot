@@ -35,4 +35,4 @@ per line (`READ`, `OT1` heater, `OT2` fan, `COOL`, `FILTER`, `DRUM`, `OFF`, `EST
 `VERSION`).
 
 Protocol version: `1` (the sketch's reply to `VERSION`). Any change goes through the
-`firmware-change` skill and bumps this number together with `Tc4SkywalkerDriver`.
+`firmware-change` skill and bumps this number together with `SKYWALKER_PROTOCOL_VERSION` in `packages/drivers/src/skywalker.ts`, which the SkyCommand dialect checks.

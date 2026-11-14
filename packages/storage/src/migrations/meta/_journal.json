@@ -85,6 +85,13 @@
       "when": 1794387622626,
       "tag": "0011_stock_movements",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1794648395693,
+      "tag": "0012_tc4_wiring",
+      "breakpoints": true
     }
   ]
 }

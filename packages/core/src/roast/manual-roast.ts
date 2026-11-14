@@ -30,6 +30,7 @@ export class ManualRoast {
   readonly #options: () => RoastOptions;
   readonly #readings: () => readonly Reading[];
   readonly #canCoolRoaster: () => boolean;
+  readonly #hasOutput: (channel: string) => boolean;
   readonly #logger: Logger;
   #state: RoastState = READY_ROAST;
   readonly #cooling: RoasterCooling;
@@ -42,6 +43,7 @@ export class ManualRoast {
     this.#options = deps.options ?? (() => DEFAULT_OPTIONS);
     this.#readings = deps.readings ?? (() => []);
     this.#canCoolRoaster = deps.canCoolRoaster ?? (() => true);
+    this.#hasOutput = deps.hasOutput ?? (() => true);
     this.#logger = deps.logger ?? silentLogger;
     this.#notify = guardListener(this.#logger, 'roast.listener-failed', deps.onChange);
     const host = {
@@ -173,6 +175,7 @@ export class ManualRoast {
   /** Sends outputs in order. A failure is logged and the rest still go out; safety covers the roaster. */
   async #send(outputs: Outputs): Promise<void> {
     for (const [channel, value] of outputs) {
+      if (!this.#hasOutput(channel)) continue;
       const sent = await this.#deps.setOutput(channel, value);
       if (!sent.ok) this.#logger.warn('roast.output-failed', { channel, value, error: sent.error });
     }

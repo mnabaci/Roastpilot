@@ -71,7 +71,7 @@ export function useConnectControls(roaster: Roaster) {
         try {
           if (!(await makeActive())) return;
           const result = await api.connect(to);
-          if (!result.ok) setError(connectErrorText(result.error));
+          if (!result.ok) setError(connectErrorText(result.error, modelFacts(roaster.model)));
         } finally {
           setBusy(false);
         }

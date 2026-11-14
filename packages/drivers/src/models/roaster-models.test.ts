@@ -1,13 +1,25 @@
-import { ManualClock, silentLogger, type RoasterModelDefinition } from '@roastpilot/core';
-import { ROASTER_MODEL_FACTS, RoasterSchema } from '@roastpilot/shared';
+import {
+  ManualClock,
+  silentLogger,
+  soakLengthS,
+  type RoasterModelDefinition,
+} from '@roastpilot/core';
+import {
+  AutoProfileSchema,
+  DEFAULT_TC4_WIRING,
+  ROASTER_MODEL_FACTS,
+  RoasterSchema,
+} from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { BUILT_IN_ROASTERS } from '../built-in-roasters';
 import { SimulatedDriver } from '../simulated/simulated-driver';
-import { Tc4SkywalkerDriver } from '../tc4/tc4-skywalker-driver';
+import { Tc4Driver } from '../tc4/tc4-driver';
 import { simulatorModel } from './simulator-model';
 import { skywalkerModel } from './skywalker-model';
+import { tc4Model } from './tc4-model';
 
-const MODELS: readonly RoasterModelDefinition[] = [skywalkerModel, simulatorModel];
+const MODELS: readonly RoasterModelDefinition[] = [skywalkerModel, tc4Model, simulatorModel];
+const NO_WIRING = { wiring: null };
 const deps = { clock: new ManualClock(), logger: silentLogger };
 const drum = (model: RoasterModelDefinition) => model.channels.find((c) => c.id === 'drum');
 
@@ -23,6 +35,12 @@ describe('model definitions', () => {
     expect(drum(simulatorModel)).toMatchObject({ unit: 'percent', min: 0, max: 100, step: 5 });
   });
 
+  it('have a bean cooler exactly when the record offers one', () => {
+    for (const model of MODELS) {
+      expect(model.channels.some((c) => c.id === 'cooling')).toBe(model.beanCooler);
+    }
+  });
+
   it('agree with what the screens know about each drum', () => {
     for (const model of MODELS) {
       const channel = drum(model);
@@ -32,12 +50,46 @@ describe('model definitions', () => {
 
   it('a Skywalker builds the TC4 driver for a serial port', () => {
     expect(skywalkerModel.createDriver({ kind: 'serial', path: 'COM3' }, deps)).toBeInstanceOf(
-      Tc4SkywalkerDriver,
+      Tc4Driver,
     );
   });
 
   it('a Skywalker given anything but a port is a programmer error', () => {
     expect(() => skywalkerModel.createDriver({ kind: 'simulator' }, deps)).toThrow(/serial/);
+  });
+
+  it('a generic TC4 builds the TC4 driver from its wiring, and has no drum', () => {
+    const driver = tc4Model.createDriver({ kind: 'serial', path: 'COM3' }, deps, {
+      wiring: { ...DEFAULT_TC4_WIRING, etInput: 0 },
+    });
+    expect(driver).toBeInstanceOf(Tc4Driver);
+    expect(driver.channels.map((c) => c.id)).toEqual(['bt', 'heater', 'fan']);
+    expect(drum(tc4Model)).toBeUndefined();
+  });
+
+  it("starts every built-in profile inside the model's batch range", () => {
+    for (const model of MODELS) {
+      for (const profile of model.profiles) {
+        expect(profile.batchG).toBeGreaterThanOrEqual(model.batch.minG);
+        expect(profile.batchG).toBeLessThanOrEqual(model.batch.maxG);
+      }
+    }
+  });
+
+  it("gives a generic TC4 the Skywalker's profiles as templates, without its heat-off soak", () => {
+    expect(tc4Model.profiles.map((p) => p.id)).toEqual(skywalkerModel.profiles.map((p) => p.id));
+    for (const profile of tc4Model.profiles) {
+      expect(profile.needsCalibration).toBe(true);
+      expect(soakLengthS(profile)).toBe(0);
+      expect(AutoProfileSchema.safeParse(profile).success).toBe(true);
+    }
+    expect(skywalkerModel.profiles.every((p) => soakLengthS(p) === 60)).toBe(true);
+  });
+
+  it('a generic TC4 without its wiring is a programmer error', () => {
+    expect(() => tc4Model.createDriver({ kind: 'serial', path: 'COM3' }, deps, NO_WIRING)).toThrow(
+      /wiring/,
+    );
   });
 
   it('the Simulator builds the simulated driver', () => {

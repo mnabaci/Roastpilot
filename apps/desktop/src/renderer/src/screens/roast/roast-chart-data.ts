@@ -1,21 +1,14 @@
+import { rorReadings, smoothCurve } from '@roastpilot/core';
 import {
-  rateOfRise,
-  ROR_DRAW_LIMITS,
-  ROR_WINDOW_MS,
-  rorReadings,
-  smoothCurve,
-} from '@roastpilot/core';
-import {
+  DEFAULT_ET_NAMES,
   DEFAULT_TEMP_NAMES,
   type CurvePoint,
   type Reading,
   type RoastEvent,
   type RoastState,
 } from '@roastpilot/shared';
-import type { LineLayer, ChartMarker, ChartPoint } from '@roastpilot/ui';
-
-/** Readings further apart than this are a break in every line (the lost-connection limit). */
-export const GAP_MS = 3_000;
+import type { ChartMarker, ChartPoint, LineLayer } from '@roastpilot/ui';
+import { breakTimes, channelPoints, rorPoints, smoothed, withBreaks } from './chart-series';
 
 /** The dashed plan is the smooth curve Auto follows, drawn from a point every 5 s. */
 export const PLAN_STEP_S = 5;
@@ -28,73 +21,6 @@ const MARKER_LABELS: Partial<Record<RoastEvent['kind'], string>> = {
   drop: 'Drop',
   end: 'End',
 };
-
-/** A channel's value at each reading that has it. */
-function channelPoints(
-  readings: readonly Reading[],
-  channel: string,
-  toT: (atMs: number) => number,
-): ChartPoint[] {
-  return readings.flatMap((r) => {
-    const v = r.values[channel];
-    return v === undefined ? [] : [{ t: toT(r.atMs), v }];
-  });
-}
-
-/** Times of the breaks: halfway between readings more than GAP_MS apart. */
-function breakTimes(readings: readonly Reading[]): number[] {
-  return readings.flatMap((r, i) => {
-    const previous = readings[i - 1];
-    return previous && r.atMs - previous.atMs > GAP_MS ? [(previous.atMs + r.atMs) / 2] : [];
-  });
-}
-
-/** Adds a null point at each break, so the line stops there instead of joining across it. */
-function withBreaks(points: ChartPoint[], breaks: readonly number[]): ChartPoint[] {
-  if (breaks.length === 0) return points;
-  return [...points, ...breaks.map((t) => ({ t, v: null }))].sort((a, b) => a.t - b.t);
-}
-
-/**
- * The drawn temperature: a weighted average of the readings in the last `windowS` seconds, newest
- * counting most (weights 1, 2, 3, …), restarting after a break. Like Artisan's curve filter, it
- * smooths jitter with about half the lag of a plain average. 0 draws the raw readings
- * (docs/spec/ui.md, Temperature axis).
- */
-function smoothed(points: readonly ChartPoint[], windowS: number): ChartPoint[] {
-  if (windowS <= 0) return [...points];
-  let start = 0;
-  return points.map((point, i) => {
-    if (point.v === null) {
-      start = i + 1;
-      return point;
-    }
-    while (start < i && (points[start]?.t ?? Infinity) <= point.t - windowS) start++;
-    let sum = 0;
-    let weights = 0;
-    for (let k = start; k <= i; k++) {
-      const weight = k - start + 1;
-      sum += (points[k]?.v ?? 0) * weight;
-      weights += weight;
-    }
-    return { t: point.t, v: sum / weights };
-  });
-}
-
-/** RoR at each reading, from only the readings in its window, so the series stays O(n). */
-function rorPoints(readings: readonly Reading[], toT: (atMs: number) => number): ChartPoint[] {
-  const points: ChartPoint[] = [];
-  let start = 0;
-  readings.forEach((reading, i) => {
-    while ((readings[start]?.atMs ?? Infinity) < reading.atMs - ROR_WINDOW_MS) start++;
-    const ror = rateOfRise(readings.slice(start, i + 1));
-    if (ror === undefined) return;
-    // Outside the limits is a gap, not a spike that stretches the axis.
-    const shown = ror >= ROR_DRAW_LIMITS.min && ror <= ROR_DRAW_LIMITS.max;
-    points.push({ t: toT(reading.atMs), v: shown ? ror : null });
-  });
-  return points;
-}
 
 /**
  * The readings the RoR line is drawn from: charge to drop (or Stop roast), as Artisan does. There
@@ -115,40 +41,47 @@ function untilRoastEnd(roast: RoastState, readings: readonly Reading[]): readonl
   return ended ? readings.filter((r) => r.atMs <= ended.atMs) : readings;
 }
 
-/**
- * Temperature (as the roaster names it), RoR, heater and fan layers plus event markers, in seconds since charge (or
- * since the first reading). Missing readings are breaks; the temperature line is smoothed.
- */
-export function roastChartData(
-  roast: RoastState,
-  allReadings: readonly Reading[],
-  {
-    smoothingS,
-    tempName = DEFAULT_TEMP_NAMES.name,
-    plan,
-  }: { smoothingS: number; tempName?: string; plan?: readonly CurvePoint[] | undefined },
-): { layers: LineLayer[]; markers: ChartMarker[] } {
-  const readings = untilRoastEnd(roast, allReadings);
-  const zeroMs = roast.chargedAtMs ?? readings[0]?.atMs ?? 0;
-  const toT = (atMs: number) => (atMs - zeroMs) / 1000;
-  const breaks = breakTimes(readings).map(toT);
-  const temperature: LineLayer = {
+type ToT = (atMs: number) => number;
+
+/** The bean temperature (as the roaster names it), and ET behind it where the roast recorded it. */
+function temperatureLayers(
+  readings: readonly Reading[],
+  toT: ToT,
+  breaks: readonly number[],
+  { smoothingS, tempName, etShort }: { smoothingS: number; tempName: string; etShort: string },
+): LineLayer[] {
+  const line = (points: ChartPoint[]) => smoothed(withBreaks(points, breaks), smoothingS);
+  const etPoints = channelPoints(readings, 'et', toT);
+  const et: LineLayer[] =
+    etPoints.length > 0
+      ? [
+          {
+            id: 'et',
+            label: etShort,
+            axis: 'temperature',
+            tone: 'env',
+            width: 2,
+            points: line(etPoints),
+          },
+        ]
+      : [];
+  const bt: LineLayer = {
     id: 'bt',
     label: tempName,
     axis: 'temperature',
     tone: 'heat',
     width: 3.5,
-    points: smoothed(withBreaks(channelPoints(readings, 'bt', toT), breaks), smoothingS),
+    points: line(channelPoints(readings, 'bt', toT)),
   };
-  const ror: LineLayer = {
-    id: 'ror',
-    label: 'RoR',
-    axis: 'ror',
-    tone: 'air',
-    width: 2,
-    points: withBreaks(rorPoints(roastingReadings(roast, readings), toT), breaks),
-  };
-  // The outputs strip (docs/spec/ui.md): what you set, as steps under the curve.
+  return [...et, bt];
+}
+
+/** The outputs strip (docs/spec/ui.md): what you set, as steps under the curve. */
+function outputLayers(
+  readings: readonly Reading[],
+  toT: ToT,
+  breaks: readonly number[],
+): LineLayer[] {
   const output = (id: string, label: string, tone: 'heat' | 'air' | 'neutral'): LineLayer => ({
     id,
     label,
@@ -159,34 +92,72 @@ export function roastChartData(
     points: withBreaks(channelPoints(readings, id, toT), breaks),
   });
   const drum = output('drum', 'Drum', 'neutral');
+  return [
+    output('heater', 'Heater', 'heat'),
+    output('fan', 'Fan', 'air'),
+    // A drum that only goes on and off reads 1 for on: drawn at 100%, like a full-speed drum.
+    ...(drum.points.some((p) => p.v !== null) ? [onOffAsPercent(drum)] : []),
+  ];
+}
+
+/** The dashed plan, only from charge on: the plan's clock starts there, and the preheat's doesn't. */
+function planLayers(roast: RoastState, plan: readonly CurvePoint[] | undefined): LineLayer[] {
+  if (!plan || roast.chargedAtMs === null) return [];
+  return [
+    {
+      id: 'plan',
+      label: 'Plan',
+      axis: 'temperature',
+      tone: 'target',
+      width: 2,
+      dash: [6, 6],
+      points: smoothCurve(plan, PLAN_STEP_S).map((point) => ({ t: point.tS, v: point.c })),
+    },
+  ];
+}
+
+/**
+ * Temperature (as the roaster names it), ET where it was recorded, RoR, heater and fan layers plus
+ * event markers, in seconds since charge (or since the first reading). Missing readings are breaks;
+ * the temperature lines are smoothed.
+ */
+export function roastChartData(
+  roast: RoastState,
+  allReadings: readonly Reading[],
+  {
+    smoothingS,
+    tempName = DEFAULT_TEMP_NAMES.name,
+    etShort = DEFAULT_ET_NAMES.short,
+    plan,
+  }: {
+    smoothingS: number;
+    tempName?: string;
+    etShort?: string;
+    plan?: readonly CurvePoint[] | undefined;
+  },
+): { layers: LineLayer[]; markers: ChartMarker[] } {
+  const readings = untilRoastEnd(roast, allReadings);
+  const zeroMs = roast.chargedAtMs ?? readings[0]?.atMs ?? 0;
+  const toT = (atMs: number) => (atMs - zeroMs) / 1000;
+  const breaks = breakTimes(readings).map(toT);
+  const ror: LineLayer = {
+    id: 'ror',
+    label: 'RoR',
+    axis: 'ror',
+    tone: 'air',
+    width: 2,
+    points: withBreaks(rorPoints(roastingReadings(roast, readings), toT), breaks),
+  };
   const markers = roast.events.flatMap((event): ChartMarker[] => {
     const label = MARKER_LABELS[event.kind];
     return label ? [{ id: event.kind, label, t: toT(event.atMs), tone: 'ink' }] : [];
   });
-  // Only from charge on: the plan's clock starts there, and the preheat's doesn't.
-  const planned: LineLayer[] =
-    plan && roast.chargedAtMs !== null
-      ? [
-          {
-            id: 'plan',
-            label: 'Plan',
-            axis: 'temperature',
-            tone: 'target',
-            width: 2,
-            dash: [6, 6],
-            points: smoothCurve(plan, PLAN_STEP_S).map((point) => ({ t: point.tS, v: point.c })),
-          },
-        ]
-      : [];
   return {
     layers: [
-      ...planned,
-      temperature,
+      ...planLayers(roast, plan),
+      ...temperatureLayers(readings, toT, breaks, { smoothingS, tempName, etShort }),
       ror,
-      output('heater', 'Heater', 'heat'),
-      output('fan', 'Fan', 'air'),
-      // A drum that only goes on and off reads 1 for on: drawn at 100%, like a full-speed drum.
-      ...(drum.points.some((p) => p.v !== null) ? [onOffAsPercent(drum)] : []),
+      ...outputLayers(readings, toT, breaks),
     ],
     markers,
   };

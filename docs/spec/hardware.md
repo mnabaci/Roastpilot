@@ -1,6 +1,19 @@
 # Hardware and serial protocol
 
-The app talks only to the controller board over USB serial. The board runs the SkyCommand sketch,
+The app talks only to a controller board over USB serial, in the text protocol Artisan uses for a
+TC4 board. One driver, `Tc4Driver`, speaks it; each kind of board is a **dialect** of it, plain data
+([ADR 0026](../adr/0026-one-tc4-driver-with-dialects.md)):
+
+| Dialect    | Board and firmware                                                                      | Roaster model |
+| ---------- | --------------------------------------------------------------------------------------- | ------------- |
+| SkyCommand | The Skywalker mod's sketch (this page, from Commands to Firmware)                       | Skywalker     |
+| Stock TC4  | Arduino + TC4 shield running aArtisanQ_PID ([below](#stock-tc4-firmware-aartisanq_pid)) | Generic TC4   |
+
+A dialect says which command drives each output, what a `READ` reply holds, what the handshake
+sends and checks, and the safe-stop sequence. Everything else (the command queue, polling, rounding
+to steps, the board-echo check, errors) is the driver's, the same for every dialect.
+
+The SkyCommand dialect: the board runs the SkyCommand sketch,
 adapted from [SkywalkerRoaster](https://github.com/jmoore52/SkywalkerRoaster) (GPL-3.0), which
 handles the roaster's pulse-timing protocol. Flash the copy in
 [`firmware/skywalker-tc4/`](../../firmware/skywalker-tc4/README.md); it reports protocol version `1`.
@@ -48,11 +61,44 @@ Comma-separated: `0.00,<temp>,<temp>,<heater>,<fan>,0`, for example `0.00,180.25
 - **Sketch over-temperature:** the sketch runs `ESTOP` above 300 °C. The app's own limit (240 °C per roaster) trips long before.
 - **Safe stop from the app:** `OT1;0`, then `OT2;100`, then `COOL;100`, queued like any other commands; `ESTOP` as a fallback.
 
+## Stock TC4 firmware (aArtisanQ_PID)
+
+The generic TC4 model: an Arduino with a TC4 shield running the stock
+[aArtisanQ_PID](https://github.com/greencardigan/TC4-shield/tree/master/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID)
+firmware, the board many home-built roasters use with Artisan (poppers, heat guns, Behmor and
+Gene Café mods). Checked against the firmware source and Artisan's own TC4 code
+(`comm.py`, `ARDUINOTC4temperature`), not its out-of-date `commands.txt`.
+
+- **Wiring is on the record**, because every build differs ([roasters.md](roasters.md#generic-tc4)): BT input, ET input, heater output, fan output, baud. Defaults match the firmware's and Artisan's.
+- **Delimiters:** the firmware takes `;`, `,`, space or `=`; the driver sends `;` as for SkyCommand.
+
+| Command     | Sets                                                                                                     | Values                                         |
+| ----------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `CHAN;ebxx` | Which TC input (1–4) is logical channel 1 (ET) and 2 (BT); `0` = off                                     | `CHAN;1200` by default; `CHAN;0200` with no ET |
+| `UNITS;C`   | Report °C                                                                                                | –                                              |
+| `READ`      | Replies with a status line (below)                                                                       | –                                              |
+| `OT1;n`     | Heater on OT1 (the usual output)                                                                         | 0–100                                          |
+| `IO3;n`     | Heater on IO3 (a heater-on-IO3 build), or a DC fan on IO3; not in the PAC3 build                         | 0–100                                          |
+| `OT2;n`     | AC fan on OT2 (the firmware's default build)                                                             | 0–100                                          |
+| `PID;STOP`  | PID and OT1 off, fan to the build's auto-cool level; leaves IO3 alone, or sets it to 100, in most builds | –                                              |
+
+- **READ reply:** `ambient,ch1,ch2,…,heater,fan,setpoint` in the order of `CHAN`; with `CHAN;eb00` that's `ambient,ET,BT,heater,fan,0`, the same six fields as SkyCommand's. With no ET (`CHAN;0b00`) it's five: `ambient,BT,heater,fan,0`. An empty field is no value. Heater and fan echo the firmware's duty, so the board-echo check works as for SkyCommand. Which outputs it echoes is fixed by how the firmware was built (`HEATER_DUTY`, `FAN_DUTY` in `user.h`), not by the wiring: the default build (CONFIG_PAC2) echoes OT1 and OT2, the PWM build OT1 and IO3, the heater-on-IO3 build IO3 and OT2. Wiring that doesn't match the build shows wrong heater or fan values and makes the board-echo check log; pick the outputs your build drives.
+- **Acknowledgements:** `CHAN` always replies `# Active channels set to …`; other commands only on a build with acks on. The driver drops every line that starts with `#` (debug log), so none answers a `READ`.
+- **Boot defaults:** the firmware starts with TC2 as channel 1 and TC1 as channel 2, in °F. A `CHAN` the board misses while it boots would leave BT and ET swapped and in °F, so connect never goes on without its acknowledgement.
+- **Connect:** open the port at the record's baud (default 115200), wait 1.5 s (the Arduino restarts when the port opens; Artisan waits 1 s), then send `CHAN` until the board acknowledges it (3 tries, 1.5 s each; none is a `no-reply` error). Then `PID;OFF` (its PID drives OT1 on its own), the heater's output to 0, then every other output the firmware has (`OT1`, `OT2`, `IO3`) to 0 whatever the wiring, so nothing runs unseen on a board that didn't restart; then `FILT;10;10;10;10` (the firmware's own filtering: a board that didn't restart would keep whatever Artisan last set, `FILT;70,70,70,70` by default, which lags the readings Auto steers by), then `UNITS;C` and the first `READ`. The driver then takes every output as 0, so the board-echo check doesn't flag the switch-off. A reply that doesn't parse is `bad-reply`. Connect errors name the firmware and the baud ("No reply · check the baud, and that aArtisanQ_PID is flashed"). There is no version check: the stock firmware has none.
+- **Live inputs:** on the roaster's page, while connected and no roast or drum cooling runs, the driver switches to `CHAN;1234`, reads `ambient,TC1,TC2,TC3,TC4,heater,fan,setpoint`, then sends the record's `CHAN` again, even when the read failed ([roasters.md](roasters.md#generic-tc4)). Reads run one at a time, so a poll never lands between the two `CHAN`s; a safe stop is never held back by a probe. If putting `CHAN` back fails, polling reads `bad-reply` until the lost-connection rule trips: it fails safe.
+- **Outputs:** clean integers 0–100 in steps of 5, as for SkyCommand. Heater and fan never share an output; the record refuses it.
+- **No watchdog:** the firmware keeps its last outputs forever. If the app crashes or the cable is pulled, the heater stays on until someone switches it off. Safe stop from the app: heater 0, then fan 100. Fallback: `PID;STOP` for a heater on OT1; for a heater on IO3, `IO3;0` again, as `PID;STOP` leaves IO3 alone or turns it fully on in most builds.
+- **Against Artisan** (`comm.py` `ARDUINOTC4temperature`, `devices.py`, `pid_control.py`, the Hottop and Kaleido TC4 machine files): same serial settings (115200 8N1), same `CHAN;<et><bt>00` with ET on 1 and BT on 2 and its `#` acknowledgement checked, same `UNITS;C`, same `READ` fields (ET 1, BT 2, heater 3, fan 4), same output commands (`OT1`, `OT2`, `IO3`; Artisan's Hottop file uses the ramped `DCFAN` for its fan, which this app doesn't), `PID;OFF` as Artisan sends it. Where this app differs, on purpose: it waits 1.5 s after opening instead of 1 s, retries `CHAN` until acknowledged where Artisan tries again on its next reading, switches every output off on connect and sends its own safe stop where Artisan sends nothing unless a button is set up, sends `FILT` with the firmware's level instead of Artisan's 70 %, and with no ET probe reads BT from field 1, as the firmware prints only active channels (Artisan reads field 2 whatever).
+- **Firmware's own limits:** `MIN_IO3` can raise a small non-zero IO3 value (the board-echo check logs it); `HTR_CUTOFF_FAN_VAL` (0 by default) is the firmware's own minimum fan, which the app's doesn't rely on.
+- **Ambient** (field 1, the board's own sensor) is not a channel: not shown, not saved.
+
 ## Simulator
 
 `SimulatedDriver` is a twin of this setup, so whatever runs on it runs on the real roaster.
 
-- **Same channels:** `bt` (°C, read; named "Temperature" / "Temp": the probe is the drum where it touches the beans, not a probe in the bean mass), `heater` and `fan` (0–100, step 5), `cooling` (0 or 100), `filter` (levels 0–4) and `drum`, with the same safe-stop sequence. One difference: the Simulator's drum has a speed (0–100 %, step 5) instead of on/off, so drum speed can be tried without such a roaster. The thermal model ignores it.
+- **Same channels:** `bt` (°C, read; named "Temperature" / "Temp": the probe is the drum where it touches the beans, not a probe in the bean mass), `heater` and `fan` (0–100, step 5), `cooling` (0 or 100), `filter` (levels 0–4) and `drum`, with the same safe-stop sequence. One difference: the Simulator's drum has a speed (0–100 %, step 5) instead of on/off, so drum speed can be tried without such a roaster. The thermal model ignores it. A second: it also reports `et`, so ET can be seen and tested without a roaster that has an ET probe (below).
+- **ET (environment temperature):** the air in the drum. It follows the drum's metal quickly as it heats (15 s) and slowly as it cools (90 s: the beans cool the metal, not the heater), plus a lift from the heater (25 °C at heater 100, half of it blown away at fan 100) that it follows quickly (8 s). So it leads BT when the heater changes, stays above BT through preheat, and dips far less than BT at charge. Not fitted to anything (no roast has an ET yet); its constants (`DEFAULT_ENVIRONMENT_CONSTANTS`) are kept apart from the fitted ones. It changes nothing else: BT is exactly as before, so the roast-16 test is untouched, and a stalled temperature stalls ET too.
 - **Same sketch behaviour:** keeps every command, 10 s watchdog switches everything off; `ESTOP` above 300 °C; reports protocol version `1`.
 - **Thermal model:** the drum's temperature, updated in 100 ms steps from the injected clock. Heater adds heat; loss to the room grows with the gap to ambient, the fan and the cooling fan.
 - **Beans:** `chargeBeans()` puts room-temperature beans in the drum and `dumpBeans()` takes them out. With beans in, the drum heats them and loses that heat, and the probe follows the beans with a lag, so BT dips at charge and turns, like a real roast. Without beans the probe reads the drum. At Drop it picks up from its last reading, never jumping up to a drum hotter than the beans: like the real Skywalker, which falls from its drop temperature (about 10 °C in the first 15 s) and never rises after Drop with the heater off. A heater left on still heats the empty drum. In the app, Start puts beans in and Drop or End takes them out.

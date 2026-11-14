@@ -1,40 +1,14 @@
 import { ManualClock } from '@roastpilot/core';
-import type { Reading } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import { SimulatedDriver, type SimulatedDriverOptions } from './simulated-driver';
-
-async function connected(options: Partial<SimulatedDriverOptions> = {}) {
-  const clock = new ManualClock();
-  const driver = new SimulatedDriver({ clock, ...options });
-  expect(await driver.connect()).toEqual({ ok: true, value: undefined });
-  return { clock, driver };
-}
-
-async function readValues(driver: SimulatedDriver): Promise<Reading['values']> {
-  const result = await driver.read();
-  if (!result.ok) throw new Error(`read failed: ${result.error.kind}`);
-  return result.value.values;
-}
-
-/** Polls READ every second like the app, which also keeps the watchdog fed. */
-async function pollFor(
-  clock: ManualClock,
-  driver: SimulatedDriver,
-  seconds: number,
-): Promise<number> {
-  let bt = Number.NaN;
-  for (let i = 0; i < seconds; i++) {
-    clock.advance(1000);
-    bt = (await readValues(driver)).bt ?? Number.NaN;
-  }
-  return bt;
-}
+import { connected, pollFor, readValues } from './simulated-driver-fixture';
+import { SimulatedDriver } from './simulated-driver';
 
 describe('SimulatedDriver', () => {
-  it('declares the Skywalker channels', () => {
+  it('declares the Skywalker channels plus an ET', () => {
     const driver = new SimulatedDriver({ clock: new ManualClock() });
     expect(driver.channels.map((c) => c.id)).toEqual([
       'bt',
+      'et',
       'heater',
       'fan',
       'cooling',
@@ -47,6 +21,7 @@ describe('SimulatedDriver', () => {
     const { driver } = await connected();
     expect(await readValues(driver)).toEqual({
       bt: 22,
+      et: 22,
       heater: 0,
       fan: 0,
       cooling: 0,
@@ -201,6 +176,15 @@ describe('SimulatedDriver', () => {
       expect(await pollFor(clock, driver, 10)).toBe(first);
       driver.stallTemperature(false);
       expect(await pollFor(clock, driver, 1)).toBeGreaterThan(first);
+    });
+
+    it('repeats the same ET while stalled too, as the board would', async () => {
+      const { clock, driver } = await connected();
+      await driver.setOutput('heater', 100);
+      driver.stallTemperature(true);
+      const first = (await readValues(driver)).et;
+      await pollFor(clock, driver, 10);
+      expect((await readValues(driver)).et).toBe(first);
     });
 
     it('keeps heating while unplugged until the watchdog trips, then reconnects', async () => {

@@ -21,6 +21,11 @@ export interface ManualRoastDeps {
   /** Drop: the roast is over for the max-roast-time rule. */
   onRoastEnded: () => void;
   options?: () => RoastOptions;
+  /**
+   * Whether the connected roaster has this output: the flow's steps send nothing to one it lacks
+   * (a bean cooler or drum on a generic TC4; docs/spec/roasters.md). Every output when left out.
+   */
+  hasOutput?: (channel: string) => boolean;
   /** Connected and not locked by a safety stop: only then may drum cooling start. */
   canCoolRoaster?: () => boolean;
   logger?: Logger;

@@ -13,9 +13,14 @@ import type {
   MakeProfileRequest,
   OpenBeanLinkError,
   ProfileEntry,
+  ReadInputsError,
   Result,
+  Roaster,
+  SaveWiringError,
+  SaveWiringRequest,
   SerialPortInfo,
   Snapshot,
+  Tc4Inputs,
 } from '@roastpilot/shared';
 import type { BeanService } from './beans/bean-service';
 import type { CoachActions } from './coach-apply';
@@ -72,6 +77,11 @@ export interface IpcDeps {
   listPorts: () => Promise<SerialPortInfo[]>;
   /** The active roaster's model's driver for the target, or why not (ADR 0024). */
   createDriver: (target: ConnectTarget) => Result<RoasterDriver, ConnectError>;
+  /** A generic TC4's live inputs and wiring (docs/spec/roasters.md, Generic TC4). */
+  tc4: {
+    readInputs: () => Promise<Result<Tc4Inputs, ReadInputsError>>;
+    saveWiring: (request: SaveWiringRequest) => Promise<Result<Roaster, SaveWiringError>>;
+  };
   updates: Pick<Updates, 'info' | 'check' | 'restart' | 'openReleasePage'>;
   logs: {
     listDays: () => Promise<LogDay[]>;

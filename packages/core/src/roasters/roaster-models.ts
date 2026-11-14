@@ -1,4 +1,5 @@
 import {
+  DEFAULT_TC4_WIRING,
   DRUM_SPEED,
   err,
   ok,
@@ -44,12 +45,13 @@ export function roasterModels(definitions: RoasterModelMap): RoasterModels {
 }
 
 /**
- * The driver of the roaster's model for this target (docs/spec/architecture.md, Device layer).
- * A target the model doesn't use is refused, never served by another model's driver.
+ * The driver of the roaster's model for this target and the record's wiring
+ * (docs/spec/architecture.md, Device layer). A target the model doesn't use is refused, never
+ * served by another model's driver.
  */
 export function createDriver(
   models: Pick<RoasterModels, 'get'>,
-  roaster: Pick<Roaster, 'model'>,
+  roaster: Pick<Roaster, 'model' | 'wiring'>,
   target: ConnectTarget,
   deps: DriverDeps,
 ): Result<RoasterDriver, ConnectError> {
@@ -62,7 +64,7 @@ export function createDriver(
     });
     return err({ kind: 'wrong-connection', model: model.id, expected: model.connection });
   }
-  return ok(model.createDriver(target, deps));
+  return ok(model.createDriver(target, deps, { wiring: roaster.wiring }));
 }
 
 /** A new record of a model, with its starting values (docs/spec/roasters.md). */
@@ -81,6 +83,8 @@ export function newRoaster(name: string, model: RoasterModelDefinition): Omit<Ro
     tuning: model.tuning,
     coolerHelpsDrum: model.coolerHelpsDrum,
     drumSpeedPct: DRUM_SPEED.defaultPct,
+    wiring: model.wiring ? DEFAULT_TC4_WIRING : null,
+    minFanHeatingPct: 0,
     active: false,
   };
 }

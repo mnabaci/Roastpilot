@@ -1,4 +1,10 @@
-import { DEFAULT_TEMP_NAMES, sensorNames, type SensorNames } from '@roastpilot/shared';
+import {
+  DEFAULT_TEMP_NAMES,
+  optionalSensorNames,
+  sensorNames,
+  type Channel,
+  type SensorNames,
+} from '@roastpilot/shared';
 import { useConnection } from '../stores/use-stores';
 
 /**
@@ -6,8 +12,21 @@ import { useConnection } from '../stores/use-stores';
  * neutral names when no roaster is connected.
  */
 export function useSensorNames(id = 'bt'): SensorNames {
-  const channels = useConnection((s) =>
+  const channels = useConnectedChannels();
+  return channels ? sensorNames(channels, id) : DEFAULT_TEMP_NAMES;
+}
+
+/**
+ * The names of an optional sensor (ET) when the connected roaster has it; undefined otherwise, so
+ * its card and line only show where there is one.
+ */
+export function useOptionalSensor(id: string): SensorNames | undefined {
+  const channels = useConnectedChannels();
+  return channels ? optionalSensorNames(channels, id) : undefined;
+}
+
+function useConnectedChannels(): readonly Channel[] | undefined {
+  return useConnection((s) =>
     s.connection.status === 'connected' ? s.connection.channels : undefined,
   );
-  return channels ? sensorNames(channels, id) : DEFAULT_TEMP_NAMES;
 }

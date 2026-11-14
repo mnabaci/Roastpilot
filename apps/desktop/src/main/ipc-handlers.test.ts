@@ -240,6 +240,10 @@ function setup() {
     nowMs: () => 42,
     snapshot: () => SNAPSHOT,
     listPorts: () => Promise.resolve([{ path: 'COM3' }]),
+    tc4: {
+      readInputs: () => Promise.resolve(ok([200, 160, 22, 22])),
+      saveWiring: () => Promise.resolve(err({ kind: 'roasting' })),
+    },
     createDriver: (target) => {
       calls.push(['createDriver', target]);
       return target.kind === 'serial' && target.path === 'WRONG'

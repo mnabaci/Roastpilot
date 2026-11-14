@@ -39,6 +39,7 @@ describe('migrate', () => {
           '0009_drop_purchase_batch_plan',
           '0010_bean_stock_adjustments',
           '0011_stock_movements',
+          '0012_tc4_wiring',
         ],
       },
     });
@@ -55,6 +56,18 @@ describe('migrate', () => {
     );
     expect(version(db)).toBe(MIGRATIONS.length);
     expect(migrate(db)).toEqual({ ok: true, value: { applied: [] } });
+  });
+
+  it('0012 gives existing roasters no wiring and no minimum fan', () => {
+    const db = new DatabaseSync(':memory:');
+    migrate(db, MIGRATIONS.slice(0, 12));
+    migrate(db);
+    expect(
+      db.prepare('SELECT wiring, min_fan_heating_pct AS minFan FROM roasters ORDER BY id').all(),
+    ).toEqual([
+      { wiring: null, minFan: 0 },
+      { wiring: null, minFan: 0 },
+    ]);
   });
 
   it('brings a database from the first version up to date, keeping its roasts', () => {
@@ -76,6 +89,7 @@ describe('migrate', () => {
           '0009_drop_purchase_batch_plan',
           '0010_bean_stock_adjustments',
           '0011_stock_movements',
+          '0012_tc4_wiring',
         ],
       },
     });
@@ -237,6 +251,7 @@ describe('migrate', () => {
         '0009_drop_purchase_batch_plan',
         '0010_bean_stock_adjustments',
         '0011_stock_movements',
+        '0012_tc4_wiring',
       ]);
       expect(schemaVersion(db)).toBe(5);
     });

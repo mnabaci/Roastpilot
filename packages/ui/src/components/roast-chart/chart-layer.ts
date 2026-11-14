@@ -21,8 +21,11 @@ export interface LineLayer {
    * chart. Values come in °C; the chart shows them in its `temperatureUnit`.
    */
   axis: 'temperature' | 'ror' | 'output';
-  /** `neutral`: the drum, neither heat nor air (docs/spec/ui.md, Outputs). */
-  tone: 'heat' | 'air' | 'neutral' | 'target' | 'ghost';
+  /**
+   * `neutral`: the drum, neither heat nor air (docs/spec/ui.md, Outputs); `env`: the environment
+   * temperature (ET) on a roaster that has one.
+   */
+  tone: 'heat' | 'air' | 'env' | 'neutral' | 'target' | 'ghost';
   /** Line width in px (design system: live 3.5, others 2). */
   width: number;
   /** Dash pattern in px, e.g. [6, 6] for the target. */
@@ -91,6 +94,7 @@ export interface ChartMarker {
 export const TONE_TOKEN: Readonly<Record<LineLayer['tone'] | ChartMarker['tone'], string>> = {
   heat: '--heat',
   air: '--air',
+  env: '--env',
   neutral: '--ink-muted',
   target: '--target',
   ghost: '--ghost',

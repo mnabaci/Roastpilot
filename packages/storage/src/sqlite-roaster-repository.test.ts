@@ -1,30 +1,6 @@
-import { createLogger } from '@roastpilot/core';
-import type { LogEntry, Roaster } from '@roastpilot/shared';
+import type { Roaster } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import { openDatabase } from './open-database';
-import { drizzleOn } from './proxy-db';
-import { SqliteRoastRepository } from './sqlite-roast-repository';
-import { SqliteRoasterRepository } from './sqlite-roaster-repository';
-
-function setup() {
-  const entries: LogEntry[] = [];
-  const logger = createLogger({ write: (e) => entries.push(e) }, 'storage');
-  const opened = openDatabase(':memory:', logger);
-  if (!opened.ok) throw new Error(opened.error.kind);
-  const db = drizzleOn(opened.value);
-  return {
-    sqlite: opened.value,
-    entries,
-    repository: new SqliteRoasterRepository(db, logger),
-    roasts: new SqliteRoastRepository(db, logger),
-  };
-}
-
-async function listed(repository: SqliteRoasterRepository): Promise<Roaster[]> {
-  const read = await repository.list();
-  if (!read.ok) throw new Error('list failed');
-  return read.value;
-}
+import { listed, setup } from './roaster-repository-fixture';
 
 describe('SqliteRoasterRepository', () => {
   it('starts with Skywalker active and the Simulator', async () => {

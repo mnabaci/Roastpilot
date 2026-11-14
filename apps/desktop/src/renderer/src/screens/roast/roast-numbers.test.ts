@@ -27,6 +27,12 @@ describe('roastNumbers', () => {
     expect(n.elapsedS).toBeUndefined();
   });
 
+  it('ET from the latest reading, where the roaster has one', () => {
+    const latest = { atMs: 1000, values: { bt: 150, et: 171.5 } };
+    expect(roastNumbers(roast({ phase: 'preheat' }), [latest]).et).toBe(171.5);
+    expect(roastNumbers(roast({ phase: 'preheat' }), readings(5)).et).toBeUndefined();
+  });
+
   it('counts the preheat until charge', () => {
     const n = roastNumbers(roast({ phase: 'preheat', preheatAtMs: 10_000 }), readings(60));
     expect(n).toMatchObject({ preheatS: 50, elapsedS: undefined });

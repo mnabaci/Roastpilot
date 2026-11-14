@@ -15,7 +15,7 @@ roaster's sensor, and heat percentages from its heater. So every profile has a `
 
 - Each roaster model ships its own built-in Light / Medium / Dark set. A new roaster without a model-specific set gets generic templates marked "needs calibration".
 - Profiles are never shared between roasters automatically. "Copy to another roaster" makes a custom copy marked "needs calibration".
-- Model-specific techniques stay in that model's profiles. Example: the Skywalker scorches beans on a hot drum, so its profiles start with a heat-off soak; another roaster's profiles may not.
+- Model-specific techniques stay in that model's profiles. Example: the Skywalker scorches beans on a hot drum, so its profiles start with a heat-off soak; the Generic TC4's templates, copied from them, leave it out ([roasters.md](roasters.md)).
 
 ## Profile format
 
