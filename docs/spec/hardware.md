@@ -1,6 +1,18 @@
 # Hardware and serial protocol
 
-The app talks only to the controller board over USB serial. The board runs the SkyCommand sketch,
+The app talks only to a controller board over USB serial, in the text protocol Artisan uses for a
+TC4 board. One driver, `Tc4Driver`, speaks it; each kind of board is a **dialect** of it, plain data
+([ADR 0026](../adr/0026-one-tc4-driver-with-dialects.md)):
+
+| Dialect    | Board and firmware                                                | Roaster model |
+| ---------- | ----------------------------------------------------------------- | ------------- |
+| SkyCommand | The Skywalker mod's sketch (this page, from Commands to Firmware) | Skywalker     |
+
+A dialect says which command drives each output, what a `READ` reply holds, what the handshake
+sends and checks, and the safe-stop sequence. Everything else (the command queue, polling, rounding
+to steps, the board-echo check, errors) is the driver's, the same for every dialect.
+
+The SkyCommand dialect: the board runs the SkyCommand sketch,
 adapted from [SkywalkerRoaster](https://github.com/jmoore52/SkywalkerRoaster) (GPL-3.0), which
 handles the roaster's pulse-timing protocol. Flash the copy in
 [`firmware/skywalker-tc4/`](../../firmware/skywalker-tc4/README.md); it reports protocol version `1`.

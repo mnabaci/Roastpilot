@@ -6,6 +6,7 @@ extension point is a small interface plus a registry the app fills at startup.
 | Extension point    | Interface                | v1 implementations                                                                       | Later, no core changes                                       |
 | ------------------ | ------------------------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | Roaster hardware   | `RoasterDriver`          | Skywalker (TC4), Simulator                                                               | Other roasters and boards (with their own built-in profiles) |
+| TC4 board dialect  | `Tc4Dialect`             | SkyCommand                                                                               | Other TC4-style sketches (stock TC4 firmware)                |
 | Roaster model      | `RoasterModelDefinition` | Skywalker, Simulator                                                                     | Other roaster models                                         |
 | Connection         | `Transport`              | Serial                                                                                   | Wi-Fi, Bluetooth                                             |
 | Control per output | `OutputController`       | Fixed, Step target (PID), Curve follow (RoR PID), Manual                                 | Other control methods                                        |
@@ -22,6 +23,8 @@ extension point is a small interface plus a registry the app fills at startup.
 ## Roaster models
 
 A roaster model is one `RoasterModelDefinition` in `drivers` ([ADR 0024](../adr/0024-one-definition-per-roaster-model.md)): its channels, built-in profiles, tuning, batch sizes, starting values and `createDriver`. The composition root registers every model at startup, and the driver for a connection is picked by the active roaster's model. What the screens and zod need without a driver (label, limits, drum kind, connection kind) is the model's entry in `ROASTER_MODEL_FACTS` in `shared`, the one hand-edited list of model ids.
+
+A board that speaks Artisan's TC4 text protocol needs no driver class: its model's `createDriver` builds a `Tc4Driver` with its dialect, plain data ([ADR 0026](../adr/0026-one-tc4-driver-with-dialects.md)). Another protocol (binary, Modbus, Wi-Fi) is a driver class of its own, as before.
 
 Adding a model: an entry in `ROASTER_MODEL_FACTS`, a definition file in `packages/drivers/src/models/` exported from the package (and its driver class if it is new hardware), and one line in `apps/desktop/src/main/roaster-models.ts`: four files, no migration.
 

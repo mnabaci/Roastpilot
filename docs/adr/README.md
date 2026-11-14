@@ -27,5 +27,6 @@ One file per decision: context, decision, consequences. Add one with the `plan-f
 - [One stock log per bean](0023-one-stock-log.md)
 - [One definition per roaster model](0024-one-definition-per-roaster-model.md)
 - [One typed IPC contract](0025-one-typed-ipc-contract.md)
+- [One TC4 driver with dialects](0026-one-tc4-driver-with-dialects.md)
 
 Template: [template.md](template.md)
