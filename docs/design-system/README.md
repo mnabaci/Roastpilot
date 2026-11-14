@@ -43,7 +43,7 @@ Rules:
 
 - `heat-fill` is for the one primary action per screen and the heater slider. Never for decoration.
 - `critical` (the fill) is reserved for Emergency stop and safety trips. Delete buttons use `critical-text` as text only, never a red fill, so a red block still always means safety.
-- Ember and cyan sit on opposite sides of the colour wheel and differ in lightness, so they stay distinct for colour-blind users. Violet (`env`, ET) sits between them in hue, and its line is thinner than the temperature's, so ET never passes for BT.
+- Ember and cyan sit on opposite sides of the colour wheel and differ in lightness, so they stay distinct for colour-blind users. Violet (`env`, ET) is far from ember in hue and darker than cyan, its line is thinner than the temperature's and it shares the temperature axis, while RoR has its own on the right, so ET never passes for BT or RoR.
 - Neutrals are cool graphite with no brown or cream: warmth comes only from the ember accent.
 
 ## Elevation

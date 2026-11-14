@@ -7,7 +7,7 @@ A big live number with a label above and one line of context below.
 - Label: `label`, `ink-muted`.
 - Value: `readout-xl`, tabular numerals; unit beside it at 20px `ink-muted`.
 - Context: `label`, `ink-muted` (e.g. "Target 186 °C", "Last 30 s").
-- Secondary reading (optional): on the label's row, right-aligned: its name in `label` `ink-muted`, its value at `heading` (20px) with tabular numerals, its unit in `label` `ink-muted`. One per card, for a second sensor that belongs with the main one: ET beside the temperature ("ET 212.4 °C"). A dash when it has no value yet.
+- Secondary reading (optional): on the label's row, right-aligned: its name in `label` `ink-muted`, its value at `heading` (17px) with tabular numerals and no extra leading, so the row stays the label's height and the readout lines up with the cards beside it, its unit in `label` `ink-muted`. One per card, for a second sensor that belongs with the main one: ET beside the temperature ("ET 212.4": no unit when it shares the main value's). The label truncates before the second reading does. A dash when it has no value yet.
 
 ## Colour
 
