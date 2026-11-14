@@ -28,6 +28,8 @@ export interface Tc4Dialect {
   readonly outputCommands: Readonly<Record<string, string>>;
   /** Runs after the port opens and before the first `READ`; an error closes the port. */
   handshake(link: Tc4Link, clock: Clock): Promise<Result<void, DriverError>>;
+  /** The handshake switched every output off, so the driver's last-sent values start at 0. */
+  readonly outputsOffAfterHandshake: boolean;
   /** Which lines can answer `READ`; anything else waiting on the line is dropped. */
   readonly isReadReply: ReplyMatcher;
   parseRead(line: string): Result<Tc4Reply, DriverError>;

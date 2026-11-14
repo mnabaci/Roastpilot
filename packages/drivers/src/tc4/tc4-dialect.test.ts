@@ -35,4 +35,17 @@ describe('checkDialect', () => {
       checkDialect(broken({ fallbackStop: { command: 'ESTOP', leaves: { bt: 0 } } }));
     }).toThrow(/fallback leaves: bt/);
   });
+
+  it('refuses a sensor named like an output, which would overwrite it in every reading', () => {
+    expect(() => {
+      checkDialect(
+        broken({
+          channels: [
+            ...skyCommandDialect.channels,
+            { id: 'fan', kind: 'sensor', unit: 'celsius', name: 'Fan', short: 'Fan' },
+          ],
+        }),
+      );
+    }).toThrow(/sensor named like an output: fan/);
+  });
 });

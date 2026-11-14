@@ -62,16 +62,31 @@ async function connected(wiring?: Tc4Wiring, reply?: (line: string) => string | 
 
 describe('Tc4Driver with the stock TC4 dialect', () => {
   describe('connect', () => {
+    it('switches the heater off first when it is on IO3', async () => {
+      const { transport, driver, run } = setup({ ...DEFAULT_TC4_WIRING, heaterOutput: 'IO3' });
+      await run(driver.connect());
+      expect(transport.sentLines().slice(1, 5)).toEqual(['PID;OFF', 'IO3;0', 'OT1;0', 'OT2;0']);
+    });
+
+    it('takes the board as off after a reconnect, so its echo raises no false alarm', async () => {
+      const { transport, driver, run, entries } = await connected();
+      await run(driver.safeStop());
+      await run(driver.connect());
+      transport.sent.length = 0;
+      await run(driver.read());
+      expect(entries.map((e) => e.event)).not.toContain('driver.output-changed-by-board');
+    });
+
     it('waits for the board, maps ET and BT, switches every output off and to °C, then reads', async () => {
       const { transport, driver, run } = setup();
       await run(driver.connect());
       expect(transport.sentLines()).toEqual([
         'CHAN;1200',
+        'PID;OFF',
         'OT1;0',
         'OT2;0',
         'IO3;0',
         'UNITS;C',
-        'READ',
         'READ',
       ]);
       expect(transport.sent[0]?.atMs).toBeGreaterThanOrEqual(TC4_BOOT_MS);

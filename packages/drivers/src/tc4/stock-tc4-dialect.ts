@@ -20,8 +20,17 @@ const ALL_INPUTS = 'CHAN;1234';
 const CHAN_ATTEMPTS = 3;
 const isChanAck = (line: string) => line.trimStart().startsWith('# Active channels');
 
-/** Every output the firmware has, whatever the wiring: off on connect, so nothing runs unseen. */
-const ALL_OFF = ['OT1;0', 'OT2;0', 'IO3;0'];
+/**
+ * Off on connect, so nothing runs unseen on a board that didn't restart: its PID first (it drives
+ * OT1 on its own), then the heater's output, then every other output the firmware has.
+ */
+function allOff(wiring: Tc4Wiring): string[] {
+  const outputs = [
+    wiring.heaterOutput,
+    ...['OT1', 'OT2', 'IO3'].filter((o) => o !== wiring.heaterOutput),
+  ];
+  return ['PID;OFF', ...outputs.map((output) => `${output};0`)];
+}
 
 const percent = { kind: 'output', unit: 'percent', min: 0, max: 100, step: 5 } as const;
 
@@ -93,14 +102,6 @@ async function setChannels(link: Tc4Link, command: string): Promise<Result<void,
   return last.ok ? ok(undefined) : last;
 }
 
-/** First READ after the board answered: one retry, as for any line lost on a fresh port. */
-async function firstRead(link: Tc4Link): Promise<Result<void, DriverError>> {
-  const first = await link.request('READ', isStockReadReply);
-  if (first.ok || first.error.kind !== 'no-reply') return first.ok ? ok(undefined) : first;
-  const second = await link.request('READ', isStockReadReply);
-  return second.ok ? ok(undefined) : second;
-}
-
 export function stockTc4Dialect(wiring: Tc4Wiring): Tc4Dialect {
   const hasEt = wiring.etInput > 0;
   return {
@@ -111,13 +112,14 @@ export function stockTc4Dialect(wiring: Tc4Wiring): Tc4Dialect {
       await clock.delay(TC4_BOOT_MS);
       const chan = await setChannels(link, chanCommand(wiring));
       if (!chan.ok) return chan;
-      for (const command of [...ALL_OFF, 'UNITS;C']) {
+      for (const command of [...allOff(wiring), 'UNITS;C']) {
         const sent = await link.send(command);
         if (!sent.ok) return sent;
       }
-      return firstRead(link);
+      return ok(undefined);
     },
 
+    outputsOffAfterHandshake: true,
     isReadReply: isStockReadReply,
     parseRead: (line) => parseStockRead(line, hasEt),
 

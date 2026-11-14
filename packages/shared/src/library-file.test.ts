@@ -6,6 +6,7 @@ import {
   FileRoasterSchema,
 } from './library-file';
 import { overRoasterLimits } from './profile-rules';
+import { DEFAULT_TC4_WIRING } from './tc4-wiring';
 import { sayInUnit } from './units';
 
 const PROFILE = {
@@ -69,6 +70,41 @@ describe('library file items', () => {
     expect(Object.keys(parsed)).not.toContain('connection');
     expect(Object.keys(parsed)).not.toContain('active');
     expect(FileRoasterSchema.safeParse({ ...record, batchMinG: 500 }).success).toBe(false);
+  });
+
+  it('a roaster from before wiring reads as none and no minimum fan; only a TC4 may set one', () => {
+    const record = {
+      name: 'Kitchen',
+      model: 'skywalker',
+      batchMinG: 250,
+      batchIdealG: 375,
+      batchMaxG: 400,
+      maxTempC: 240,
+      maxTimeS: 1200,
+      tempOffsetC: 0,
+      tuning: {
+        target: { kp: 1, ki: 0, kd: 0 },
+        targetLimitPct: 20,
+        preheat: { kp: 1, ki: 0, kd: 0 },
+        preheatFanPct: 30,
+        holdS: 60,
+        chargeCutS: 10,
+      },
+      coolerHelpsDrum: true,
+      drumSpeedPct: 60,
+    };
+    expect(FileRoasterSchema.parse(record)).toMatchObject({ wiring: null, minFanHeatingPct: 0 });
+    expect(FileRoasterSchema.safeParse({ ...record, minFanHeatingPct: 30 }).success).toBe(false);
+    expect(FileRoasterSchema.safeParse({ ...record, model: 'tc4' }).success).toBe(false);
+    expect(
+      FileRoasterSchema.safeParse({
+        ...record,
+        model: 'tc4',
+        maxTempC: 250,
+        wiring: DEFAULT_TC4_WIRING,
+        minFanHeatingPct: 30,
+      }).success,
+    ).toBe(true);
   });
 
   it('a bean carries its profile by name, or none', () => {

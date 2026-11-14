@@ -35,6 +35,9 @@ export const skyCommandDialect: Tc4Dialect = {
         });
   },
 
+  // The sketch keeps its outputs; its 10 s watchdog switches them off when nothing is sent.
+  outputsOffAfterHandshake: false,
+
   isReadReply: isReadReplyShape,
 
   parseRead(line) {

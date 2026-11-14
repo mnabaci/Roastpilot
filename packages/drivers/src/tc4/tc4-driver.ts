@@ -170,6 +170,10 @@ export class Tc4Driver implements RoasterDriver {
   async #handshake(): Promise<Result<void, DriverError>> {
     const ready = await this.#dialect.handshake(this.#queue, this.#clock);
     if (!ready.ok) return ready;
+    // So the board-echo check compares with what the board now runs, not a pre-reconnect value.
+    if (this.#dialect.outputsOffAfterHandshake) {
+      for (const channel of this.#sent.keys()) this.#sent.set(channel, 0);
+    }
     const reading = await this.#readOnce();
     return reading.ok ? ok(undefined) : reading;
   }

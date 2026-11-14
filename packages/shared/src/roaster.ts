@@ -113,7 +113,14 @@ export const RoasterObjectSchema = z.object({
 
 type RoasterRuleShape = Pick<
   z.infer<typeof RoasterObjectSchema>,
-  'model' | 'maxTempC' | 'maxTimeS' | 'batchMinG' | 'batchIdealG' | 'batchMaxG' | 'wiring'
+  | 'model'
+  | 'maxTempC'
+  | 'maxTimeS'
+  | 'batchMinG'
+  | 'batchIdealG'
+  | 'batchMaxG'
+  | 'wiring'
+  | 'minFanHeatingPct'
 >;
 
 /** Limits at or below the model's own, and batch sizes in order (docs/spec/roasters.md). */
@@ -130,8 +137,10 @@ export function checkRoaster(roaster: RoasterRuleShape, ctx: z.RefinementCtx): v
   }
   if (roaster.batchMinG > roaster.batchIdealG) issue('batchMinG', 'Must not be above ideal');
   if (roaster.batchIdealG > roaster.batchMaxG) issue('batchMaxG', 'Must not be below ideal');
-  if (modelFacts(roaster.model).wiring && roaster.wiring === null)
-    issue('wiring', 'Choose the wiring');
+  const { wiring } = modelFacts(roaster.model);
+  if (wiring && roaster.wiring === null) issue('wiring', 'Choose the wiring');
+  // Only a roaster with wiring has the setting, and only its handshake leaves the outputs off.
+  if (!wiring && roaster.minFanHeatingPct > 0) issue('minFanHeatingPct', 'Not on this model');
 }
 
 export const RoasterSchema = RoasterObjectSchema.superRefine(checkRoaster);
