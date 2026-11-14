@@ -5,7 +5,7 @@ import { ACCEPTED_SETTINGS, CONNECTED, renderApp } from '../../test/render-app';
 import { onConnect, reading, roast } from '../../test/roast-screen';
 import { RoastScreen } from './RoastScreen';
 
-/** A roaster with an ET probe, as the Simulator is. */
+/** A roaster with an ET probe, as the Simulator and a generic TC4 with an ET probe are. */
 const TARGET = { kind: 'serial', path: '/dev/cu.usbserial-0001' } as const;
 const WITH_ET: ConnectionState = {
   status: 'connected',
