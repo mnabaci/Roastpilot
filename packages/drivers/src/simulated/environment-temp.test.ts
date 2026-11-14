@@ -43,6 +43,16 @@ describe('environment temperature', () => {
     expect(etC - 200).toBeLessThan(15);
   });
 
+  it('stays above a drum that is heating up, as the air heats the metal', () => {
+    // The drum climbs 25 °C/min under heater 80, fan 30, like a preheat.
+    let temps = { baseC: 22, etC: 22 };
+    for (let s = 0; s < 300; s += 0.1) {
+      const drumC = 22 + (25 / 60) * s;
+      temps = stepEnvironment(temps, drumC, inputs(80, 30), constants, 0.1);
+      if (s > 30) expect(temps.etC).toBeGreaterThan(drumC);
+    }
+  });
+
   it('follows the drum metal slowly, so a quick drop in the drum moves it much less', () => {
     const { etC } = run({ baseC: 200, etC: 200 }, 150, 0, 0, 30);
     expect(200 - etC).toBeLessThan(20);

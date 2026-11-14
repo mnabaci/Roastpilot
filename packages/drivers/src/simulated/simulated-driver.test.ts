@@ -111,6 +111,17 @@ describe('SimulatedDriver', () => {
       expect((values.et ?? 0) - (values.bt ?? 0)).toBeGreaterThan(10);
     });
 
+    it('reads above BT through a whole preheat climb', async () => {
+      const { clock, driver } = await connected();
+      await driver.setOutput('heater', 80);
+      await driver.setOutput('fan', 30);
+      for (let s = 1; s <= 420; s++) {
+        clock.advance(1000);
+        const values = await readValues(driver);
+        if (s > 30) expect(values.et ?? 0).toBeGreaterThan(values.bt ?? 0);
+      }
+    });
+
     it('dips far less than BT at charge, through the turning point', async () => {
       const { clock, driver } = await connected();
       await driver.setOutput('heater', 60);
