@@ -30,9 +30,9 @@ export interface StatCardProps
   };
 }
 
-// `leading-none`: the reading sits in the label's line, so the card's readout stays level with the
-// cards beside it.
-const secondaryVariants = cva('text-heading leading-none tabular-nums', {
+// The row is the label's height (see below), so the card's readout stays level with the cards
+// beside it.
+const secondaryVariants = cva('text-heading leading-(--text-label--line-height) tabular-nums', {
   variants: { tone: TONE_TEXT },
   defaultVariants: { tone: 'ink' },
 });
@@ -64,7 +64,7 @@ export function StatCard({
       {...props}
     >
       {secondary ? (
-        <div className="flex min-w-0 items-baseline justify-between gap-3">
+        <div className="flex h-(--text-label--line-height) min-w-0 items-center justify-between gap-3">
           <p className="truncate text-label text-ink-muted">{label}</p>
           <p className="flex shrink-0 items-baseline gap-1.5">
             <span className="text-label text-ink-muted">{secondary.label}</span>
