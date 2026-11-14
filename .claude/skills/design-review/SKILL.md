@@ -14,7 +14,7 @@ Judge a component in the full screen, not on its own: run the app (`ui-check`) a
 3. **Hierarchy:** one primary action per state, using the primary button; everything else tonal, outline or ghost.
 4. **No walls of text:** numbers before sentences; hints are one line; no modals during a roast except the confirmation dialog after the user's own click.
 5. **Readability:** live values use the readout styles with tabular numerals; readable from 1–2 m.
-6. **Colour meaning:** ember = heat, cyan = air, grey = reference, state colours only for real states, red only for safety.
+6. **Colour meaning:** ember = heat, cyan = air, violet (`env`) = ET, grey = reference, state colours only for real states, red only for safety.
 7. **Accessibility:** 4.5:1 text contrast in dark and light, focus ring visible, 44px targets, labels on inputs, `aria-label` on icon-only buttons.
 8. **Copy:** sentence case, value then unit (`212 °C`, `1:58`), verbs on buttons.
 
