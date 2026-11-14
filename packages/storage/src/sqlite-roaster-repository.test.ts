@@ -1,30 +1,6 @@
-import { createLogger } from '@roastpilot/core';
-import { DEFAULT_TC4_WIRING, type LogEntry, type Roaster } from '@roastpilot/shared';
+import type { Roaster } from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
-import { openDatabase } from './open-database';
-import { drizzleOn } from './proxy-db';
-import { SqliteRoastRepository } from './sqlite-roast-repository';
-import { SqliteRoasterRepository } from './sqlite-roaster-repository';
-
-function setup() {
-  const entries: LogEntry[] = [];
-  const logger = createLogger({ write: (e) => entries.push(e) }, 'storage');
-  const opened = openDatabase(':memory:', logger);
-  if (!opened.ok) throw new Error(opened.error.kind);
-  const db = drizzleOn(opened.value);
-  return {
-    sqlite: opened.value,
-    entries,
-    repository: new SqliteRoasterRepository(db, logger),
-    roasts: new SqliteRoastRepository(db, logger),
-  };
-}
-
-async function listed(repository: SqliteRoasterRepository): Promise<Roaster[]> {
-  const read = await repository.list();
-  if (!read.ok) throw new Error('list failed');
-  return read.value;
-}
+import { listed, setup } from './roaster-repository-fixture';
 
 describe('SqliteRoasterRepository', () => {
   it('starts with Skywalker active and the Simulator', async () => {
@@ -135,36 +111,6 @@ describe('SqliteRoasterRepository', () => {
     });
     expect(await repository.usage(2)).toEqual({ ok: true, value: { roasts: 1, profiles: 0 } });
     expect(await repository.usage(1)).toEqual({ ok: true, value: { roasts: 0, profiles: 0 } });
-  });
-
-  it('keeps a generic TC4 record with its wiring and minimum fan', async () => {
-    const { repository } = setup();
-    const [skywalker] = await listed(repository);
-    if (!skywalker) throw new Error('no roaster');
-    const { id, ...fields } = skywalker;
-    expect(id).toBe(1);
-    const wiring = { ...DEFAULT_TC4_WIRING, etInput: 0, fanOutput: 'IO3' } as const;
-    await repository.add({
-      ...fields,
-      name: 'Popper',
-      model: 'tc4',
-      wiring,
-      minFanHeatingPct: 40,
-      active: false,
-    });
-    expect((await listed(repository)).at(-1)).toMatchObject({
-      name: 'Popper',
-      model: 'tc4',
-      wiring,
-      minFanHeatingPct: 40,
-    });
-  });
-
-  it('skips a generic TC4 whose wiring no longer reads, never guessing its heater output', async () => {
-    const { repository, sqlite, entries } = setup();
-    sqlite.exec(`UPDATE roasters SET model = 'tc4', wiring = '{"heater":"D9"}' WHERE id = 2`);
-    expect((await listed(repository)).map((r) => r.id)).toEqual([1]);
-    expect(entries.map((e) => e.event)).toContain('storage.roaster-unreadable');
   });
 
   it('deletes a record, and says when there is none', async () => {

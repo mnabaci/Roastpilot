@@ -66,6 +66,8 @@ export class SqliteRoasterRepository implements RoasterRepository {
         model: knownModel.data,
         tuning: tuning.data,
         wiring: wired?.success ? wired.data : null,
+        // Only a model with wiring has the setting (checkRoaster): never a fan held on another.
+        minFanHeatingPct: wired ? plain.minFanHeatingPct : 0,
         connection: target?.success ? target.data : null,
         active: isActive,
       },
