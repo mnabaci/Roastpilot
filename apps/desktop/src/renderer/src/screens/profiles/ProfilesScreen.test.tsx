@@ -12,7 +12,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BUILT_INS, CURVE, STEPS } from '../../test/profiles';
 import { fakeApi, renderApp } from '../../test/render-app';
-import { roastersWith } from '../../test/roasters';
+import { roastersWith, SIMULATOR } from '../../test/roasters';
 import { ProfilesScreen } from './ProfilesScreen';
 
 const MINE: AutoProfile = { ...STEPS, id: 'custom-1', name: 'Mine' };
@@ -707,6 +707,31 @@ describe('ProfilesScreen', () => {
     expect(
       screen.getByRole('button', { name: /^More for (?!Profiles$)/ }).parentElement,
     ).not.toContainElement(message);
+  });
+
+  it('with two other roasters, one Copy item opens a picker', async () => {
+    const api = fakeApi({ copyProfile: vi.fn(() => Promise.resolve(ok(OWN))) });
+    const third = { ...SIMULATOR, id: 3, name: 'Popcorn' };
+    renderApp(
+      <ProfilesScreen />,
+      {
+        profiles: withMine,
+        ...settingsOn('light-steps'),
+        roasters: [...roastersWith(null), third],
+      },
+      api,
+    );
+    await userEvent.click(screen.getByRole('button', { name: /^More for (?!Profiles$)/ }));
+    const items = screen.getAllByRole('menuitem').map((item) => item.textContent);
+    expect(items.filter((label) => label.startsWith('Copy to'))).toEqual([
+      'Copy to another roaster…',
+    ]);
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Copy to another roaster…' }));
+    const dialog = within(screen.getByRole('dialog', { name: 'Copy to another roaster' }));
+    await userEvent.click(dialog.getByRole('button', { name: 'Roaster' }));
+    await userEvent.click(screen.getByRole('option', { name: 'Popcorn' }));
+    await userEvent.click(dialog.getByRole('button', { name: 'Copy' }));
+    expect(api.copyProfile).toHaveBeenCalledWith({ id: 'light-steps', roasterId: 3 });
   });
 
   it('names the copy a roaster already has instead of making another', async () => {

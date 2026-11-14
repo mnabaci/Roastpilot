@@ -9,6 +9,7 @@ import { useRun } from '../../features/use-run';
 import { useToast } from '../../features/use-toast';
 import { useRoasters } from '../../stores/use-stores';
 import { useSaveSettings } from '../settings/use-save-settings';
+import { CopyToRoasterDialog } from './CopyToRoasterDialog';
 import type { ProfileDraftState } from './use-profile-draft';
 
 /**
@@ -39,6 +40,7 @@ export function useProfileActions({
   const saveSettings = useSaveSettings();
   const [problem, setProblem] = useState<string>();
   const [deleting, setDeleting] = useState(false);
+  const [picking, setPicking] = useState(false);
   const { id } = entry.profile;
   const others = useRoasters((s) => s.roasters).filter((r) => !r.active);
   const files = useLibraryFiles('profiles');
@@ -146,12 +148,26 @@ export function useProfileActions({
   const more: MenuItem[] = [
     // A built-in's Duplicate is its button.
     ...(entry.builtIn ? [] : [{ label: 'Duplicate', onSelect: duplicate }]),
-    ...others.map((roaster) => ({
-      label: `Copy to ${roaster.name}`,
-      onSelect: () => {
-        copyTo(roaster.id, roaster.name);
-      },
-    })),
+    // One item, whatever the number of roasters: with two or more it opens a picker.
+    ...(others.length === 1 && others[0]
+      ? [
+          {
+            label: `Copy to ${others[0].name}`,
+            onSelect: () => {
+              if (others[0]) copyTo(others[0].id, others[0].name);
+            },
+          },
+        ]
+      : others.length > 1
+        ? [
+            {
+              label: 'Copy to another roaster…',
+              onSelect: () => {
+                setPicking(true);
+              },
+            },
+          ]
+        : []),
     ...(yours
       ? [
           {
@@ -224,6 +240,15 @@ export function useProfileActions({
     ),
     page: (
       <>
+        <CopyToRoasterDialog
+          open={picking}
+          onOpenChange={setPicking}
+          profileName={entry.profile.name}
+          roasters={others}
+          onCopy={(roaster) => {
+            copyTo(roaster.id, roaster.name);
+          }}
+        />
         <ConfirmDialog
           open={deleting}
           onOpenChange={setDeleting}

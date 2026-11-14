@@ -173,7 +173,7 @@ export function BeanFields({
         <p className="text-label text-ink-muted">Decaf</p>
         <SegmentedControl
           label="Decaf"
-          className="self-start"
+          fill
           options={[
             { value: false, label: 'No' },
             { value: true, label: 'Yes' },
