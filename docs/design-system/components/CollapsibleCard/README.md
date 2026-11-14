@@ -1,6 +1,6 @@
 # CollapsibleCard
 
-A card whose content folds away under its header row, which then says in one line what's inside. History's Roast details: bean, weights, rating and notes under the stat cards.
+A card whose content folds away under its header row, which then says in one line what's inside. History's Roast details: bean, weights, rating and notes under the stat cards. Roasters' Wiring on a Generic TC4: set once, so folded to its summary.
 
 ## Anatomy
 

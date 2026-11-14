@@ -55,7 +55,7 @@ between builds is on the record, so a new build is a new record, not new code.
 | Bean cooler helps cool the drum  | Off (there is none)                                                |
 | Built-in profiles                | None: generic templates marked "needs calibration"                 |
 
-**Wiring** (its own card on the roaster's page, between the connection and the record; Generic TC4 only):
+**Wiring** (its own card on the roaster's page, between the connection and the record, folded to a one-line summary once the roaster has a port; Generic TC4 only):
 
 | Setting                   | Choices                           | Default |
 | ------------------------- | --------------------------------- | ------- |
