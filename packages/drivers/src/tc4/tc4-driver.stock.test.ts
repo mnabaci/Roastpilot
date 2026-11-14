@@ -86,6 +86,7 @@ describe('Tc4Driver with the stock TC4 dialect', () => {
         'OT1;0',
         'OT2;0',
         'IO3;0',
+        'FILT;10;10;10;10',
         'UNITS;C',
         'READ',
       ]);

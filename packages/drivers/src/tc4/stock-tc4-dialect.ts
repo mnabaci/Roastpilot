@@ -21,6 +21,13 @@ const CHAN_ATTEMPTS = 3;
 const isChanAck = (line: string) => line.trimStart().startsWith('# Active channels');
 
 /**
+ * The firmware's own filtering (`ET_FILTER`, `BT_FILTER` in user.h), sent on every connect: a board
+ * that didn't restart keeps the level Artisan last set (its default `FILT;70,70,70,70`), which would
+ * lag the readings Auto steers by. The app smooths what it draws itself.
+ */
+const FIRMWARE_FILTERS = 'FILT;10;10;10;10';
+
+/**
  * Off on connect, so nothing runs unseen on a board that didn't restart: its PID first (it drives
  * OT1 on its own), then the heater's output, then every other output the firmware has.
  */
@@ -112,7 +119,7 @@ export function stockTc4Dialect(wiring: Tc4Wiring): Tc4Dialect {
       await clock.delay(TC4_BOOT_MS);
       const chan = await setChannels(link, chanCommand(wiring));
       if (!chan.ok) return chan;
-      for (const command of [...allOff(wiring), 'UNITS;C']) {
+      for (const command of [...allOff(wiring), FIRMWARE_FILTERS, 'UNITS;C']) {
         const sent = await link.send(command);
         if (!sent.ok) return sent;
       }
