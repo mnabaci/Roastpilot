@@ -19,6 +19,7 @@ Roastpilot switches a heater. Use it at your own risk.
   roast time, stalled temperature) help, but software and computers fail.
 - **Keep the hardware safety in place:** the roaster's thermal fuses and cut-outs, and the sketch's
   watchdog that turns the heater off when the app goes quiet. Don't bypass them.
+  The stock TC4 firmware has no such watchdog: if the app stops, its heater stays on.
 - Roastpilot is free software with **no warranty**, as sections 15 and 16 of the
   [GPL-3.0](LICENSE) say.
 
@@ -70,10 +71,11 @@ Manual: you drive heater and fan; the coach suggests what Auto would do, with Ap
 
 ## Supported roasters
 
-| Roaster   | How it connects                                                                                                                                                         |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Skywalker | USB serial to an ESP32 running the SkyCommand sketch (from [SkywalkerRoaster](https://github.com/jmoore52/SkywalkerRoaster)). See [hardware.md](docs/spec/hardware.md). |
-| Simulator | Built in; no hardware. Good for trying the app and for tests.                                                                                                           |
+| Roaster     | How it connects                                                                                                                                                                                                                                                                                                            |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Skywalker   | USB serial to an ESP32 running the SkyCommand sketch (from [SkywalkerRoaster](https://github.com/jmoore52/SkywalkerRoaster)). See [hardware.md](docs/spec/hardware.md).                                                                                                                                                    |
+| Generic TC4 | Home-built roasters (poppers, heat guns, Behmor and Gene Café mods) on an Arduino + TC4 board running the stock aArtisanQ_PID firmware, over USB serial. Probes, outputs and baud are set on the roaster's page. Untested on real hardware yet. See [hardware.md](docs/spec/hardware.md#stock-tc4-firmware-aartisanq_pid). |
+| Simulator   | Built in; no hardware. Good for trying the app and for tests.                                                                                                                                                                                                                                                              |
 
 Want another roaster? Open a [new roaster request](https://github.com/mnabaci/Roastpilot/issues/new?template=new_roaster.yml);
 drivers are plug-ins ([extensibility.md](docs/spec/extensibility.md)).

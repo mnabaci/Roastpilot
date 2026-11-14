@@ -4,9 +4,10 @@ The app talks only to a controller board over USB serial, in the text protocol A
 TC4 board. One driver, `Tc4Driver`, speaks it; each kind of board is a **dialect** of it, plain data
 ([ADR 0026](../adr/0026-one-tc4-driver-with-dialects.md)):
 
-| Dialect    | Board and firmware                                                | Roaster model |
-| ---------- | ----------------------------------------------------------------- | ------------- |
-| SkyCommand | The Skywalker mod's sketch (this page, from Commands to Firmware) | Skywalker     |
+| Dialect    | Board and firmware                                                                      | Roaster model |
+| ---------- | --------------------------------------------------------------------------------------- | ------------- |
+| SkyCommand | The Skywalker mod's sketch (this page, from Commands to Firmware)                       | Skywalker     |
+| Stock TC4  | Arduino + TC4 shield running aArtisanQ_PID ([below](#stock-tc4-firmware-aartisanq_pid)) | Generic TC4   |
 
 A dialect says which command drives each output, what a `READ` reply holds, what the handshake
 sends and checks, and the safe-stop sequence. Everything else (the command queue, polling, rounding
@@ -59,6 +60,35 @@ Comma-separated: `0.00,<temp>,<temp>,<heater>,<fan>,0`, for example `0.00,180.25
 - **Stale readings:** if the board fails to read the roaster, `READ` keeps returning the last good temperature with no error. The stalled-temperature alarm ([safety.md](safety.md)) is the app's only signal for this.
 - **Sketch over-temperature:** the sketch runs `ESTOP` above 300 °C. The app's own limit (240 °C per roaster) trips long before.
 - **Safe stop from the app:** `OT1;0`, then `OT2;100`, then `COOL;100`, queued like any other commands; `ESTOP` as a fallback.
+
+## Stock TC4 firmware (aArtisanQ_PID)
+
+The generic TC4 model: an Arduino with a TC4 shield running the stock
+[aArtisanQ_PID](https://github.com/greencardigan/TC4-shield/tree/master/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID)
+firmware, the board many home-built roasters use with Artisan (poppers, heat guns, Behmor and
+Gene Café mods). Checked against the firmware source and Artisan's own TC4 code
+(`comm.py`, `ARDUINOTC4temperature`), not its out-of-date `commands.txt`.
+
+- **Wiring is on the record**, because every build differs ([roasters.md](roasters.md#generic-tc4)): BT input, ET input, heater output, fan output, baud. Defaults match the firmware's and Artisan's.
+- **Delimiters:** the firmware takes `;`, `,`, space or `=`; the driver sends `;` as for SkyCommand.
+
+| Command     | Sets                                                                 | Values                                         |
+| ----------- | -------------------------------------------------------------------- | ---------------------------------------------- |
+| `CHAN;ebxx` | Which TC input (1–4) is logical channel 1 (ET) and 2 (BT); `0` = off | `CHAN;1200` by default; `CHAN;0200` with no ET |
+| `UNITS;C`   | Report °C                                                            | –                                              |
+| `READ`      | Replies with a status line (below)                                   | –                                              |
+| `OT1;n`     | Heater on OT1 (the usual output)                                     | 0–100                                          |
+| `IO3;n`     | Heater on IO3 (a heater-on-IO3 build), or a DC fan on IO3            | 0–100                                          |
+| `OT2;n`     | AC fan on OT2 (the firmware's default build)                         | 0–100                                          |
+| `PID;STOP`  | Heater off and PID off, fan to the build's auto-cool level           | –                                              |
+
+- **READ reply:** `ambient,ch1,ch2,…,heater,fan,setpoint` in the order of `CHAN`; with `CHAN;eb00` that's `ambient,ET,BT,heater,fan,0`, the same six fields as SkyCommand's. With no ET (`CHAN;0b00`) it's five: `ambient,BT,heater,fan,0`. An empty field is no value. Heater and fan echo the firmware's duty, so the board-echo check works as for SkyCommand.
+- **Acknowledgements:** `CHAN` always replies `# Active channels set to …`; other commands only on a build with acks on. The driver drops every line that starts with `#` (debug log), so none answers a `READ`.
+- **Connect:** open the port at the record's baud (default 115200), wait 1.5 s (the Arduino restarts when the port opens; Artisan waits 1 s), send `CHAN`, `UNITS;C`, then `READ`. No reply within 1.5 s is retried once (still booting), then a `no-reply` error. A reply that doesn't parse is `bad-reply`, with the banner "Not a TC4 reply · check the baud and the firmware". There is no version check: the stock firmware has none.
+- **Live inputs:** on the roaster's page, while connected and no roast or drum cooling runs, the driver switches to `CHAN;1234`, reads `ambient,TC1,TC2,TC3,TC4,heater,fan,setpoint`, then sends the record's `CHAN` again, even when the read failed ([roasters.md](roasters.md#generic-tc4)). Reads run one at a time, so a poll never lands between the two `CHAN`s.
+- **Outputs:** clean integers 0–100 in steps of 5, as for SkyCommand. Heater and fan never share an output; the record refuses it.
+- **No watchdog:** the firmware keeps its last outputs forever. If the app crashes or the cable is pulled, the heater stays on until someone switches it off. Safe stop from the app: heater 0, then fan 100; `PID;STOP` as the fallback.
+- **Ambient** (field 1, the board's own sensor) is not a channel: not shown, not saved.
 
 ## Simulator
 
