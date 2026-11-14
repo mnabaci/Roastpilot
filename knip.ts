@@ -13,7 +13,13 @@ const config: KnipConfig = {
   ignoreExportsUsedInFile: true,
   workspaces: {
     '.': {
-      entry: ['scripts/*.ts', 'scripts/ui/ui.ts', '.claude/hooks/*.ts'],
+      // Figma loads the design-system plugin from its manifest.
+      entry: [
+        'scripts/*.ts',
+        'scripts/ui/ui.ts',
+        '.claude/hooks/*.ts',
+        'design/figma-plugin/code.js',
+      ],
     },
     'apps/desktop': {
       // `pnpm icon` runs this through the electron binary, which knip does not follow.

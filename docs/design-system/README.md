@@ -3,6 +3,7 @@
 This folder is the source of truth ([ADR 0020](../adr/0020-design-system-in-the-repo.md)).
 Change it in the same PR as the component.
 The claude.ai page is generated from it with `/design-sync`.
+The Figma file (Roastpilot Design System) mirrors it: variables, text styles and components. [design/figma-plugin](../../design/figma-plugin/README.md) builds the components there; extend it when a component changes.
 
 Roastpilot is a desktop app that roasts coffee on autopilot and coaches you when you take the controls. This design system keeps every screen dark, precise and readable from a step back from the roaster: graphite surfaces, an ember accent for heat and cyan for air.
 

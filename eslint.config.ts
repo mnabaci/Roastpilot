@@ -77,6 +77,12 @@ export default defineConfig(
     languageOptions: { globals: globals.node },
   },
 
+  // The Figma plugin runs in Figma's plugin sandbox, which provides `figma`.
+  {
+    files: ['design/figma-plugin/**/*.js'],
+    languageOptions: { globals: { figma: 'readonly', console: 'readonly' } },
+  },
+
   // Electron main and preload run in Node.
   {
     files: [
