@@ -1,10 +1,15 @@
-import { ROASTER_MODEL_FACTS, type ConnectTarget, type RoasterModel } from '@roastpilot/shared';
+import {
+  DEFAULT_TC4_WIRING,
+  ROASTER_MODEL_FACTS,
+  type ConnectTarget,
+  type RoasterModel,
+} from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { ManualClock } from '../clock';
 import type { LogContext, Logger } from '../logging/logger';
 import { silentLogger } from '../logging/logger';
 import type { RoasterDriver } from '../roaster-driver';
-import type { RoasterModelDefinition } from './roaster-model-definition';
+import type { DriverRecord, RoasterModelDefinition } from './roaster-model-definition';
 import { createDriver, newRoaster, roasterModels } from './roaster-models';
 
 const stubDriver = (name: string): RoasterDriver =>
@@ -13,6 +18,7 @@ const stubDriver = (name: string): RoasterDriver =>
 function definition<M extends RoasterModel>(
   id: M,
   built: ConnectTarget[],
+  records: DriverRecord[] = [],
 ): RoasterModelDefinition & { id: M } {
   return {
     id,
@@ -22,8 +28,9 @@ function definition<M extends RoasterModel>(
     tuning: {} as RoasterModelDefinition['tuning'],
     batch: { minG: 100, idealG: 150, maxG: 200 },
     coolerHelpsDrum: id === 'skywalker',
-    createDriver: (target) => {
+    createDriver: (target, _deps, record) => {
       built.push(target);
+      records.push(record);
       return stubDriver(id);
     },
   };
@@ -31,6 +38,7 @@ function definition<M extends RoasterModel>(
 
 function setup() {
   const built: ConnectTarget[] = [];
+  const records: DriverRecord[] = [];
   const warnings: [string, LogContext | undefined][] = [];
   const logger: Logger = {
     ...silentLogger,
@@ -39,16 +47,17 @@ function setup() {
     },
   };
   const models = roasterModels({
-    skywalker: definition('skywalker', built),
-    simulator: definition('simulator', built),
+    skywalker: definition('skywalker', built, records),
+    tc4: definition('tc4', built, records),
+    simulator: definition('simulator', built, records),
   });
-  return { models, built, warnings, deps: { clock: new ManualClock(), logger } };
+  return { models, built, records, warnings, deps: { clock: new ManualClock(), logger } };
 }
 
 describe('roasterModels', () => {
   it('lists every registered model and gets each by id', () => {
     const { models } = setup();
-    expect(models.all.map((m) => m.id)).toEqual(['skywalker', 'simulator']);
+    expect(models.all.map((m) => m.id)).toEqual(['skywalker', 'tc4', 'simulator']);
     expect(models.get('simulator').label).toBe('Simulator');
   });
 
@@ -70,7 +79,7 @@ describe('createDriver', () => {
     const { models, built, deps } = setup();
     const made = createDriver(
       models,
-      { model: 'skywalker' },
+      { model: 'skywalker', wiring: null },
       { kind: 'serial', path: 'COM3' },
       deps,
     );
@@ -78,11 +87,22 @@ describe('createDriver', () => {
     expect(built).toEqual([{ kind: 'serial', path: 'COM3' }]);
   });
 
+  it("hands the model's driver the record's wiring", () => {
+    const { models, records, deps } = setup();
+    createDriver(
+      models,
+      { model: 'tc4', wiring: DEFAULT_TC4_WIRING },
+      { kind: 'serial', path: 'COM3' },
+      deps,
+    );
+    expect(records).toEqual([{ wiring: DEFAULT_TC4_WIRING }]);
+  });
+
   it('refuses a target the model does not use, and logs it', () => {
     const { models, built, warnings, deps } = setup();
     const made = createDriver(
       models,
-      { model: 'simulator' },
+      { model: 'simulator', wiring: null },
       { kind: 'serial', path: 'COM3' },
       deps,
     );
@@ -107,8 +127,14 @@ describe('newRoaster', () => {
       maxTimeS: 1200,
       coolerHelpsDrum: true,
       drumSpeedPct: 60,
+      wiring: null,
+      minFanHeatingPct: 0,
       active: false,
     });
+  });
+
+  it('a model with wiring starts from the firmware defaults', () => {
+    expect(newRoaster('Popper', setup().models.get('tc4')).wiring).toEqual(DEFAULT_TC4_WIRING);
   });
 
   it('a Simulator-kind model is connected to the simulator from the start', () => {

@@ -16,6 +16,8 @@ export interface HarnessOptions {
   options?: Partial<RoastOptions>;
   /** Whether the roaster can take a cool-down (connected, no safety stop); true by default. */
   canCoolRoaster?: boolean;
+  /** The outputs the roaster has; every output when left out. */
+  outputs?: readonly string[];
 }
 
 /**
@@ -26,6 +28,7 @@ export function manualRoastHarness({
   failOutputs = false,
   options = {},
   canCoolRoaster = true,
+  outputs,
 }: HarnessOptions = {}) {
   const clock = new ManualClock();
   const sent: string[] = [];
@@ -52,6 +55,7 @@ export function manualRoastHarness({
     onRoastEnded: () => signals.push('roast-ended'),
     options: () => ({ ...DEFAULT_OPTIONS, ...options }),
     canCoolRoaster: () => canCoolRoaster,
+    ...(outputs ? { hasOutput: (channel: string) => outputs.includes(channel) } : {}),
     logger: createLogger({ write: (e) => entries.push(e) }, 'roast'),
   });
   const act = (...actions: RoastAction[]) =>

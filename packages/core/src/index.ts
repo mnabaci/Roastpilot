@@ -2,6 +2,7 @@ export { ManualClock, type Clock } from './clock';
 export { quantize } from './quantize';
 export type { DriverError, RoasterDriver } from './roaster-driver';
 export type { Transport, TransportError } from './transport';
+export { FanInterlockDriver } from './safety/fan-interlock-driver';
 export { SafetyGuardedDriver } from './safety/safety-guarded-driver';
 export { DEFAULT_SAFETY_LIMITS } from './safety/safety-limits';
 export {

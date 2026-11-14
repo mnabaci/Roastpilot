@@ -5,6 +5,7 @@ import type {
   ConnectTarget,
   RoasterModel,
   RoasterModelFacts,
+  Tc4Wiring,
 } from '@roastpilot/shared';
 import type { Clock } from '../clock';
 import type { Logger } from '../logging/logger';
@@ -14,6 +15,11 @@ import type { RoasterDriver } from '../roaster-driver';
 export interface DriverDeps {
   clock: Clock;
   logger: Logger;
+}
+
+/** What a driver takes from the roaster's record: its wiring, on a model that has one. */
+export interface DriverRecord {
+  readonly wiring: Tc4Wiring | null;
 }
 
 /**
@@ -32,8 +38,9 @@ export interface RoasterModelDefinition extends RoasterModelFacts {
   /** The tray fan sits under the drum and helps cool it (docs/spec/roasters.md). */
   readonly coolerHelpsDrum: boolean;
   /**
-   * Its driver for a target of its `connection` kind. Called only with that kind (`createDriver`
-   * checks it first): another kind is a programmer error and throws.
+   * Its driver for a target of its `connection` kind and the record's wiring. Called only with
+   * that kind (`createDriver` checks it first): another kind, or a model with wiring given none,
+   * is a programmer error and throws.
    */
-  createDriver(target: ConnectTarget, deps: DriverDeps): RoasterDriver;
+  createDriver(target: ConnectTarget, deps: DriverDeps, record: DriverRecord): RoasterDriver;
 }

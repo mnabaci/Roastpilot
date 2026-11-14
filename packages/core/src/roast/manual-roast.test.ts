@@ -290,6 +290,13 @@ describe('ManualRoast', () => {
     expect(roast.state.phase).toBe('done');
   });
 
+  it('sends nothing to an output the roaster lacks: Drop on heater and fan only', async () => {
+    const h = manualRoastHarness({ outputs: ['heater', 'fan'] });
+    await h.act('preheat', 'start', 'drop');
+    expect(h.sent.every((s) => s.startsWith('heater=') || s.startsWith('fan='))).toBe(true);
+    expect(h.sent.slice(-2)).toEqual(['heater=0', 'fan=100']);
+  });
+
   it('publishes every change, and survives a listener that throws', async () => {
     const clock = new ManualClock();
     const entries: LogEntry[] = [];
