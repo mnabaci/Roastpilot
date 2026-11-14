@@ -13,6 +13,8 @@ controller bug can't bypass it. Limits are per roaster.
 | Computer sleep      | While a roaster is connected the app keeps the computer from idle sleep; while a roast runs (Preheat to Cooling, or drum cooling) it also keeps the screen on, so it doesn't lock                                                       | If it sleeps anyway (lid closed, Sleep chosen): safe stop and heater lock before it sleeps; sleep and wake are logged                    |
 | App quit or crash   | —                                                                                                                                                                                                                                       | Send safe-stop commands on quit; a crash also tries to save the roast in progress, within 2 s; the sketch's 10 s watchdog covers crashes |
 
+Safety reads BT only; ET, on a roaster that has it, is shown and saved but never trips anything.
+
 The app never claims it can be left alone. The roast screen says to stay with the roaster.
 
 ## Safety notice
