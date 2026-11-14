@@ -45,6 +45,17 @@ const isKnown = (value: string | number | null | undefined): value is string | n
     ? Number.isFinite(value)
     : value !== null && value !== undefined && value !== '';
 
+/** The smaller reading on the label's row: label, value, then unit once the value is known. */
+function SecondaryReading({ label, value, unit, tone }: NonNullable<StatCardProps['secondary']>) {
+  return (
+    <p className="flex shrink-0 items-baseline gap-1.5">
+      <span className="text-label text-ink-muted">{label}</span>
+      <span className={secondaryVariants({ tone })}>{isKnown(value) ? withMinus(value) : '—'}</span>
+      {unit && isKnown(value) ? <span className="text-label text-ink-muted">{unit}</span> : null}
+    </p>
+  );
+}
+
 /** A big live number with a label above and one line of context below. */
 export function StatCard({
   label,
@@ -66,15 +77,7 @@ export function StatCard({
       {secondary ? (
         <div className="flex h-(--text-label--line-height) min-w-0 items-center justify-between gap-3">
           <p className="truncate text-label text-ink-muted">{label}</p>
-          <p className="flex shrink-0 items-baseline gap-1.5">
-            <span className="text-label text-ink-muted">{secondary.label}</span>
-            <span className={secondaryVariants({ tone: secondary.tone })}>
-              {isKnown(secondary.value) ? withMinus(secondary.value) : '—'}
-            </span>
-            {secondary.unit && isKnown(secondary.value) ? (
-              <span className="text-label text-ink-muted">{secondary.unit}</span>
-            ) : null}
-          </p>
+          <SecondaryReading {...secondary} />
         </div>
       ) : (
         <p className="text-label text-ink-muted">{label}</p>
