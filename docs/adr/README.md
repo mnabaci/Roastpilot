@@ -26,5 +26,6 @@ One file per decision: context, decision, consequences. Add one with the `plan-f
 - [dnd-kit for reordering rows](0022-dnd-kit-for-reordering.md)
 - [One stock log per bean](0023-one-stock-log.md)
 - [One definition per roaster model](0024-one-definition-per-roaster-model.md)
+- [One typed IPC contract](0025-one-typed-ipc-contract.md)
 
 Template: [template.md](template.md)

@@ -32,14 +32,18 @@ import {
   SettingsSchema,
   CoachRequestSchema,
 } from '@roastpilot/shared';
-import type { IpcCaller, IpcDeps, IpcHandler } from './ipc-deps';
+import type { IpcCaller, IpcDeps, IpcHandlers } from './ipc-deps';
 
-export type { IpcCaller, IpcDeps, IpcHandler } from './ipc-deps';
+export type { AnyIpcHandler, IpcCaller, IpcDeps, IpcHandler, IpcHandlers } from './ipc-deps';
 export { handleRendererLog, withErrorLogging } from './ipc-logging';
 
 /** Runs `fn` so that anything it throws, a failed validation included, becomes a rejected promise. */
-function handler(fn: (payload: unknown, caller: IpcCaller) => unknown): IpcHandler {
-  return (payload, caller) => Promise.resolve().then(() => fn(payload, caller));
+function handler<T>(
+  fn: (payload: unknown, caller: IpcCaller) => T,
+): (payload: unknown, caller: IpcCaller) => Promise<Awaited<T>> {
+  // `then` flattens a returned promise, so this resolves to Awaited<T>; tsc can't see that for a generic T.
+  return (payload, caller) =>
+    Promise.resolve().then(() => fn(payload, caller)) as Promise<Awaited<T>>;
 }
 
 /**
@@ -68,7 +72,7 @@ export function createIpcHandlers({
   createDriver,
   updates,
   logs,
-}: IpcDeps): Record<string, IpcHandler> {
+}: IpcDeps): IpcHandlers {
   return {
     [IPC_CHANNELS.listPorts]: handler(() => listPorts()),
     [IPC_CHANNELS.connect]: handler((payload) => {

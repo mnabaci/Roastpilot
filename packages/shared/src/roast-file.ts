@@ -23,7 +23,11 @@ export const FileRoastSchema = RoastDetailSchema.omit({
   roasterName: z.string().nullable(),
 });
 
-/** Version 1: every sample a row, `{ tS, values: { bt: 182.4, … } }`. */
+/**
+ * Version 1: every sample a row, `{ tS, values: { bt: 182.4, … } }`. Import checks v1 roasts with
+ * `FileRoastSchema` directly, so this envelope is not used in code; it stays as the format's record.
+ * @public
+ */
 export const RoastFileV1Schema = z.object({
   format: z.literal(ROAST_FILE_FORMAT),
   version: z.literal(1),
@@ -57,11 +61,6 @@ export const RoastFileV2Schema = z.object({
   roasts: z.array(FileRoastV2Schema),
 });
 
-export const RoastFileSchema = z.discriminatedUnion('version', [
-  RoastFileV1Schema,
-  RoastFileV2Schema,
-]);
-
 /** Which roasts to export, and how: every roast when `ids` is left out. */
 export const ExportRoastsRequestSchema = z.object({
   format: z.enum(['csv', 'roastpilot']),
@@ -74,7 +73,6 @@ export const SetRoastBeanRequestSchema = z.object({
 });
 
 export type FileRoast = z.infer<typeof FileRoastSchema>;
-export type RoastFile = z.infer<typeof RoastFileSchema>;
 export type RoastFileV2 = z.infer<typeof RoastFileV2Schema>;
 export type SampleColumns = z.infer<typeof SampleColumnsSchema>;
 export type ExportRoastsRequest = z.infer<typeof ExportRoastsRequestSchema>;

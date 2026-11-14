@@ -1,12 +1,13 @@
 import { serializeError, type Logger } from '@roastpilot/core';
 import { RendererLogEntrySchema } from '@roastpilot/shared';
-import type { IpcCaller, IpcHandler } from './ipc-deps';
+import type { AnyIpcHandler, IpcCaller } from './ipc-deps';
 
 /** Logs every failing handler with its channel, then rethrows so the renderer's call rejects too. */
-export function withErrorLogging(
-  handlers: Record<string, IpcHandler>,
+export function withErrorLogging<H extends Readonly<Record<string, AnyIpcHandler>>>(
+  handlers: H,
   logger: Logger,
-): Record<string, IpcHandler> {
+): H {
+  // Each wrapper resolves to what its handler resolves to, so the map keeps its type.
   return Object.fromEntries(
     Object.entries(handlers).map(([channel, handler]) => [
       channel,
@@ -19,7 +20,7 @@ export function withErrorLogging(
         }
       },
     ]),
-  );
+  ) as H;
 }
 
 /** A log entry from the renderer: validated, then written under the `renderer` scope. */

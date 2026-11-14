@@ -3,6 +3,8 @@ import type {
   BeanId,
   ConnectError,
   ConnectTarget,
+  InvokeChannel,
+  InvokeResult,
   LogDay,
   LogDayRead,
   MakeBeanProfileError,
@@ -83,4 +85,17 @@ export interface IpcCaller {
   window: DialogParent;
 }
 
-export type IpcHandler = (payload: unknown, caller: IpcCaller) => Promise<unknown>;
+/**
+ * One invoke channel's handler. The payload is unknown until its zod schema parses it; the answer
+ * is the channel's result in `InvokeContract`.
+ */
+export type IpcHandler<C extends InvokeChannel = InvokeChannel> = (
+  payload: unknown,
+  caller: IpcCaller,
+) => Promise<InvokeResult<C>>;
+
+/** One handler per invoke channel: a missing, extra or wrong-shaped one fails tsc. */
+export type IpcHandlers = { readonly [C in InvokeChannel]: IpcHandler<C> };
+
+/** Any channel's handler, for code that only passes calls through (registration, logging). */
+export type AnyIpcHandler = (payload: unknown, caller: IpcCaller) => Promise<unknown>;
