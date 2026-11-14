@@ -1,6 +1,7 @@
 import type { RoasterModelDefinition } from '@roastpilot/core';
 import { ROASTER_MODEL_FACTS } from '@roastpilot/shared';
-import { SIMULATOR_CHANNELS, SimulatedDriver } from '../simulated/simulated-driver';
+import { SimulatedDriver } from '../simulated/simulated-driver';
+import { SIMULATOR_CHANNELS } from '../simulated/simulator-channels';
 import { skywalkerModel } from './skywalker-model';
 
 /** A fake roaster for practice and tests; it practises the Skywalker's profiles and batches. */

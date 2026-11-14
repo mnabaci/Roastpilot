@@ -31,10 +31,11 @@ async function pollFor(
 }
 
 describe('SimulatedDriver', () => {
-  it('declares the Skywalker channels', () => {
+  it('declares the Skywalker channels plus an ET', () => {
     const driver = new SimulatedDriver({ clock: new ManualClock() });
     expect(driver.channels.map((c) => c.id)).toEqual([
       'bt',
+      'et',
       'heater',
       'fan',
       'cooling',
@@ -47,6 +48,7 @@ describe('SimulatedDriver', () => {
     const { driver } = await connected();
     expect(await readValues(driver)).toEqual({
       bt: 22,
+      et: 22,
       heater: 0,
       fan: 0,
       cooling: 0,
@@ -98,6 +100,37 @@ describe('SimulatedDriver', () => {
       return pollFor(clock, driver, 120);
     };
     expect(await runOnce()).toBe(await runOnce());
+  });
+
+  describe('ET', () => {
+    it('leads BT when the heater comes on', async () => {
+      const { clock, driver } = await connected();
+      await driver.setOutput('heater', 100);
+      await pollFor(clock, driver, 10);
+      const values = await readValues(driver);
+      expect((values.et ?? 0) - (values.bt ?? 0)).toBeGreaterThan(10);
+    });
+
+    it('dips far less than BT at charge, through the turning point', async () => {
+      const { clock, driver } = await connected();
+      await driver.setOutput('heater', 60);
+      await driver.setOutput('fan', 30);
+      await pollFor(clock, driver, 900);
+      const before = await readValues(driver);
+      driver.chargeBeans();
+      let lowBt = Infinity;
+      let lowEt = Infinity;
+      for (let s = 0; s < 120; s++) {
+        clock.advance(1000);
+        const values = await readValues(driver);
+        lowBt = Math.min(lowBt, values.bt ?? Infinity);
+        lowEt = Math.min(lowEt, values.et ?? Infinity);
+      }
+      const btDip = (before.bt ?? 0) - lowBt;
+      const etDip = (before.et ?? 0) - lowEt;
+      expect(btDip).toBeGreaterThan(50);
+      expect(etDip).toBeLessThan(btDip / 2);
+    });
   });
 
   describe('safe stop', () => {
@@ -201,6 +234,15 @@ describe('SimulatedDriver', () => {
       expect(await pollFor(clock, driver, 10)).toBe(first);
       driver.stallTemperature(false);
       expect(await pollFor(clock, driver, 1)).toBeGreaterThan(first);
+    });
+
+    it('repeats the same ET while stalled too, as the board would', async () => {
+      const { clock, driver } = await connected();
+      await driver.setOutput('heater', 100);
+      driver.stallTemperature(true);
+      const first = (await readValues(driver)).et;
+      await pollFor(clock, driver, 10);
+      expect((await readValues(driver)).et).toBe(first);
     });
 
     it('keeps heating while unplugged until the watchdog trips, then reconnects', async () => {
