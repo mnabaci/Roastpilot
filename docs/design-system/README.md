@@ -33,6 +33,7 @@ Dark is the primary theme; light mirrors it for bright rooms and outdoor roastin
 | Text         | `ink`, `ink-muted`                                                 | Values and labels                                  |
 | Heat (ember) | `heat`, `heat-fill`, `heat-fill-hover`, `heat-tint`, `on-heat`     | Temperature curve and readouts; the primary button |
 | Air (cyan)   | `air`, `air-tint`                                                  | Fan, rate of rise, Auto badge, focus ring          |
+| ET (violet)  | `env`                                                              | Environment temperature: its line and readout      |
 | Reference    | `target`, `ghost`                                                  | Target curve (dashed), ghost roast (faded)         |
 | Chart ground | `band-low`, `band-mid`, `band-high`, `chart-grid`                  | Phase bands behind the curves; the chart grid      |
 | State        | `good`, `warning`, `critical`, `critical-text`, `critical-surface` | Connected, low stock, safety                       |
@@ -42,7 +43,7 @@ Rules:
 
 - `heat-fill` is for the one primary action per screen and the heater slider. Never for decoration.
 - `critical` (the fill) is reserved for Emergency stop and safety trips. Delete buttons use `critical-text` as text only, never a red fill, so a red block still always means safety.
-- Ember and cyan sit on opposite sides of the colour wheel and differ in lightness, so they stay distinct for colour-blind users.
+- Ember and cyan sit on opposite sides of the colour wheel and differ in lightness, so they stay distinct for colour-blind users. Violet (`env`, ET) sits between them in hue, and its line is thinner than the temperature's, so ET never passes for BT.
 - Neutrals are cool graphite with no brown or cream: warmth comes only from the ember accent.
 
 ## Elevation
@@ -96,6 +97,7 @@ Inter, one family, with tabular numerals (`font-variant-numeric: tabular-nums`) 
 | ------------------------- | ----------------------------------- | -------------------------------- |
 | Live temperature          | `heat`                              | 3.5px solid                      |
 | Target curve              | `target`                            | 2px dashed 6 6                   |
+| Environment temperature   | `env`                               | 2px solid, behind live           |
 | Rate of rise (right axis) | `air`                               | 2px solid                        |
 | Ghost temperature and RoR | `ghost`                             | 2px solid, behind live           |
 | Compared roast's outputs  | `heat`, `air`, `ink-muted`          | 2px dashed 4 4, 55 % opacity     |

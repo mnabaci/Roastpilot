@@ -30,4 +30,31 @@ describe('StatCard', () => {
     render(<StatCard label="Rate of rise" value="-7.7" unit="°C/min" />);
     expect(screen.getByRole('region', { name: 'Rate of rise' })).toHaveTextContent('\u22127.7');
   });
+
+  it('shows a second reading beside the label, with its own name and unit', () => {
+    render(
+      <StatCard
+        label="Temperature"
+        value={198}
+        unit="°C"
+        secondary={{ label: 'ET', value: '212.4', unit: '°C', tone: 'env' }}
+      />,
+    );
+    const card = screen.getByRole('region', { name: 'Temperature' });
+    expect(card).toHaveTextContent('ET212.4°C');
+  });
+
+  it('shows a dash and no unit for a second reading not known yet', () => {
+    render(
+      <StatCard
+        label="Temperature"
+        value={198}
+        unit="°C"
+        secondary={{ label: 'ET', value: undefined, unit: '°F' }}
+      />,
+    );
+    const card = screen.getByRole('region', { name: 'Temperature' });
+    expect(card).toHaveTextContent('ET—');
+    expect(card).not.toHaveTextContent('°F');
+  });
 });

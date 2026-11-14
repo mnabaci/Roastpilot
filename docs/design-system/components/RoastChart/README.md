@@ -10,9 +10,10 @@ The live roast chart: temperature against the target curve, rate of rise on a ri
 4. Ghost temperature and RoR: `ghost`, 2px.
 5. Target curve: `target`, 2px dashed 6 6.
 6. RoR: `air`, 2px, right axis 0–30 °C/min.
-7. Live temperature: `heat`, 3.5px, round joins; current point as a 6px dot.
-8. Event markers (First crack, Drop): 1.5px dashed vertical in `ink`, ghost's in `ghost`, labelled at the top. A label that would sit on the current-point dot (Drop, at the hottest point) moves down a row, so both stay readable.
-9. Projection and now line (aids, below), then the current-point dot on top.
+7. ET (environment temperature), on a roaster with an ET probe: `env`, 2px, on the temperature axis, behind the live temperature; no dot.
+8. Live temperature: `heat`, 3.5px, round joins; current point as a 6px dot.
+9. Event markers (First crack, Drop): 1.5px dashed vertical in `ink`, ghost's in `ghost`, labelled at the top. A label that would sit on the current-point dot (Drop, at the hottest point) moves down a row, so both stay readable.
+10. Projection and now line (aids, below), then the current-point dot on top.
 
 ## Aids (during a roast)
 

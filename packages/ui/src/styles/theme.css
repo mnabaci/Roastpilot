@@ -53,6 +53,7 @@
   --color-on-heat: var(--on-heat);
   --color-air: var(--air);
   --color-air-tint: var(--air-tint);
+  --color-env: var(--env);
   --color-target: var(--target);
   --color-ghost: var(--ghost);
   --color-band-low: var(--band-low);

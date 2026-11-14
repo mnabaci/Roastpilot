@@ -17,6 +17,7 @@
   --on-heat: #0b0c0e;
   --air: #4cd3f0;
   --air-tint: rgba(76, 211, 240, 0.14);
+  --env: #b79cff;
   --target: #5f6670;
   --ghost: #474d57;
   --band-low: #1d1e21;
@@ -49,6 +50,7 @@
   --on-heat: #0b0c0e;
   --air: #076f91;
   --air-tint: rgba(7, 111, 145, 0.1);
+  --env: #6a4bc4;
   --target: #9aa0a8;
   --ghost: #c9cdd3;
   --band-low: #f8f8f8;
