@@ -1,5 +1,15 @@
-import { ManualClock, silentLogger, type RoasterModelDefinition } from '@roastpilot/core';
-import { DEFAULT_TC4_WIRING, ROASTER_MODEL_FACTS, RoasterSchema } from '@roastpilot/shared';
+import {
+  ManualClock,
+  silentLogger,
+  soakLengthS,
+  type RoasterModelDefinition,
+} from '@roastpilot/core';
+import {
+  AutoProfileSchema,
+  DEFAULT_TC4_WIRING,
+  ROASTER_MODEL_FACTS,
+  RoasterSchema,
+} from '@roastpilot/shared';
 import { describe, expect, it } from 'vitest';
 import { BUILT_IN_ROASTERS } from '../built-in-roasters';
 import { SimulatedDriver } from '../simulated/simulated-driver';
@@ -64,6 +74,16 @@ describe('model definitions', () => {
         expect(profile.batchG).toBeLessThanOrEqual(model.batch.maxG);
       }
     }
+  });
+
+  it("gives a generic TC4 the Skywalker's profiles as templates, without its heat-off soak", () => {
+    expect(tc4Model.profiles.map((p) => p.id)).toEqual(skywalkerModel.profiles.map((p) => p.id));
+    for (const profile of tc4Model.profiles) {
+      expect(profile.needsCalibration).toBe(true);
+      expect(soakLengthS(profile)).toBe(0);
+      expect(AutoProfileSchema.safeParse(profile).success).toBe(true);
+    }
+    expect(skywalkerModel.profiles.every((p) => soakLengthS(p) === 60)).toBe(true);
   });
 
   it('a generic TC4 without its wiring is a programmer error', () => {

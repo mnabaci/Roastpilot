@@ -44,16 +44,16 @@ A model for home-built roasters on an Arduino + TC4 board with the stock firmwar
 ([hardware.md](hardware.md#stock-tc4-firmware-aartisanq_pid)). One model covers them all: what differs
 between builds is on the record, so a new build is a new record, not new code.
 
-| Roaster setting                  | Generic TC4 starting value                                         |
-| -------------------------------- | ------------------------------------------------------------------ |
-| Driver + connection              | `Tc4Driver`, stock TC4 dialect, over USB serial                    |
-| Capabilities                     | Heater, fan; BT, and ET when wired. No drum, bean cooler or filter |
-| Batch size min / ideal / max (g) | 100 / 150 / 250 (change them to fit your roaster)                  |
-| Safety limits                    | 250 °C, 20 min (the model's own; the record can only go lower)     |
-| PID gains                        | The Skywalker's as a start; tune them on your roaster              |
-| Preheat hold                     | First batch 2:30, next batch 2:00                                  |
-| Bean cooler helps cool the drum  | Off (there is none)                                                |
-| Built-in profiles                | None: generic templates marked "needs calibration"                 |
+| Roaster setting                  | Generic TC4 starting value                                                                                                  |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Driver + connection              | `Tc4Driver`, stock TC4 dialect, over USB serial                                                                             |
+| Capabilities                     | Heater, fan; BT, and ET when wired. No drum, bean cooler or filter                                                          |
+| Batch size min / ideal / max (g) | 100 / 150 / 250 (change them to fit your roaster)                                                                           |
+| Safety limits                    | 250 °C, 20 min (the model's own; the record can only go lower)                                                              |
+| PID gains                        | The Skywalker's as a start; tune them on your roaster                                                                       |
+| Preheat hold                     | First batch 2:30, next batch 2:00                                                                                           |
+| Bean cooler helps cool the drum  | Off (there is none)                                                                                                         |
+| Built-in profiles                | The Skywalker's as templates marked "needs calibration", at its 150 g batch, without their heat-off soak (heat from charge) |
 
 **Wiring** (its own card on the roaster's page, between the connection and the record, folded to a one-line summary once the roaster has a port; Generic TC4 only):
 
