@@ -3,6 +3,7 @@ import type { CoachStatus, ConnectionState, Roaster, Settings } from '@roastpilo
 import { useDeps } from '../app/app-context';
 import type { AutoData } from './auto-store';
 import type { BeansData } from './beans-store';
+import type { EditsData } from './edits-store';
 import type { RoastData } from './roast-store';
 import type { SafetyState } from './safety-store';
 import type { UpdatesData } from './updates-store';
@@ -26,6 +27,9 @@ export const useRoasters = <T>(select: (state: { roasters: Roaster[] }) => T): T
 
 export const useBeans = <T>(select: (state: BeansData) => T): T =>
   useStore(useDeps().stores.beans, select);
+
+export const useEdits = <T>(select: (state: EditsData) => T): T =>
+  useStore(useDeps().stores.edits, select);
 
 export const useAuto = <T>(select: (state: AutoData) => T): T =>
   useStore(useDeps().stores.auto, select);

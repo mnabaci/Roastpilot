@@ -1,9 +1,8 @@
 import type { ProfileEntry } from '@roastpilot/shared';
-import { Badge, Button, ConfirmDialog, Menu, type MenuItem } from '@roastpilot/ui';
+import { Button, ConfirmDialog, Menu, type MenuItem } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { removeProfiles, upsertProfile } from '../../stores/auto-store';
-import { EditActions } from '../../features/EditActions';
 import { useLibraryFiles } from '../../features/use-library-files';
 import { IN_USE } from '../../features/profile-messages';
 import { useRun } from '../../features/use-run';
@@ -12,13 +11,16 @@ import { useRoasters } from '../../stores/use-stores';
 import { useSaveSettings } from '../settings/use-save-settings';
 import type { ProfileDraftState } from './use-profile-draft';
 
-/** The one next thing to do with this profile, and the rest behind "⋯" (docs/spec/ui.md, Header). */
-export function ProfileActions({
+/**
+ * What you can do with this profile (docs/spec/ui.md, Header): the one next thing, Edit, and the
+ * rest behind "⋯" while reading, for RecordHeader; Save and Cancel for its Edit; and the Delete
+ * dialog and a problem line for the page.
+ */
+export function useProfileActions({
   entry,
   state,
   active,
   locked,
-  editing,
   onEditingChange,
   onSelect,
   onCopied,
@@ -28,7 +30,6 @@ export function ProfileActions({
   active: boolean;
   /** Auto is running a profile: the choice, and the one it runs, wait until Drop. */
   locked: boolean;
-  editing: boolean;
   onEditingChange: (editing: boolean) => void;
   onSelect: (id: string) => void;
   onCopied: (message: string) => void;
@@ -181,69 +182,63 @@ export function ProfileActions({
           },
         ]),
   ];
-  return (
-    <div className="flex flex-col items-end gap-1">
-      <div className="flex items-center gap-2">
-        {editing ? (
-          // Cancel throws the edit away; Save waits for a change it can save.
-          <EditActions
-            onCancel={() => {
-              setProblem(undefined);
-              state.discard();
-              onEditingChange(false);
+  return {
+    save,
+    cancel: () => {
+      setProblem(undefined);
+      state.discard();
+      onEditingChange(false);
+    },
+    canSave: state.edited && state.valid !== undefined && !(active && locked),
+    actions: (
+      <>
+        {active ? null : (
+          <Button
+            variant="primary"
+            size="sm"
+            disabled={locked}
+            onClick={() => {
+              saveSettings({ autoProfile: id });
             }}
-            onSave={save}
-            canSave={state.edited && state.valid !== undefined && !(active && locked)}
-          />
+          >
+            Use for Auto
+          </Button>
+        )}
+        {/* A built-in can't change: its copy can. */}
+        {entry.builtIn ? (
+          <Button size="sm" onClick={duplicate}>
+            Duplicate
+          </Button>
         ) : (
-          <>
-            {active ? (
-              <Badge tone="air">Auto</Badge>
-            ) : (
-              <Button
-                variant="primary"
-                size="sm"
-                disabled={locked}
-                onClick={() => {
-                  saveSettings({ autoProfile: id });
-                }}
-              >
-                Use for Auto
-              </Button>
-            )}
-            {/* A built-in can't change: its copy can. */}
-            {entry.builtIn ? (
-              <Button size="sm" onClick={duplicate}>
-                Duplicate
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                onClick={() => {
-                  onEditingChange(true);
-                }}
-              >
-                Edit
-              </Button>
-            )}
-          </>
+          <Button
+            size="sm"
+            onClick={() => {
+              onEditingChange(true);
+            }}
+          >
+            Edit
+          </Button>
         )}
         <Menu label={`More for ${entry.profile.name}`} items={more} />
-      </div>
-      <ConfirmDialog
-        open={deleting}
-        onOpenChange={setDeleting}
-        question="Delete this profile?"
-        detail="saved roasts keep their copy"
-        confirmLabel="Delete"
-        destructive
-        onConfirm={remove}
-      />
-      {problem ? (
-        <p role="alert" className="text-label text-critical-text">
-          {problem}
-        </p>
-      ) : null}
-    </div>
-  );
+      </>
+    ),
+    page: (
+      <>
+        <ConfirmDialog
+          open={deleting}
+          onOpenChange={setDeleting}
+          question="Delete this profile?"
+          detail="saved roasts keep their copy"
+          confirmLabel="Delete"
+          destructive
+          onConfirm={remove}
+        />
+        {problem ? (
+          <p role="alert" className="text-label text-critical-text">
+            {problem}
+          </p>
+        ) : null}
+      </>
+    ),
+  };
 }

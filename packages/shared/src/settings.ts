@@ -42,6 +42,14 @@ export const ThemeSchema = z.enum(['dark', 'light', 'system']);
 export const SAFETY_NOTICE_VERSION = 1;
 
 /** Missing or unknown fields fall back to defaults, so an older settings file still loads. */
+/** Open until you fold them: what a record is about. A roaster's parts start folded. */
+export const DEFAULT_OPEN_CARDS: readonly string[] = [
+  'bean.about',
+  'profile.values',
+  'profile.preview',
+  'profile.steps',
+];
+
 export const SettingsSchema = z.object({
   /** The roaster last picked in Settings; the app never connects by itself. */
   connection: ConnectTargetSchema.nullable().catch(null).default(null),
@@ -71,8 +79,15 @@ export const SettingsSchema = z.object({
   theme: ThemeSchema.catch('dark').default('dark'),
   /** History's Roast details card open or folded, for every roast (docs/spec/ui.md, History). */
   historyDetailsOpen: z.boolean().catch(true).default(true),
-  /** The roaster page's record cards you keep open, by name; the rest folded (ui.md, Roasters). */
-  roasterSectionsOpen: z.array(z.string().max(32)).max(16).catch([]).default([]),
+  /**
+   * The record pages' cards you keep open, as "page.card" ("bean.about", "roaster.batch"); the
+   * rest are folded. The same for every bean, profile or roaster (ui.md, Read and edit).
+   */
+  openCards: z
+    .array(z.string().max(48))
+    .max(64)
+    .catch([...DEFAULT_OPEN_CARDS])
+    .default([...DEFAULT_OPEN_CARDS]),
   /** The safety notice version you accepted; 0 until you do (docs/spec/safety.md, Safety notice). */
   safetyNoticeAccepted: z.number().int().min(0).catch(0).default(0),
 });

@@ -425,16 +425,15 @@ describe('RoastersScreen', () => {
     });
 
     it('folds each card to its summary, and keeps which are open', async () => {
-      const { api } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
+      const { api, stores } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
       const batch = screen.getByRole('button', { name: 'Batch size' });
       expect(batch).toHaveAttribute('aria-expanded', 'false');
       expect(batch).toHaveAccessibleDescription('375 g ideal · 250–400 g');
       await userEvent.click(batch);
       await waitFor(() => {
-        expect(api.setSettings).toHaveBeenCalledWith(
-          expect.objectContaining({ roasterSectionsOpen: ['batch'] }),
-        );
+        expect(stores.settings.getState().settings.openCards).toContain('roaster.batch');
       });
+      expect(api.setSettings).toHaveBeenCalled();
       expect(batch).toHaveAttribute('aria-expanded', 'true');
     });
 
@@ -446,6 +445,19 @@ describe('RoastersScreen', () => {
       }
       // Folded or open while editing isn't saved.
       expect(api.setSettings).not.toHaveBeenCalled();
+    });
+
+    it('keeps an unsaved edit, marked Not saved here and Edited in the list', async () => {
+      const { stores } = renderApp(<RoastersScreen />, { roasters: roastersWith(null) });
+      await edit();
+      const name = screen.getByRole('textbox', { name: 'Name' });
+      await userEvent.type(name, ' 2');
+      expect(screen.getByText('Not saved')).toBeInTheDocument();
+      expect(sidebar().getByText('Edited')).toBeInTheDocument();
+      expect(Object.keys(stores.edits.getState().roasters)).toHaveLength(1);
+      await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(stores.edits.getState().roasters).toEqual({});
+      expect(sidebar().queryByText('Edited')).toBeNull();
     });
 
     it('keeps the tuning closed, in plain words, until asked', async () => {

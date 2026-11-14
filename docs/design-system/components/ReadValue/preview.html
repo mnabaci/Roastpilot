@@ -1,0 +1,52 @@
+<!-- @dsCard group="Inputs" height=120 subtitle="Values as read, where their fields go in Edit" -->
+<!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
+<link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+  }
+  .wrap {
+    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(3, 180px);
+    gap: 12px;
+  }
+  .v {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .v span {
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+  .v p {
+    margin: 0;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+  }
+</style>
+<div class="wrap">
+  <div class="v">
+    <span>Max temp</span>
+    <p>240 °C</p>
+  </div>
+  <div class="v">
+    <span>Origin</span>
+    <p>Uganda</p>
+  </div>
+  <div class="v">
+    <span>Moisture</span>
+    <p>–</p>
+  </div>
+</div>

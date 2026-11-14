@@ -32,6 +32,7 @@ export { RoastStrip, type RoastStripProps } from './components/RoastStrip';
 export { type SelectOption } from './components/Select';
 export { SelectField } from './components/SelectField';
 export { NumberField } from './components/NumberField';
+export { ReadValue } from './components/ReadValue';
 export { Switch } from './components/Switch';
 export { SegmentedControl, type SegmentedOption } from './components/SegmentedControl';
 export { NavList } from './components/NavList';

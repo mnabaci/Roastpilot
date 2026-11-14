@@ -1,8 +1,7 @@
 import { modelFacts, type Roaster } from '@roastpilot/shared';
 import { CollapsibleCard, NumberField, Switch } from '@roastpilot/ui';
-import { useState, type ReactNode } from 'react';
-import { useSettings } from '../../stores/use-stores';
-import { useSaveSettings } from '../settings/use-save-settings';
+import type { ReactNode } from 'react';
+import { useRecordCards } from '../../features/use-record-cards';
 import {
   DRUM_FIELDS,
   everydayFields,
@@ -16,9 +15,7 @@ import type { RoasterDraftState } from './use-roaster-draft';
 /**
  * One roaster's record (docs/spec/ui.md, Roasters screen) as cards that fold to a one-line
  * summary: read until Edit, then fields whose name (the title), Cancel and Save sit in the page's
- * header. Which
- * cards are open is a setting; Edit opens the ones you'd type in, and a card with a problem stays
- * open, so a held-back Save is never unexplained.
+ * header. Which cards are open is a setting (useRecordCards); Edit opens the ones you'd type in.
  */
 export function RoasterEditor({
   roaster,
@@ -33,22 +30,10 @@ export function RoasterEditor({
   const readOnly = !editing;
   const facts = modelFacts(roaster.model);
   const groups = [...everydayFields(unit), ...(facts.drumSpeed ? [DRUM_FIELDS] : [])];
-  const savedOpen = useSettings((s) => s.settings.roasterSectionsOpen);
-  const saveSettings = useSaveSettings();
-  // While editing, the open cards are this edit's own, not the saved choice.
-  const [editOpen, setEditOpen] = useState<readonly string[]>([]);
-  const [wasEditing, setWasEditing] = useState(editing);
-  if (editing !== wasEditing) {
-    setWasEditing(editing);
-    if (editing) {
-      setEditOpen([
-        ...groups.flatMap((g) => (g.section ? [g.section] : [])),
-        ...(facts.beanCooler ? ['cooling'] : []),
-        ...(savedOpen.includes('tuning') ? ['tuning'] : []),
-      ]);
-    }
-  }
-  const openList = editing ? editOpen : savedOpen;
+  const cards = useRecordCards(editing, [
+    ...groups.flatMap((g) => (g.section ? [`roaster.${g.section}`] : [])),
+    ...(facts.beanCooler ? ['roaster.cooling'] : []),
+  ]);
   const hasProblem = (gs: readonly FieldGroup[]) =>
     gs.some((g) => g.cells.some((c) => Boolean(errors[c.key])));
   const card = (
@@ -61,11 +46,9 @@ export function RoasterEditor({
       key={section}
       title={title}
       summary={sectionSummary(section, draft, unit)}
-      open={withProblem || openList.includes(section)}
+      open={cards.isOpen(`roaster.${section}`, withProblem)}
       onOpenChange={(open) => {
-        const next = [...openList.filter((s) => s !== section), ...(open ? [section] : [])];
-        if (editing) setEditOpen(next);
-        else saveSettings({ roasterSectionsOpen: next });
+        cards.setOpen(`roaster.${section}`, open);
       }}
     >
       {children}

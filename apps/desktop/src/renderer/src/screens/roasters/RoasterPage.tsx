@@ -1,10 +1,10 @@
 import type { Roaster } from '@roastpilot/shared';
-import { cn, ConfirmDialog, Menu, TitleField } from '@roastpilot/ui';
+import { cn, ConfirmDialog, Menu } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useConnection } from '../../stores/use-stores';
 import { ConnectPanel } from './ConnectPanel';
 import { ConnectButton } from './ConnectButton';
-import { EditActions } from '../../features/EditActions';
+import { RecordHeader } from '../../features/RecordHeader';
 import { RoasterEditor } from './RoasterEditor';
 import { WiringCard } from './WiringCard';
 import { useRoasterDraft } from './use-roaster-draft';
@@ -22,42 +22,34 @@ export function RoasterPage({ roaster, onDeleted }: { roaster: Roaster; onDelete
   const actions = useRoasterPageActions(roaster, { locked, onDeleted });
   const connect = useConnectControls(roaster);
   const record = useRoasterDraft(roaster);
-  const [editing, setEditing] = useState(false);
+  // An unsaved edit kept from before opens in Edit, so it shows (as on Profiles).
+  const [editing, setEditing] = useState(record.edited);
   return (
     <div className={cn('flex flex-col gap-4', PAGE_WIDTH)}>
-      <header className="flex items-start justify-between gap-4">
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          {/* As tall as the sidebar's title row, so both titles share a line. */}
-          <div className="flex min-h-control-sm min-w-0 items-center">
-            {editing ? (
-              <TitleField
-                value={record.draft.name}
-                invalid={Boolean(record.errors.name)}
-                onChange={(name) => {
-                  record.setDraft({ ...record.draft, name });
-                }}
-              />
-            ) : (
-              <h2 className="truncate text-title">{roaster.name}</h2>
-            )}
-          </div>
-          {note ? <p className="text-label text-ink-muted">{note}</p> : null}
-        </div>
-        {editing ? (
-          <EditActions
-            onCancel={() => {
-              record.cancel();
+      <RecordHeader
+        name={roaster.name}
+        editing={editing}
+        note={note}
+        edit={{
+          name: record.draft.name,
+          onName: (name) => {
+            record.setDraft({ ...record.draft, name });
+          },
+          nameError: record.errors.name,
+          edited: record.edited,
+          onCancel: () => {
+            record.cancel();
+            setEditing(false);
+          },
+          onSave: () => {
+            record.save(() => {
               setEditing(false);
-            }}
-            onSave={() => {
-              record.save(() => {
-                setEditing(false);
-              });
-            }}
-            canSave={record.canSave && !locked}
-          />
-        ) : (
-          <div className="flex shrink-0 items-center gap-2">
+            });
+          },
+          canSave: record.canSave && !locked,
+        }}
+        actions={
+          <>
             {roaster.active ? null : (
               <WaitingButton
                 size="sm"
@@ -80,14 +72,9 @@ export function RoasterPage({ roaster, onDeleted }: { roaster: Roaster; onDelete
               Edit
             </WaitingButton>
             <Menu label={`More for ${roaster.name}`} items={actions.more} />
-          </div>
-        )}
-      </header>
-      {editing && record.errors.name ? (
-        <p role="alert" className="text-label text-critical-text">
-          Name: {record.errors.name}
-        </p>
-      ) : null}
+          </>
+        }
+      />
       {actions.problem ? (
         <p role="alert" className="text-label text-critical-text">
           {actions.problem}

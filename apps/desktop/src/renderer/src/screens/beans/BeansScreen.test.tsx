@@ -67,6 +67,36 @@ describe('BeansScreen', () => {
     });
   });
 
+  it('edits in place: the same page, values as fields, Save once something changed', async () => {
+    const user = userEvent.setup();
+    const { api } = show();
+    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    // Stock and the rest stay; the record's values turn into fields.
+    expect(screen.getByText('Green')).toBeInTheDocument();
+    const save = screen.getByRole('button', { name: 'Save' });
+    expect(save).toBeDisabled();
+    await user.clear(screen.getByRole('textbox', { name: 'Origin' }));
+    await user.type(screen.getByRole('textbox', { name: 'Origin' }), 'Kenya');
+    await user.click(save);
+    await waitFor(() => {
+      expect(api.updateBean.mock.calls[0]?.[0].fields.origin).toBe('Kenya');
+    });
+  });
+
+  it('keeps an unsaved edit when you leave, and opens it again in Edit', async () => {
+    const user = userEvent.setup();
+    const { unmount, stores } = show();
+    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    await user.type(screen.getByRole('textbox', { name: 'Origin' }), ' south');
+    unmount();
+    renderApp(<BeansScreen onRoast={vi.fn()} onOpenProfile={vi.fn()} />, {
+      beans: [BEAN],
+      roasters: [SKYWALKER],
+    });
+    // A fresh screen, as after visiting another one: the same stores would hold the edit.
+    expect(stores.edits.getState().beans[String(BEAN.id)]?.origin).toBe('Ethiopia south');
+  });
+
   it('adds stock, showing what the green then splits into, with nothing to pick', async () => {
     const user = userEvent.setup();
     const { api } = show();
@@ -314,14 +344,14 @@ describe('BeansScreen', () => {
     const user = userEvent.setup();
     const api = fakeApi();
     show(api, [{ ...BEAN, link: 'https://www.shop.example/yirgacheffe' }]);
-    // Under the supplier in the bean's card, as written.
+    // Its site in the bean's card, as written.
     const about = within(screen.getByRole('region', { name: 'About this bean' }));
-    expect(about.getByText('shop.example')).not.toHaveClass('first-letter:uppercase');
+    expect(about.getByLabelText('Order link')).toHaveTextContent(/^shop\.example$/);
     await user.click(screen.getByRole('button', { name: 'Order again' }));
     expect(api.openBeanLink).toHaveBeenCalledWith(BEAN.id);
   });
 
-  it("sets out the bean's facts as tiles, its order link's site under the supplier, and its hints", () => {
+  it("sets out the bean's record where its fields go, the order link's site, and its hints", () => {
     show(fakeApi(), [
       {
         ...BEAN,
@@ -331,8 +361,10 @@ describe('BeansScreen', () => {
       },
     ]);
     const about = within(screen.getByRole('region', { name: 'About this bean' }));
-    const supplier = about.getByText('Supplier').parentElement!;
-    expect(supplier.textContent).toBe('SupplierGreen Coffee Collectivegreencoffee.example');
+    expect(about.getByLabelText('Supplier')).toHaveTextContent('Green Coffee Collective');
+    expect(about.getByLabelText('Order link')).toHaveTextContent('greencoffee.example');
+    // An empty value reads as a dash, where its field goes in Edit.
+    expect(about.getByLabelText('Moisture')).toHaveTextContent('–');
     expect(about.getAllByRole('listitem').some((li) => li.textContent.startsWith('Natural'))).toBe(
       true,
     );
