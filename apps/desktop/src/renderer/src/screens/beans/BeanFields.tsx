@@ -10,7 +10,7 @@ import {
 import { ExternalLink } from 'lucide-react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
-import { siteOf } from './bean-detail';
+import { siteOf, tastingNotes } from './bean-detail';
 import type { BeanDraftState } from './use-bean-draft';
 
 const PROCESSES: readonly { value: BeanProcess; label: string }[] = [
@@ -40,10 +40,72 @@ const NUMBER_CELLS: Readonly<Record<NumberKey, { label: string; unit?: string }>
   lowStockG: { label: 'Low stock below', unit: 'g' },
 };
 
+const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
 /**
- * A bean's record as one grid, the same in read and in Edit (docs/spec/ui.md, Read and edit):
- * read, each value sits where its field goes, "–" when empty; Edit swaps them for the fields.
- * Its name is the page's title, not a cell here.
+ * Read, a bean's record as compact tiles (docs/spec/ui.md, Beans screen): as many columns as the
+ * card holds (3 to 6), only the values it has, the order link's site under the supplier, and
+ * tasting notes as chips.
+ */
+function BeanTiles({ draft }: { draft: BeanDraftState['draft'] }) {
+  const t = (v: string) => v.trim();
+  const site = t(draft.link) ? siteOf(t(draft.link)) : '';
+  const tiles: { label: string; value: string; under?: string }[] = [
+    { label: 'Origin', value: t(draft.origin) },
+    { label: 'Variety', value: t(draft.variety) },
+    { label: 'Species', value: draft.species ? capital(draft.species) : '' },
+    { label: 'Process', value: capital(draft.process) },
+    { label: 'Altitude', value: t(draft.altitudeM) && `${t(draft.altitudeM)} m` },
+    { label: 'Screen size', value: t(draft.screen) },
+    { label: 'Density', value: t(draft.densityGL) && `${t(draft.densityGL)} g/L` },
+    { label: 'Moisture', value: t(draft.moisturePct) && `${t(draft.moisturePct)} %` },
+    { label: 'Decaf', value: draft.decaf ? 'Yes' : '' },
+    { label: 'Low stock below', value: t(draft.lowStockG) && `${t(draft.lowStockG)} g` },
+    {
+      label: 'Supplier',
+      value: t(draft.supplier) || site,
+      ...(t(draft.supplier) && site ? { under: site } : {}),
+    },
+  ];
+  const notes = tastingNotes(draft.notes);
+  return (
+    <div className="@container flex flex-col gap-4">
+      <div className="grid grid-cols-3 gap-x-4 gap-y-3 @3xl:grid-cols-4 @5xl:grid-cols-6">
+        {tiles
+          .filter((tile) => tile.value !== '')
+          .map(({ label, value, under }) => (
+            <div key={label} className="min-w-0">
+              <ReadValue label={label} value={value} numeric />
+              {under ? <p className="truncate text-label text-ink-muted">{under}</p> : null}
+            </div>
+          ))}
+      </div>
+      {t(draft.notes) ? (
+        notes.length > 0 ? (
+          <div className="flex flex-col gap-1.5">
+            <p className="text-label text-ink-muted">Notes</p>
+            <ul aria-label="Notes" className="flex flex-wrap gap-2">
+              {notes.map((note) => (
+                <li
+                  key={note}
+                  className="rounded-full bg-surface-hover px-3 py-1 text-label text-ink"
+                >
+                  {note}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <ReadValue label="Notes" value={t(draft.notes)} />
+        )
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * A bean's record as one grid of fields in Edit (docs/spec/ui.md, Read and edit), and as tiles
+ * while reading. Its name is the page's title, not a cell here.
  */
 export function BeanFields({
   bean,
@@ -62,14 +124,11 @@ export function BeanFields({
       <TextField
         label={label}
         value={draft[key]}
-        readOnly={readOnly}
         onChange={(value) => {
           change({ [key]: value });
         }}
       />
-      {errors[key] && !readOnly ? (
-        <p className="text-label text-critical-text">{errors[key]}</p>
-      ) : null}
+      {errors[key] ? <p className="text-label text-critical-text">{errors[key]}</p> : null}
     </div>
   );
   const numberCell = (key: NumberKey) => {
@@ -79,10 +138,8 @@ export function BeanFields({
         label={label}
         {...(unit ? { unit } : {})}
         value={draft[key]}
-        readOnly={readOnly}
         invalid={errors[key] !== undefined}
         hint={errors[key]}
-        className="col-span-2"
         onChange={(value) => {
           change({ [key]: value });
         }}
@@ -90,93 +147,75 @@ export function BeanFields({
     );
   };
   const savedLink = bean?.link != null && draft.link.trim() === bean.link;
+  if (readOnly) return <BeanTiles draft={draft} />;
   return (
-    // One 6-column grid for every row, so the columns line up from top to bottom.
-    <div className="grid grid-cols-6 gap-x-3 gap-y-4">
-      {textCell('origin', 'Origin', 'col-span-3')}
-      {textCell('variety', 'Variety', 'col-span-3')}
+    // Five columns: the ten short values in two rows, then the shop and its link, then notes.
+    <div className="grid grid-cols-5 items-start gap-x-3 gap-y-4">
+      {textCell('origin', 'Origin', '')}
+      {textCell('variety', 'Variety', '')}
       <SelectField
         label="Species"
         value={draft.species}
         options={SPECIES}
-        readOnly={readOnly}
         onChange={(species) => {
           change({ species });
         }}
-        className="col-span-3"
       />
       <SelectField
         label="Process"
         value={draft.process}
         options={PROCESSES}
-        readOnly={readOnly}
         onChange={(process) => {
           change({ process });
         }}
-        className="col-span-3"
       />
+      <div className="flex flex-col gap-1.5">
+        <p className="text-label text-ink-muted">Decaf</p>
+        <SegmentedControl
+          label="Decaf"
+          className="self-start"
+          options={[
+            { value: false, label: 'No' },
+            { value: true, label: 'Yes' },
+          ]}
+          value={draft.decaf}
+          onChange={(decaf) => {
+            change({ decaf });
+          }}
+        />
+      </div>
       {numberCell('altitudeM')}
       {numberCell('screen')}
-      {readOnly ? (
-        <ReadValue label="Decaf" value={draft.decaf ? 'Yes' : 'No'} className="col-span-2" />
-      ) : (
-        <div className="col-span-2 flex flex-col gap-1.5">
-          <p className="text-label text-ink-muted">Decaf</p>
-          <SegmentedControl
-            label="Decaf"
-            className="self-start"
-            options={[
-              { value: false, label: 'No' },
-              { value: true, label: 'Yes' },
-            ]}
-            value={draft.decaf}
-            onChange={(decaf) => {
-              change({ decaf });
-            }}
-          />
-        </div>
-      )}
       {numberCell('densityGL')}
       {numberCell('moisturePct')}
       {numberCell('lowStockG')}
-      {readOnly ? null : (
-        <p className="col-span-6 -mt-2 text-label text-ink-muted">
-          Density is the one to measure: weigh a fixed volume of green beans.
-        </p>
-      )}
-      {textCell('supplier', 'Supplier', 'col-span-3')}
-      {readOnly ? (
-        // Its site, short and as written; Order again in the header opens the page.
-        <ReadValue
-          label="Order link"
-          value={draft.link.trim() ? siteOf(draft.link.trim()) : ''}
-          className="col-span-3"
+      <p className="col-span-5 -mt-2 text-label text-ink-muted">
+        Density is the one to measure: weigh a fixed volume of green beans.
+      </p>
+      {textCell('supplier', 'Supplier', 'col-span-2')}
+      {/* Where to order it again: the button opens the saved link (main opens only a saved one). */}
+      <div className="col-span-3 flex items-end gap-2">
+        {textCell('link', 'Order link', 'min-w-0 flex-1')}
+        <Button
+          size="sm"
+          variant="ghost"
+          aria-label="Open the order link"
+          disabled={!savedLink}
+          icon={<ExternalLink aria-hidden="true" />}
+          onClick={() => {
+            if (!bean) return;
+            run(
+              'beans.open-link-failed',
+              async () => {
+                const opened = await api.openBeanLink(bean.id);
+                if (!opened.ok) setProblem("Couldn't open the order link · see Logs");
+              },
+              { failed: "Couldn't open the order link · try again" },
+            );
+          }}
         />
-      ) : (
-        // Where to order it again: the button opens the saved link (main opens only a saved one).
-        <div className="col-span-3 flex items-end gap-2">
-          {textCell('link', 'Order link', 'min-w-0 flex-1')}
-          <Button
-            size="sm"
-            variant="ghost"
-            aria-label="Open the order link"
-            disabled={!savedLink}
-            icon={<ExternalLink aria-hidden="true" />}
-            onClick={() => {
-              if (!bean) return;
-              run(
-                'beans.open-link-failed',
-                async () => {
-                  const opened = await api.openBeanLink(bean.id);
-                  if (!opened.ok) setProblem("Couldn't open the order link · see Logs");
-                },
-                { failed: "Couldn't open the order link · try again" },
-              );
-            }}
-          />
-        </div>
-      )}
-      {textCell('notes', 'Notes', 'col-span-6')}
+      </div>
+      {textCell('notes', 'Notes', 'col-span-5')}
     </div>
   );
 }

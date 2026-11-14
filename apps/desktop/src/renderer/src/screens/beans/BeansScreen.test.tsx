@@ -344,27 +344,31 @@ describe('BeansScreen', () => {
     const user = userEvent.setup();
     const api = fakeApi();
     show(api, [{ ...BEAN, link: 'https://www.shop.example/yirgacheffe' }]);
-    // Its site in the bean's card, as written.
+    // Its site in the bean's card, as written: with no supplier, in the supplier's place.
     const about = within(screen.getByRole('region', { name: 'About this bean' }));
-    expect(about.getByLabelText('Order link')).toHaveTextContent(/^shop\.example$/);
+    expect(about.getByLabelText('Supplier')).toHaveTextContent(/^shop\.example$/);
     await user.click(screen.getByRole('button', { name: 'Order again' }));
     expect(api.openBeanLink).toHaveBeenCalledWith(BEAN.id);
   });
 
-  it("sets out the bean's record where its fields go, the order link's site, and its hints", () => {
+  it("sets out the bean's record as tiles, the link's site under the supplier, notes as chips, and its hints", () => {
     show(fakeApi(), [
       {
         ...BEAN,
         process: 'natural',
         supplier: 'Green Coffee Collective',
         link: 'https://www.greencoffee.example/african-moon',
+        moisturePct: null,
+        notes: 'Pecan | Plum',
       },
     ]);
     const about = within(screen.getByRole('region', { name: 'About this bean' }));
     expect(about.getByLabelText('Supplier')).toHaveTextContent('Green Coffee Collective');
-    expect(about.getByLabelText('Order link')).toHaveTextContent('greencoffee.example');
-    // An empty value reads as a dash, where its field goes in Edit.
-    expect(about.getByLabelText('Moisture')).toHaveTextContent('–');
+    expect(about.getByText('greencoffee.example')).toBeInTheDocument();
+    // Only the values it has.
+    expect(about.queryByLabelText('Moisture')).toBeNull();
+    const notes = within(about.getByRole('list', { name: 'Notes' }));
+    expect(notes.getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Pecan', 'Plum']);
     expect(about.getAllByRole('listitem').some((li) => li.textContent.startsWith('Natural'))).toBe(
       true,
     );

@@ -30,3 +30,12 @@ export function aboutSummary(draft: BeanDraft): string {
     .filter(Boolean)
     .join(' · ');
 }
+
+/** Tasting notes written as a list ("Dark chocolate | Pecan, Plum") as separate notes. */
+export const tastingNotes = (notes: string): string[] =>
+  notes.includes('|') || notes.includes(',')
+    ? notes
+        .split(/[|,]/)
+        .map((n) => n.trim())
+        .filter(Boolean)
+    : [];
