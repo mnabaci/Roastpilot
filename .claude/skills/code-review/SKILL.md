@@ -15,7 +15,7 @@ Review the diff (`git diff main...HEAD`) against `engineering-standards`. Report
 6. **Tests:** every new rule, branch and state transition covered; tests use public APIs and a fake clock.
 7. **Purpose:** a change to what users see or do was challenged (`challenge` skill) and still fits `docs/spec/overview.md` "Who it's for" and "What it isn't"; a kept clash updated that section.
 8. **Roasting practice:** any change to what Auto or the coach does or suggests is checked against roasting practice (charge, soak, turning point, dry end, first crack, development, drop) and the roast numbers in `docs/spec/roast-control.md`, with the reasoning written in the PR. Example: Auto's heat-off soak must not become manual advice at charge ("Heater 70% → 0%" is wrong for a manual charge).
-9. **UI:** `design-review` passed; a changed component's look, sizes or rules are updated in `docs/design-system/components/<Name>/README.md` in the same PR (ADR 0020).
+9. **UI:** `design-review` passed; a changed component's look, sizes or rules are updated in `docs/design-system/components/<Name>/README.md` and its `preview.html` in the same PR, and a new component has both (ADR 0020).
 10. **Docs:** spec, ADRs and skills updated when behaviour or workflow changed.
 11. **Touched files comply:** every file in the diff follows the rules and skills as a whole, not just the changed lines. A violation left in a touched file is a finding.
 12. Run `pnpm check` and include the result.

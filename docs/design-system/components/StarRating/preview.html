@@ -1,0 +1,269 @@
+<!-- @dsCard group="Data" height=170 subtitle="Shown in a row, not rated, and the picker on 4 (5 hovered)" -->
+<!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
+<link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans, Inter, system-ui, sans-serif);
+    font-size: 15px;
+    line-height: 22px;
+  }
+  .wrap {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .label {
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 500;
+  }
+  .heading {
+    font-size: 17px;
+    line-height: 24px;
+    font-weight: 600;
+  }
+  .muted {
+    color: var(--ink-muted);
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+  }
+  button {
+    font-family: inherit;
+  }
+  svg {
+    flex: none;
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .pick {
+    width: var(--control-sm, 44px);
+    height: var(--control-sm, 44px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: transparent;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+  }
+  .pick.hover {
+    background: var(--surface-hover);
+  }
+</style>
+<div class="wrap">
+  <div
+    class="card label num"
+    style="padding: 12px 16px; display: flex; flex-direction: column; gap: 8px"
+  >
+    <div class="row">
+      <span>Sun 8 Nov · 16:45</span><span class="muted">Auto · Light</span
+      ><span style="margin-left: auto"
+        ><span
+          role="img"
+          aria-label="Rated 4 of 5"
+          style="display: inline-flex; gap: 1px; vertical-align: middle"
+          ><svg
+            class=""
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+            style="color: var(--ink)"
+          >
+            <path
+              d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+            /></svg
+          ><svg
+            class=""
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+            style="color: var(--ink)"
+          >
+            <path
+              d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+            /></svg
+          ><svg
+            class=""
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+            style="color: var(--ink)"
+          >
+            <path
+              d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+            /></svg
+          ><svg
+            class=""
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+            style="color: var(--ink)"
+          >
+            <path
+              d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+            /></svg
+          ><svg
+            class=""
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+            style="color: var(--border-strong)"
+          >
+            <path
+              d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+            /></svg></span
+      ></span>
+    </div>
+    <div class="row">
+      <span>Sat 7 Nov · 10:20</span><span class="muted">Manual</span
+      ><span class="muted" role="img" aria-label="Not rated" style="margin-left: auto">–</span>
+    </div>
+  </div>
+  <div class="card" style="padding: 12px 16px; display: flex; align-items: center; gap: 12px">
+    <span class="label muted">Rating</span>
+    <div role="group" aria-label="Rating" style="display: flex">
+      <button type="button" class="pick" aria-label="1 star" aria-pressed="false">
+        <svg
+          class=""
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+          style="color: var(--ink)"
+        >
+          <path
+            d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+          />
+        </svg></button
+      ><button type="button" class="pick" aria-label="2 stars" aria-pressed="false">
+        <svg
+          class=""
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+          style="color: var(--ink)"
+        >
+          <path
+            d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+          />
+        </svg></button
+      ><button type="button" class="pick" aria-label="3 stars" aria-pressed="false">
+        <svg
+          class=""
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+          style="color: var(--ink)"
+        >
+          <path
+            d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+          />
+        </svg></button
+      ><button type="button" class="pick" aria-label="4 stars" aria-pressed="true">
+        <svg
+          class=""
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+          style="color: var(--ink)"
+        >
+          <path
+            d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+          />
+        </svg></button
+      ><button type="button" class="pick hover" aria-label="5 stars" aria-pressed="false">
+        <svg
+          class=""
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+          style="color: var(--ink-muted)"
+        >
+          <path
+            d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+          />
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+<script></script>

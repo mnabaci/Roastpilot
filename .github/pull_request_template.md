@@ -8,5 +8,5 @@
 - [ ] Tests for new rules, branches and state transitions
 - [ ] `pnpm check` passes
 - [ ] UI: passes `design-review` (tokens only, one primary action, contrast, 44px targets)
-- [ ] UI: a changed component's look, sizes or rules updated in `docs/design-system/components/<Name>/README.md`
+- [ ] UI: a changed component's look, sizes or rules updated in `docs/design-system/components/<Name>/README.md` and `preview.html`
 - [ ] No path can leave the heater on

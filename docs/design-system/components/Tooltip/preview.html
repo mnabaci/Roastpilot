@@ -1,0 +1,110 @@
+<!-- @dsCard group="Feedback" height=150 subtitle="A truncated row, and why an action waits" -->
+<!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
+<link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans, Inter, system-ui, sans-serif);
+    font-size: 15px;
+    line-height: 22px;
+  }
+  .wrap {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .label {
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 500;
+  }
+  .heading {
+    font-size: 17px;
+    line-height: 24px;
+    font-weight: 600;
+  }
+  .muted {
+    color: var(--ink-muted);
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+  }
+  button {
+    font-family: inherit;
+  }
+  svg {
+    flex: none;
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .tip {
+    position: absolute;
+    max-width: 384px;
+    box-sizing: border-box;
+    background: var(--surface-raised);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    padding: 6px 12px;
+  }
+  .row {
+    display: flex;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    background: var(--surface-raised);
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .btn {
+    height: 44px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--surface-raised);
+    color: var(--ink);
+    font: 600 15px var(--font-sans, Inter, system-ui, sans-serif);
+    opacity: 0.5;
+  }
+</style>
+<div class="wrap" style="flex-direction: row; gap: 32px; align-items: flex-start">
+  <div style="position: relative; width: 240px">
+    <div class="row label" aria-describedby="t1">
+      <span style="overflow: hidden; text-overflow: ellipsis"
+        >Ethiopia Guji Hambela · Auto · Light · Curve</span
+      >
+    </div>
+    <div
+      id="t1"
+      role="tooltip"
+      class="tip label"
+      style="top: calc(100% + 4px); left: 0; width: 240px"
+    >
+      Ethiopia Guji Hambela · Auto · Light · Curve
+    </div>
+  </div>
+  <div style="position: relative">
+    <button class="btn" aria-disabled="true" aria-describedby="t2">Connect</button>
+    <div
+      id="t2"
+      role="tooltip"
+      class="tip label"
+      style="top: calc(100% + 4px); left: 0; white-space: nowrap"
+    >
+      Disconnect first
+    </div>
+  </div>
+</div>
+<script></script>

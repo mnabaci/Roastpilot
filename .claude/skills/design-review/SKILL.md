@@ -25,7 +25,7 @@ Judge a component in the full screen, not on its own: run the app (`ui-check`) a
 11. **Headers:** actions in a page header are `sm`; the open item's title sits on the sidebar title's line, in a `control-sm` row, in the `title` type.
 12. **Spacing:** `space-4` between cards, in columns and grids.
 13. **Values:** right-aligned in their row, tabular numerals, lining up down a column.
-14. **Design system:** a changed component's look, sizes or rules are written in `docs/design-system/components/<Name>/README.md` (screen-wide rules in `docs/design-system/README.md`) in the same PR (ADR 0020).
+14. **Design system:** a changed component's look, sizes or rules are written in `docs/design-system/components/<Name>/README.md` and drawn in its `preview.html` (screen-wide rules in `docs/design-system/README.md`) in the same PR; a new component has both (ADR 0020).
 
 ## Measure, don't eyeball
 

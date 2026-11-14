@@ -1,0 +1,195 @@
+<!-- @dsCard group="Feedback" height=470 subtitle="Batch calculator, over the screen" -->
+<!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
+<link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans, Inter, system-ui, sans-serif);
+    font-size: 15px;
+    line-height: 22px;
+  }
+  .wrap {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .label {
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 500;
+  }
+  .heading {
+    font-size: 17px;
+    line-height: 24px;
+    font-weight: 600;
+  }
+  .muted {
+    color: var(--ink-muted);
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+  }
+  button {
+    font-family: inherit;
+  }
+  svg {
+    flex: none;
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .o {
+    padding: 24px;
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+  }
+  .d {
+    max-width: 560px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-xl);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .close {
+    width: 44px;
+    height: 44px;
+    margin: -4px -8px 0 0;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .input {
+    height: 44px;
+    box-sizing: border-box;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+  }
+  .chip {
+    height: 44px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--ink-muted);
+    font: 600 15px var(--font-sans, Inter, system-ui, sans-serif);
+  }
+  .chip.on {
+    background: var(--surface-raised);
+    color: var(--ink);
+  }
+  .seg {
+    flex: 1;
+    border-radius: var(--radius-sm);
+    background: var(--ink-muted);
+  }
+</style>
+<div class="o">
+  <div class="d" role="dialog" aria-labelledby="t" aria-describedby="s">
+    <div style="display: flex; align-items: flex-start; gap: 12px">
+      <div
+        style="
+          flex: 1;
+          min-width: 0;
+          padding-top: 8px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        "
+      >
+        <h2 id="t" class="heading" style="margin: 0">Batch calculator</h2>
+        <p id="s" class="label muted" style="margin: 0">
+          What an order makes in equal batches on the active roaster
+        </p>
+      </div>
+      <button class="close" aria-label="Close">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M18 6 6 18" />
+          <path d="m6 6 12 12" />
+        </svg>
+      </button>
+    </div>
+    <div style="display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap">
+      <div class="field" style="width: 160px">
+        <span class="label muted">Order weight</span>
+        <div class="input num"><span>1000</span><span class="muted">g</span></div>
+      </div>
+      <div role="group" aria-label="Common orders" style="display: flex; gap: 4px">
+        <button class="chip on" aria-pressed="true">1 kg</button
+        ><button class="chip" aria-pressed="false">2 kg</button
+        ><button class="chip" aria-pressed="false">5 lb</button
+        ><button class="chip" aria-pressed="false">5 kg</button>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <div class="field" style="width: 160px">
+        <span class="label muted">Batch</span>
+        <div class="input num"><span class="muted">356</span><span class="muted">g</span></div>
+      </div>
+      <p class="label muted num" style="margin: 0">
+        The roaster's ideal unless you change it · 250–400 g
+      </p>
+    </div>
+    <section
+      aria-label="Plan"
+      style="
+        background: var(--surface-raised);
+        border-radius: var(--radius-xl);
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      "
+    >
+      <div>
+        <p class="heading num" style="margin: 0">3 batches</p>
+        <p class="label muted num" style="margin: 0">2 × 333 g · 1 × 334 g</p>
+      </div>
+      <div aria-hidden="true" style="display: flex; gap: 2px; height: 12px">
+        <span class="seg"></span><span class="seg"></span><span class="seg"></span>
+      </div>
+      <p class="label muted num" style="margin: 0">About 860 g roasted</p>
+    </section>
+  </div>
+</div>
+<script></script>

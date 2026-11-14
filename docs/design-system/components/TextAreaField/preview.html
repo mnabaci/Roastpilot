@@ -1,0 +1,88 @@
+<!-- @dsCard group="Inputs" height=230 subtitle="Grown to its notes; empty with focus" -->
+<!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
+<link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans, Inter, system-ui, sans-serif);
+    font-size: 15px;
+    line-height: 22px;
+  }
+  .wrap {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .label {
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 500;
+  }
+  .heading {
+    font-size: 17px;
+    line-height: 24px;
+    font-weight: 600;
+  }
+  .muted {
+    color: var(--ink-muted);
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+  }
+  button {
+    font-family: inherit;
+  }
+  svg {
+    flex: none;
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  textarea {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: var(--control-sm, 44px);
+    max-height: 192px;
+    padding: 10px 14px;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font: 400 15px/22px var(--font-sans, Inter, system-ui, sans-serif);
+    resize: none;
+    field-sizing: content;
+  }
+  textarea:hover {
+    border-color: var(--border-strong);
+  }
+  textarea.focus {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+</style>
+<div class="wrap" style="max-width: 420px">
+  <label
+    ><span class="label muted">Notes</span
+    ><textarea rows="3">
+Bright, stone fruit. Dropped a little early: try 15 s more development next time.</textarea>
+  </label>
+  <label><span class="label muted">Notes</span><textarea class="focus" rows="1"></textarea></label>
+</div>
+<script></script>

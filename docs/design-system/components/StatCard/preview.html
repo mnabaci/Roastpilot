@@ -1,4 +1,4 @@
-<!-- @dsCard group="Data" height=170 subtitle="Temperature, RoR, development" -->
+<!-- @dsCard group="Data" height=330 subtitle="Temperature with ET, RoR, development; compact tiles in a card" -->
 <!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
 <link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
 <link
@@ -10,72 +10,199 @@
     margin: 0;
     background: var(--bg);
     color: var(--ink);
-    font-family: var(--font-sans);
-    font-variant-numeric: tabular-nums;
+    font-family: var(--font-sans, Inter, system-ui, sans-serif);
+    font-size: 15px;
+    line-height: 22px;
   }
   .wrap {
     padding: 20px;
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 16px;
-    align-items: flex-start;
+  }
+  .label {
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 500;
+  }
+  .heading {
+    font-size: 17px;
+    line-height: 24px;
+    font-weight: 600;
+  }
+  .muted {
+    color: var(--ink-muted);
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius-xl);
   }
   button {
     font-family: inherit;
+  }
+  svg {
+    flex: none;
   }
   :focus-visible {
     outline: 2px solid var(--focus);
     outline-offset: 2px;
   }
 </style>
-<div class="wrap" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr))">
-  <div
-    style="
-      background: var(--surface);
-      border-radius: var(--radius-xl);
-      padding: 18px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    "
-  >
-    <div class="label" style="color: var(--ink-muted)">Temperature</div>
-    <div style="display: flex; align-items: baseline; gap: 6px">
-      <span class="readout-xl" style="color: var(--heat)">198</span
-      ><span style="font-size: 20px; color: var(--ink-muted)">°C</span>
+<div class="wrap">
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+    <div class="card" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 6px">
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          height: 18px;
+        "
+      >
+        <span class="label muted">Temperature</span
+        ><span style="display: flex; align-items: baseline; gap: 6px"
+          ><span class="label muted">ET</span
+          ><span class="heading num" style="line-height: 18px; color: var(--env)">212.4</span></span
+        >
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 6px">
+        <span
+          class="num"
+          style="
+            font-size: 56px;
+            line-height: 56px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--heat);
+          "
+          >198.4</span
+        ><span class="heading muted">°C</span>
+      </div>
+      <div class="label muted">Target 196 °C</div>
     </div>
-    <div class="label" style="color: var(--ink-muted)">Target 196 °C</div>
-  </div>
-  <div
-    style="
-      background: var(--surface);
-      border-radius: var(--radius-xl);
-      padding: 18px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    "
-  >
-    <div class="label" style="color: var(--ink-muted)">Rate of rise</div>
-    <div style="display: flex; align-items: baseline; gap: 6px">
-      <span class="readout-xl" style="color: var(--air)">8.6</span
-      ><span style="font-size: 20px; color: var(--ink-muted)">°C/min</span>
+    <div class="card" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 6px">
+      <div class="label muted">Rate of rise</div>
+      <div style="display: flex; align-items: baseline; gap: 6px">
+        <span
+          class="num"
+          style="
+            font-size: 56px;
+            line-height: 56px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--air);
+          "
+          >8.6</span
+        ><span class="heading muted">°C/min</span>
+      </div>
+      <div class="label muted">Last 30 s</div>
     </div>
-    <div class="label" style="color: var(--ink-muted)">Last 30 s</div>
+    <div class="card" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 6px">
+      <div class="label muted">Development</div>
+      <div style="display: flex; align-items: baseline; gap: 6px">
+        <span
+          class="num"
+          style="
+            font-size: 56px;
+            line-height: 56px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--ink);
+          "
+          >1:12</span
+        >
+      </div>
+      <div class="label muted">12% of roast</div>
+    </div>
   </div>
-  <div
-    style="
-      background: var(--surface);
-      border-radius: var(--radius-xl);
-      padding: 18px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    "
-  >
-    <div class="label" style="color: var(--ink-muted)">Development</div>
-    <div class="readout-xl">1:12</div>
-    <div class="label" style="color: var(--ink-muted)">12% of roast</div>
+  <div class="card" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 8px">
+    <span class="label muted">Inputs now</span>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+      <div
+        style="
+          background: var(--surface-raised);
+          border-radius: var(--radius-lg);
+          padding: 8px 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        "
+      >
+        <span class="label muted">TC1</span>
+        <span style="display: flex; align-items: baseline; gap: 6px"
+          ><span
+            class="num"
+            style="font-size: 26px; line-height: 32px; font-weight: 700; color: var(--env)"
+            >212.4</span
+          ><span class="label muted">°C</span></span
+        >
+        <span class="label muted">ET</span>
+      </div>
+      <div
+        style="
+          background: var(--surface-raised);
+          border-radius: var(--radius-lg);
+          padding: 8px 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        "
+      >
+        <span class="label muted">TC2</span>
+        <span style="display: flex; align-items: baseline; gap: 6px"
+          ><span
+            class="num"
+            style="font-size: 26px; line-height: 32px; font-weight: 700; color: var(--heat)"
+            >165.2</span
+          ><span class="label muted">°C</span></span
+        >
+        <span class="label muted">BT</span>
+      </div>
+      <div
+        style="
+          background: var(--surface-raised);
+          border-radius: var(--radius-lg);
+          padding: 8px 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        "
+      >
+        <span class="label muted">TC3</span>
+        <span style="display: flex; align-items: baseline; gap: 6px"
+          ><span
+            class="num"
+            style="font-size: 26px; line-height: 32px; font-weight: 700; color: var(--ink)"
+            >21.9</span
+          ><span class="label muted">°C</span></span
+        >
+        <span class="label muted">Not used</span>
+      </div>
+      <div
+        style="
+          background: var(--surface-raised);
+          border-radius: var(--radius-lg);
+          padding: 8px 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        "
+      >
+        <span class="label muted">TC4</span>
+        <span style="display: flex; align-items: baseline; gap: 6px"
+          ><span
+            class="num"
+            style="font-size: 26px; line-height: 32px; font-weight: 700; color: var(--ink)"
+            >22.1</span
+          ><span class="label muted">°C</span></span
+        >
+        <span class="label muted">Not used</span>
+      </div>
+    </div>
   </div>
 </div>
 <script></script>
