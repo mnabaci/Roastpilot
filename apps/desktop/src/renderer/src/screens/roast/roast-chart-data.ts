@@ -115,9 +115,13 @@ function untilRoastEnd(roast: RoastState, readings: readonly Reading[]): readonl
   return ended ? readings.filter((r) => r.atMs <= ended.atMs) : readings;
 }
 
+/** What the ET line is called when the roaster that recorded it isn't connected (History). */
+const DEFAULT_ET_NAME = 'ET';
+
 /**
- * Temperature (as the roaster names it), RoR, heater and fan layers plus event markers, in seconds since charge (or
- * since the first reading). Missing readings are breaks; the temperature line is smoothed.
+ * Temperature (as the roaster names it), ET where it was recorded, RoR, heater and fan layers plus
+ * event markers, in seconds since charge (or since the first reading). Missing readings are breaks;
+ * the temperature lines are smoothed.
  */
 export function roastChartData(
   roast: RoastState,
@@ -125,8 +129,14 @@ export function roastChartData(
   {
     smoothingS,
     tempName = DEFAULT_TEMP_NAMES.name,
+    etName = DEFAULT_ET_NAME,
     plan,
-  }: { smoothingS: number; tempName?: string; plan?: readonly CurvePoint[] | undefined },
+  }: {
+    smoothingS: number;
+    tempName?: string;
+    etName?: string;
+    plan?: readonly CurvePoint[] | undefined;
+  },
 ): { layers: LineLayer[]; markers: ChartMarker[] } {
   const readings = untilRoastEnd(roast, allReadings);
   const zeroMs = roast.chargedAtMs ?? readings[0]?.atMs ?? 0;
@@ -140,6 +150,21 @@ export function roastChartData(
     width: 3.5,
     points: smoothed(withBreaks(channelPoints(readings, 'bt', toT), breaks), smoothingS),
   };
+  // ET only where the roast recorded it: thinner than the bean temperature, behind it.
+  const etPoints = channelPoints(readings, 'et', toT);
+  const environment: LineLayer[] =
+    etPoints.length > 0
+      ? [
+          {
+            id: 'et',
+            label: etName,
+            axis: 'temperature',
+            tone: 'env',
+            width: 2,
+            points: smoothed(withBreaks(etPoints, breaks), smoothingS),
+          },
+        ]
+      : [];
   const ror: LineLayer = {
     id: 'ror',
     label: 'RoR',
@@ -181,6 +206,7 @@ export function roastChartData(
   return {
     layers: [
       ...planned,
+      ...environment,
       temperature,
       ror,
       output('heater', 'Heater', 'heat'),

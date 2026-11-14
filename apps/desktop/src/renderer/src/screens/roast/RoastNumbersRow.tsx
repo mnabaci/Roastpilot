@@ -7,16 +7,19 @@ import type { RoastNumbers } from './roast-numbers';
 const clock = (s: number | undefined) =>
   s === undefined || !Number.isFinite(s) ? undefined : formatClock(s);
 
-/** Temperature, RoR, time (in preheat, then since charge) and development: numbers first (docs/spec/manual-mode.md). */
+/** Temperature (with ET beside it where there is one), RoR, time (in preheat, then since charge) and development: numbers first (docs/spec/manual-mode.md). */
 export function RoastNumbersRow({
   numbers,
   tempName,
+  etShort,
   tempLine,
   rorLine,
 }: {
   numbers: RoastNumbers;
   /** The connected roaster's name for its temperature. */
   tempName: string;
+  /** Its short name for ET, on a roaster with an ET probe: shown beside the temperature. */
+  etShort?: string | undefined;
   /** How today compares with the plan in Auto, or else with the ghost. */
   tempLine?: string | undefined;
   /** The RoR the running Auto step aims for. */
@@ -31,6 +34,16 @@ export function RoastNumbersRow({
         unit={tempSymbol(unit)}
         tone="heat"
         {...(tempLine ? { context: tempLine } : {})}
+        {...(etShort
+          ? {
+              secondary: {
+                label: etShort,
+                value: numbers.et === undefined ? undefined : tempNumber(numbers.et, unit, 1),
+                unit: tempSymbol(unit),
+                tone: 'env' as const,
+              },
+            }
+          : {})}
       />
       <StatCard
         label="RoR"

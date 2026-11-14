@@ -40,6 +40,21 @@ describe('roastChartData', () => {
     expect(layers[0]?.points[0]).toEqual({ t: 2, v: 100 });
   });
 
+  it('draws ET where the roast recorded it, thinner and behind the bean temperature', () => {
+    const withEt = readings.map((r) => ({ ...r, values: { ...r.values, et: 120 } }));
+    const { layers } = roastChartData(READY_ROAST, withEt, { ...RAW, etName: 'ET' });
+    const ids = layers.map((l) => l.id);
+    expect(ids.indexOf('et')).toBeLessThan(ids.indexOf('bt'));
+    const et = layers.find((l) => l.id === 'et');
+    expect(et).toMatchObject({ label: 'ET', axis: 'temperature', tone: 'env', width: 2 });
+    expect(et?.points[0]).toEqual({ t: 0, v: 120 });
+  });
+
+  it('has no ET line for a roast without ET readings', () => {
+    const { layers } = roastChartData(READY_ROAST, readings, RAW);
+    expect(layers.some((l) => l.id === 'et')).toBe(false);
+  });
+
   it('cool-end is not a marker', () => {
     const { markers } = roastChartData(
       { ...READY_ROAST, phase: 'done', events: [{ kind: 'cool-end', atMs: 1, bt: null }] },

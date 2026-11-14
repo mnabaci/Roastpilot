@@ -14,7 +14,7 @@ import { useRoastView } from './use-roast-view';
 import { OutputsPanel } from './OutputsPanel';
 import { CoachPanel } from './CoachPanel';
 import { RoastNumbersRow } from './RoastNumbersRow';
-import { useSensorNames } from '../../features/use-sensor-names';
+import { useOptionalSensor, useSensorNames } from '../../features/use-sensor-names';
 import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { useConnection, useRoast, useSettings } from '../../stores/use-stores';
 import { isConnected } from './flow-step';
@@ -41,14 +41,21 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
   const lost = useConnection((s) => s.connection.status === 'lost');
   const numbers = useMemo(() => roastNumbers(roast, readings), [roast, readings]);
   // With no roaster, the last temperature would look live: show dashes instead.
-  const shown = connected ? numbers : { ...numbers, bt: undefined, ror: undefined };
+  const shown = connected ? numbers : { ...numbers, bt: undefined, et: undefined, ror: undefined };
   const smoothingS = useSettings((s) => s.settings.chartSmoothingS);
   const unit = useTemperatureUnit();
   const temp = useSensorNames();
+  const et = useOptionalSensor('et');
   const plan = useRunningPlan();
   const chart = useMemo(
-    () => roastChartData(roast, readings, { smoothingS, tempName: temp.name, plan }),
-    [roast, readings, smoothingS, temp.name, plan],
+    () =>
+      roastChartData(roast, readings, {
+        smoothingS,
+        tempName: temp.name,
+        ...(et ? { etName: et.short } : {}),
+        plan,
+      }),
+    [roast, readings, smoothingS, temp.name, et, plan],
   );
   const ghost = useGhost(roast, { elapsedS: numbers.elapsedS, bt: shown.bt, smoothingS });
   const planLines = usePlanLines(shown.bt, numbers.elapsedS);
@@ -95,6 +102,7 @@ export function RoastScreen({ onConnect }: { onConnect: () => void }) {
         <RoastNumbersRow
           numbers={shown}
           tempName={temp.name}
+          etShort={et?.short}
           // In Auto the plan is what's followed, so it takes the ghost's place.
           tempLine={planLines.temp ?? ghost.line}
           rorLine={planLines.ror}

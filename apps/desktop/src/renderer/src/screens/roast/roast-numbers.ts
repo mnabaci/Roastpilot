@@ -3,6 +3,8 @@ import type { Reading, RoastState } from '@roastpilot/shared';
 
 export interface RoastNumbers {
   bt: number | undefined;
+  /** The environment temperature, on a roaster with an ET probe. */
+  et: number | undefined;
   /** °C/min over the last 30 s since charge; none before it, as on the chart. */
   ror: number | undefined;
   /** Seconds since charge, frozen at drop. */
@@ -30,6 +32,7 @@ export function roastNumbers(roast: RoastState, readings: readonly Reading[]): R
     roast.firstCrackAtMs !== null && endMs !== undefined ? endMs - roast.firstCrackAtMs : undefined;
   return {
     bt: latest?.values.bt,
+    et: latest?.values.et,
     ror:
       roast.chargedAtMs === null ? undefined : rateOfRise(rorReadings(readings, roast.chargedAtMs)),
     elapsedS: elapsedMs === undefined ? undefined : seconds(elapsedMs),
