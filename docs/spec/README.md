@@ -19,6 +19,7 @@ The source of truth for what Roastpilot does and how it is built. Change the spe
 | [manual-mode.md](manual-mode.md)                       | Manual mode and the live coach                                   |
 | [batch-and-stock.md](batch-and-stock.md)               | Batch calculator and stock tracking                              |
 | [ui.md](ui.md)                                         | Screens                                                          |
+| [roast-report.md](roast-report.md)                     | A finished roast's phases, RoR findings and plan check           |
 | [safety.md](safety.md)                                 | Safety rules                                                     |
 | [data-model.md](data-model.md)                         | SQLite tables                                                    |
 | [install-and-update.md](install-and-update.md)         | Releases, installers, updates, data across updates               |

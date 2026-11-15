@@ -1,0 +1,91 @@
+<!-- @dsCard group="Data" height=130 subtitle="A roast's drying, Maillard and development as one bar" -->
+<!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
+<link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+  }
+  .card {
+    margin: 20px;
+    width: 440px;
+    padding: 20px;
+    border-radius: 12px;
+    background: var(--surface);
+  }
+  .bar {
+    display: flex;
+    gap: 2px;
+    height: 10px;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .low {
+    background: var(--target);
+    opacity: 0.3;
+  }
+  .mid {
+    background: var(--target);
+    opacity: 0.6;
+  }
+  .high {
+    background: var(--target);
+  }
+  dl {
+    margin: 10px 0 0;
+    display: grid;
+    grid-template-columns: 40fr 42fr 18fr;
+    gap: 2px;
+  }
+  dt {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+  dt i {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  dd {
+    margin: 2px 0 0;
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+  }
+  dd.end {
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+</style>
+<div class="card">
+  <div class="bar">
+    <div class="low" style="flex: 40"></div>
+    <div class="mid" style="flex: 42"></div>
+    <div class="high" style="flex: 18"></div>
+  </div>
+  <dl>
+    <div>
+      <dt><i class="low"></i>Drying</dt>
+      <dd>4:24 · 40 %</dd>
+      <dd class="end">to 150.2 °C</dd>
+    </div>
+    <div>
+      <dt><i class="mid"></i>Maillard</dt>
+      <dd>4:36 · 42 %</dd>
+      <dd class="end">to 196.0 °C</dd>
+    </div>
+    <div>
+      <dt><i class="high"></i>Development</dt>
+      <dd>2:00 · 18 %</dd>
+      <dd class="end">to 208.5 °C</dd>
+    </div>
+  </dl>
+</div>

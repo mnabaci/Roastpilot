@@ -79,6 +79,8 @@ export const SettingsSchema = z.object({
   theme: ThemeSchema.catch('dark').default('dark'),
   /** History's Roast details card open or folded, for every roast (docs/spec/ui.md, History). */
   historyDetailsOpen: z.boolean().catch(true).default(true),
+  /** History's Roast report card open or folded, for every roast (docs/spec/roast-report.md). */
+  historyReportOpen: z.boolean().catch(true).default(true),
   /**
    * The record pages' cards you keep open, as "page.card" ("bean.about", "roaster.batch"); the
    * rest are folded. The same for every bean, profile or roaster (ui.md, Read and edit).

@@ -1,5 +1,6 @@
 import type { RoastDetail } from '@roastpilot/shared';
-import { Button, cn, RoastChart } from '@roastpilot/ui';
+import { Button, cn, RoastChart, type ChartAid, type LineLayer } from '@roastpilot/ui';
+import type { TimeSpan } from '../../features/roast-report/report-text';
 import { useMemo } from 'react';
 import { useTemperatureUnit } from '../../features/use-temperature-unit';
 import { savedRoastChart, savedRoastFocus } from './saved-roast-chart';
@@ -15,8 +16,11 @@ export function SavedRoastChart({
   smoothingS,
   showPreheat,
   onShowPreheat,
+  span,
 }: {
   detail: RoastDetail;
+  /** A stretch to pick out: the Roast report's finding you point at. */
+  span?: TimeSpan | undefined;
   compare: RoastDetail | undefined;
   compareLabel: string;
   smoothingS: number;
@@ -31,6 +35,11 @@ export function SavedRoastChart({
         smoothingS,
       ),
     [detail, compare, compareLabel, smoothingS],
+  );
+  const layers = useMemo(
+    (): readonly (ChartAid | LineLayer)[] =>
+      span ? [{ kind: 'time-span', id: 'finding', ...span }, ...chart.layers] : chart.layers,
+    [chart.layers, span],
   );
   const focus = useMemo(() => savedRoastFocus(detail, compare), [detail, compare]);
   const unit = useTemperatureUnit();
@@ -52,7 +61,7 @@ export function SavedRoastChart({
           </Button>
         ) : undefined
       }
-      layers={chart.layers}
+      layers={layers}
       markers={chart.markers}
       timeWindow={showPreheat ? undefined : focus}
       temperatureUnit={unit}

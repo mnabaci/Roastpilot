@@ -132,6 +132,21 @@ export const NowLine: Story = {
   args: { ...roasting, layers: [temperature, ror, heater, fan, nowLine] },
 };
 export const NowLineLight: Story = { ...NowLine, globals: { theme: 'Light' } };
+/** History's Roast report pointing at a finding: a stall from 6:10, and a moment at 9:00. */
+export const TimeSpan: Story = {
+  args: {
+    ...roasting,
+    layers: [
+      { kind: 'time-span', id: 'stall', fromS: 370, toS: 440 },
+      { kind: 'time-span', id: 'moment', fromS: 540, toS: 540 },
+      temperature,
+      ror,
+      heater,
+      fan,
+    ],
+  },
+};
+export const TimeSpanLight: Story = { ...TimeSpan, globals: { theme: 'Light' } };
 /** The same roast in °F: data still given in °C, axes, legend and hover in °F (100 °F steps). */
 export const Fahrenheit: Story = {
   args: {

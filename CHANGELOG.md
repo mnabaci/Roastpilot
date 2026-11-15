@@ -7,6 +7,14 @@ a roast: minor for a new roasting capability, patch for everything else
 
 ## [Unreleased]
 
+### Added
+
+- **Roast report:** every finished roast now says how it went. Drying, Maillard and development
+  as one bar with each phase's length and share; a RoR crash or flick after first crack, or a
+  stall before it; missing readings and a short or long development; and for an Auto roast, dry
+  end, first crack, development and drop against the plan. It's in History, and on the Roast
+  screen as soon as the roast finishes.
+
 ## [0.3.4] - 2026-11-14
 
 ### Changed

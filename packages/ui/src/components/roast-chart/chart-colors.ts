@@ -9,6 +9,8 @@ export interface ChartColors {
   surface: string;
   /** The phase bands' fills, coolest first (`band-low`, `band-mid`, `band-high`). */
   bands: readonly string[];
+  /** A picked-out stretch of time (`ink`, drawn faint). */
+  highlight: string;
   font: string;
 }
 
@@ -25,6 +27,7 @@ export function readChartColors(element: Element): ChartColors {
     grid: read('--chart-grid'),
     surface: read('--surface'),
     bands: [read('--band-low'), read('--band-mid'), read('--band-high')],
+    highlight: read('--ink'),
     font: read('--font-sans') || 'sans-serif',
   };
 }

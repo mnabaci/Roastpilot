@@ -21,6 +21,7 @@ const pointsIn = (
 const layerIn = (layer: ChartLayer, unit: TemperatureUnit): ChartLayer => {
   switch (layer.kind) {
     case 'now-line':
+    case 'time-span':
       return layer;
     case 'phase-bands':
       return {
