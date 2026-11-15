@@ -26,6 +26,7 @@ export { CollapsibleCard } from './components/CollapsibleCard';
 export { RoastList, type RoastListItem } from './components/RoastList';
 export { EventTable, type EventRow } from './components/EventTable';
 export { CompareTable, type CompareTableRow } from './components/CompareTable';
+export { PhaseSplit, type PhaseSplitPart } from './components/PhaseSplit';
 export { RoastTable, type RoastTableRow } from './components/RoastTable';
 export { Mark } from './components/Mark';
 export { RoastStrip, type RoastStripProps } from './components/RoastStrip';

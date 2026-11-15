@@ -21,11 +21,14 @@ const VALUES = ['own', 'other', 'diff'] as const;
 export function CompareTable({
   rows,
   otherTitle,
+  label = 'Comparison',
   className,
 }: {
   rows: readonly CompareTableRow[];
-  /** The compared roast's header, e.g. its date and time. */
+  /** The compared roast's header, e.g. its date and time, or "Plan". */
   otherTitle: string;
+  /** Names the table for screen readers. */
+  label?: string;
   className?: string;
 }) {
   const titles: Record<(typeof VALUES)[number], string> = {
@@ -35,7 +38,7 @@ export function CompareTable({
   };
   return (
     <div className={cn('rounded-xl bg-surface p-4', className)}>
-      <table aria-label="Comparison" className="w-full border-collapse text-label tabular-nums">
+      <table aria-label={label} className="w-full border-collapse text-label tabular-nums">
         <thead>
           <tr className="text-ink-muted">
             <th scope="col" className="pb-2 text-left font-medium">

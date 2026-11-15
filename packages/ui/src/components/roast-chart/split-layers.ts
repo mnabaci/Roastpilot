@@ -22,7 +22,7 @@ export interface SplitLayers {
 
 /**
  * What each plot draws: the chart gets temperature and RoR lines with every aid; the strip its
- * outputs and only the now line. Both share one set of times, so they line up.
+ * outputs, the now line and any picked-out time. Both share one set of times, so they line up.
  */
 export function splitLayers(
   layers: readonly ChartLayer[],
@@ -39,6 +39,9 @@ export function splitLayers(
     mainData: [xs, ...series.slice(0, main.length)] as uPlot.AlignedData,
     stripData: [xs, ...series.slice(main.length)] as uPlot.AlignedData,
     mainOverlay: { markers, aids },
-    stripOverlay: { markers, aids: aids.filter((aid) => aid.kind === 'now-line') },
+    stripOverlay: {
+      markers,
+      aids: aids.filter((aid) => aid.kind === 'now-line' || aid.kind === 'time-span'),
+    },
   };
 }

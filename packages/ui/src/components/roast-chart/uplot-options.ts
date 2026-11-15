@@ -8,6 +8,7 @@ import {
   drawBandLabels,
   drawNowLines,
   drawPhaseBands,
+  drawTimeSpans,
   drawProjections,
 } from './draw-aids';
 import { attachDrag, drawDragHandles, type ChartDrag, type TimeRange } from './drag-handles';
@@ -132,6 +133,7 @@ export function buildChartOptions({
       drawClear: [
         (u) => {
           drawPhaseBands(u, aids(), colors);
+          drawTimeSpans(u, aids(), colors);
         },
       ],
       draw: [
@@ -191,6 +193,11 @@ export function buildStripOptions({
     series: series(layers, colors, stepped),
     hooks: {
       ...hover.hooks,
+      drawClear: [
+        (u) => {
+          drawTimeSpans(u, aids(), colors);
+        },
+      ],
       draw: [
         (u) => {
           drawMarkers(u, markers(), colors, { labels: false });

@@ -74,3 +74,11 @@ export { projection } from './chart/projection';
 export { phaseBandEdges } from './chart/phase-bands';
 export { savedTurningPointC } from './history/expected-turning-point';
 export { expectedTurningPointC, nextFloorC, startFloorC } from './chart/temperature-floor';
+export { roastReport } from './history/roast-report/roast-report';
+export {
+  needsAttention,
+  type PlanCheck,
+  type ReportFinding,
+  type ReportPhase,
+  type RoastReport,
+} from './history/roast-report/report-types';

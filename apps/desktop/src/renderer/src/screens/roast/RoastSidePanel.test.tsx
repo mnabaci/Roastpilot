@@ -1,9 +1,10 @@
-import { READY_ROAST, type RoastSummary } from '@roastpilot/shared';
+import { ok, READY_ROAST, type RoastSummary } from '@roastpilot/shared';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { pick } from '../../test/pick';
 import { CONNECTED, fakeApi, renderApp } from '../../test/render-app';
+import { reportRoast } from '../../test/report-roast';
 import { RoastScreen } from './RoastScreen';
 
 const roast = (phase: (typeof READY_ROAST)['phase']) => ({ ...READY_ROAST, phase });
@@ -121,6 +122,25 @@ describe('Roast side panel follows the roast', () => {
     ).toBeNull();
     await userEvent.click(within(card).getByRole('button', { name: 'Done' }));
     expect(screen.queryByRole('region', { name: 'Roast just finished' })).toBeNull();
+  });
+
+  it('done: the finished roast leads with its report, without the plan table', async () => {
+    renderApp(
+      <RoastScreen onConnect={vi.fn()} />,
+      {
+        connection: CONNECTED,
+        roast: { ...roast('done'), chargedAtMs: 0 },
+        currentRoastId: GHOST.id,
+      },
+      fakeApi({
+        listRoasts: vi.fn(() => Promise.resolve([GHOST])),
+        getRoast: vi.fn(() => Promise.resolve(ok({ ...reportRoast(620, 660), id: GHOST.id }))),
+      }),
+    );
+    const card = within(await screen.findByRole('region', { name: 'Roast just finished' }));
+    expect(await card.findByRole('group', { name: 'Phases' })).toBeInTheDocument();
+    expect(card.getByText('Short development')).toBeInTheDocument();
+    expect(card.queryByRole('table')).toBeNull();
   });
 
   it('connection lost mid-roast: the outputs stay, with dashes', () => {

@@ -95,7 +95,7 @@ export function RoastNumbersRow({
         context={
           numbers.developmentPct === undefined
             ? 'After first crack'
-            : `${formatNumber(numbers.developmentPct, 0)}% of the roast`
+            : `${formatNumber(numbers.developmentPct, 0)} % of the roast`
         }
       />
     </div>

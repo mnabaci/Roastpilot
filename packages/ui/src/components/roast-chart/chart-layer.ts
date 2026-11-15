@@ -73,8 +73,19 @@ export interface PhaseBandsLayer {
   bands: readonly PhaseBand[];
 }
 
+/**
+ * A stretch of time picked out behind the lines, through the chart and the outputs strip (History's
+ * Roast report shows where a finding happened). `fromS` equal to `toS` is a moment: a thin line.
+ */
+export interface TimeSpanLayer {
+  kind: 'time-span';
+  id: string;
+  fromS: number;
+  toS: number;
+}
+
 /** What the chart draws over or behind the lines: no legend entry, no hover value. */
-export type ChartAid = NowLineLayer | ProjectionLayer | PhaseBandsLayer;
+export type ChartAid = NowLineLayer | ProjectionLayer | PhaseBandsLayer | TimeSpanLayer;
 
 /** Everything RoastChart draws from its `layers`: lines and aids (docs/spec/extensibility.md). */
 export type ChartLayer = LineLayer | ChartAid;

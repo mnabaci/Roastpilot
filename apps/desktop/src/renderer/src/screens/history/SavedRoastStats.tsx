@@ -20,7 +20,7 @@ export function SavedRoastStats({ roast }: { roast: RoastSummary }) {
       <StatCard
         label="Development"
         value={clock(developmentS)}
-        context={share === undefined ? 'After first crack' : `${share}% of the roast`}
+        context={share === undefined ? 'After first crack' : `${share} % of the roast`}
       />
       <StatCard
         label="Drop"

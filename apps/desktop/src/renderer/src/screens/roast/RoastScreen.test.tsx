@@ -339,7 +339,7 @@ describe('RoastScreen', () => {
     expect(screen.getByRole('region', { name: 'Temperature' })).toHaveTextContent('201.3°C');
     expect(screen.getByRole('region', { name: 'Time' })).toHaveTextContent('8:20');
     expect(screen.getByRole('region', { name: 'Development' })).toHaveTextContent(
-      '1:4020% of the roast',
+      '1:4020 % of the roast',
     );
   });
 

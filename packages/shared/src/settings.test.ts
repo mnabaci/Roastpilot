@@ -23,6 +23,7 @@ const ROAST_DEFAULTS = {
   temperatureUnit: 'c',
   theme: 'dark',
   historyDetailsOpen: true,
+  historyReportOpen: true,
   openCards: ['bean.about', 'profile.values', 'profile.preview', 'profile.steps'],
   safetyNoticeAccepted: 0,
 };
@@ -71,6 +72,12 @@ describe('SettingsSchema', () => {
     expect(DEFAULT_SETTINGS.historyDetailsOpen).toBe(true);
     expect(SettingsSchema.parse({ historyDetailsOpen: false }).historyDetailsOpen).toBe(false);
     expect(SettingsSchema.parse({ historyDetailsOpen: 'no' }).historyDetailsOpen).toBe(true);
+  });
+
+  it('opens the Roast report in History unless you fold it, also for an older file or a bad value', () => {
+    expect(DEFAULT_SETTINGS.historyReportOpen).toBe(true);
+    expect(SettingsSchema.parse({ historyReportOpen: false }).historyReportOpen).toBe(false);
+    expect(SettingsSchema.parse({ historyReportOpen: 'no' }).historyReportOpen).toBe(true);
   });
 
   it('keeps which record cards are open: what a record is about by default', () => {
@@ -124,6 +131,7 @@ describe('SettingsSchema', () => {
       temperatureUnit: 'f',
       theme: 'system',
       historyDetailsOpen: false,
+      historyReportOpen: false,
       openCards: ['roaster.batch', 'roaster.tuning'],
       safetyNoticeAccepted: 1,
     };

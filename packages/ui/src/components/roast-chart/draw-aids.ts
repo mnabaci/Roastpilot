@@ -7,6 +7,7 @@ import type {
   PhaseBand,
   PhaseBandsLayer,
   ProjectionLayer,
+  TimeSpanLayer,
 } from './chart-layer';
 import { plotPixelRatio } from './pixel-ratio';
 import { nowLineSegments } from './now-line-gaps';
@@ -25,6 +26,8 @@ export const nowLines = (aids: readonly ChartAid[]): NowLineLayer[] =>
   aids.filter((aid): aid is NowLineLayer => aid.kind === 'now-line');
 const projections = (aids: readonly ChartAid[]): ProjectionLayer[] =>
   aids.filter((aid): aid is ProjectionLayer => aid.kind === 'projection');
+const timeSpans = (aids: readonly ChartAid[]): TimeSpanLayer[] =>
+  aids.filter((aid): aid is TimeSpanLayer => aid.kind === 'time-span');
 const bandLayers = (aids: readonly ChartAid[]): PhaseBandsLayer[] =>
   aids.filter((aid): aid is PhaseBandsLayer => aid.kind === 'phase-bands');
 
@@ -211,6 +214,55 @@ export function drawNowLines(
     )) {
       ctx.moveTo(x, from);
       ctx.lineTo(x, to);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/** A span's left and right edges on the canvas, in time order, clipped to the plot. */
+export function spanPixels(
+  span: Pick<TimeSpanLayer, 'fromS' | 'toS'>,
+  toX: (t: number) => number,
+  left: number,
+  right: number,
+): { from: number; to: number } {
+  const clip = (t: number) => Math.min(right, Math.max(left, toX(t)));
+  return {
+    from: clip(Math.min(span.fromS, span.toS)),
+    to: clip(Math.max(span.fromS, span.toS)),
+  };
+}
+
+/** A picked-out stretch's fill, and its edges a little stronger, so a short one still shows. */
+const SPAN_FILL_ALPHA = 0.08;
+const SPAN_EDGE_ALPHA = 0.4;
+
+/**
+ * Picked-out stretches of time: a faint full-height fill behind the grid and lines, edged by thin
+ * lines; a moment is the edge alone. Clipped to the plot.
+ */
+export function drawTimeSpans(u: uPlot, aids: readonly ChartAid[], colors: ChartColors): void {
+  const spans = timeSpans(aids);
+  if (spans.length === 0) return;
+  const { ctx, bbox } = u;
+  const ratio = plotPixelRatio(u);
+  const toX = (t: number) => u.valToPos(t, 'x', true);
+  ctx.save();
+  ctx.fillStyle = colors.highlight;
+  ctx.strokeStyle = colors.highlight;
+  ctx.lineWidth = ratio;
+  for (const span of spans) {
+    const { from, to } = spanPixels(span, toX, bbox.left, bbox.left + bbox.width);
+    if (to > from) {
+      ctx.globalAlpha = SPAN_FILL_ALPHA;
+      ctx.fillRect(from, bbox.top, to - from, bbox.height);
+    }
+    ctx.globalAlpha = SPAN_EDGE_ALPHA;
+    ctx.beginPath();
+    for (const edge of to > from ? [from, to] : [from]) {
+      ctx.moveTo(edge, bbox.top);
+      ctx.lineTo(edge, bbox.top + bbox.height);
     }
     ctx.stroke();
   }
