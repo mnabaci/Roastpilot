@@ -118,6 +118,13 @@ importers:
 
   apps/desktop:
     dependencies:
+      electron-updater:
+        specifier: ^6.8.11
+        version: 6.8.11
+      serialport:
+        specifier: ^13.0.0
+        version: 13.0.0
+    devDependencies:
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -127,25 +134,6 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.3.1)
-      electron-updater:
-        specifier: ^6.8.11
-        version: 6.8.11
-      lucide-react:
-        specifier: ^1.70.0
-        version: 1.70.0(@types/react@19.3.0)(react@19.3.1)
-      react:
-        specifier: ^19.3.1
-        version: 19.3.1
-      react-dom:
-        specifier: ^19.3.1
-        version: 19.3.1(react@19.3.1)
-      serialport:
-        specifier: ^13.0.0
-        version: 13.0.0
-      zustand:
-        specifier: ^5.0.16
-        version: 5.0.16(@types/react@19.3.0)(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))
-    devDependencies:
       '@roastpilot/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -188,6 +176,15 @@ importers:
       electron-vite:
         specifier: ^6.0.0
         version: 6.0.0(vite@8.3.6(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+      lucide-react:
+        specifier: ^1.70.0
+        version: 1.70.0(@types/react@19.3.0)(react@19.3.1)
+      react:
+        specifier: ^19.3.1
+        version: 19.3.1
+      react-dom:
+        specifier: ^19.3.1
+        version: 19.3.1(react@19.3.1)
       storybook:
         specifier: ^10.6.6
         version: 10.6.6(@types/react@19.3.0)(prettier@3.9.10)(react@19.3.1)
@@ -197,6 +194,9 @@ importers:
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
+      zustand:
+        specifier: ^5.0.16
+        version: 5.0.16(@types/react@19.3.0)(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))
 
   packages/core:
     dependencies:
