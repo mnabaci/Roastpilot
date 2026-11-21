@@ -85,12 +85,4 @@ export {
 export type { SpecSheetReader, SpecSheetSource, TasteReader } from './ai/readers';
 export { isEmptySheet, specSheetFields } from './ai/spec-sheet-fields';
 export { applyTasteChange, suggestTasteChange, tasteInput } from './taste/suggest-taste-change';
-export type {
-  TasteChange,
-  TasteField,
-  TasteInput,
-  TasteReason,
-  TasteRule,
-  TasteSuggestion,
-} from './taste/taste-rule';
-export { TASTE, TASTE_RULES } from './taste/taste-rules';
+export type { TasteField, TasteReason, TasteSuggestion } from './taste/taste-rule';

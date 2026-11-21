@@ -1,4 +1,4 @@
-import { err, ok, type AiKeys, type RoastpilotApi } from '@roastpilot/shared';
+import { err, ok, type AiKeys, type RoastpilotApi, type Settings } from '@roastpilot/shared';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -7,11 +7,11 @@ import { AddBean } from './AddBean';
 
 const none = { saved: false, last4: null };
 const CLAUDE: AiKeys = { claude: { saved: true, last4: '1234' }, jev: none };
-const AI_ON = { ...ACCEPTED_SETTINGS, ai: { enabled: true, tasteProvider: 'claude' as const } };
+const AI_ON: Settings = { ...ACCEPTED_SETTINGS, ai: { enabled: true, tasteProvider: 'claude' } };
 
 function setup(
   overrides: Partial<RoastpilotApi> = {},
-  { settings = AI_ON, keys = CLAUDE }: { settings?: typeof AI_ON; keys?: AiKeys } = {},
+  { settings = AI_ON, keys = CLAUDE }: { settings?: Settings; keys?: AiKeys } = {},
 ) {
   const api = fakeApi({ getAiKeys: () => Promise.resolve(keys), ...overrides });
   return renderApp(<AddBean onCancel={vi.fn()} onAdded={vi.fn()} />, { settings }, api);

@@ -114,7 +114,6 @@ export const AiReadErrorSchema = z.discriminatedUnion('kind', [
 
 export type AiProvider = z.infer<typeof AiProviderSchema>;
 export type AiSettings = z.infer<typeof AiSettingsSchema>;
-export type AiKeyStatus = z.infer<typeof AiKeyStatusSchema>;
 export type AiKeys = z.infer<typeof AiKeysSchema>;
 export type SaveAiKeyRequest = z.infer<typeof SaveAiKeyRequestSchema>;
 export type AiKeyError = z.infer<typeof AiKeyErrorSchema>;
