@@ -15,6 +15,7 @@ const header = (unit: TemperatureUnit) => [
   'rating',
   'favourite',
   'notes',
+  'taste',
 ];
 
 /** Spreadsheets run a cell starting with these as a formula, and notes can come from imported files. */
@@ -56,6 +57,7 @@ export function roastsToCsv(
       numberCell(roast.rating),
       roast.isFavourite ? 'yes' : 'no',
       textCell(roast.notes),
+      textCell((roast.tasteTags ?? []).join('|')),
     ].join(','),
   );
   return `\uFEFF${[header(unit).join(','), ...rows].join('\r\n')}\r\n`;

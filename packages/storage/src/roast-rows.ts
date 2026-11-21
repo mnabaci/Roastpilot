@@ -5,6 +5,9 @@ import {
   type AutoProfile,
   type SavedEvent,
   type SavedSample,
+  orderedTags,
+  TasteTagSchema,
+  type TasteTag,
 } from '@roastpilot/shared';
 import { sql } from 'drizzle-orm';
 import { z } from 'zod';
@@ -44,6 +47,8 @@ export const summaryColumns = {
   profileId: sql<string | null>`json_extract(${roasts.profile}, '$.id')`,
   profileName: sql<string | null>`json_extract(${roasts.profile}, '$.name')`,
   imported: roasts.imported,
+  tasteTags: roasts.tasteTags,
+  tasteWords: roasts.tasteWords,
 };
 
 /** What stock changes need to know about a roast. */
@@ -104,4 +109,25 @@ export function toSavedProfile(json: string | null): AutoProfile | null | undefi
   if (json === null) return null;
   const parsed = AutoProfileSchema.safeParse(parseJson(json));
   return parsed.success ? parsed.data : undefined;
+}
+
+/** The `taste_tags` column: the tags in their order as JSON, or null with none ticked. */
+export function tasteTagsJson(tags: readonly TasteTag[]): string | null {
+  const ordered = orderedTags(tags);
+  return ordered.length > 0 ? JSON.stringify(ordered) : null;
+}
+
+/**
+ * The tags of a `taste_tags` column, in their order. A tag this version doesn't know, or a column
+ * that isn't a list, is dropped and counted, so the caller can log it (storage.taste-unreadable).
+ */
+export function toTasteTags(json: string | null): { tags: TasteTag[]; dropped: number } {
+  if (json === null) return { tags: [], dropped: 0 };
+  const parsed = parseJson(json);
+  if (!Array.isArray(parsed)) return { tags: [], dropped: 1 };
+  const tags = parsed.flatMap((value: unknown) => {
+    const tag = TasteTagSchema.safeParse(value);
+    return tag.success ? [tag.data] : [];
+  });
+  return { tags: orderedTags(tags), dropped: parsed.length - tags.length };
 }

@@ -30,8 +30,21 @@ describe('roastsToCsv', () => {
       .split('\r\n');
     expect(header?.startsWith('id,started_at,ended_at,bean,profile')).toBe(true);
     expect(rest[0]).toBe(
-      '7,2026-11-04T10:00:00.000Z,,"Çay, Yirga",Light · Curve,400,,480,570.5,205,5,yes,"Sweet, ""floral""\nnext time less fan"',
+      '7,2026-11-04T10:00:00.000Z,,"Çay, Yirga",Light · Curve,400,,480,570.5,205,5,yes,"Sweet, ""floral""\nnext time less fan",',
     );
+  });
+
+  it('writes the taste tags last, joined with |, and nothing without any', () => {
+    const lastCell = (csv: string) => csv.replace('\uFEFF', '').split('\r\n')[1]?.split(',').at(-1);
+    const tasted = { ...ROAST, notes: null, tasteTags: ['sour', 'thin'] as const };
+    expect(
+      lastCell(roastsToCsv([{ ...tasted, tasteTags: [...tasted.tasteTags] }], new Map(), 'c')),
+    ).toBe('sour|thin');
+    expect(lastCell(roastsToCsv([{ ...ROAST, notes: null, tasteTags: [] }], new Map(), 'c'))).toBe(
+      '',
+    );
+    const header = roastsToCsv([], new Map(), 'c').replace('\uFEFF', '').split('\r\n')[0];
+    expect(header?.endsWith(',notes,taste')).toBe(true);
   });
 
   it('names the drop temperature column by its unit: drop_c, or drop_f in °F', () => {

@@ -36,6 +36,10 @@ export const roasts = sqliteTable(
     notes: text('notes'),
     /** Came from a file (Roastpilot or Artisan): its bean's stock never moves. */
     imported: integer('imported', { mode: 'boolean' }).notNull().default(false),
+    /** JSON array of taste tag ids, in their order; null when none ticked. */
+    tasteTags: text('taste_tags'),
+    /** Your tasting words, as typed. */
+    tasteWords: text('taste_words'),
   },
   (table) => [
     index('roasts_started_at').on(table.startedAt),

@@ -85,6 +85,22 @@ describe('Roastpilot roast file', () => {
     expect(parsed.ok && parsed.value[0]?.notes).toBe('Bright');
   });
 
+  it('carries the taste through a file and back', () => {
+    const tasted = { ...ROAST, tasteTags: ['sour' as const, 'thin' as const], tasteWords: 'tart' };
+    const parsed = parseRoastFile(JSON.stringify(toRoastFile([tasted], NAMES, new Date())));
+    expect(parsed.ok && parsed.value[0]).toMatchObject({
+      tasteTags: ['sour', 'thin'],
+      tasteWords: 'tart',
+    });
+  });
+
+  it('reads a version 2 file from before taste, with none', () => {
+    const file = toRoastFile([ROAST], NAMES, new Date());
+    const parsed = parseRoastFile(JSON.stringify(file));
+    expect(file.version).toBe(2);
+    expect(parsed.ok && parsed.value[0]?.tasteTags).toBeUndefined();
+  });
+
   it.each([
     ['not JSON', 'nope'],
     ['another JSON file', '{"name":"package"}'],

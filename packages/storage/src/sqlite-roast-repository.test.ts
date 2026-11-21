@@ -68,6 +68,8 @@ describe('SqliteRoastRepository', () => {
         profileId: null,
         profileName: null,
         imported: false,
+        tasteTags: [],
+        tasteWords: null,
         startedAt: '2026-11-04T10:00:00.000Z',
         endedAt: null,
         fcTimeS: null,

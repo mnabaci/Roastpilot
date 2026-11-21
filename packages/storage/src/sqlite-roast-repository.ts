@@ -8,9 +8,11 @@ import {
   type RoastDetail,
   type RoastId,
   type RoastSummary,
+  type RoastTaste,
   type SavedEvent,
   type SavedSample,
   type StorageError,
+  type TasteTag,
 } from '@roastpilot/shared';
 import { asc, desc, eq } from 'drizzle-orm';
 import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy';
@@ -18,9 +20,11 @@ import { attempt } from './attempt';
 import {
   eventDetailJson,
   summaryColumns,
+  tasteTagsJson,
   toSavedEvents,
   toSavedProfile,
   toSavedSamples,
+  toTasteTags,
 } from './roast-rows';
 import { moveRoastToBean, saveRoastResult, syncRoastMovement } from './roast-stock';
 import { moveStock } from './stock';
@@ -112,21 +116,46 @@ export class SqliteRoastRepository implements RoastRepository {
     return transaction(this.#db, (tx) => moveRoastToBean(tx, id, beanId));
   }
 
-  list(): Promise<Result<RoastSummary[], StorageError>> {
-    return attempt(() =>
+  /** A roast's taste tags and words (docs/spec/beans-favourites-ghost.md, Taste). */
+  async saveTaste({ id, tags, words }: RoastTaste): Promise<Result<void, StorageError>> {
+    const updated = await attempt(() =>
+      this.#db
+        .update(roasts)
+        .set({ tasteTags: tasteTagsJson(tags), tasteWords: words })
+        .where(eq(roasts.id, id))
+        .returning({ id: roasts.id })
+        .all(),
+    );
+    if (!updated.ok) return updated;
+    return updated.value.length > 0 ? ok(undefined) : err({ kind: 'not-found', id });
+  }
+
+  async list(): Promise<Result<RoastSummary[], StorageError>> {
+    const rows = await attempt(() =>
       this.#db
         .select(summaryColumns)
         .from(roasts)
         .orderBy(desc(roasts.startedAt), desc(roasts.id))
         .all(),
     );
+    return rows.ok ? ok(rows.value.map((row) => this.#withTaste(row))) : rows;
+  }
+
+  /** The row with its taste tags read; tags it can't read are dropped and logged. */
+  #withTaste<R extends { id: RoastId; tasteTags: string | null }>(
+    row: R,
+  ): Omit<R, 'tasteTags'> & { tasteTags: TasteTag[] } {
+    const { tags, dropped } = toTasteTags(row.tasteTags);
+    if (dropped > 0) this.#logger.warn('storage.taste-unreadable', { roastId: row.id, dropped });
+    return { ...row, tasteTags: tags };
   }
 
   async get(id: RoastId): Promise<Result<RoastDetail, StorageError>> {
     const read = await attempt(() => this.#readRows(id));
     if (!read.ok) return read;
     if (!read.value) return err({ kind: 'not-found', id });
-    const { summary, samples, events } = read.value;
+    const { samples, events } = read.value;
+    const summary = this.#withTaste(read.value.summary);
     // A row that doesn't parse is skipped (and logged) rather than failing the whole roast.
     const savedSamples = toSavedSamples(samples);
     const savedEvents = toSavedEvents(events);

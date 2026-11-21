@@ -7,6 +7,7 @@ import type {
   RoastDetail,
   RoastId,
   RoastSummary,
+  RoastTaste,
   SavedEvent,
   SavedSample,
   StorageError,
@@ -40,6 +41,8 @@ export interface RoastRepository {
   create(roast: NewRoast): Promise<Result<RoastId, StorageError>>;
   /** What you say about the roast; stock moves only by what changed. */
   saveResult(result: RoastResult): Promise<Result<void, StorageError>>;
+  /** The taste tags and words; `not-found` when the roast is gone. */
+  saveTaste(taste: RoastTaste): Promise<Result<void, StorageError>>;
   addSamples(id: RoastId, samples: readonly SavedSample[]): Promise<Result<void, StorageError>>;
   addEvent(id: RoastId, event: SavedEvent): Promise<Result<void, StorageError>>;
   update(id: RoastId, patch: RoastSummaryPatch): Promise<Result<void, StorageError>>;

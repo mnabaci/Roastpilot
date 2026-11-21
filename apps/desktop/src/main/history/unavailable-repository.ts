@@ -15,6 +15,7 @@ export function unavailableRepository(message: string): RoastRepository {
   return {
     create: fail,
     saveResult: fail,
+    saveTaste: fail,
     addSamples: fail,
     addEvent: fail,
     update: fail,
