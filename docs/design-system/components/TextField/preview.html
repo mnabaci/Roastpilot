@@ -1,4 +1,4 @@
-<!-- @dsCard group="Inputs" height=120 subtitle="Search, empty and filled" -->
+<!-- @dsCard group="Inputs" height=190 subtitle="Search, empty and filled; password" -->
 <!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
 <link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
 <link
@@ -47,6 +47,9 @@
     font: inherit;
     font-size: 15px;
   }
+  input.plain {
+    padding: 0 14px;
+  }
   input::placeholder {
     color: var(--ink-muted);
   }
@@ -90,6 +93,10 @@
         <circle cx="11" cy="11" r="7" />
         <path d="m20 20-3.5-3.5" /></svg
       ><input type="search" value="connect-failed" /></div
+  ></label>
+  <label
+    >Key
+    <div class="f"><input class="plain" type="password" value="sk-ant-1234567890" /></div
   ></label>
 </div>
 <script></script>

@@ -47,8 +47,7 @@ export function suggestTasteChange(
     if (suggestion.kind === 'change' && input.profile) {
       const changed = applyTasteChange(input.profile, suggestion.change);
       if (!AutoProfileSchema.safeParse(changed).success) {
-        const { field, to } = suggestion.change;
-        return { kind: 'none', reason: { kind: 'at-limit', field, value: to } };
+        return { kind: 'none', reason: { kind: 'at-limit', ...suggestion.change } };
       }
     }
     return suggestion;

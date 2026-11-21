@@ -169,37 +169,37 @@ describe('suggestTasteChange', () => {
   });
 
   describe('limits', () => {
-    const atLimit = (field: string, value: number) => ({
+    const atLimit = (field: string, from: number, to: number) => ({
       kind: 'none',
-      reason: { kind: 'at-limit', field, value },
+      reason: { kind: 'at-limit', field, from, to },
     });
 
     it('keeps development within 0:30–10:00', () => {
       const long = { ...PROFILE, devTimeS: 600 };
       expect(suggestTasteChange(input(['sour'], { profile: long }))).toEqual(
-        atLimit('devTimeS', 615),
+        atLimit('devTimeS', 600, 615),
       );
       const short = { ...PROFILE, devTimeS: 40 };
       expect(suggestTasteChange(input(['bitter'], { profile: short }))).toEqual(
-        atLimit('devTimeS', 25),
+        atLimit('devTimeS', 40, 25),
       );
     });
 
     it('keeps charge within its range and below the cap', () => {
       const hot = { ...PROFILE, chargeC: 228, capC: 235 };
       expect(suggestTasteChange(input(['flat'], { profile: hot }))).toEqual(
-        atLimit('chargeC', 233),
+        atLimit('chargeC', 228, 233),
       );
       const near = { ...PROFILE, chargeC: 200, capC: 204 };
       expect(suggestTasteChange(input(['flat'], { profile: near }))).toEqual(
-        atLimit('chargeC', 205),
+        atLimit('chargeC', 200, 205),
       );
     });
 
     it('keeps the cap above every curve point', () => {
       const tight = { ...PROFILE, capC: 211 };
       expect(suggestTasteChange(input(['roasty'], { profile: tight, developmentS: 30 }))).toEqual(
-        atLimit('capC', 208),
+        atLimit('capC', 211, 208),
       );
     });
   });

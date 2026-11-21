@@ -28,8 +28,8 @@ export type TasteReason =
   | { kind: 'no-first-crack' }
   /** A manual roast, or one whose profile wasn't saved. */
   | { kind: 'needs-auto' }
-  /** The change would leave the profile's limits. */
-  | { kind: 'at-limit'; field: TasteField; value: number };
+  /** The change would leave the profile's limits: `from` is as far as it goes. */
+  | { kind: 'at-limit'; field: TasteField; from: number; to: number };
 
 /** A change to make, with why; or none, with why not. */
 export type TasteSuggestion =
