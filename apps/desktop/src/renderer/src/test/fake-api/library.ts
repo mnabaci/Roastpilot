@@ -1,6 +1,7 @@
 import {
   err,
   ok,
+  type AiApi,
   type AutoProfile,
   type BeansApi,
   type HistoryApi,
@@ -52,6 +53,26 @@ export const fakeBeansApi = (): BeansApi => ({
   setRoastSetup: done,
   saveRoastResult: accepted,
   makeProfileFromRoast: () => Promise.resolve(err({ kind: 'too-short' as const })),
+  saveRoastTaste: accepted,
+  makeTasteProfile: () => Promise.resolve(err({ kind: 'no-change' as const })),
+});
+
+const NO_KEY = { saved: false, last4: null };
+
+/** No AI keys; a read is off, a key saves, a PDF dialog is cancelled. */
+export const fakeAiApi = (): AiApi => ({
+  getAiKeys: () => Promise.resolve({ claude: NO_KEY, jev: NO_KEY }),
+  saveAiKey: (request) =>
+    Promise.resolve(
+      ok({
+        claude: NO_KEY,
+        jev: NO_KEY,
+        [request.provider]: { saved: true, last4: request.key.slice(-4) },
+      }),
+    ),
+  removeAiKey: () => Promise.resolve(ok({ claude: NO_KEY, jev: NO_KEY })),
+  readTaste: () => Promise.resolve(err({ kind: 'off' as const })),
+  readSpecSheet: () => Promise.resolve(err({ kind: 'off' as const })),
 });
 
 /** No roasters; a new one is refused, a saved one comes back as sent. */

@@ -67,7 +67,7 @@ export function OpenRoast({
       return (
         <>
           <SavedRoastStats roast={detail} />
-          <RoastDetailsCard roast={detail} beans={beans} live={live} />
+          <RoastDetailsCard roast={detail} report={report} beans={beans} live={live} />
           {report ? <RoastReportCard report={report} pointer={pointer} /> : null}
           <div ref={chartRef} className="scroll-my-4">
             <SavedRoastChart
