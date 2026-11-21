@@ -3,7 +3,9 @@ import { listSerialPorts } from '@roastpilot/drivers';
 import { dialog, shell } from 'electron';
 import { randomUUID } from 'node:crypto';
 import { readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { aiWiring } from './ai/ai-wiring';
 import type { AppServices } from './app-services-types';
+import { makeTasteProfile } from './profiles/make-taste-profile';
 import { openBeanLink } from './beans/open-bean-link';
 import { makeBeanProfile } from './beans/make-bean-profile';
 import { connectWiring } from './connect-wiring';
@@ -34,6 +36,7 @@ export function buildIpcDeps({
   simulatorBeans,
   updates,
   logDir,
+  userDataDir,
   openLogFolder,
   logger,
 }: {
@@ -42,6 +45,8 @@ export function buildIpcDeps({
   simulatorBeans: SimulatorBeans;
   updates: Updates;
   logDir: string;
+  /** Where the AI keys are kept, encrypted. */
+  userDataDir: string;
   openLogFolder: () => Promise<void>;
   logger: Logger;
 }): IpcDeps {
@@ -92,6 +97,21 @@ export function buildIpcDeps({
       }),
     makeBeanProfile: (request) =>
       makeBeanProfile(request, { beans, profiles, logger: beansLogger }),
+    makeTasteProfile: (request) =>
+      makeTasteProfile(request, {
+        history,
+        profiles,
+        beans,
+        activeRoaster: () => roasters.active(),
+        newId: newProfileId,
+        logger: logger.child('history'),
+      }),
+    ai: aiWiring({
+      dir: userDataDir,
+      settings: async () => (await services.settings.get()).ai,
+      chooseImportPath: choosers.chooseImportPath,
+      logger: logger.child('ai'),
+    }),
     openBeanLink: (id) =>
       openBeanLink(id, {
         beans,

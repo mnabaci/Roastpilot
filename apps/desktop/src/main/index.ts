@@ -99,6 +99,7 @@ app
       simulatorBeans,
       updates,
       logDir,
+      userDataDir: app.getPath('userData'),
       openLogFolder,
       logger,
     });

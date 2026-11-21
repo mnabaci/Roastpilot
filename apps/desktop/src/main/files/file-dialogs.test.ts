@@ -63,6 +63,10 @@ describe('file dialogs', () => {
       title: 'Import an Artisan roast',
       filters: [{ name: 'Artisan roast', extensions: ['alog'] }],
     });
+    expect(importDialog('spec-sheet')).toEqual({
+      title: 'Choose a spec sheet',
+      filters: [{ name: 'PDF', extensions: ['pdf'] }],
+    });
   });
 });
 

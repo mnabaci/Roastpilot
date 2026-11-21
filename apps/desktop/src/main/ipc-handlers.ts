@@ -17,6 +17,7 @@ import {
   SettingsSchema,
   IPC_CHANNELS,
 } from '@roastpilot/shared';
+import { tasteIpcHandlers } from './ai-ipc-handlers';
 import type { IpcDeps, IpcHandlers } from './ipc-deps';
 import { handler } from './ipc-handler';
 import { beanIpcHandlers, profileIpcHandlers, roasterIpcHandlers } from './library-ipc-handlers';
@@ -44,6 +45,8 @@ export function createIpcHandlers({
   makeProfile,
   makeBeanProfile,
   openBeanLink,
+  makeTasteProfile,
+  ai,
   nowMs,
   snapshot,
   listPorts,
@@ -115,6 +118,7 @@ export function createIpcHandlers({
     [IPC_CHANNELS.makeProfileFromRoast]: handler((payload) =>
       makeProfile(MakeProfileRequestSchema.parse(payload)),
     ),
+    ...tasteIpcHandlers({ history, makeTasteProfile, ai }),
     ...profileIpcHandlers({ profiles }),
     ...beanIpcHandlers({ beans, openBeanLink, makeBeanProfile }),
     ...roasterIpcHandlers({ roasters, tc4 }),
