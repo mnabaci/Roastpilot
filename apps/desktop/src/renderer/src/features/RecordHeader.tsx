@@ -31,6 +31,8 @@ export function RecordHeader({
     /** "Add bean" for a new one. */
     saveLabel?: string;
     placeholder?: string;
+    /** A quiet helper before Cancel while editing. */
+    lead?: ReactNode;
   };
   /** The record's own badges (Low stock, Built-in, Needs calibration). */
   badges?: ReactNode;
@@ -72,6 +74,7 @@ export function RecordHeader({
             onSave={edit.onSave}
             canSave={edit.canSave}
             {...(edit.saveLabel ? { saveLabel: edit.saveLabel } : {})}
+            lead={edit.lead}
           />
         ) : (
           <div className="flex shrink-0 items-center gap-2">{actions}</div>

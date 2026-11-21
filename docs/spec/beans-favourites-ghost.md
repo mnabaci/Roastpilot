@@ -110,14 +110,14 @@ Worked out in `core` from the ticked tags and this roast's measured values ([roa
 ### Make the profile
 
 - One step in main, all or nothing: a new custom profile, a copy of the profile the roast ran with the one change, on the same roaster, `source` the roast, named after the bean as "Make a profile for this bean" names it (no bean: the profile's name plus "· tasted"). It becomes the bean's own profile, so the next roast of the bean suggests it; the bean's earlier profile stays in Profiles.
-- Toast: "Made Guji Natural 2 · next roast of this bean uses it"; Profiles opens it on its toast action.
+- Toast: "Made Guji Natural 2 · Next roast of this bean uses it" (no bean: "· Uses it when you pick it"). A refusal is one line under the suggestion ("Nothing to change any more · the taste changed").
 - The roast and its profile copy are never changed.
 
 ## Fill from a spec sheet
 
-- **Fill from spec sheet** (ghost button) on a bean in Edit, and on Add bean, with [AI helpers](ai-helpers.md) on. A Dialog: paste the sheet's text, or Choose PDF…; then Fill (primary), Cancel.
+- **Fill from spec sheet** (ghost button, before Cancel) on a bean in Edit, and on Add bean, with [AI helpers](ai-helpers.md) on and a Claude key. A Dialog, "Fills empty fields only · check them, then Save": Paste the sheet, Choose PDF… (ghost, at the left), then Cancel and Fill (primary, waiting for pasted text). A failed read says why in the dialog, which stays open with your text.
 - **What it fills:** name (on Add bean), origin, process (washed, natural, honey or other), species, variety, altitude, density, moisture, screen size, decaf, supplier, and the sheet's tasting notes into Notes. An altitude range ("1,800–2,000 m") fills its middle, 1900. A value the form would refuse is left out.
-- **Only empty fields:** what you typed stays. Each filled field shows a quiet "From sheet" under it until Save; nothing is saved until you press Save.
+- **Only empty fields:** what you typed stays. Process and decaf have no empty state, so a sheet sets them only on a new bean, while still as the form started. One line under the header says what happened ("Filled 7 fields from the sheet · check them, then Save"); nothing is saved until you press Save.
 - A filled record feeds the [profile suggestion](#profile-suggestion) and the [hints](#hints) as one typed by hand.
 - Nothing found: "Nothing to fill from that sheet".
 
