@@ -14,7 +14,7 @@ describe('suggestionText', () => {
       ),
     ).toEqual({
       change: 'Development 1:45 → 2:00',
-      line: 'Sour or grassy often means under-developed',
+      line: 'Sour, grassy or thin often means under-developed',
     });
     expect(
       suggestionText(
@@ -60,6 +60,14 @@ describe('reasonLine', () => {
       { kind: 'after-finding' as const, finding: 'stall' as const, atS: 372 },
       'Flat or baked often follows a stall · 6:12 · see Roast report',
     ],
+    [
+      { kind: 'cap-ended' as const },
+      'The BT cap dropped it before its development time · drop a little hotter',
+    ],
+    [
+      { kind: 'check-beans' as const },
+      'Not a slow or stalled roast · check bean age and storage first',
+    ],
     [{ kind: 'no-first-crack' as const }, "No first crack marked · development can't be judged"],
     [{ kind: 'needs-auto' as const }, 'Roast on Auto to get a suggestion'],
     [
@@ -68,6 +76,12 @@ describe('reasonLine', () => {
     ],
   ])('%j', (reason, line) => {
     expect(reasonLine(reason, 'c')).toBe(line);
+  });
+
+  it('says when a step is in the way', () => {
+    expect(reasonLine({ kind: 'clashes', field: 'capC' }, 'c')).toBe(
+      "BT cap can't change alone · a step is in the way · edit it in Profiles",
+    );
   });
 
   it('says a temperature limit in the unit', () => {

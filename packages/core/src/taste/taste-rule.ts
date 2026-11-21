@@ -18,18 +18,24 @@ export type TasteReason =
   | { kind: 'over-developed' }
   | { kind: 'drop-cooler' }
   | { kind: 'under-developed' }
+  /** The BT cap ended the roast before its development time: drop hotter. */
+  | { kind: 'cap-ended' }
   /** Development already a large share of the roast: grind and brew first. */
   | { kind: 'already-developed'; share: number }
   /** Flat or baked after a stall or crash the report found. */
   | { kind: 'after-finding'; finding: 'stall' | 'crash'; atS: number }
   /** Flat or baked in a slow roast, `totalS` from charge to drop. */
   | { kind: 'slow-roast'; totalS: number }
+  /** Flat or baked in a roast that ran neither slow nor stalled: likely not the roast. */
+  | { kind: 'check-beans' }
   /** Development can't be judged without a first crack. */
   | { kind: 'no-first-crack' }
   /** A manual roast, or one whose profile wasn't saved. */
   | { kind: 'needs-auto' }
   /** The change would leave the profile's limits: `from` is as far as it goes. */
-  | { kind: 'at-limit'; field: TasteField; from: number; to: number };
+  | { kind: 'at-limit'; field: TasteField; from: number; to: number }
+  /** Within its limit, but a step or curve point of the profile is in the way. */
+  | { kind: 'clashes'; field: TasteField };
 
 /** A change to make, with why; or none, with why not. */
 export type TasteSuggestion =
@@ -48,6 +54,8 @@ export interface TasteInput {
   /** Charge to drop (or Stop roast), seconds; undefined without an end. */
   totalS: number | undefined;
   findings: readonly ReportFinding[];
+  /** The roaster's own limit, when known: a BT cap never goes past it. */
+  maxTempC?: number;
 }
 
 /**

@@ -9,10 +9,12 @@ export const TASTE = {
   devStepS: 15,
   capStepC: 3,
   chargeStepC: 5,
-  /** Under this much development, a bitter cup drops cooler instead of shorter. */
-  shortDevelopmentS: 60,
+  /** Under this share of the roast, a bitter cup drops cooler: shorter would turn it sour. */
+  shortShare: 0.15,
   /** At or above this share of the roast, a sour cup is not under-developed. */
   developedShare: 0.2,
+  /** A roast longer than this, charge to drop, is slow enough to flatten a cup. */
+  slowRoastS: 12 * 60,
 } as const;
 
 const UNDER: readonly TasteTag[] = ['sour', 'grassy', 'thin'];
@@ -65,33 +67,50 @@ export const needsProfileRule: TasteRule = {
     asks(tags) && !profile ? { kind: 'none', reason: { kind: 'needs-auto' } } : undefined,
 };
 
-/** Bitter or roasty: shorter development, or a cooler drop when development was short already. */
+/** Auto dropped at the BT cap before its development time: development never ran out. */
+const cappedEarly = (input: TasteInput): boolean =>
+  input.findings.some((f) => f.kind === 'cap-drop');
+
+/**
+ * Bitter or roasty: shorter development; a cooler drop when the cap ended the roast (shorter
+ * development would change nothing) or development was already a small share (shorter would
+ * turn it sour).
+ */
 export const overRule: TasteRule = {
   id: 'over',
   suggest: (input) => {
     if (!hasAny(input.tags, OVER)) return undefined;
-    if (input.developmentS === undefined)
-      return { kind: 'none', reason: { kind: 'no-first-crack' } };
-    return input.developmentS >= TASTE.shortDevelopmentS
+    if (cappedEarly(input)) return change(input, 'capC', -TASTE.capStepC, { kind: 'drop-cooler' });
+    const share = input.developmentShare;
+    if (share === undefined) return { kind: 'none', reason: { kind: 'no-first-crack' } };
+    return shownShare(share) >= TASTE.shortShare
       ? change(input, 'devTimeS', -TASTE.devStepS, { kind: 'over-developed' })
       : change(input, 'capC', -TASTE.capStepC, { kind: 'drop-cooler' });
   },
 };
 
-/** Sour, grassy or thin: longer development, unless development is already a large share. */
+/**
+ * Sour, grassy or thin: longer development, unless development is already a large share. When
+ * the cap ended the roast, development never ran out: a hotter drop is what lets it go on.
+ */
 export const underRule: TasteRule = {
   id: 'under',
   suggest: (input) => {
     if (!hasAny(input.tags, UNDER)) return undefined;
     const share = input.developmentShare;
     if (share === undefined) return { kind: 'none', reason: { kind: 'no-first-crack' } };
-    return shownShare(share) < TASTE.developedShare
-      ? change(input, 'devTimeS', TASTE.devStepS, { kind: 'under-developed' })
-      : { kind: 'none', reason: { kind: 'already-developed', share } };
+    if (shownShare(share) >= TASTE.developedShare)
+      return { kind: 'none', reason: { kind: 'already-developed', share } };
+    return cappedEarly(input)
+      ? change(input, 'capC', TASTE.capStepC, { kind: 'cap-ended' })
+      : change(input, 'devTimeS', TASTE.devStepS, { kind: 'under-developed' });
   },
 };
 
-/** Flat or baked: point at a stall or crash the report found, else more heat early. */
+/**
+ * Flat or baked: point at a stall or crash the report found; else more heat early in a roast
+ * that ran long; else it is likely not the roast.
+ */
 export const flatRule: TasteRule = {
   id: 'flat',
   suggest: (input) => {
@@ -104,6 +123,7 @@ export const flatRule: TasteRule = {
       };
     }
     if (input.totalS === undefined) return undefined;
+    if (input.totalS <= TASTE.slowRoastS) return { kind: 'none', reason: { kind: 'check-beans' } };
     return change(input, 'chargeC', TASTE.chargeStepC, {
       kind: 'slow-roast',
       totalS: input.totalS,

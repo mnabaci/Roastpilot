@@ -2,7 +2,7 @@ import type { RoastReport } from '@roastpilot/core';
 import type { Bean, RoastDetail } from '@roastpilot/shared';
 import { CollapsibleCard } from '@roastpilot/ui';
 import { RoastResultForm } from '../../features/RoastResultForm';
-import { useAiHelpers } from '../../features/use-ai-keys';
+import { useAiHelpers } from '../../features/use-ai-providers';
 import { useSettings } from '../../stores/use-stores';
 import { useSaveSettings } from '../settings/use-save-settings';
 import { BeanLink } from './BeanLink';

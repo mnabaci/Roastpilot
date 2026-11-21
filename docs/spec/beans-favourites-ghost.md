@@ -90,18 +90,21 @@ of that bean, as a new profile you make with one click.
 
 ### The suggestion
 
-Worked out in `core` from the ticked tags and this roast's measured values ([roast-report.md](roast-report.md)), against the profile the roast ran. The first row that matches gives one change, or none with its reason. One change at a time, so the next cup tells you what it did.
+Worked out in `core` from the ticked tags and this roast's measured values and findings ([roast-report.md](roast-report.md)), against the profile the roast ran. Shares are judged as the report shows them, whole percentages. Auto drops at the development time or the BT cap, whichever comes first, so when the cap ended the roast (the report's cap-drop finding) a development change would do nothing: the cap moves instead. The first row that matches gives one change, or none with its reason. One change at a time, so the next cup tells you what it did.
 
-| Tags                                                      | This roast                          | Change                | Line shown                                                         |
-| --------------------------------------------------------- | ----------------------------------- | --------------------- | ------------------------------------------------------------------ |
-| Sweet and balanced, nothing else                          | –                                   | None; offers the star | "Sounds right · star it to roast it again"                         |
-| Both under (Sour, Grassy, Thin) and over (Bitter, Roasty) | –                                   | None                  | "Mixed signals · change one thing at a time"                       |
-| Bitter or Roasty                                          | Development 1:00 or more            | Development −15 s     | "Bitter or roasty often means too much development"                |
-| Bitter or Roasty                                          | Development under 1:00              | BT cap −3 °C          | "Bitter or roasty · drop a little cooler"                          |
-| Sour, Grassy or Thin                                      | Development under 20 % of the roast | Development +15 s     | "Sour or grassy often means under-developed"                       |
-| Sour, Grassy or Thin                                      | Development 20 % or more            | None                  | "Development is already 22 % · check grind and brew first"         |
-| Flat or Baked                                             | The report found a stall or crash   | None; points at it    | "Flat or baked often follows a stall · see Roast report"           |
-| Flat or Baked                                             | No stall or crash                   | Charge temp +5 °C     | "Flat or baked often means a slow roast · 13:40 · more heat early" |
+| Tags                                                      | This roast                                          | Change                | Line shown                                                                 |
+| --------------------------------------------------------- | --------------------------------------------------- | --------------------- | -------------------------------------------------------------------------- |
+| Sweet and balanced, nothing else                          | –                                                   | None; offers the star | "Sounds right · star it to roast it again"                                 |
+| Both under (Sour, Grassy, Thin) and over (Bitter, Roasty) | –                                                   | None                  | "Mixed signals · change one thing at a time"                               |
+| Bitter or Roasty                                          | The BT cap ended it before its development time     | BT cap −3 °C          | "Bitter or roasty · drop a little cooler"                                  |
+| Bitter or Roasty                                          | Development 15 % of the roast or more               | Development −15 s     | "Bitter or roasty often means too much development"                        |
+| Bitter or Roasty                                          | Development under 15 % (shorter would turn it sour) | BT cap −3 °C          | "Bitter or roasty · drop a little cooler"                                  |
+| Sour, Grassy or Thin                                      | Development 20 % or more                            | None                  | "Development is already 22 % · check grind and brew first"                 |
+| Sour, Grassy or Thin                                      | The BT cap ended it before its development time     | BT cap +3 °C          | "The BT cap dropped it before its development time · drop a little hotter" |
+| Sour, Grassy or Thin                                      | Development under 20 %                              | Development +15 s     | "Sour, grassy or thin often means under-developed"                         |
+| Flat or Baked                                             | The report found a stall or crash                   | None; points at it    | "Flat or baked often follows a stall · 6:12 · see Roast report"            |
+| Flat or Baked                                             | Over 12:00, charge to drop                          | Charge temp +5 °C     | "Flat or baked often means a slow roast · 13:40 · more heat early"         |
+| Flat or Baked                                             | 12:00 or less                                       | None                  | "Not a slow or stalled roast · check bean age and storage first"           |
 
 - **Bounds:** a change that would leave the profile's limits (development 0:30–10:00, the BT cap under the roaster's limit and above charge, charge temp's range) is not made: "Development is at its 10:00 limit". Starting guesses, as the density hints: revisit them once there are tasted roasts to compare.
 - **Needs the profile:** an Auto roast with its profile saved. A manual roast, or one without its profile, keeps its tags and says "Roast on Auto to get a suggestion".

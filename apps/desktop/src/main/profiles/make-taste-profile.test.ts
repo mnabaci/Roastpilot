@@ -11,7 +11,7 @@ import {
   type StorageError,
 } from '@roastpilot/shared';
 import { describe, expect, it, vi } from 'vitest';
-import { makeTasteProfile, type MakeTasteProfileDeps } from './make-taste-profile';
+import { makeTasteProfile, oneAtATime, type MakeTasteProfileDeps } from './make-taste-profile';
 
 const PROFILE: AutoProfile = {
   schemaVersion: PROFILE_SCHEMA_VERSION,
@@ -96,6 +96,7 @@ function setup({
       linkProfile: vi.fn(link),
     },
     activeRoaster: () => ({ id: 9 }),
+    roaster: (id: number) => (id === 3 ? { maxTempC: 240 } : undefined),
     newId: () => 'custom-taste',
     logger: createLogger({ write: (e) => entries.push(e) }, 'history'),
   };
@@ -196,5 +197,34 @@ describe('makeTasteProfile', () => {
     const { deps, mocks } = setup({ link: () => Promise.reject(new Error('bug')) });
     await expect(makeTasteProfile({ roastId: 12 }, deps)).rejects.toThrow('bug');
     expect(mocks.profiles.delete).toHaveBeenCalledWith('custom-taste');
+  });
+});
+
+describe('oneAtATime', () => {
+  it('runs the second call only after the first has finished, failed or not', async () => {
+    const order: string[] = [];
+    let finishFirst: () => void = () => undefined;
+    const queued = oneAtATime((name: string) => {
+      order.push(`start ${name}`);
+      if (name === 'first')
+        return new Promise<string>((resolve) => {
+          finishFirst = () => {
+            order.push('end first');
+            resolve(name);
+          };
+        });
+      if (name === 'second') return Promise.reject(new Error('second failed'));
+      return Promise.resolve(name);
+    });
+    const first = queued('first');
+    const second = queued('second');
+    const third = queued('third');
+    await Promise.resolve();
+    expect(order).toEqual(['start first']);
+    finishFirst();
+    await expect(first).resolves.toBe('first');
+    await expect(second).rejects.toThrow('second failed');
+    await expect(third).resolves.toBe('third');
+    expect(order).toEqual(['start first', 'end first', 'start second', 'start third']);
   });
 });

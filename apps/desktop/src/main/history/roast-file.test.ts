@@ -94,6 +94,18 @@ describe('Roastpilot roast file', () => {
     });
   });
 
+  it('refuses a file whose tasting words are longer than History takes', () => {
+    const file = toRoastFile([ROAST], NAMES, new Date());
+    const long = {
+      ...file,
+      roasts: file.roasts.map((r) => ({ ...r, tasteWords: 'w'.repeat(501) })),
+    };
+    expect(parseRoastFile(JSON.stringify(long))).toEqual({
+      ok: false,
+      error: { kind: 'not-roastpilot' },
+    });
+  });
+
   it('reads a version 2 file from before taste, with none', () => {
     const file = toRoastFile([ROAST], NAMES, new Date());
     const parsed = parseRoastFile(JSON.stringify(file));

@@ -25,17 +25,23 @@ export function reasonLine(reason: TasteReason, unit: TemperatureUnit): string {
     case 'drop-cooler':
       return 'Bitter or roasty · drop a little cooler';
     case 'under-developed':
-      return 'Sour or grassy often means under-developed';
+      return 'Sour, grassy or thin often means under-developed';
+    case 'cap-ended':
+      return 'The BT cap dropped it before its development time · drop a little hotter';
     case 'already-developed':
       return `Development is already ${formatNumber(reason.share * 100, 0) ?? ''} % · check grind and brew first`;
     case 'after-finding':
       return `Flat or baked often follows a ${reason.finding} · ${formatClock(reason.atS)} · see Roast report`;
     case 'slow-roast':
       return `Flat or baked often means a slow roast · ${formatClock(reason.totalS)} · more heat early`;
+    case 'check-beans':
+      return 'Not a slow or stalled roast · check bean age and storage first';
     case 'no-first-crack':
       return "No first crack marked · development can't be judged";
     case 'needs-auto':
       return 'Roast on Auto to get a suggestion';
+    case 'clashes':
+      return `${FIELD_LABELS[reason.field]} can't change alone · a step is in the way · edit it in Profiles`;
     case 'at-limit':
       return `${FIELD_LABELS[reason.field]} ${fieldValue(reason.field, reason.from, unit)} is at its limit`;
   }

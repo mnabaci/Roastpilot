@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { AutoProfileSchema } from './profile';
 import { RoastEventSchema } from './roast';
-import { TasteTagSchema } from './taste';
+import { TasteTagSchema, TasteWordsSchema } from './taste';
 
 /** Saved roasts (docs/spec/data-model.md, Saving a roast). Times are seconds from charge. */
 export const RoastIdSchema = z.number().int().positive();
@@ -40,8 +40,8 @@ export const RoastSummarySchema = z.object({
    * Taste). Optional, as `tpTemp`: a summary from before taste has none.
    */
   tasteTags: z.array(TasteTagSchema).optional(),
-  /** Your tasting words, as typed; null or missing without any. */
-  tasteWords: z.string().nullable().optional(),
+  /** Your tasting words, as typed; null or missing without any. A file can't bring more. */
+  tasteWords: TasteWordsSchema.nullable().optional(),
 });
 
 /** What you say about a roast after it, and can change later (docs/spec/ui.md). */

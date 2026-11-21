@@ -36,7 +36,8 @@ export function TasteSection({
   const taste = useRoastTaste(roast, report);
   const shown = taste.suggestion ? suggestionText(taste.suggestion, unit) : undefined;
   return (
-    <section aria-label="Taste" className="flex flex-col gap-3 border-y border-border py-4">
+    // One name for screen readers, the chips' group: the visible "Taste" is that name, shown.
+    <div className="flex flex-col gap-3 border-t border-border pt-4">
       <div className="flex flex-col gap-1.5">
         <span aria-hidden="true" className="text-label text-ink-muted">
           Taste
@@ -95,6 +96,6 @@ export function TasteSection({
           {taste.note}
         </p>
       ) : null}
-    </section>
+    </div>
   );
 }

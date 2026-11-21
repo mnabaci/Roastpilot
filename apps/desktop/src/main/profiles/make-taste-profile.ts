@@ -27,6 +27,8 @@ export interface MakeTasteProfileDeps {
   profiles: Pick<ProfileService, 'addOn' | 'delete' | 'ownNames'>;
   beans: Pick<BeanService, 'find' | 'linkProfile'>;
   activeRoaster: () => Pick<Roaster, 'id'>;
+  /** A roaster by id, for its own limit on a hotter BT cap. */
+  roaster: (id: number) => Pick<Roaster, 'maxTempC'> | undefined;
   newId: () => string;
   logger: Logger;
 }
@@ -50,7 +52,8 @@ export async function makeTasteProfile(
   if (!read.ok)
     return read.error.kind === 'not-found' ? err(read.error) : err(storageFailed(read.error));
   const roast = read.value;
-  const input = tasteInput(roast, roastReport(roast));
+  const roasterId = roast.roasterId ?? deps.activeRoaster().id;
+  const input = tasteInput(roast, roastReport(roast), deps.roaster(roasterId));
   const suggestion = suggestTasteChange(input);
   if (suggestion?.kind !== 'change' || !input.profile) return err({ kind: 'no-change' });
 
@@ -60,7 +63,6 @@ export async function makeTasteProfile(
       ? err({ kind: 'bean-not-found', id: bean.error.id })
       : err(storageFailed(bean.error));
   }
-  const roasterId = roast.roasterId ?? deps.activeRoaster().id;
   const base = bean ? bean.value.name : `${input.profile.name} · tasted`;
   const profile = {
     ...applyTasteChange(input.profile, suggestion.change),
@@ -117,4 +119,20 @@ async function removeProfile(
       error: serializeError(error),
     });
   }
+}
+
+/**
+ * The call, one at a time: a second Make waits for the first, so two never pick the same free
+ * name (two windows, or a double click).
+ */
+export function oneAtATime<A extends unknown[], R>(
+  call: (...args: A) => Promise<R>,
+): (...args: A) => Promise<R> {
+  let running: Promise<unknown> = Promise.resolve();
+  return (...args) => {
+    const run = () => call(...args);
+    const next = running.then(run, run);
+    running = next.catch(() => undefined);
+    return next;
+  };
 }

@@ -10,6 +10,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { aiReadMessage } from '../../features/ai-messages';
 import { useRun } from '../../features/use-run';
+import { useRoasters } from '../../stores/use-stores';
 import { useToast } from '../../features/use-toast';
 
 const NOT_SAVED = "Couldn't save the taste · try again";
@@ -30,7 +31,13 @@ export function useRoastTaste(roast: RoastDetail, report: RoastReport | undefine
   const { api, logger } = useDeps();
   const run = useRun();
   const toast = useToast();
-  const [tags, setTags] = useState<TasteTag[]>(() => orderedTags(roast.tasteTags ?? []));
+  const [tags, setTagsState] = useState<TasteTag[]>(() => orderedTags(roast.tasteTags ?? []));
+  /** The tags as ticked now: a read that answers later adds to these, not to what it started with. */
+  const latestTags = useRef(tags);
+  const setTags = (next: TasteTag[]) => {
+    latestTags.current = next;
+    setTagsState(next);
+  };
   const [words, setWords] = useState(roast.tasteWords ?? '');
   /** The words as last saved, so leaving the field unchanged saves nothing. */
   const savedWords = useRef(roast.tasteWords ?? '');
@@ -39,32 +46,37 @@ export function useRoastTaste(roast: RoastDetail, report: RoastReport | undefine
   /** One line about the last read or make, shown under the field or the suggestion. */
   const [note, setNote] = useState<string>();
 
+  // Checked against the roaster it ran on, as main checks it again on Make.
+  const roaster = useRoasters((s) => s.roasters.find((r) => r.id === roast.roasterId));
   const suggestion: TasteSuggestion | undefined = useMemo(
-    () => suggestTasteChange(tasteInput({ ...roast, tasteTags: tags }, report)),
-    [roast, report, tags],
+    () => suggestTasteChange(tasteInput({ ...roast, tasteTags: tags }, report, roaster)),
+    [roast, report, tags, roaster],
   );
+  /** The last taste save: Make waits for it, so main works the suggestion out from what you see. */
+  const saving = useRef<Promise<unknown>>(Promise.resolve());
 
   const save = (nextTags: TasteTag[], nextWords: string) => {
     const trimmed = nextWords.trim();
     savedWords.current = trimmed;
-    run(
-      'history.taste-failed',
-      async () => {
-        const saved = await api.saveRoastTaste({
-          id: roast.id,
-          tags: nextTags,
-          words: trimmed === '' ? null : trimmed,
-        });
-        if (saved.ok) return;
-        logger.warn('history.taste-refused', { id: roast.id, error: saved.error });
-        toast('error', NOT_SAVED);
-      },
-      { failed: NOT_SAVED },
-    );
+    const call = async () => {
+      const saved = await api.saveRoastTaste({
+        id: roast.id,
+        tags: nextTags,
+        words: trimmed === '' ? null : trimmed,
+      });
+      if (saved.ok) return;
+      logger.warn('history.taste-refused', { id: roast.id, error: saved.error });
+      toast('error', NOT_SAVED);
+    };
+    // One after another, so the last one you made is the one that lands.
+    const next = saving.current.then(call, call);
+    saving.current = next.catch(() => undefined);
+    run('history.taste-failed', () => next, { failed: NOT_SAVED });
   };
 
   const toggle = (tag: TasteTag) => {
-    const next = tags.includes(tag) ? tags.filter((t) => t !== tag) : orderedTags([...tags, tag]);
+    const now = latestTags.current;
+    const next = now.includes(tag) ? now.filter((t) => t !== tag) : orderedTags([...now, tag]);
     setTags(next);
     setNote(undefined);
     save(next, words);
@@ -85,7 +97,7 @@ export function useRoastTaste(roast: RoastDetail, report: RoastReport | undefine
             setNote(aiReadMessage(answer.error, 'tags'));
             return;
           }
-          const next = orderedTags([...tags, ...answer.value]);
+          const next = orderedTags([...latestTags.current, ...answer.value]);
           if (answer.value.length === 0) setNote('Nothing to tick from those words');
           setTags(next);
           save(next, typed);
@@ -105,6 +117,7 @@ export function useRoastTaste(roast: RoastDetail, report: RoastReport | undefine
       'history.taste-profile-failed',
       async () => {
         try {
+          await saving.current;
           const made = await api.makeTasteProfile({ roastId: roast.id });
           if (!made.ok) {
             logger.info('history.taste-profile-refused', { ...made.error });
@@ -129,7 +142,7 @@ export function useRoastTaste(roast: RoastDetail, report: RoastReport | undefine
     setWords,
     /** Keeps your words without reading them, when you leave the field. */
     keepWords: () => {
-      if (words.trim() !== savedWords.current) save(tags, words);
+      if (words.trim() !== savedWords.current) save(latestTags.current, words);
     },
     read,
     reading,

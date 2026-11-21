@@ -1,9 +1,10 @@
-import { err, ok, type RoastDetail, type RoastpilotApi } from '@roastpilot/shared';
+import { err, ok, type RoastDetail, type RoastpilotApi, type TasteTag } from '@roastpilot/shared';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { BEAN } from '../../test/beans';
 import { ACCEPTED_SETTINGS, fakeApi, renderApp } from '../../test/render-app';
+import { WORDS_AND_SHEETS, withKey } from '../../test/ai-providers';
 import { STEPS } from '../../test/profiles';
 import { RoastDetailsCard } from './RoastDetailsCard';
 
@@ -37,8 +38,8 @@ const roast = (id: number, over: Partial<RoastDetail> = {}): RoastDetail => ({
 const auto = (over: Partial<RoastDetail> = {}) =>
   roast(1, { mode: 'auto', profile: STEPS, profileId: STEPS.id, ...over });
 
-const AI_ON = { ...ACCEPTED_SETTINGS, ai: { enabled: true, tasteProvider: 'claude' as const } };
-const KEYS = { claude: { saved: true, last4: '1234' }, jev: { saved: false, last4: null } };
+const AI_ON = { ...ACCEPTED_SETTINGS, ai: { enabled: true, tasteProvider: null } };
+const PROVIDERS = [withKey(WORDS_AND_SHEETS, '1234')];
 
 describe('RoastDetailsCard', () => {
   it('opens by default with the bean, weights, rating and notes', () => {
@@ -146,7 +147,9 @@ describe('Taste', () => {
     const to = STEPS.devTimeS + 15;
     const toText = `${String(Math.floor(to / 60))}:${String(to % 60).padStart(2, '0')}`;
     expect(screen.getByText(`Development ${from} → ${toText}`)).toBeInTheDocument();
-    expect(screen.getByText('Sour or grassy often means under-developed')).toBeInTheDocument();
+    expect(
+      screen.getByText('Sour, grassy or thin often means under-developed'),
+    ).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: `Make ${BEAN.name} profile` }));
     expect(api.makeTasteProfile).toHaveBeenCalledWith({ roastId: 1 });
   });
@@ -180,7 +183,7 @@ describe('Taste', () => {
     /** The AI helpers on with a Claude key; `readTaste` answers as given. */
     const setup = (answer?: Awaited<ReturnType<RoastpilotApi['readTaste']>>, detail = auto()) => {
       const api = fakeApi({
-        getAiKeys: () => Promise.resolve(KEYS),
+        listAiProviders: () => Promise.resolve(PROVIDERS),
         ...(answer ? { readTaste: () => Promise.resolve(answer) } : {}),
       });
       return renderApp(card(detail), { settings: AI_ON }, api);
@@ -202,6 +205,38 @@ describe('Taste', () => {
       expect(screen.getByRole('button', { name: 'Flat' })).toHaveAttribute('aria-pressed', 'true');
     });
 
+    it('keeps a tag you tick while the words are being read', async () => {
+      let answer: (tags: TasteTag[]) => void = () => undefined;
+      const { api } = renderApp(
+        card(auto()),
+        { settings: AI_ON },
+        fakeApi({
+          listAiProviders: () => Promise.resolve(PROVIDERS),
+          readTaste: () =>
+            new Promise((resolve) => {
+              answer = (tags) => {
+                resolve(ok(tags));
+              };
+            }),
+        }),
+      );
+      await userEvent.type(await screen.findByLabelText('In your words'), 'tart');
+      await userEvent.click(screen.getByRole('button', { name: 'Read' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Bitter' }));
+      answer(['sour']);
+      await waitFor(() => {
+        expect(api.saveRoastTaste).toHaveBeenLastCalledWith({
+          id: 1,
+          tags: ['sour', 'bitter'],
+          words: 'tart',
+        });
+      });
+      expect(screen.getByRole('button', { name: 'Bitter' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+    });
+
     it('says when the words tick nothing', async () => {
       setup(ok([]));
       await userEvent.type(await screen.findByLabelText('In your words'), 'lovely');
@@ -210,7 +245,7 @@ describe('Taste', () => {
     });
 
     it('says why a read failed, keeping the words', async () => {
-      setup(err({ kind: 'offline', provider: 'claude' }));
+      setup(err({ kind: 'offline', provider: 'alpha' }));
       const field = await screen.findByLabelText('In your words');
       await userEvent.type(field, 'tart');
       await userEvent.click(screen.getByRole('button', { name: 'Read' }));

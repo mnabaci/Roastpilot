@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { aiWiring } from './ai/ai-wiring';
 import type { AppServices } from './app-services-types';
-import { makeTasteProfile } from './profiles/make-taste-profile';
+import { makeTasteProfile, oneAtATime } from './profiles/make-taste-profile';
 import { openBeanLink } from './beans/open-bean-link';
 import { makeBeanProfile } from './beans/make-bean-profile';
 import { connectWiring } from './connect-wiring';
@@ -97,15 +97,17 @@ export function buildIpcDeps({
       }),
     makeBeanProfile: (request) =>
       makeBeanProfile(request, { beans, profiles, logger: beansLogger }),
-    makeTasteProfile: (request) =>
+    makeTasteProfile: oneAtATime((request) =>
       makeTasteProfile(request, {
         history,
         profiles,
         beans,
         activeRoaster: () => roasters.active(),
+        roaster: (id) => roasters.all.find((r) => r.id === id),
         newId: newProfileId,
         logger: logger.child('history'),
       }),
+    ),
     ai: aiWiring({
       dir: userDataDir,
       settings: async () => (await services.settings.get()).ai,
