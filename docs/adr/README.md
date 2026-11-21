@@ -28,6 +28,6 @@ One file per decision: context, decision, consequences. Add one with the `plan-f
 - [One definition per roaster model](0024-one-definition-per-roaster-model.md)
 - [One typed IPC contract](0025-one-typed-ipc-contract.md)
 - [One TC4 driver with dialects](0026-one-tc4-driver-with-dialects.md)
-- [AI helpers behind a text reader](0027-ai-helpers-behind-a-text-reader.md)
+- [AI helpers behind readers](0027-ai-helpers-behind-readers.md)
 
 Template: [template.md](template.md)
