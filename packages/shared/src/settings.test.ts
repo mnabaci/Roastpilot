@@ -25,7 +25,7 @@ const ROAST_DEFAULTS = {
   historyDetailsOpen: true,
   historyReportOpen: true,
   openCards: ['bean.about', 'profile.values', 'profile.preview', 'profile.steps'],
-  ai: { enabled: false, tasteProvider: 'claude' },
+  ai: { enabled: false, tasteProvider: null },
   safetyNoticeAccepted: 0,
 };
 

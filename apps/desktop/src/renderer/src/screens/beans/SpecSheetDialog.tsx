@@ -68,6 +68,7 @@ export function SpecSheetDialog({
     >
       <TextAreaField
         label="Paste the sheet"
+        tall
         value={text}
         maxLength={SPEC_SHEET_TEXT_MAX}
         onChange={setText}

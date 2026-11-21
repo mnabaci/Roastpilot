@@ -9,22 +9,21 @@ import {
 import { SettingsSchema } from './settings';
 
 describe('AI settings', () => {
-  it('starts off, Claude reading tasting words, for a settings file from before', () => {
-    expect(SettingsSchema.parse({}).ai).toEqual({ enabled: false, tasteProvider: 'claude' });
+  it('starts off, no reader chosen, for a settings file from before', () => {
+    expect(SettingsSchema.parse({}).ai).toEqual({ enabled: false, tasteProvider: null });
   });
 
-  it('falls back to the defaults for values it does not know', () => {
-    expect(SettingsSchema.parse({ ai: { enabled: 'yes', tasteProvider: 'gpt' } }).ai).toEqual({
+  it('falls back to the defaults for values it cannot read', () => {
+    expect(
+      SettingsSchema.parse({ ai: { enabled: 'yes', tasteProvider: 'Not an id!' } }).ai,
+    ).toEqual({
       enabled: false,
-      tasteProvider: 'claude',
+      tasteProvider: null,
     });
-    expect(SettingsSchema.parse({ ai: 'on' }).ai).toEqual({
-      enabled: false,
-      tasteProvider: 'claude',
-    });
+    expect(SettingsSchema.parse({ ai: 'on' }).ai).toEqual({ enabled: false, tasteProvider: null });
   });
 
-  it('keeps Jev when picked', () => {
+  it('keeps the provider picked, by its id', () => {
     expect(SettingsSchema.parse({ ai: { enabled: true, tasteProvider: 'jev' } }).ai).toEqual({
       enabled: true,
       tasteProvider: 'jev',
@@ -43,7 +42,10 @@ describe('SaveAiKeyRequestSchema', () => {
     ['too short', { provider: 'claude', key: 'abc' }],
     ['only spaces', { provider: 'claude', key: '          ' }],
     ['too long', { provider: 'claude', key: 'k'.repeat(401) }],
-    ['an unknown provider', { provider: 'gpt', key: 'sk-12345678' }],
+    ['an id that is not one', { provider: 'GPT 4', key: 'sk-12345678' }],
+    ['broken by a line break', { provider: 'claude', key: 'sk-ant-1234\n5678' }],
+    ['with a space inside', { provider: 'claude', key: 'sk-ant 12345678' }],
+    ['with letters outside ASCII', { provider: 'claude', key: 'sk-ant-12345678é' }],
   ])('refuses a key that is %s', (_name, input) => {
     expect(SaveAiKeyRequestSchema.safeParse(input).success).toBe(false);
   });

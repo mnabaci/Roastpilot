@@ -1,11 +1,11 @@
-import type { AiProvider, AiReadError, RawSpecSheet, Result, TasteTag } from '@roastpilot/shared';
+import type { AiProviderId, AiReadError, RawSpecSheet, Result, TasteTag } from '@roastpilot/shared';
 
 /**
  * Reads your tasting words into taste tags (docs/spec/ai-helpers.md, Reading). One per provider
  * that can; the setting picks which one a read uses.
  */
 export interface TasteReader {
-  readonly provider: AiProvider;
+  readonly provider: AiProviderId;
   readTaste(words: string, key: string): Promise<Result<TasteTag[], AiReadError>>;
 }
 
@@ -14,6 +14,6 @@ export type SpecSheetSource = { kind: 'text'; text: string } | { kind: 'pdf'; by
 
 /** Reads a supplier's spec sheet into raw bean values, checked afterwards (`specSheetFields`). */
 export interface SpecSheetReader {
-  readonly provider: AiProvider;
+  readonly provider: AiProviderId;
   readSpecSheet(sheet: SpecSheetSource, key: string): Promise<Result<RawSpecSheet, AiReadError>>;
 }

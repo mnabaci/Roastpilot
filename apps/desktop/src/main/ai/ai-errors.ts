@@ -1,4 +1,4 @@
-import type { AiProvider, AiReadError } from '@roastpilot/shared';
+import type { AiProviderId, AiReadError } from '@roastpilot/shared';
 
 /**
  * One read error kind for whatever a provider's SDK threw (docs/spec/ai-helpers.md, When it
@@ -6,7 +6,7 @@ import type { AiProvider, AiReadError } from '@roastpilot/shared';
  * HTTP status says the rest, the same in both SDKs.
  */
 export function readErrorOf(
-  provider: AiProvider,
+  provider: AiProviderId,
   error: unknown,
   isConnection: (error: unknown) => boolean,
 ): AiReadError {

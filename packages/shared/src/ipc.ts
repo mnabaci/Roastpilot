@@ -78,7 +78,7 @@ export const INVOKE_CHANNELS = {
   makeProfileFromRoast: 'history:make-profile',
   saveRoastTaste: 'history:save-taste',
   makeTasteProfile: 'history:make-taste-profile',
-  getAiKeys: 'ai:get-keys',
+  listAiProviders: 'ai:list-providers',
   saveAiKey: 'ai:save-key',
   removeAiKey: 'ai:remove-key',
   readTaste: 'ai:read-taste',

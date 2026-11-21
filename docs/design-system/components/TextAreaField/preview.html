@@ -1,4 +1,4 @@
-<!-- @dsCard group="Inputs" height=230 subtitle="Grown to its notes; empty with focus" -->
+<!-- @dsCard group="Inputs" height=400 subtitle="Grown to its notes; empty with focus; tall for a pasted sheet" -->
 <!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
 <link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
 <link
@@ -72,6 +72,9 @@
   textarea:hover {
     border-color: var(--border-strong);
   }
+  textarea.tall {
+    min-height: 128px;
+  }
   textarea.focus {
     outline: 2px solid var(--focus);
     outline-offset: 2px;
@@ -84,5 +87,8 @@
 Bright, stone fruit. Dropped a little early: try 15 s more development next time.</textarea>
   </label>
   <label><span class="label muted">Notes</span><textarea class="focus" rows="1"></textarea></label>
+  <label
+    ><span class="label muted">Paste the sheet</span><textarea class="tall" rows="1"></textarea>
+  </label>
 </div>
 <script></script>

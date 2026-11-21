@@ -1,13 +1,13 @@
 import type { Logger } from '@roastpilot/core';
 import type { AiSettings } from '@roastpilot/shared';
 import { safeStorage } from 'electron';
-import { readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { open, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import type { ChooseImportPath } from '../files/file-dialogs';
 import type { IpcDeps } from '../ipc-deps';
 import { AiKeyStore } from './ai-key-store';
 import { AiService } from './ai-service';
-import { ClaudeReader } from './claude-reader';
-import { JevTasteReader } from './jev-taste-reader';
+import { claudeProvider } from './claude-reader';
+import { jevProvider } from './jev-taste-reader';
 
 /**
  * The AI helpers, made in main (docs/spec/ai-helpers.md, ADR 0027): keys in the user-data folder,
@@ -24,8 +24,11 @@ export function aiWiring({
   chooseImportPath: ChooseImportPath;
   logger: Logger;
 }): IpcDeps['ai'] {
+  // The providers, in Settings' order: a new one is a module and a line here.
+  const providers = [claudeProvider(logger), jevProvider(logger)];
   const keys = new AiKeyStore({
     dir,
+    providers: providers.map((provider) => provider.info.id),
     cipher: safeStorage,
     files: {
       read: (path) => readFile(path),
@@ -35,16 +38,23 @@ export function aiWiring({
     },
     logger,
   });
-  const claude = new ClaudeReader(logger);
   const reads = new AiService({
     settings,
     keys,
-    tasteReaders: { claude, jev: new JevTasteReader(logger) },
-    sheetReader: claude,
+    providers,
     files: {
       choosePdf: (parent) => chooseImportPath('spec-sheet', parent),
       sizeOf: async (path) => (await stat(path)).size,
-      readBytes: async (path) => new Uint8Array(await readFile(path)),
+      readBytes: async (path, limit) => {
+        const file = await open(path, 'r');
+        try {
+          const buffer = new Uint8Array(limit);
+          const { bytesRead } = await file.read(buffer, 0, limit, 0);
+          return buffer.subarray(0, bytesRead);
+        } finally {
+          await file.close();
+        }
+      },
     },
     logger,
     now: () => Date.now(),

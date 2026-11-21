@@ -1,19 +1,28 @@
-import { err, ok, type AiKeys, type RoastpilotApi, type Settings } from '@roastpilot/shared';
+import {
+  err,
+  ok,
+  type AiProviderEntry,
+  type RoastpilotApi,
+  type Settings,
+} from '@roastpilot/shared';
+import { WORDS_AND_SHEETS, WORDS_ONLY, withKey } from '../../test/ai-providers';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { ACCEPTED_SETTINGS, fakeApi, renderApp } from '../../test/render-app';
 import { AddBean } from './AddBean';
 
-const none = { saved: false, last4: null };
-const CLAUDE: AiKeys = { claude: { saved: true, last4: '1234' }, jev: none };
-const AI_ON: Settings = { ...ACCEPTED_SETTINGS, ai: { enabled: true, tasteProvider: 'claude' } };
+const SHEETS = [withKey(WORDS_AND_SHEETS, '1234')];
+const AI_ON: Settings = { ...ACCEPTED_SETTINGS, ai: { enabled: true, tasteProvider: null } };
 
 function setup(
   overrides: Partial<RoastpilotApi> = {},
-  { settings = AI_ON, keys = CLAUDE }: { settings?: Settings; keys?: AiKeys } = {},
+  {
+    settings = AI_ON,
+    providers = SHEETS,
+  }: { settings?: Settings; providers?: AiProviderEntry[] } = {},
 ) {
-  const api = fakeApi({ getAiKeys: () => Promise.resolve(keys), ...overrides });
+  const api = fakeApi({ listAiProviders: () => Promise.resolve(providers), ...overrides });
   return renderApp(<AddBean onCancel={vi.fn()} onAdded={vi.fn()} />, { settings }, api);
 }
 
@@ -28,7 +37,7 @@ describe('Fill from spec sheet on Add bean', () => {
     await off.findByRole('button', { name: 'Add bean' });
     expect(screen.queryByRole('button', { name: 'Fill from spec sheet' })).toBeNull();
     off.unmount();
-    setup({}, { keys: { claude: none, jev: { saved: true, last4: 'abcd' } } });
+    setup({}, { providers: [WORDS_AND_SHEETS, withKey(WORDS_ONLY, 'abcd')] });
     await screen.findByRole('button', { name: 'Add bean' });
     expect(screen.queryByRole('button', { name: 'Fill from spec sheet' })).toBeNull();
   });

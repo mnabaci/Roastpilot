@@ -24,7 +24,16 @@ import {
 } from './ipc-handlers';
 
 /** The app window a call came from (checked in ipc.ts); file dialogs open on it. */
-const NO_KEYS = { claude: { saved: false, last4: null }, jev: { saved: false, last4: null } };
+const PROVIDERS = [
+  {
+    id: 'claude',
+    label: 'Claude',
+    company: 'Anthropic',
+    keyFrom: 'console.anthropic.com',
+    reads: { taste: true, specSheet: true },
+    key: { saved: false, last4: null },
+  },
+];
 const CALLER: IpcCaller = { window: { id: 7 } as unknown as IpcCaller['window'] };
 
 /** Handlers called as if from the app's window, so a test passes only the payload. */
@@ -119,17 +128,17 @@ function setup() {
     },
     ai: {
       keys: {
-        status: () => Promise.resolve(NO_KEYS),
         save: (provider, key) => {
           calls.push(['saveAiKey', provider, key]);
-          return Promise.resolve(ok(NO_KEYS));
+          return Promise.resolve(ok({}));
         },
         remove: (provider) => {
           calls.push(['removeAiKey', provider]);
-          return Promise.resolve(ok(NO_KEYS));
+          return Promise.resolve(err({ kind: 'unknown-provider' }));
         },
       },
       reads: {
+        list: () => Promise.resolve(PROVIDERS),
         readTaste: (words) => {
           calls.push(['readTaste', words]);
           return Promise.resolve(ok(['sour']));
@@ -650,9 +659,14 @@ describe('taste and AI helper handlers', () => {
     const { handlers, calls } = setup();
     await handle(handlers, IPC_CHANNELS.saveRoastTaste, { id: 3, tags: ['sour'], words: 'tart' });
     await handle(handlers, IPC_CHANNELS.makeTasteProfile, { roastId: 3 });
-    expect(await handle(handlers, IPC_CHANNELS.getAiKeys)).toEqual(NO_KEYS);
-    await handle(handlers, IPC_CHANNELS.saveAiKey, { provider: 'jev', key: ' ts-12345678 ' });
-    await handle(handlers, IPC_CHANNELS.removeAiKey, 'claude');
+    expect(await handle(handlers, IPC_CHANNELS.listAiProviders)).toEqual(PROVIDERS);
+    // A saved key answers with the providers as they are now; a refusal passes through.
+    expect(
+      await handle(handlers, IPC_CHANNELS.saveAiKey, { provider: 'jev', key: ' ts-12345678 ' }),
+    ).toEqual(ok(PROVIDERS));
+    expect(await handle(handlers, IPC_CHANNELS.removeAiKey, 'claude')).toEqual(
+      err({ kind: 'unknown-provider' }),
+    );
     expect(await handle(handlers, IPC_CHANNELS.readTaste, { words: 'tart' })).toEqual(ok(['sour']));
     await handle(handlers, IPC_CHANNELS.readSpecSheet, { kind: 'pdf' });
     expect(calls).toEqual([
@@ -669,9 +683,10 @@ describe('taste and AI helper handlers', () => {
     [IPC_CHANNELS.saveRoastTaste, { id: 3, tags: ['smoky'], words: null }],
     [IPC_CHANNELS.saveRoastTaste, { id: 3, tags: [], words: 'w'.repeat(501) }],
     [IPC_CHANNELS.makeTasteProfile, { roastId: 'x' }],
-    [IPC_CHANNELS.saveAiKey, { provider: 'gpt', key: 'sk-12345678' }],
+    [IPC_CHANNELS.saveAiKey, { provider: 'GPT 4', key: 'sk-12345678' }],
+    [IPC_CHANNELS.saveAiKey, { provider: 'claude', key: 'sk-ant-1234\n5678' }],
     [IPC_CHANNELS.saveAiKey, { provider: 'claude', key: 'short' }],
-    [IPC_CHANNELS.removeAiKey, 'gpt'],
+    [IPC_CHANNELS.removeAiKey, '../keys'],
     [IPC_CHANNELS.readTaste, { words: '' }],
     [IPC_CHANNELS.readSpecSheet, { kind: 'url', url: 'https://example.com' }],
   ])('rejects a bad %s payload and calls nothing', async (channel, payload) => {

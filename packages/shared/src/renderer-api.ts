@@ -206,11 +206,12 @@ export interface UpdatesApi {
 }
 
 /**
- * AI helpers (docs/spec/ai-helpers.md): keys are kept in main, encrypted; the screen only learns
- * whether each is saved and its last four characters. Reads run in main.
+ * AI helpers (docs/spec/ai-helpers.md): the providers main registered, each with what it says
+ * about itself and whether its key is saved (its last four characters, never the key). Keys are
+ * kept in main, encrypted; reads run in main.
  */
 export interface AiApi {
-  getAiKeys: Invoke<typeof C.getAiKeys>;
+  listAiProviders: Invoke<typeof C.listAiProviders>;
   saveAiKey: Invoke<typeof C.saveAiKey>;
   removeAiKey: Invoke<typeof C.removeAiKey>;
   /** Your tasting words into tags, by the provider Settings picked. */

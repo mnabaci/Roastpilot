@@ -1,12 +1,12 @@
 import type { SpecSheetFields } from '@roastpilot/shared';
 import { useState } from 'react';
-import { useAiHelpers } from '../../features/use-ai-keys';
+import { useAiHelpers } from '../../features/use-ai-providers';
 import { fillFromSheet } from './bean-draft';
 import type { BeanDraftState } from './use-bean-draft';
 
 /**
  * Fill from spec sheet on a bean in Edit, or on Add bean: whether it is offered (the AI helpers
- * on with a Claude key), the dialog, and one line after it saying how many fields it filled.
+ * on with a key for a provider that reads sheets), the dialog, and one line after it saying how many fields it filled.
  */
 export function useSpecSheetFill(record: BeanDraftState, { isNew }: { isNew: boolean }) {
   const { sheets } = useAiHelpers();

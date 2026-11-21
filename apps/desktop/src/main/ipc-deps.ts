@@ -81,8 +81,8 @@ export interface IpcDeps {
   ) => Promise<Result<ProfileEntry, MakeTasteProfileError>>;
   /** The AI helpers: keys kept here, reads run here (docs/spec/ai-helpers.md). */
   ai: {
-    keys: Pick<AiKeyStore, 'status' | 'save' | 'remove'>;
-    reads: Pick<AiService, 'readTaste' | 'readSpecSheet'>;
+    keys: Pick<AiKeyStore, 'save' | 'remove'>;
+    reads: Pick<AiService, 'list' | 'readTaste' | 'readSpecSheet'>;
   };
   /** The clock's now, for Charge soon. */
   nowMs: () => number;

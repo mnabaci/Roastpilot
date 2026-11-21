@@ -2,7 +2,7 @@ import { createLogger, type SpecSheetReader, type TasteReader } from '@roastpilo
 import {
   err,
   ok,
-  type AiProvider,
+  type AiProviderId,
   type AiSettings,
   type LogEntry,
   type RawSpecSheet,
@@ -31,11 +31,9 @@ const EMPTY_SHEET: RawSpecSheet = {
 
 /** A PDF of `pages` pages, as far as the page count reads it. */
 const pdf = (pages: number) =>
-  new Uint8Array(
-    Buffer.from(`%PDF-1.7\n<< /Type /Pages >>\n${'<< /Type /Page >>\n'.repeat(pages)}%%EOF`),
-  );
+  new Uint8Array(Buffer.from(`%PDF-1.7\n${'<< /Type /Page >>\n'.repeat(pages)}%%EOF`));
 
-function tasteReader(provider: AiProvider): TasteReader {
+function tasteReader(provider: AiProviderId): TasteReader {
   return { provider, readTaste: vi.fn(() => Promise.resolve(ok(['sour' as const]))) };
 }
 
@@ -45,7 +43,7 @@ function setup({
   files = {},
 }: {
   settings?: AiSettings;
-  keys?: Partial<Record<AiProvider, string>>;
+  keys?: Partial<Record<AiProviderId, string>>;
   files?: Partial<SheetFiles>;
 } = {}) {
   const entries: LogEntry[] = [];
@@ -67,9 +65,26 @@ function setup({
   let clock = 0;
   const service = new AiService({
     settings: () => Promise.resolve(settings),
-    keys: { read: (provider) => Promise.resolve(keys[provider]) },
-    tasteReaders: { claude, jev },
-    sheetReader,
+    keys: {
+      read: (provider) => Promise.resolve(keys[provider]),
+      status: () =>
+        Promise.resolve(
+          Object.fromEntries(
+            Object.entries(keys).map(([id, key]) => [
+              id,
+              { saved: true, last4: key?.slice(-4) ?? null },
+            ]),
+          ),
+        ),
+    },
+    providers: [
+      {
+        info: { id: 'claude', label: 'Claude', company: 'Anthropic', keyFrom: 'a.example' },
+        taste: claude,
+        specSheet: sheetReader,
+      },
+      { info: { id: 'jev', label: 'Jev', company: 'TypeSafe', keyFrom: 'b.example' }, taste: jev },
+    ],
     files: sheetFiles,
     logger,
     now: () => (clock += 250),
@@ -100,9 +115,25 @@ describe('AiService.readTaste', () => {
     expect(claude.readTaste).toHaveBeenCalledWith('tart', 'sk-claude');
   });
 
-  it('says no key, naming the chosen provider, when neither has one', async () => {
+  it('says no key when no provider that reads tasting words has one', async () => {
     const { service } = setup({ settings: { enabled: true, tasteProvider: 'jev' }, keys: {} });
-    expect(await service.readTaste('tart')).toEqual(err({ kind: 'no-key', provider: 'jev' }));
+    expect(await service.readTaste('tart')).toEqual(err({ kind: 'no-key' }));
+  });
+
+  it('reads with the first provider that can when none is chosen', async () => {
+    const { service, claude } = setup({ settings: { enabled: true, tasteProvider: null } });
+    await service.readTaste('tart');
+    expect(claude.readTaste).toHaveBeenCalledWith('tart', 'sk-claude');
+  });
+
+  it('drops an answer that came after the helpers were turned off', async () => {
+    const settings: AiSettings = { enabled: true, tasteProvider: 'claude' };
+    const { service, claude } = setup({ settings });
+    vi.mocked(claude.readTaste).mockImplementationOnce(() => {
+      settings.enabled = false;
+      return Promise.resolve(ok(['sour' as const]));
+    });
+    expect(await service.readTaste('tart')).toEqual(err({ kind: 'off' }));
   });
 
   it('runs one read at a time: a second while one runs is busy', async () => {
@@ -154,7 +185,7 @@ describe('AiService.readSpecSheet', () => {
     );
     const jevOnly = setup({ keys: { jev: 'ts-jev' } });
     expect(await jevOnly.service.readSpecSheet({ kind: 'pdf' }, PARENT)).toEqual(
-      err({ kind: 'no-key', provider: 'claude' }),
+      err({ kind: 'no-key' }),
     );
     expect(jevOnly.sheetFiles.choosePdf).not.toHaveBeenCalled();
   });
@@ -221,6 +252,15 @@ describe('AiService.readSpecSheet', () => {
     );
   });
 
+  it('refuses a PDF that grew past 10 MB after it was measured', async () => {
+    const { service } = setup({
+      files: { readBytes: () => Promise.resolve(new Uint8Array(10 * 1024 * 1024 + 1)) },
+    });
+    expect(await service.readSpecSheet({ kind: 'pdf' }, PARENT)).toEqual(
+      err({ kind: 'too-long', limit: '10 MB' }),
+    );
+  });
+
   it('says it failed when the file cannot be read, and logs why', async () => {
     const { service, entries } = setup({
       files: { readBytes: () => Promise.reject(new Error('EACCES')) },
@@ -260,10 +300,43 @@ describe('AiService.readSpecSheet', () => {
   });
 });
 
+describe('AiService.list', () => {
+  it('lists each provider with what it reads and its key, never the key itself', async () => {
+    const { service } = setup({ keys: { jev: 'ts-jev-secret' } });
+    const list = await service.list();
+    expect(list).toEqual([
+      {
+        id: 'claude',
+        label: 'Claude',
+        company: 'Anthropic',
+        keyFrom: 'a.example',
+        reads: { taste: true, specSheet: true },
+        key: { saved: false, last4: null },
+      },
+      {
+        id: 'jev',
+        label: 'Jev',
+        company: 'TypeSafe',
+        keyFrom: 'b.example',
+        reads: { taste: true, specSheet: false },
+        key: { saved: true, last4: 'cret' },
+      },
+    ]);
+    expect(JSON.stringify(list)).not.toContain('ts-jev-secret');
+  });
+});
+
 describe('pdfPageCount', () => {
-  it('counts page objects, not the page tree', () => {
+  it('reads the page tree’s count, the largest when a saved change repeats it', () => {
+    const tree = (count: number) => `<< /Type /Pages /Kids [3 0 R] /Count ${String(count)} >>`;
+    const bytes = (text: string) => new Uint8Array(Buffer.from(`%PDF-1.7\n${text}`));
+    expect(pdfPageCount(bytes(`${tree(15)}\n${'<< /Type /Page >>\n'.repeat(30)}`))).toBe(15);
+    expect(pdfPageCount(bytes(`${tree(12)}\n${tree(15)}`))).toBe(15);
+  });
+
+  it('counts page objects when there is no page tree in plain sight', () => {
     expect(pdfPageCount(pdf(3))).toBe(3);
-    expect(pdfPageCount(pdf(0))).toBe(0);
     expect(pdfPageCount(new Uint8Array(Buffer.from('/Type/Page /Type /Page/Contents')))).toBe(2);
+    expect(pdfPageCount(new Uint8Array(Buffer.from('%PDF-1.7 compressed')))).toBe(0);
   });
 });

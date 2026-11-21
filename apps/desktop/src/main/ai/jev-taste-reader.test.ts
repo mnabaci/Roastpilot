@@ -1,6 +1,6 @@
 import { createLogger } from '@roastpilot/core';
 import { TASTE_TAGS, type LogEntry } from '@roastpilot/shared';
-import { APIConnectionError, APITimeoutError } from '@typesafe-ai/sdk';
+import { APIConnectionError, APITimeoutError, APIUserAbortError } from '@typesafe-ai/sdk';
 import { describe, expect, it, vi } from 'vitest';
 import { JEV_TICK_AT, JevTasteReader, type JevAsk } from './jev-taste-reader';
 
@@ -64,7 +64,8 @@ describe('JevTasteReader', () => {
 
   it.each([
     ['no connection', new APIConnectionError('down'), 'offline'],
-    ['a timeout', new APITimeoutError(30_000), 'offline'],
+    ['a timeout', new APITimeoutError(15_000), 'offline'],
+    ['the hard stop', new APIUserAbortError('stopped'), 'offline'],
     ['a refused key', Object.assign(new Error('no'), { status: 401 }), 'key-refused'],
     ['too many requests', Object.assign(new Error('slow'), { status: 429 }), 'rate-limited'],
     ['overloaded', Object.assign(new Error('busy'), { status: 529 }), 'rate-limited'],

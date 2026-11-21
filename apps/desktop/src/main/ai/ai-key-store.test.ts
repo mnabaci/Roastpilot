@@ -56,7 +56,13 @@ function setup(options: { available?: boolean; failWrite?: boolean; failRemove?:
   const entries: LogEntry[] = [];
   const logger = createLogger({ write: (e) => entries.push(e) }, 'ai');
   const { files, api } = memoryFiles(options);
-  const store = new AiKeyStore({ dir: DIR, cipher: cipher(options.available), files: api, logger });
+  const store = new AiKeyStore({
+    dir: DIR,
+    providers: ['claude', 'jev'],
+    cipher: cipher(options.available),
+    files: api,
+    logger,
+  });
   return { store, files, entries };
 }
 
@@ -138,6 +144,17 @@ describe('AiKeyStore', () => {
     const { store, files } = setup();
     files.set(join(DIR, keyFileName('jev')), Buffer.from(''));
     expect(await store.status()).toEqual({ claude: none, jev: none });
+  });
+
+  it('refuses a key for a provider that is not registered, writing nothing', async () => {
+    const { store, files } = setup();
+    expect(await store.save('other', 'sk-12345678')).toEqual({
+      ok: false,
+      error: { kind: 'unknown-provider' },
+    });
+    expect(await store.remove('other')).toEqual({ ok: false, error: { kind: 'unknown-provider' } });
+    expect(await store.read('other')).toBeUndefined();
+    expect(files.size).toBe(0);
   });
 
   it('runs a quick save then remove in order', async () => {

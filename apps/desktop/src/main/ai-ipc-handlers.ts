@@ -1,6 +1,7 @@
 import {
-  AiProviderSchema,
+  AiProviderIdSchema,
   IPC_CHANNELS,
+  ok,
   MakeTasteProfileRequestSchema,
   ReadSpecSheetRequestSchema,
   ReadTasteRequestSchema,
@@ -13,7 +14,7 @@ import { handler } from './ipc-handler';
 type TasteChannels =
   | typeof IPC_CHANNELS.saveRoastTaste
   | typeof IPC_CHANNELS.makeTasteProfile
-  | typeof IPC_CHANNELS.getAiKeys
+  | typeof IPC_CHANNELS.listAiProviders
   | typeof IPC_CHANNELS.saveAiKey
   | typeof IPC_CHANNELS.removeAiKey
   | typeof IPC_CHANNELS.readTaste
@@ -32,14 +33,17 @@ export function tasteIpcHandlers({
     [IPC_CHANNELS.makeTasteProfile]: handler((payload) =>
       makeTasteProfile(MakeTasteProfileRequestSchema.parse(payload)),
     ),
-    [IPC_CHANNELS.getAiKeys]: handler(() => ai.keys.status()),
-    [IPC_CHANNELS.saveAiKey]: handler((payload) => {
+    [IPC_CHANNELS.listAiProviders]: handler(() => ai.reads.list()),
+    // A key change answers with the providers as they are now, so Settings shows them at once.
+    [IPC_CHANNELS.saveAiKey]: handler(async (payload) => {
       const { provider, key } = SaveAiKeyRequestSchema.parse(payload);
-      return ai.keys.save(provider, key);
+      const saved = await ai.keys.save(provider, key);
+      return saved.ok ? ok(await ai.reads.list()) : saved;
     }),
-    [IPC_CHANNELS.removeAiKey]: handler((payload) =>
-      ai.keys.remove(AiProviderSchema.parse(payload)),
-    ),
+    [IPC_CHANNELS.removeAiKey]: handler(async (payload) => {
+      const removed = await ai.keys.remove(AiProviderIdSchema.parse(payload));
+      return removed.ok ? ok(await ai.reads.list()) : removed;
+    }),
     [IPC_CHANNELS.readTaste]: handler((payload) =>
       ai.reads.readTaste(ReadTasteRequestSchema.parse(payload).words),
     ),

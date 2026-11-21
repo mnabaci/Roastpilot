@@ -22,8 +22,10 @@ can't pull numbers and names off a sheet and doesn't take PDFs.
   bean fields. The profile change comes from `TasteRule`s in `core`, the same whether the tags
   were tapped or read. Everything AI returns is checked with zod like typed input.
 - **One interface per job,** `TasteReader` and `SpecSheetReader` in `core` (types only), so a
-  provider implements only what it can do. Implementations live in `apps/desktop` main and are
-  registered at startup.
+  provider implements only what it can do. Implementations live in `apps/desktop` main.
+- **Providers describe themselves.** Each provider's module exports its id, name, company, key
+  host and readers; main registers them at startup and sends the list to the screens. Nothing
+  else names a provider: Settings, its lines and the messages are built from the list.
 - **Two providers, each with the roaster's own key:** Claude (`@anthropic-ai/sdk`,
   `claude-opus-5-5` at low effort, structured output, refusal fallback) reads both; Jev
   (`@typesafe-ai/sdk`, `jev-1.14.0`, one Noul question per tag) reads tasting words. A setting

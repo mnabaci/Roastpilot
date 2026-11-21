@@ -1,4 +1,4 @@
-import { AI_PROVIDER_LABELS, type AiReadError } from '@roastpilot/shared';
+import type { AiReadError } from '@roastpilot/shared';
 
 /** What to do instead when a read fails: tap the tags, or fill the fields. */
 type Fallback = 'tags' | 'fields';
@@ -14,9 +14,9 @@ export function aiReadMessage(error: AiReadError, fallback: Fallback): string {
     case 'off':
       return 'AI helpers are off · turn them on in Settings';
     case 'no-key':
-      return `No ${AI_PROVIDER_LABELS[error.provider]} API key · add one in Settings`;
+      return 'No API key that reads this · add one in Settings';
     case 'key-refused':
-      return `The ${AI_PROVIDER_LABELS[error.provider]} API key was refused · check it in Settings`;
+      return 'The API key was refused · check it in Settings';
     case 'rate-limited':
       return 'Too many requests · try again in a minute';
     case 'offline':

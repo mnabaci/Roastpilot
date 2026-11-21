@@ -1,11 +1,10 @@
 import { serializeError, type Logger } from '@roastpilot/core';
 import {
-  AI_PROVIDERS,
   err,
   ok,
   type AiKeyError,
-  type AiKeys,
-  type AiProvider,
+  type AiKeyStatus,
+  type AiProviderId,
   type Result,
 } from '@roastpilot/shared';
 import { join } from 'node:path';
@@ -29,8 +28,11 @@ export interface KeyFiles {
 const isMissing = (error: unknown) =>
   (error as NodeJS.ErrnoException | undefined)?.code === 'ENOENT';
 
+/** Each registered provider's key status, by id. */
+export type AiKeys = Readonly<Record<AiProviderId, AiKeyStatus>>;
+
 /** The file a provider's key lives in (docs/spec/ai-helpers.md, Turning it on). */
-export const keyFileName = (provider: AiProvider): string => `ai-key-${provider}.bin`;
+export const keyFileName = (provider: AiProviderId): string => `ai-key-${provider}.bin`;
 
 /**
  * The AI providers' keys, each encrypted with the computer's keychain in its own file in the
@@ -42,17 +44,26 @@ export class AiKeyStore {
   readonly #cipher: KeyCipher;
   readonly #files: KeyFiles;
   readonly #logger: Logger;
+  /** The registered providers' ids: a key for any other is refused. */
+  readonly #providers: readonly AiProviderId[];
   #writing: Promise<unknown> = Promise.resolve();
 
-  constructor(deps: { dir: string; cipher: KeyCipher; files: KeyFiles; logger: Logger }) {
+  constructor(deps: {
+    dir: string;
+    providers: readonly AiProviderId[];
+    cipher: KeyCipher;
+    files: KeyFiles;
+    logger: Logger;
+  }) {
     this.#dir = deps.dir;
+    this.#providers = deps.providers;
     this.#cipher = deps.cipher;
     this.#files = deps.files;
     this.#logger = deps.logger;
   }
 
   /** The key, or undefined when none is saved or it can't be read (logged). */
-  async read(provider: AiProvider): Promise<string | undefined> {
+  async read(provider: AiProviderId): Promise<string | undefined> {
     let data: Buffer;
     try {
       data = await this.#files.read(this.#path(provider));
@@ -74,17 +85,18 @@ export class AiKeyStore {
   /** Whether each provider has a key, and its last four characters. */
   async status(): Promise<AiKeys> {
     const entries = await Promise.all(
-      AI_PROVIDERS.map(async (provider) => {
+      this.#providers.map(async (provider) => {
         const key = await this.read(provider);
         return [provider, { saved: key !== undefined, last4: key?.slice(-4) ?? null }] as const;
       }),
     );
-    return Object.fromEntries(entries) as AiKeys;
+    return Object.fromEntries(entries);
   }
 
   /** Saves the key, replacing the one there; refused where the keychain can't encrypt it. */
-  save(provider: AiProvider, key: string): Promise<Result<AiKeys, AiKeyError>> {
+  save(provider: AiProviderId, key: string): Promise<Result<AiKeys, AiKeyError>> {
     return this.#queue(async () => {
+      if (!this.#providers.includes(provider)) return err({ kind: 'unknown-provider' });
       if (!this.#cipher.isEncryptionAvailable()) {
         this.#logger.warn('ai.key-not-saved', { provider, reason: 'unsafe-storage' });
         return err({ kind: 'unsafe-storage' });
@@ -108,8 +120,9 @@ export class AiKeyStore {
   }
 
   /** Removes the key; one that isn't there is already removed. */
-  remove(provider: AiProvider): Promise<Result<AiKeys, AiKeyError>> {
+  remove(provider: AiProviderId): Promise<Result<AiKeys, AiKeyError>> {
     return this.#queue(async () => {
+      if (!this.#providers.includes(provider)) return err({ kind: 'unknown-provider' });
       try {
         await this.#files.remove(this.#path(provider));
       } catch (error) {
@@ -123,7 +136,7 @@ export class AiKeyStore {
     });
   }
 
-  #path(provider: AiProvider): string {
+  #path(provider: AiProviderId): string {
     return join(this.#dir, keyFileName(provider));
   }
 

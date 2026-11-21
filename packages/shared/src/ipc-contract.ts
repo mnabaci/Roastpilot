@@ -40,8 +40,8 @@ import type { Milestones } from './milestones';
 import type { AutoProfile, ProfileEntry, ProfileError, ProfileId } from './profile';
 import type {
   AiKeyError,
-  AiKeys,
-  AiProvider,
+  AiProviderEntry,
+  AiProviderId,
   AiReadError,
   ReadSpecSheetRequest,
   ReadSpecSheetResult,
@@ -163,9 +163,9 @@ export interface InvokeContract {
   [C.makeProfileFromRoast]: Call<MakeProfileRequest, Result<ProfileEntry, MakeProfileError>>;
   [C.saveRoastTaste]: Call<RoastTaste, Result<void, StorageError>>;
   [C.makeTasteProfile]: Call<MakeTasteProfileRequest, Result<ProfileEntry, MakeTasteProfileError>>;
-  [C.getAiKeys]: Call<undefined, AiKeys>;
-  [C.saveAiKey]: Call<SaveAiKeyRequest, Result<AiKeys, AiKeyError>>;
-  [C.removeAiKey]: Call<AiProvider, Result<AiKeys, AiKeyError>>;
+  [C.listAiProviders]: Call<undefined, AiProviderEntry[]>;
+  [C.saveAiKey]: Call<SaveAiKeyRequest, Result<AiProviderEntry[], AiKeyError>>;
+  [C.removeAiKey]: Call<AiProviderId, Result<AiProviderEntry[], AiKeyError>>;
   [C.readTaste]: Call<ReadTasteRequest, Result<TasteTag[], AiReadError>>;
   [C.readSpecSheet]: Call<ReadSpecSheetRequest, Result<ReadSpecSheetResult, AiReadError>>;
   [C.getAppInfo]: Call<undefined, AppInfo>;

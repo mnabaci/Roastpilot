@@ -9,10 +9,19 @@ export interface TextAreaFieldProps extends Omit<
   label: string;
   value: string;
   onChange: (value: string) => void;
+  /** Starts four lines tall, for pasting a document (a bean's spec sheet). */
+  tall?: boolean;
 }
 
 /** A labelled multi-line text field that grows with its text (design system: TextAreaField). */
-export function TextAreaField({ label, value, onChange, className, ...props }: TextAreaFieldProps) {
+export function TextAreaField({
+  label,
+  value,
+  onChange,
+  tall = false,
+  className,
+  ...props
+}: TextAreaFieldProps) {
   const id = useId();
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
@@ -26,7 +35,11 @@ export function TextAreaField({ label, value, onChange, className, ...props }: T
         onChange={(event) => {
           onChange(event.target.value);
         }}
-        className="field-sizing-content min-h-control-sm max-h-48 w-full resize-none rounded-md border border-border bg-surface px-3.5 py-2.5 text-body text-ink placeholder:text-ink-muted hover:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50"
+        className={cn(
+          'field-sizing-content max-h-48 w-full resize-none rounded-md border border-border bg-surface px-3.5 py-2.5 text-body text-ink placeholder:text-ink-muted hover:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50',
+          // A pasted document starts four lines tall; a note starts as one line.
+          tall ? 'min-h-32' : 'min-h-control-sm',
+        )}
         {...props}
       />
     </div>

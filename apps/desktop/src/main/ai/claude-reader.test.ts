@@ -52,7 +52,8 @@ describe('ClaudeReader', () => {
       messages: [{ role: 'user', content: 'tart and watery' }],
       output_config: { effort: 'low' },
     });
-    expect(options).toEqual({ timeout: 30_000 });
+    expect(options).toMatchObject({ timeout: 15_000 });
+    expect((options as { signal?: unknown }).signal).toBeInstanceOf(AbortSignal);
   });
 
   it('reads no tags when none fit', async () => {
@@ -93,6 +94,7 @@ describe('ClaudeReader', () => {
   it.each([
     ['no connection', new Anthropic.APIConnectionError({ message: 'down' }), 'offline'],
     ['a timeout', new Anthropic.APIConnectionTimeoutError(), 'offline'],
+    ['the hard stop', new Anthropic.APIUserAbortError(), 'offline'],
     ['a refused key', Object.assign(new Error('no'), { status: 401 }), 'key-refused'],
     ['no permission', Object.assign(new Error('no'), { status: 403 }), 'key-refused'],
     ['too many requests', Object.assign(new Error('slow'), { status: 429 }), 'rate-limited'],
@@ -100,6 +102,11 @@ describe('ClaudeReader', () => {
     ['a bad request', Object.assign(new Error('bad'), { status: 400 }), 'failed'],
     ['anything else', new Error('boom'), 'failed'],
     ['a thrown string', 'boom', 'failed'],
+    [
+      'an answer the SDK could not parse (a refusal or a cut-off)',
+      new Anthropic.AnthropicError('Failed to parse structured output'),
+      'unreadable',
+    ],
   ])('maps %s to %s, logging the status but never the key or words', async (_n, error, kind) => {
     const { reader, entries } = setup(thrown(error));
     expect(await reader.readTaste('secret tasting words', 'sk-ant-secret')).toEqual({
@@ -107,7 +114,7 @@ describe('ClaudeReader', () => {
       error: { kind, provider: 'claude' },
     });
     expect(entries).toHaveLength(1);
-    expect(entries[0]?.context).toMatchObject({ provider: 'claude', kind });
+    expect(entries[0]?.context).toMatchObject({ helper: 'taste', provider: 'claude', kind });
     const logged = JSON.stringify(entries);
     expect(logged).not.toContain('sk-ant-secret');
     expect(logged).not.toContain('secret tasting words');

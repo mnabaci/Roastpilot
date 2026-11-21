@@ -2,44 +2,62 @@ import { z } from 'zod';
 import { BeanFieldsSchema, BeanSpeciesSchema } from './bean';
 import { TasteWordsSchema } from './taste';
 
-/** Who reads text for the AI helpers (docs/spec/ai-helpers.md, Providers). */
-export const AiProviderSchema = z.enum(['claude', 'jev']);
-export const AI_PROVIDERS = AiProviderSchema.options;
+/**
+ * An AI provider's id. Providers are registered in main, each describing itself (docs/spec/
+ * ai-helpers.md, Providers): nothing outside its own module names one.
+ */
+export const AiProviderIdSchema = z.string().regex(/^[a-z][a-z0-9-]{0,31}$/);
 
-export const AI_PROVIDER_LABELS: Readonly<Record<AiProvider, string>> = {
-  claude: 'Claude',
-  jev: 'Jev',
-};
-
-/** Only Claude reads spec sheets: Jev answers yes/no and pick-one questions. */
-export const SPEC_SHEET_PROVIDER: AiProvider = 'claude';
-
-/** The AI helpers' settings; the keys live apart, encrypted (ai-helpers.md, Turning it on). */
-export const AiSettingsSchema = z.object({
-  enabled: z.boolean().catch(false).default(false),
-  /** Who reads tasting words; the one with a key is used when this one has none. */
-  tasteProvider: AiProviderSchema.catch('claude').default('claude'),
+/** What a provider says about itself, for Settings and the screens' lines. */
+export const AiProviderInfoSchema = z.object({
+  id: AiProviderIdSchema,
+  /** Its name on screen: "Claude". */
+  label: z.string().min(1).max(40),
+  /** Who what it reads is sent to: "Anthropic". */
+  company: z.string().min(1).max(60),
+  /** Where you get a key, as a host: "console.anthropic.com". */
+  keyFrom: z.string().min(1).max(120),
+  /** What it can read. */
+  reads: z.object({ taste: z.boolean(), specSheet: z.boolean() }),
 });
 
-export const DEFAULT_AI_SETTINGS: AiSettings = { enabled: false, tasteProvider: 'claude' };
-
-/** Whether each provider's key is saved, and its last four characters: never the key itself. */
+/** Whether a provider's key is saved, and its last four characters: never the key itself. */
 export const AiKeyStatusSchema = z.object({
   saved: z.boolean(),
   last4: z.string().max(4).nullable(),
 });
-export const AiKeysSchema = z.record(AiProviderSchema, AiKeyStatusSchema);
+
+/** A registered provider with its key's status: one row in Settings › AI helpers. */
+export const AiProviderEntrySchema = AiProviderInfoSchema.extend({ key: AiKeyStatusSchema });
+
+/** The AI helpers' settings; the keys live apart, encrypted (ai-helpers.md, Turning it on). */
+export const AiSettingsSchema = z.object({
+  enabled: z.boolean().catch(false).default(false),
+  /** Who reads tasting words; none chosen, or one without a key, is the first that can. */
+  tasteProvider: AiProviderIdSchema.nullable().catch(null).default(null),
+});
+
+export const DEFAULT_AI_SETTINGS: AiSettings = { enabled: false, tasteProvider: null };
 
 export const AI_KEY_MAX = 400;
 export const SaveAiKeyRequestSchema = z.object({
-  provider: AiProviderSchema,
-  key: z.string().trim().min(8, 'That key is too short').max(AI_KEY_MAX),
+  provider: AiProviderIdSchema,
+  key: z
+    .string()
+    .trim()
+    .min(8, 'That key is too short')
+    .max(AI_KEY_MAX)
+    // Printable characters only: a line break or a space pasted inside would make a header
+    // the network refuses, with the key in its message.
+    .regex(/^[\x21-\x7E]+$/, 'A key has no spaces or line breaks'),
 });
 
 export const AiKeyErrorSchema = z.discriminatedUnion('kind', [
   /** The computer's keychain can't encrypt it. */
   z.object({ kind: z.literal('unsafe-storage') }),
   z.object({ kind: z.literal('storage-failed'), message: z.string() }),
+  /** No provider with that id is registered. */
+  z.object({ kind: z.literal('unknown-provider') }),
 ]);
 
 /** Limits on what is sent (ai-helpers.md, Reading). */
@@ -100,21 +118,24 @@ export type ReadSpecSheetResult =
 export const AiReadErrorSchema = z.discriminatedUnion('kind', [
   /** The AI helpers switch is off. */
   z.object({ kind: z.literal('off') }),
-  z.object({ kind: z.literal('no-key'), provider: AiProviderSchema }),
-  z.object({ kind: z.literal('key-refused'), provider: AiProviderSchema }),
-  z.object({ kind: z.literal('rate-limited'), provider: AiProviderSchema }),
-  z.object({ kind: z.literal('offline'), provider: AiProviderSchema }),
-  z.object({ kind: z.literal('unreadable'), provider: AiProviderSchema }),
-  z.object({ kind: z.literal('failed'), provider: AiProviderSchema }),
+  /** No provider that can read this has a key. */
+  z.object({ kind: z.literal('no-key') }),
+  z.object({ kind: z.literal('key-refused'), provider: AiProviderIdSchema }),
+  z.object({ kind: z.literal('rate-limited'), provider: AiProviderIdSchema }),
+  z.object({ kind: z.literal('offline'), provider: AiProviderIdSchema }),
+  z.object({ kind: z.literal('unreadable'), provider: AiProviderIdSchema }),
+  z.object({ kind: z.literal('failed'), provider: AiProviderIdSchema }),
   /** Over a limit: nothing was sent. */
   z.object({ kind: z.literal('too-long'), limit: z.string() }),
   /** Another read of the same kind is running. */
   z.object({ kind: z.literal('busy') }),
 ]);
 
-export type AiProvider = z.infer<typeof AiProviderSchema>;
+export type AiProviderId = z.infer<typeof AiProviderIdSchema>;
+export type AiProviderInfo = z.infer<typeof AiProviderInfoSchema>;
+export type AiProviderEntry = z.infer<typeof AiProviderEntrySchema>;
+export type AiKeyStatus = z.infer<typeof AiKeyStatusSchema>;
 export type AiSettings = z.infer<typeof AiSettingsSchema>;
-export type AiKeys = z.infer<typeof AiKeysSchema>;
 export type SaveAiKeyRequest = z.infer<typeof SaveAiKeyRequestSchema>;
 export type AiKeyError = z.infer<typeof AiKeyErrorSchema>;
 export type ReadTasteRequest = z.infer<typeof ReadTasteRequestSchema>;
