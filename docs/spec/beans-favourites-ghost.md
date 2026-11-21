@@ -76,6 +76,51 @@ At most two show, in this order. The density cut-offs are starting guesses; revi
 
 See [roast-control.md](roast-control.md#creating-a-curve-profile): the run's BT curve becomes the target, simplified to about 10 points.
 
+## Taste → next roast
+
+After cupping, say what the coffee tasted like; Roastpilot suggests one change for the next roast
+of that bean, as a new profile you make with one click.
+
+### Taste
+
+- **Tags,** on History › Roast details, in this order: Sour, Grassy, Thin, Flat, Baked, Bitter, Roasty, Sweet and balanced. Tap to tick or untick; saved as you go, like the rating.
+- **In your words** (with [AI helpers](ai-helpers.md) on): one line, "tart, a bit hay-like", and Read. Read only ticks tags, never unticks one you set; the words are kept with the roast. AI off, the field isn't there.
+- Folded, Roast details' line shows the ticked tags after the rating.
+- Any finished roast can be tasted, imported ones too.
+
+### The suggestion
+
+Worked out in `core` from the ticked tags and this roast's measured values ([roast-report.md](roast-report.md)), against the profile the roast ran. The first row that matches gives one change, or none with its reason. One change at a time, so the next cup tells you what it did.
+
+| Tags                                                      | This roast                          | Change                | Line shown                                                         |
+| --------------------------------------------------------- | ----------------------------------- | --------------------- | ------------------------------------------------------------------ |
+| Sweet and balanced, nothing else                          | –                                   | None; offers the star | "Sounds right · star it to roast it again"                         |
+| Both under (Sour, Grassy, Thin) and over (Bitter, Roasty) | –                                   | None                  | "Mixed signals · change one thing at a time"                       |
+| Bitter or Roasty                                          | Development 1:00 or more            | Development −15 s     | "Bitter or roasty often means too much development"                |
+| Bitter or Roasty                                          | Development under 1:00              | BT cap −3 °C          | "Bitter or roasty · drop a little cooler"                          |
+| Sour, Grassy or Thin                                      | Development under 20 % of the roast | Development +15 s     | "Sour or grassy often means under-developed"                       |
+| Sour, Grassy or Thin                                      | Development 20 % or more            | None                  | "Development is already 22 % · check grind and brew first"         |
+| Flat or Baked                                             | The report found a stall or crash   | None; points at it    | "Flat or baked often follows a stall · see Roast report"           |
+| Flat or Baked                                             | No stall or crash                   | Charge temp +5 °C     | "Flat or baked often means a slow roast · 13:40 · more heat early" |
+
+- **Bounds:** a change that would leave the profile's limits (development 0:30–10:00, the BT cap under the roaster's limit and above charge, charge temp's range) is not made: "Development is at its 10:00 limit". Starting guesses, as the density hints: revisit them once there are tasted roasts to compare.
+- **Needs the profile:** an Auto roast with its profile saved. A manual roast, or one without its profile, keeps its tags and says "Roast on Auto to get a suggestion".
+- **Shown** under the tags: the change in numbers first ("Development 1:45 → 2:00"), the line under it, then **Make <bean> profile** (secondary). No suggestion, no button.
+
+### Make the profile
+
+- One step in main, all or nothing: a new custom profile, a copy of the profile the roast ran with the one change, on the same roaster, `source` the roast, named after the bean as "Make a profile for this bean" names it (no bean: the profile's name plus "· tasted"). It becomes the bean's own profile, so the next roast of the bean suggests it; the bean's earlier profile stays in Profiles.
+- Toast: "Made Guji Natural 2 · next roast of this bean uses it"; Profiles opens it on its toast action.
+- The roast and its profile copy are never changed.
+
+## Fill from a spec sheet
+
+- **Fill from spec sheet** (ghost button) on a bean in Edit, and on Add bean, with [AI helpers](ai-helpers.md) on. A Dialog: paste the sheet's text, or Choose PDF…; then Fill (primary), Cancel.
+- **What it fills:** name (on Add bean), origin, process (washed, natural, honey or other), species, variety, altitude, density, moisture, screen size, decaf, supplier, and the sheet's tasting notes into Notes. An altitude range ("1,800–2,000 m") fills its middle, 1900. A value the form would refuse is left out.
+- **Only empty fields:** what you typed stays. Each filled field shows a quiet "From sheet" under it until Save; nothing is saved until you press Save.
+- A filled record feeds the [profile suggestion](#profile-suggestion) and the [hints](#hints) as one typed by hand.
+- Nothing found: "Nothing to fill from that sheet".
+
 ## Ghost layer
 
 - **Default:** the bean's best favourite, else the profile's most recent favourite, else none.

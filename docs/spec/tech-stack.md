@@ -15,6 +15,7 @@ the `package.json` files and `pnpm-lock.yaml`.
 | UI state           | Zustand                                                             | Small stores fed by IPC events, little boilerplate                            |
 | IPC                | Typed contract in `packages/shared` + zod                           | One source of truth for channels; payloads validated at the boundary          |
 | Serial             | serialport                                                          | Used only inside `SerialTransport`                                            |
+| AI helpers         | `@anthropic-ai/sdk` (ADR 0027)                                      | Used only inside `ClaudeTextReader`, in main; optional, off by default        |
 | Database           | `node:sqlite` + Drizzle (ADR 0010)                                  | Typed schema and generated migrations behind the repositories                 |
 | Tests              | Vitest + Testing Library (jsdom)                                    | Logic tested in Node, React components in jsdom; v8 coverage                  |
 | Language           | TypeScript 6, strict                                                | TypeScript 7 waits until typescript-eslint supports it                        |
