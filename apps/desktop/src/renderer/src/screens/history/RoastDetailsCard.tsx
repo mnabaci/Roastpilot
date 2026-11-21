@@ -45,17 +45,19 @@ export function RoastDetailsCard({
         key={roast.id}
         roast={roast}
         lead={live ? null : <BeanLink key={roast.id} roast={roast} beans={beans} />}
+        // You taste after the coffee has rested, so not while it is being roasted.
+        after={
+          live ? null : (
+            <TasteSection
+              key={roast.id}
+              roast={roast}
+              report={report}
+              beanName={beans.find((b) => b.id === roast.beanId)?.name}
+              canRead={ai.taste}
+            />
+          )
+        }
       />
-      {/* You taste after the coffee has rested, so not while it is being roasted. */}
-      {live ? null : (
-        <TasteSection
-          key={roast.id}
-          roast={roast}
-          report={report}
-          beanName={beans.find((b) => b.id === roast.beanId)?.name}
-          canRead={ai.taste}
-        />
-      )}
     </CollapsibleCard>
   );
 }

@@ -26,10 +26,13 @@ const STATUS_TEXT = { idle: 'Saves as you go', saved: 'Saved', failed: 'Not save
 export function RoastResultForm({
   roast,
   lead,
+  after,
 }: {
   roast: RoastSummary;
   /** First in the weights' row, such as History's Bean ▾. */
   lead?: ReactNode;
+  /** After the notes, before the save status at the foot, such as History's Taste. */
+  after?: ReactNode;
 }) {
   const { api, logger } = useDeps();
   const run = useRun();
@@ -134,6 +137,7 @@ export function RoastResultForm({
         }}
         onBlur={commit}
       />
+      {after}
       <p role="status" className="text-label text-ink-muted">
         {STATUS_TEXT[saving]}
       </p>
