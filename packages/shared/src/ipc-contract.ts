@@ -38,7 +38,18 @@ import type {
 } from './make-profile';
 import type { Milestones } from './milestones';
 import type { AutoProfile, ProfileEntry, ProfileError, ProfileId } from './profile';
+import type {
+  AiKeyError,
+  AiKeys,
+  AiProvider,
+  AiReadError,
+  ReadSpecSheetRequest,
+  ReadSpecSheetResult,
+  ReadTasteRequest,
+  SaveAiKeyRequest,
+} from './ai';
 import type { Result } from './result';
+import type { MakeTasteProfileError, MakeTasteProfileRequest, RoastTaste, TasteTag } from './taste';
 import type { RoastAction, RoastActionError } from './roast';
 import type { ExportRoastsRequest, SetRoastBeanRequest } from './roast-file';
 import type { EnvelopeProblem } from './roastpilot-file';
@@ -150,6 +161,13 @@ export interface InvokeContract {
   [C.setRoastSetup]: Call<RoastSetup, void>;
   [C.saveRoastResult]: Call<RoastResult, Result<void, StorageError>>;
   [C.makeProfileFromRoast]: Call<MakeProfileRequest, Result<ProfileEntry, MakeProfileError>>;
+  [C.saveRoastTaste]: Call<RoastTaste, Result<void, StorageError>>;
+  [C.makeTasteProfile]: Call<MakeTasteProfileRequest, Result<ProfileEntry, MakeTasteProfileError>>;
+  [C.getAiKeys]: Call<undefined, AiKeys>;
+  [C.saveAiKey]: Call<SaveAiKeyRequest, Result<AiKeys, AiKeyError>>;
+  [C.removeAiKey]: Call<AiProvider, Result<AiKeys, AiKeyError>>;
+  [C.readTaste]: Call<ReadTasteRequest, Result<TasteTag[], AiReadError>>;
+  [C.readSpecSheet]: Call<ReadSpecSheetRequest, Result<ReadSpecSheetResult, AiReadError>>;
   [C.getAppInfo]: Call<undefined, AppInfo>;
   [C.checkForUpdates]: Call<undefined, void>;
   [C.restartToUpdate]: Call<undefined, Result<void, RestartToUpdateError>>;

@@ -148,6 +148,13 @@ export interface BeansApi {
   saveRoastResult: Invoke<typeof C.saveRoastResult>;
   /** A new profile of your own from a saved roast, on the roaster it ran on. */
   makeProfileFromRoast: Invoke<typeof C.makeProfileFromRoast>;
+  /** The taste tags and words of a saved roast (docs/spec/beans-favourites-ghost.md, Taste). */
+  saveRoastTaste: Invoke<typeof C.saveRoastTaste>;
+  /**
+   * Make <bean> profile: the roast's taste suggestion as a new profile, made the bean's own.
+   * Main works the suggestion out again from what is saved. All or nothing.
+   */
+  makeTasteProfile: Invoke<typeof C.makeTasteProfile>;
 }
 
 /** Roaster records (docs/spec/roasters.md). Changes wait while one is connected. */
@@ -198,6 +205,20 @@ export interface UpdatesApi {
   onUpdateStatus(listener: (status: UpdateStatus) => void): Unsubscribe;
 }
 
+/**
+ * AI helpers (docs/spec/ai-helpers.md): keys are kept in main, encrypted; the screen only learns
+ * whether each is saved and its last four characters. Reads run in main.
+ */
+export interface AiApi {
+  getAiKeys: Invoke<typeof C.getAiKeys>;
+  saveAiKey: Invoke<typeof C.saveAiKey>;
+  removeAiKey: Invoke<typeof C.removeAiKey>;
+  /** Your tasting words into tags, by the provider Settings picked. */
+  readTaste: Invoke<typeof C.readTaste>;
+  /** A spec sheet into bean fields: pasted text, or a PDF main asks you to pick. */
+  readSpecSheet: Invoke<typeof C.readSpecSheet>;
+}
+
 /** The typed API the preload script exposes to the renderer as `window.roastpilot`. */
 export interface RoastpilotApi
   extends
@@ -214,4 +235,5 @@ export interface RoastpilotApi
     BeansApi,
     LibraryFilesApi,
     AppApi,
-    UpdatesApi {}
+    UpdatesApi,
+    AiApi {}
