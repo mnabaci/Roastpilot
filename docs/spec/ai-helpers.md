@@ -37,7 +37,7 @@ Settings › AI helpers, off by default, one row per registered provider:
 
 | Row                | What it does                                                                                                                                                                          |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Switch             | "Use AI to read words and spec sheets". Off: no field, button or call anywhere; keys stay saved                                                                                       |
+| Switch             | "Use AI helpers", hint "Tasting notes into taste tags · a supplier's spec sheet into a bean's details". Off: no field, button or call anywhere; keys stay saved                       |
 | <Provider> API key | A password field and Save; saved, "Saved · ends 4f2a" with Replace (a new key over it; the old one stays until Save) and Remove (asks first). Hint: "From <key host> · billed to you" |
 
 Then a second card, **Who reads what**, one row per job some provider can do:
@@ -47,9 +47,11 @@ Then a second card, **Who reads what**, one row per job some provider can do:
 | Tasting words | Where they go and the model: "To Anthropic · Haiku 5.5" | With two or more providers that read them: a segmented control, choosable once two have keys ("· a second key lets you choose"); it shows the one actually used. Else the provider's name |
 | Spec sheets   | "To Anthropic · Opus 5.5"                               | The provider's name                                                                                                                                                                       |
 
-With no key for a job: "Nothing sent · add a key that reads them", and a dash (no choice to make yet). Under the cards, one line: "Roasts, beans and profiles stay on this computer."
+With no key for a job: "Nothing sent · add a key that reads them", and a dash (no choice to make yet).
 
-- The switch can't turn on without at least one key ("Save a key first").
+**ⓘ beside the switch and each job** (an InfoButton, on click): what it does, where you use it, and what it sends, in three short lines (`ai-info.ts`). Tasting words: write how a roast tasted and Read ticks the matching taste tags, which suggest the next roast's change; History › a roast › Roast details › Taste › In your words; only those words, up to 500 characters. Spec sheets: a supplier's sheet as PDF or pasted text fills the bean's fields for you to check before Save; Beans › Add bean, or a bean's Edit › Fill from spec sheet; only the sheet, up to 20 pages or 20,000 characters. The switch: the two helpers, with your own key; nothing they return is saved or changes a profile until you click, never mid-roast; off, tap tags and type details yourself. Under the cards, one line: "Roasts, beans and profiles stay on this computer."
+
+- The switch can't turn on without at least one key (its hint ends "· save a key first").
 - **Who reads:** tasting words go to the chosen provider while it has a key, else the first registered that can; spec sheets to the first registered that reads them and has a key. **Which helpers show:** each while some provider for it has a key.
 - **Keys** are encrypted with the computer's keychain (Electron `safeStorage`), one file per provider in the user-data folder (`ai-key-<id>.bin`), only for a registered provider. Printable characters only, no spaces ("A key has no spaces or line breaks"). Never in `settings.json`, the logs, an export or the renderer: the screen only learns whether one is saved and its last four characters. Where the keychain isn't available, Save is refused: "Can't store the key safely on this computer".
 - **Hosts:** each provider's client is given its own host, so no environment variable can send a key elsewhere.

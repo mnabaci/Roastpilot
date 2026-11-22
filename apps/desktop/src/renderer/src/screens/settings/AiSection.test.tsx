@@ -38,10 +38,10 @@ describe('AiSection', () => {
   it('starts off, and the switch waits for a key', async () => {
     setup();
     await keyRow('Alpha');
-    const toggle = screen.getByRole('switch', { name: 'Use AI to read words and spec sheets' });
+    const toggle = screen.getByRole('switch', { name: 'Use AI helpers' });
     expect(toggle).toHaveAttribute('aria-checked', 'false');
     expect(toggle).toBeDisabled();
-    expect(screen.getByText('Save a key first')).toBeInTheDocument();
+    expect(screen.getByText(/· save a key first$/)).toBeInTheDocument();
     expect(
       screen.getByText('Roasts, beans and profiles stay on this computer.'),
     ).toBeInTheDocument();
@@ -93,7 +93,7 @@ describe('AiSection', () => {
   it('turns the helpers on once a key is saved', async () => {
     const { api } = setup(firstOnly);
     await screen.findByText('Saved · ends 1234');
-    const toggle = screen.getByRole('switch', { name: 'Use AI to read words and spec sheets' });
+    const toggle = screen.getByRole('switch', { name: 'Use AI helpers' });
     await userEvent.click(toggle);
     expect(api.setSettings).toHaveBeenCalledWith(
       expect.objectContaining({ ai: { enabled: true, tasteProvider: null } }),
@@ -129,6 +129,22 @@ describe('AiSection', () => {
     await userEvent.click(row.getByRole('button', { name: 'Save' }));
     expect(api.saveAiKey).toHaveBeenCalledWith({ provider: 'alpha', key: 'sk-ant-new-9999' });
     expect(api.removeAiKey).not.toHaveBeenCalled();
+  });
+
+  it('explains each helper behind an ⓘ: what it does, where, and what it sends', async () => {
+    setup([WORDS_AND_SHEETS, withKey(WORDS_ONLY, 'abcd')], { tasteProvider: 'alpha' });
+    await screen.findByText('Saved · ends abcd');
+    await userEvent.click(screen.getByRole('button', { name: 'About tasting words' }));
+    const taste = await screen.findByRole('dialog', { name: 'About tasting words' });
+    expect(taste).toHaveTextContent('History › a roast › Roast details › Taste');
+    expect(taste).toHaveTextContent('Sends only those words, up to 500 characters.');
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog', { name: 'About tasting words' })).toBeNull();
+
+    await userEvent.click(screen.getByRole('button', { name: 'About spec sheets' }));
+    expect(await screen.findByRole('dialog', { name: 'About spec sheets' })).toHaveTextContent(
+      'Fill from spec sheet',
+    );
   });
 
   it('shows the reader actually used when only one has a key', async () => {

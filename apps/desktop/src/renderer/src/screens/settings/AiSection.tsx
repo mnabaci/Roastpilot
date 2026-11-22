@@ -1,7 +1,8 @@
-import { Switch } from '@roastpilot/ui';
+import { InfoButton, Switch } from '@roastpilot/ui';
 import { useAiProviders } from '../../features/use-ai-providers';
 import { useSettings } from '../../stores/use-stores';
 import { AiKeyRow } from './AiKeyRow';
+import { AI_SWITCH } from './ai-info';
 import { AiReadersCard } from './AiReadersCard';
 import { SettingRow, SettingRows, SettingSection } from './SettingRow';
 import { useSaveSettings } from './use-save-settings';
@@ -19,11 +20,12 @@ export function AiSection() {
     <SettingSection title="AI helpers">
       <SettingRows>
         <SettingRow
-          name="Use AI to read words and spec sheets"
-          hint={anyKey ? 'Tasting words into tags, spec sheets into beans' : 'Save a key first'}
+          name={AI_SWITCH.name}
+          hint={anyKey ? AI_SWITCH.hint : `${AI_SWITCH.hint} · save a key first`}
+          info={<InfoButton label="About AI helpers" lines={AI_SWITCH.info} />}
         >
           <Switch
-            aria-label="Use AI to read words and spec sheets"
+            aria-label={AI_SWITCH.name}
             checked={ai.enabled && anyKey}
             disabled={!anyKey}
             onChange={(enabled) => {
