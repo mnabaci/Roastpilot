@@ -9,14 +9,37 @@ a roast: minor for a new roasting capability, patch for everything else
 
 ### Added
 
+- **History follows your roaster:** with more than one roaster, History lists the active
+  roaster's roasts, as Profiles lists its profiles, and says which under the title. Pick another
+  roaster or All roasters there; under All roasters each roast names the roaster it ran on.
+  Profiles now says whose profiles they are too.
+
 - **Roast report:** every finished roast now says how it went. Drying, Maillard and development
   as one bar with each phase's length and share; a RoR crash or flick after first crack, or a
   stall before it; missing readings and a short or long development; and for an Auto roast, dry
   end, first crack, development and drop against the plan. It's in History, and on the Roast
   screen as soon as the roast finishes.
 
+- **Suppliers, kept once:** a bean's supplier is now picked from your suppliers, not typed again;
+  type a new name and Add supplier, and Save adds it with the bean. Each supplier keeps its
+  website, email, phone and notes: on a bean, its name opens a card with which beans it supplies,
+  its website, email and phone (each with Copy) and notes, and Edit supplier. Beans "⋯" › Suppliers lists them with how many beans each has, to change one
+  or delete one no bean uses. Your beans' suppliers become supplier records on update, one per
+  name (whatever the case, "Çağ Kahve" and "ÇAĞ KAHVE" too); bean files carry the supplier by name, and Fill from spec sheet picks a supplier you have
+  or offers to add a new one with the website and contacts on the sheet.
+
+- **Fill details from the order page:** a bean's Fill from spec sheet is now Fill details, and
+  with an order link it also reads the shop's product page: origin, process, variety and the
+  rest, for you to check before Save.
+
+- **Roast notes:** an ⓘ beside a bean's process, species, altitude, screen size, density,
+  moisture and decaf says in two or three lines what that value means for roasting and what to
+  try. Beans "⋯" › Roasting cheat sheet shows them all on one page, your bean's marked.
+
 ### Changed
 
+- **A bean's Low stock badge sits beside its name:** switching between beans no longer moves the
+  page down and up; profiles' and roasters' badges do the same.
 - **Smaller app:** the installed app is about 35 MB smaller. It no longer ships a second copy of
   the screen libraries that are already built into it.
 

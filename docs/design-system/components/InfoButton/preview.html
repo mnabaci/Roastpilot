@@ -1,0 +1,84 @@
+<!-- @dsCard group="Feedback" height=240 subtitle="A short explanation beside a name, on click" -->
+<!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
+<link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+  }
+  .wrap {
+    padding: 20px;
+  }
+  .name {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .i {
+    display: inline-flex;
+    width: 24px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink);
+  }
+  .hint {
+    margin: 2px 0 0;
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+  .panel {
+    margin-top: 4px;
+    width: 384px;
+    box-sizing: border-box;
+    padding: 12px 16px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--surface-raised);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .panel p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+  .panel p:first-child {
+    color: var(--ink);
+  }
+</style>
+<div class="wrap">
+  <div class="name">
+    Tasting words
+    <span class="i">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 16v-4M12 8h.01" />
+      </svg>
+    </span>
+  </div>
+  <p class="hint">To Anthropic · Haiku 5.5</p>
+  <div class="panel">
+    <p>
+      Write how a roast tasted, like “tart, a bit hay-like”. Read ticks the taste tags that match.
+    </p>
+    <p>Where: History › a roast › Roast details › Taste › In your words.</p>
+    <p>Sends only those words, up to 500 characters.</p>
+  </div>
+</div>

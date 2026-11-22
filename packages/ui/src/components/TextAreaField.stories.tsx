@@ -24,4 +24,5 @@ export const Long: Story = {
       'Third auto roast curve.\nSweet and clean, a little bright.\nNext time: 10 s more development.\nDrop 2 °C earlier.\nRested 3 days.\nCupped with Anna.\nTry 5 g less.',
   },
 };
+export const Tall: Story = { args: { label: 'Paste the sheet', value: '', tall: true } };
 export const Disabled: Story = { args: { value: 'Saving as it roasts', disabled: true } };

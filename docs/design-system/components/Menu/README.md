@@ -4,7 +4,7 @@ The actions you rarely need, behind a "⋯" button, so the one main action stand
 
 ## Anatomy
 
-- **Trigger**: a ghost icon button (Lucide Ellipsis), `control-sm`, named for screen readers ("More for Light · Steps"). Or, when the menu is one action with a choice, a worded chip with a ChevronDown after the word ("Make profile ▾" → Step profile, Curve profile), drawn exactly like FilterSelect's chip. Its word truncates (never wraps) when a tight header row lets it shrink, down to `control-sm`.
+- **Trigger**: a ghost icon button (Lucide Ellipsis), `control-sm`, named for screen readers ("More for Light · Steps"). Or, when the menu is one action with a choice, a worded chip with a ChevronDown after the word ("Make profile ▾" → Step profile, Curve profile), drawn exactly like FilterSelect's chip; or, `quiet`, a ghost button with its icon first and a muted 16px chevron after the word, for a helper beside Cancel and Save (a bean's Fill details ▾). Its word truncates (never wraps) when a tight header row lets it shrink, down to `control-sm`.
 - **List**: the Select panel (`surface-raised`, 1px `border-strong`, `radius-lg`, 4px padding), at least 192px wide, aligned to the trigger's end, 4px below it.
 - **Item**: at least `control-sm` tall, 12px side padding, `radius-md`, `body` in `ink`; an optional 20px icon first, 8px before the label; items 2px apart. Delete is `critical-text`, never a red fill.
 - **Hint** (optional): why a disabled item waits ("Disconnect first"), in the app's Tooltip to the item's left on hover or keyboard focus, never a line in the menu: items are their name only. It describes the item for screen readers; the item's name stays its label. A disabled item dims to 50 %.

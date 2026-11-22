@@ -156,6 +156,13 @@ export class ProfileService {
     );
   }
 
+  /** The names of your own profiles on a roaster, to name a new one apart. */
+  ownNames(roasterId: RoasterId): ReadonlySet<string> {
+    return new Set(
+      this.#own.filter((own) => own.roasterId === roasterId).map((own) => own.profile.name),
+    );
+  }
+
   /** A profile made elsewhere (from a roast), on the roaster it belongs to. */
   addOn(profile: AutoProfile, roasterId: RoasterId): Promise<Result<ProfileEntry, ProfileError>> {
     return this.#store(profile, roasterId);

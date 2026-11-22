@@ -709,6 +709,25 @@ describe('ProfilesScreen', () => {
     ).not.toContainElement(message);
   });
 
+  it('says whose profiles these are when there is more than one roaster', () => {
+    renderApp(<ProfilesScreen />, {
+      profiles: withMine,
+      ...settingsOn('light-steps'),
+      roasters: roastersWith(null),
+    });
+    expect(screen.getByText('Skywalker')).toBeInTheDocument();
+    expect(screen.getByText('Roaster:', { exact: false })).toHaveClass('sr-only');
+  });
+
+  it('says nothing about the roaster when there is only one', () => {
+    renderApp(<ProfilesScreen />, {
+      profiles: withMine,
+      ...settingsOn('light-steps'),
+      roasters: roastersWith(null).slice(0, 1),
+    });
+    expect(screen.queryByText('Roaster:', { exact: false })).toBeNull();
+  });
+
   it('with two other roasters, one Copy item opens a picker', async () => {
     const api = fakeApi({ copyProfile: vi.fn(() => Promise.resolve(ok(OWN))) });
     const third = { ...SIMULATOR, id: 3, name: 'Popcorn' };

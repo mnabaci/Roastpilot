@@ -9,11 +9,14 @@ import { PAGE_WIDTH } from '../../lib/page-width';
 export function SettingRow({
   name,
   hint,
+  info,
   group = false,
   children,
 }: {
   name: string;
   hint: string;
+  /** More than the hint can say, behind an ⓘ beside the name (an InfoButton). */
+  info?: ReactNode;
   group?: boolean;
   children: ReactNode;
 }) {
@@ -24,7 +27,10 @@ export function SettingRow({
       className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-border py-4 first:border-t-0"
     >
       <div className="flex min-w-60 flex-1 flex-col gap-0.5">
-        <h3 className="text-body font-semibold">{name}</h3>
+        <div className="flex items-center gap-1">
+          <h3 className="text-body font-semibold">{name}</h3>
+          {info}
+        </div>
         <p className="text-label text-ink-muted">{hint}</p>
       </div>
       <div className="flex flex-col items-end gap-2">{children}</div>

@@ -4,8 +4,8 @@ import { EditActions } from './EditActions';
 
 /**
  * The header of a bean's, profile's or roaster's page, the same on all three (docs/spec/ui.md,
- * Read and edit): the name as the title, a field in Edit; under it the record's badges, "Not
- * saved" while an edit is kept, and one quiet line; on the right its actions, or Cancel and Save
+ * Read and edit): the name as the title, a field in Edit, with the record's badges beside it
+ * (under it in Edit); under it "Not saved" while an edit is kept, and one quiet line; on the right its actions, or Cancel and Save
  * in Edit. A problem with the name is one line under the header.
  */
 export function RecordHeader({
@@ -31,6 +31,8 @@ export function RecordHeader({
     /** "Add bean" for a new one. */
     saveLabel?: string;
     placeholder?: string;
+    /** A quiet helper before Cancel while editing. */
+    lead?: ReactNode;
   };
   /** The record's own badges (Low stock, Built-in, Needs calibration). */
   badges?: ReactNode;
@@ -40,13 +42,14 @@ export function RecordHeader({
   actions: ReactNode;
 }) {
   const notSaved = editing && edit.edited;
-  const under = badges !== undefined || notSaved || note;
+  // Reading, the badges sit beside the name, so a bean with Low stock and one without line up.
+  const under = (editing && badges !== undefined) || notSaved || note;
   return (
     <>
       <header className="flex items-start gap-4">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           {/* As tall as the sidebar's title row, so both titles share a line. */}
-          <div className="flex min-h-control-sm min-w-0 items-center">
+          <div className="flex min-h-control-sm min-w-0 items-center gap-3">
             {editing ? (
               <TitleField
                 value={edit.name}
@@ -55,12 +58,17 @@ export function RecordHeader({
                 onChange={edit.onName}
               />
             ) : (
-              <h2 className="truncate text-title text-ink">{name}</h2>
+              <>
+                <h2 className="truncate text-title text-ink">{name}</h2>
+                {badges !== undefined ? (
+                  <div className="flex shrink-0 items-center gap-2">{badges}</div>
+                ) : null}
+              </>
             )}
           </div>
           {under ? (
             <div className="flex min-h-6 flex-wrap items-center gap-2">
-              {badges}
+              {editing ? badges : null}
               {notSaved ? <Badge tone="heat">Not saved</Badge> : null}
               {note ? <p className="text-label text-ink-muted">{note}</p> : null}
             </div>
@@ -72,6 +80,7 @@ export function RecordHeader({
             onSave={edit.onSave}
             canSave={edit.canSave}
             {...(edit.saveLabel ? { saveLabel: edit.saveLabel } : {})}
+            lead={edit.lead}
           />
         ) : (
           <div className="flex shrink-0 items-center gap-2">{actions}</div>

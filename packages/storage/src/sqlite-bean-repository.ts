@@ -18,8 +18,15 @@ import { attempt } from './attempt';
 import { beans } from './schema/beans';
 import { roasts } from './schema/roasts';
 import { beanStockMovements } from './schema/stock-movements';
+import { suppliers } from './schema/suppliers';
+import { supplierIdFor } from './sqlite-supplier-repository';
 import { toStockMovements } from './stock-rows';
 import { transaction } from './transaction';
+
+/** A bean's row: its fields with its supplier's id for the name (supplierIdFor). */
+async function rowOf(tx: SqliteRemoteDatabase, { supplier, ...fields }: BeanFields) {
+  return { ...fields, supplierId: await supplierIdFor(tx, supplier) };
+}
 
 /** An adjustment's reason as a stock log kind. */
 const ADJUSTED = { count: 'counted', returned: 'returned', taken: 'taken' } as const;
@@ -37,8 +44,9 @@ export class SqliteBeanRepository implements BeanRepository {
   list(): Promise<Result<Bean[], StorageError>> {
     return attempt(async () => {
       const rows = await this.#db
-        .select()
+        .select({ bean: beans, supplier: suppliers.name })
         .from(beans)
+        .leftJoin(suppliers, eq(beans.supplierId, suppliers.id))
         .orderBy(asc(beans.name), asc(beans.id))
         .all();
       const losses = await this.#db
@@ -56,17 +64,23 @@ export class SqliteBeanRepository implements BeanRepository {
         )
         .groupBy(roasts.beanId)
         .all();
-      return rows.map((row) => ({
-        ...row,
-        avgLossPct: losses.find((l) => l.beanId === row.id)?.avg ?? null,
+      return rows.map(({ bean, supplier }) => ({
+        ...bean,
+        supplier,
+        avgLossPct: losses.find((l) => l.beanId === bean.id)?.avg ?? null,
       }));
     });
   }
 
+  /** With its supplier, added when new, all or nothing. */
   add(fields: BeanFields): Promise<Result<BeanId, StorageError>> {
-    return attempt(async () => {
-      const row = await this.#db.insert(beans).values(fields).returning({ id: beans.id }).get();
-      return row.id;
+    return transaction(this.#db, async (tx) => {
+      const row = await tx
+        .insert(beans)
+        .values(await rowOf(tx, fields))
+        .returning({ id: beans.id })
+        .get();
+      return ok(row.id);
     });
   }
 
@@ -79,7 +93,7 @@ export class SqliteBeanRepository implements BeanRepository {
       for (const { fields, profileId } of list) {
         const row = await tx
           .insert(beans)
-          .values({ ...fields, profileId })
+          .values({ ...(await rowOf(tx, fields)), profileId })
           .returning({ id: beans.id })
           .get();
         ids.push(row.id);
@@ -97,19 +111,21 @@ export class SqliteBeanRepository implements BeanRepository {
     return updated.value.length > 0 ? ok(undefined) : err({ kind: 'not-found', id });
   }
 
+  /** With its supplier, added when new, all or nothing. */
   update(
     id: BeanId,
     fields: BeanFields,
     profileId: ProfileId | null,
   ): Promise<Result<void, StorageError>> {
-    return this.#changed(id, () =>
-      this.#db
+    return transaction(this.#db, async (tx) => {
+      const updated = await tx
         .update(beans)
-        .set({ ...fields, profileId })
+        .set({ ...(await rowOf(tx, fields)), profileId })
         .where(eq(beans.id, id))
         .returning({ id: beans.id })
-        .all(),
-    );
+        .all();
+      return updated.length > 0 ? ok(undefined) : err({ kind: 'not-found', id });
+    });
   }
 
   setArchived(id: BeanId, archived: boolean): Promise<Result<void, StorageError>> {

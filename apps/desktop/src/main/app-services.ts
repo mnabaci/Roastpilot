@@ -29,6 +29,7 @@ export function createAppServices({
   profileStore,
   roasterStore,
   beanStore,
+  supplierStore,
   newProfileId,
   nowIso,
   onConnectionChange,
@@ -37,7 +38,12 @@ export function createAppServices({
   publish,
 }: AppServicesDeps): AppServices {
   const history = new ReadingHistory();
-  const { beans, refreshBeans } = createBeans({ repository: beanStore, publish, logger });
+  const { beans, suppliers, refreshBeans } = createBeans({
+    repository: beanStore,
+    supplierRepository: supplierStore,
+    publish,
+    logger,
+  });
   const historyLogger = logger.child('history');
   const roastLogger = logger.child('roast');
   const recorder = new RoastRecorder({
@@ -173,6 +179,7 @@ export function createAppServices({
     profiles,
     roasters,
     beans,
+    suppliers,
     snapshot,
   };
 }

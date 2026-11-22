@@ -22,13 +22,15 @@ type Written = Result<void, StorageError>;
 function setup({
   addEvent = ok(undefined),
   remove = ok(undefined),
-}: { addEvent?: Written; remove?: Written } = {}) {
+  saveTaste = ok(undefined),
+}: { addEvent?: Written; remove?: Written; saveTaste?: Written } = {}) {
   const entries: LogEntry[] = [];
   const repository = {
     addSamples: vi.fn(() => Promise.resolve(ok(undefined))),
     addEvent: vi.fn(() => Promise.resolve(addEvent)),
     update: vi.fn(() => Promise.resolve(ok(undefined))),
     saveResult: vi.fn(() => Promise.resolve(ok(undefined))),
+    saveTaste: vi.fn(() => Promise.resolve(saveTaste)),
     delete: vi.fn(() => Promise.resolve(remove)),
   };
   const logger = createLogger({ write: (e) => entries.push(e) }, 'history');
@@ -40,6 +42,26 @@ describe('fillOrRemove', () => {
     const { repository, logger } = setup();
     expect(await fillOrRemove(repository, 7, ROAST, logger)).toEqual(ok(undefined));
     expect(repository.delete).not.toHaveBeenCalled();
+  });
+
+  it('writes no taste for a roast that came without one', async () => {
+    const { repository, logger } = setup();
+    await fillOrRemove(repository, 7, { ...ROAST, tasteTags: [], tasteWords: null }, logger);
+    expect(repository.saveTaste).not.toHaveBeenCalled();
+  });
+
+  it('writes the taste a roast came with', async () => {
+    const { repository, logger } = setup();
+    const tasted = { ...ROAST, tasteTags: ['sour' as const], tasteWords: 'tart' };
+    expect(await fillOrRemove(repository, 7, tasted, logger)).toEqual(ok(undefined));
+    expect(repository.saveTaste).toHaveBeenCalledWith({ id: 7, tags: ['sour'], words: 'tart' });
+  });
+
+  it('deletes the roast when its taste fails to write', async () => {
+    const { repository, logger } = setup({ saveTaste: FAILED });
+    const tasted = { ...ROAST, tasteTags: [], tasteWords: 'tart' };
+    expect(await fillOrRemove(repository, 7, tasted, logger)).toEqual(FAILED);
+    expect(repository.delete).toHaveBeenCalledWith(7);
   });
 
   it('deletes the half-written roast and returns why it failed', async () => {

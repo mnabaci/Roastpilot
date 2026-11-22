@@ -1,4 +1,5 @@
 import { Button } from '@roastpilot/ui';
+import type { ReactNode } from 'react';
 
 /**
  * Cancel and Save in an edit page's header, at its right end, on every screen (docs/spec/ui.md,
@@ -9,15 +10,19 @@ export function EditActions({
   onSave,
   saveLabel = 'Save',
   canSave,
+  lead,
 }: {
   onCancel: () => void;
   onSave: () => void;
   /** `Add bean` for a new one. */
   saveLabel?: string;
   canSave: boolean;
+  /** A quiet helper before Cancel, such as a bean's Fill details. */
+  lead?: ReactNode;
 }) {
   return (
     <div className="ml-auto flex shrink-0 items-center gap-2">
+      {lead}
       <Button size="sm" onClick={onCancel}>
         Cancel
       </Button>

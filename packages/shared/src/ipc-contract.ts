@@ -10,6 +10,14 @@ import type {
   StockMovement,
   UpdateBean,
 } from './bean';
+import type {
+  OpenSupplierWebsiteError,
+  Supplier,
+  SupplierError,
+  SupplierFields,
+  SupplierId,
+  UpdateSupplier,
+} from './supplier';
 import type { CoachApplyError, CoachRequest } from './coach';
 import type { ConnectTarget, SerialPortInfo } from './connection';
 import type { ConnectError, DriverError } from './driver-error';
@@ -38,7 +46,18 @@ import type {
 } from './make-profile';
 import type { Milestones } from './milestones';
 import type { AutoProfile, ProfileEntry, ProfileError, ProfileId } from './profile';
+import type {
+  AiKeyError,
+  AiProviderEntry,
+  AiProviderId,
+  AiReadError,
+  ReadSpecSheetRequest,
+  ReadSpecSheetResult,
+  ReadTasteRequest,
+  SaveAiKeyRequest,
+} from './ai';
 import type { Result } from './result';
+import type { MakeTasteProfileError, MakeTasteProfileRequest, RoastTaste, TasteTag } from './taste';
 import type { RoastAction, RoastActionError } from './roast';
 import type { ExportRoastsRequest, SetRoastBeanRequest } from './roast-file';
 import type { EnvelopeProblem } from './roastpilot-file';
@@ -147,9 +166,21 @@ export interface InvokeContract {
   [C.adjustStock]: Call<AdjustStock, Result<void, StorageError>>;
   [C.stockHistory]: Call<BeanId, Result<StockMovement[], StorageError>>;
   [C.makeBeanProfile]: Call<MakeBeanProfileRequest, Result<ProfileEntry, MakeBeanProfileError>>;
+  [C.listSuppliers]: Call<undefined, Supplier[]>;
+  [C.addSupplier]: Call<SupplierFields, Result<SupplierId, SupplierError>>;
+  [C.updateSupplier]: Call<UpdateSupplier, Result<void, SupplierError>>;
+  [C.deleteSupplier]: Call<SupplierId, Result<void, SupplierError>>;
+  [C.openSupplierWebsite]: Call<SupplierId, Result<void, OpenSupplierWebsiteError>>;
   [C.setRoastSetup]: Call<RoastSetup, void>;
   [C.saveRoastResult]: Call<RoastResult, Result<void, StorageError>>;
   [C.makeProfileFromRoast]: Call<MakeProfileRequest, Result<ProfileEntry, MakeProfileError>>;
+  [C.saveRoastTaste]: Call<RoastTaste, Result<void, StorageError>>;
+  [C.makeTasteProfile]: Call<MakeTasteProfileRequest, Result<ProfileEntry, MakeTasteProfileError>>;
+  [C.listAiProviders]: Call<undefined, AiProviderEntry[]>;
+  [C.saveAiKey]: Call<SaveAiKeyRequest, Result<AiProviderEntry[], AiKeyError>>;
+  [C.removeAiKey]: Call<AiProviderId, Result<AiProviderEntry[], AiKeyError>>;
+  [C.readTaste]: Call<ReadTasteRequest, Result<TasteTag[], AiReadError>>;
+  [C.readSpecSheet]: Call<ReadSpecSheetRequest, Result<ReadSpecSheetResult, AiReadError>>;
   [C.getAppInfo]: Call<undefined, AppInfo>;
   [C.checkForUpdates]: Call<undefined, void>;
   [C.restartToUpdate]: Call<undefined, Result<void, RestartToUpdateError>>;

@@ -1,11 +1,13 @@
 import type { RoastpilotApi } from '@roastpilot/shared';
 import { fakeSettingsApi, fakeUpdatesApi, fakeWindowApi } from './app';
 import {
+  fakeAiApi,
   fakeBeansApi,
   fakeHistoryApi,
   fakeLibraryFilesApi,
   fakeProfilesApi,
   fakeRoastersApi,
+  fakeSuppliersApi,
 } from './library';
 import { fakeRoastApi, fakeRoasterApi } from './session';
 
@@ -21,11 +23,13 @@ export function fakeAppApi(overrides: Partial<RoastpilotApi> = {}): RoastpilotAp
     ...fakeHistoryApi(),
     ...fakeProfilesApi(),
     ...fakeBeansApi(),
+    ...fakeSuppliersApi(),
     ...fakeRoastersApi(),
     ...fakeLibraryFilesApi(),
     ...fakeWindowApi(),
     ...fakeSettingsApi(),
     ...fakeUpdatesApi(),
+    ...fakeAiApi(),
   };
   return { ...api, ...overrides };
 }

@@ -25,6 +25,7 @@ const ROAST_DEFAULTS = {
   historyDetailsOpen: true,
   historyReportOpen: true,
   openCards: ['bean.about', 'profile.values', 'profile.preview', 'profile.steps'],
+  ai: { enabled: false, tasteProvider: null },
   safetyNoticeAccepted: 0,
 };
 
@@ -133,6 +134,7 @@ describe('SettingsSchema', () => {
       historyDetailsOpen: false,
       historyReportOpen: false,
       openCards: ['roaster.batch', 'roaster.tuning'],
+      ai: { enabled: true, tasteProvider: 'jev' },
       safetyNoticeAccepted: 1,
     };
     expect(SettingsSchema.parse(settings)).toEqual(settings);

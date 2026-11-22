@@ -33,6 +33,7 @@ export function sampleApi(state: AppState, screen: Screen): RoastpilotApi {
     makeProfileFromMilestones: frozen,
     addRoaster: frozen,
     addBean: frozen,
+    addSupplier: frozen,
     makeBeanProfile: frozen,
     makeProfileFromRoast: frozen,
   });

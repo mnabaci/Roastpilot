@@ -1,11 +1,11 @@
 # TextAreaField
 
-A labelled multi-line text field that grows with its text: a roast's notes.
+A labelled multi-line text field that grows with its text: a roast's notes, a pasted spec sheet.
 
 ## Anatomy
 
 - **Label** above, `label` style in `ink-muted`, as on TextField.
-- **Field**: at least `control-sm` (44px) tall, growing a line at a time with what's typed (CSS `field-sizing: content`), up to 192px, then it scrolls inside. `surface` fill, 1px `border`, `radius-md`, `body` text in `ink`, 10px × 14px padding; no resize handle.
+- **Field**: at least `control-sm` (44px) tall (**Tall**: 128px, about four lines, for pasting a document), growing a line at a time with what's typed (CSS `field-sizing: content`), up to 192px, then it scrolls inside. `surface` fill, 1px `border`, `radius-md`, `body` text in `ink`, 10px × 14px padding; no resize handle.
 
 ## States
 
@@ -15,3 +15,4 @@ A labelled multi-line text field that grows with its text: a roast's notes.
 
 - A real `<textarea>` with a `<label>`; Enter adds a line, it never submits.
 - For text that can run to a few lines (notes); a name or a search is a TextField.
+- Tall only where a whole document is pasted (Fill from spec sheet); a note starts as one line.

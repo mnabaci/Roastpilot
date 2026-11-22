@@ -40,6 +40,9 @@ describe('migrate', () => {
           '0010_bean_stock_adjustments',
           '0011_stock_movements',
           '0012_tc4_wiring',
+          '0013_roast_taste',
+          '0014_suppliers',
+          '0015_drop_bean_supplier',
         ],
       },
     });
@@ -90,6 +93,9 @@ describe('migrate', () => {
           '0010_bean_stock_adjustments',
           '0011_stock_movements',
           '0012_tc4_wiring',
+          '0013_roast_taste',
+          '0014_suppliers',
+          '0015_drop_bean_supplier',
         ],
       },
     });
@@ -252,6 +258,9 @@ describe('migrate', () => {
         '0010_bean_stock_adjustments',
         '0011_stock_movements',
         '0012_tc4_wiring',
+        '0013_roast_taste',
+        '0014_suppliers',
+        '0015_drop_bean_supplier',
       ]);
       expect(schemaVersion(db)).toBe(5);
     });

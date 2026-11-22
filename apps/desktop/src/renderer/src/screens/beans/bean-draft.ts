@@ -5,6 +5,9 @@ import {
   type BeanProcess,
   type BeanSpecies,
   type Result,
+  type SpecSheetFields,
+  type Supplier,
+  supplierNamed,
 } from '@roastpilot/shared';
 
 /** The bean form's cells, as typed. */
@@ -88,4 +91,45 @@ export function fromBeanDraft(draft: BeanDraft): Result<BeanFields, BeanDraftErr
     }
   }
   return { ok: false, error: errors };
+}
+
+/**
+ * What a spec sheet fills in the bean form (docs/spec/beans-favourites-ghost.md, Fill from a spec
+ * sheet): only empty cells, so nothing you typed changes. Process and decaf have no empty state,
+ * so the sheet sets them only on a new bean, while still as the form started. A supplier you have
+ * is filled as you spell it.
+ */
+export function fillFromSheet(
+  draft: BeanDraft,
+  sheet: SpecSheetFields,
+  { isNew, suppliers = [] }: { isNew: boolean; suppliers?: readonly Supplier[] },
+): { cells: Partial<BeanDraft>; count: number } {
+  const blank = toBeanDraft(undefined);
+  const cells: Partial<BeanDraft> = {};
+  const fill = <K extends keyof BeanDraft>(cell: K, value: BeanDraft[K] | undefined) => {
+    if (value === undefined) return;
+    const empty = typeof draft[cell] === 'string' ? draft[cell] === '' : false;
+    const untouchedNew = isNew && draft[cell] === blank[cell];
+    if (empty || (untouchedNew && (cell === 'process' || cell === 'decaf'))) cells[cell] = value;
+  };
+  const asText = (value: number | string | null | undefined) =>
+    value === null || value === undefined ? undefined : String(value);
+  if (isNew) fill('name', asText(sheet.name));
+  fill('origin', asText(sheet.origin));
+  fill('process', sheet.process);
+  fill('species', sheet.species ?? undefined);
+  fill('variety', asText(sheet.variety));
+  fill('altitudeM', asText(sheet.altitudeM));
+  fill('densityGL', asText(sheet.densityGL));
+  fill('moisturePct', asText(sheet.moisturePct));
+  fill('screen', asText(sheet.screen));
+  fill('decaf', sheet.decaf);
+  const supplier = sheet.supplier ? supplierNamed(suppliers, sheet.supplier) : undefined;
+  fill('supplier', supplier?.name ?? asText(sheet.supplier));
+  fill('notes', asText(sheet.notes));
+  // A cell set to what it already holds isn't a fill.
+  const changed = Object.fromEntries(
+    Object.entries(cells).filter(([cell, value]) => draft[cell as keyof BeanDraft] !== value),
+  ) as Partial<BeanDraft>;
+  return { cells: changed, count: Object.keys(changed).length };
 }

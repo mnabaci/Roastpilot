@@ -3,8 +3,11 @@ import { listSerialPorts } from '@roastpilot/drivers';
 import { dialog, shell } from 'electron';
 import { randomUUID } from 'node:crypto';
 import { readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { aiWiring } from './ai/ai-wiring';
 import type { AppServices } from './app-services-types';
+import { makeTasteProfile, oneAtATime } from './profiles/make-taste-profile';
 import { openBeanLink } from './beans/open-bean-link';
+import { openSupplierWebsite } from './beans/open-supplier-website';
 import { makeBeanProfile } from './beans/make-bean-profile';
 import { connectWiring } from './connect-wiring';
 import { pathChoosers } from './files/file-dialogs';
@@ -34,6 +37,7 @@ export function buildIpcDeps({
   simulatorBeans,
   updates,
   logDir,
+  userDataDir,
   openLogFolder,
   logger,
 }: {
@@ -42,10 +46,12 @@ export function buildIpcDeps({
   simulatorBeans: SimulatorBeans;
   updates: Updates;
   logDir: string;
+  /** Where the AI keys are kept, encrypted. */
+  userDataDir: string;
   openLogFolder: () => Promise<void>;
   logger: Logger;
 }): IpcDeps {
-  const { session, roast, history, profiles, roasters, beans } = services;
+  const { session, roast, history, profiles, roasters, beans, suppliers } = services;
   const filesLogger = logger.child('files');
   const beansLogger = logger.child('beans');
   const newProfileId = () => `custom-${randomUUID()}`;
@@ -92,11 +98,35 @@ export function buildIpcDeps({
       }),
     makeBeanProfile: (request) =>
       makeBeanProfile(request, { beans, profiles, logger: beansLogger }),
+    makeTasteProfile: oneAtATime((request) =>
+      makeTasteProfile(request, {
+        history,
+        profiles,
+        beans,
+        activeRoaster: () => roasters.active(),
+        roaster: (id) => roasters.all.find((r) => r.id === id),
+        newId: newProfileId,
+        logger: logger.child('history'),
+      }),
+    ),
+    ai: aiWiring({
+      dir: userDataDir,
+      settings: async () => (await services.settings.get()).ai,
+      chooseImportPath: choosers.chooseImportPath,
+      logger: logger.child('ai'),
+    }),
     openBeanLink: (id) =>
       openBeanLink(id, {
         beans,
         openExternal: (url) => shell.openExternal(url),
         logger: beansLogger,
+      }),
+    suppliers,
+    openSupplierWebsite: (id) =>
+      openSupplierWebsite(id, {
+        suppliers,
+        openExternal: (url) => shell.openExternal(url),
+        logger: logger.child('suppliers'),
       }),
     nowMs: () => systemClock.now(),
     snapshot: services.snapshot,

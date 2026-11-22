@@ -3,6 +3,7 @@ import type {
   ProfileRepository,
   RoasterRepository,
   RoastRepository,
+  SupplierRepository,
 } from '@roastpilot/core';
 import { err } from '@roastpilot/shared';
 
@@ -15,6 +16,7 @@ export function unavailableRepository(message: string): RoastRepository {
   return {
     create: fail,
     saveResult: fail,
+    saveTaste: fail,
     addSamples: fail,
     addEvent: fail,
     update: fail,
@@ -46,6 +48,11 @@ export function unavailableRoasters(message: string): RoasterRepository {
 }
 
 /** The same for beans: the screen opens empty, changes say why they can't be saved. */
+export function unavailableSuppliers(message: string): SupplierRepository {
+  const fail = () => Promise.resolve(err({ kind: 'storage-failed' as const, message }));
+  return { list: fail, add: fail, update: fail, delete: fail };
+}
+
 export function unavailableBeans(message: string): BeanRepository {
   const fail = () => Promise.resolve(err({ kind: 'storage-failed' as const, message }));
   return {

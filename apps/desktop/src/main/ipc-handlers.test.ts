@@ -24,6 +24,16 @@ import {
 } from './ipc-handlers';
 
 /** The app window a call came from (checked in ipc.ts); file dialogs open on it. */
+const PROVIDERS = [
+  {
+    id: 'claude',
+    label: 'Claude',
+    company: 'Anthropic',
+    keyFrom: 'console.anthropic.com',
+    models: { taste: 'Small 2', specSheet: 'Big 2' },
+    key: { saved: false, last4: null },
+  },
+];
 const CALLER: IpcCaller = { window: { id: 7 } as unknown as IpcCaller['window'] };
 
 /** Handlers called as if from the app's window, so a test passes only the payload. */
@@ -107,6 +117,37 @@ function setup() {
         calls.push(['setBean', id, beanId]);
         return Promise.resolve(ok(undefined));
       },
+      saveTaste: (taste) => {
+        calls.push(['saveTaste', taste]);
+        return Promise.resolve(ok(undefined));
+      },
+    },
+    makeTasteProfile: (request) => {
+      calls.push(['makeTasteProfile', request]);
+      return Promise.resolve(err({ kind: 'no-change' }));
+    },
+    ai: {
+      keys: {
+        save: (provider, key) => {
+          calls.push(['saveAiKey', provider, key]);
+          return Promise.resolve(ok({}));
+        },
+        remove: (provider) => {
+          calls.push(['removeAiKey', provider]);
+          return Promise.resolve(err({ kind: 'unknown-provider' }));
+        },
+      },
+      reads: {
+        list: () => Promise.resolve(PROVIDERS),
+        readTaste: (words) => {
+          calls.push(['readTaste', words]);
+          return Promise.resolve(ok(['sour']));
+        },
+        readSpecSheet: (request, parent) => {
+          calls.push(['readSpecSheet', request, parent]);
+          return Promise.resolve(ok({ status: 'cancelled' }));
+        },
+      },
     },
     roastFiles: {
       exportRoasts: (request, parent) => {
@@ -186,6 +227,25 @@ function setup() {
     openBeanLink: (id) => {
       calls.push(['openBeanLink', id]);
       return Promise.resolve(err({ kind: 'no-link', id }));
+    },
+    suppliers: {
+      list: () => Promise.resolve([]),
+      add: (fields) => {
+        calls.push(['addSupplier', fields]);
+        return Promise.resolve(ok(1));
+      },
+      update: (update) => {
+        calls.push(['updateSupplier', update]);
+        return Promise.resolve(ok(undefined));
+      },
+      delete: (id) => {
+        calls.push(['deleteSupplier', id]);
+        return Promise.resolve(ok(undefined));
+      },
+    },
+    openSupplierWebsite: (id) => {
+      calls.push(['openSupplierWebsite', id]);
+      return Promise.resolve(err({ kind: 'no-website', id }));
     },
     roasters: {
       load: () => Promise.resolve([]),
@@ -461,6 +521,39 @@ describe('roast, snapshot and settings handlers', () => {
     ]);
   });
 
+  it('checks supplier requests at the boundary', async () => {
+    const { handlers, calls } = setup();
+    const falcon = {
+      name: 'Falcon',
+      website: 'https://falcon.coffee',
+      email: 'sales@falcon.coffee',
+      phone: null,
+      notes: null,
+    };
+    await expect(handlers[IPC_CHANNELS.addSupplier]?.({ ...falcon, name: ' ' })).rejects.toThrow();
+    await expect(
+      handlers[IPC_CHANNELS.addSupplier]?.({ ...falcon, website: 'javascript:alert(1)' }),
+    ).rejects.toThrow();
+    await expect(
+      handlers[IPC_CHANNELS.updateSupplier]?.({ id: 1, fields: { ...falcon, email: 'no' } }),
+    ).rejects.toThrow();
+    // A supplier id only: an address from the renderer is refused before anything opens.
+    await expect(
+      handlers[IPC_CHANNELS.openSupplierWebsite]?.('https://elsewhere.example'),
+    ).rejects.toThrow();
+    expect(calls).toEqual([]);
+    await handlers[IPC_CHANNELS.addSupplier]?.(falcon);
+    await handlers[IPC_CHANNELS.updateSupplier]?.({ id: 1, fields: falcon });
+    await handlers[IPC_CHANNELS.deleteSupplier]?.(1);
+    await handlers[IPC_CHANNELS.openSupplierWebsite]?.(1);
+    expect(calls).toEqual([
+      ['addSupplier', falcon],
+      ['updateSupplier', { id: 1, fields: falcon }],
+      ['deleteSupplier', 1],
+      ['openSupplierWebsite', 1],
+    ]);
+  });
+
   it('passes Charge soon and Resume auto on', async () => {
     const { handlers, calls } = setup();
     await handlers[IPC_CHANNELS.autoChargeSoon]?.(undefined);
@@ -609,6 +702,48 @@ describe('make a bean profile handler', () => {
   ])('rejects %j and makes nothing', async (payload) => {
     const { handlers, calls } = setup();
     await expect(handle(handlers, IPC_CHANNELS.makeBeanProfile, payload)).rejects.toThrow();
+    expect(calls).toEqual([]);
+  });
+});
+
+describe('taste and AI helper handlers', () => {
+  it('passes valid requests on, the spec sheet with the calling window', async () => {
+    const { handlers, calls } = setup();
+    await handle(handlers, IPC_CHANNELS.saveRoastTaste, { id: 3, tags: ['sour'], words: 'tart' });
+    await handle(handlers, IPC_CHANNELS.makeTasteProfile, { roastId: 3 });
+    expect(await handle(handlers, IPC_CHANNELS.listAiProviders)).toEqual(PROVIDERS);
+    // A saved key answers with the providers as they are now; a refusal passes through.
+    expect(
+      await handle(handlers, IPC_CHANNELS.saveAiKey, { provider: 'jev', key: ' ts-12345678 ' }),
+    ).toEqual(ok(PROVIDERS));
+    expect(await handle(handlers, IPC_CHANNELS.removeAiKey, 'claude')).toEqual(
+      err({ kind: 'unknown-provider' }),
+    );
+    expect(await handle(handlers, IPC_CHANNELS.readTaste, { words: 'tart' })).toEqual(ok(['sour']));
+    await handle(handlers, IPC_CHANNELS.readSpecSheet, { kind: 'pdf' });
+    expect(calls).toEqual([
+      ['saveTaste', { id: 3, tags: ['sour'], words: 'tart' }],
+      ['makeTasteProfile', { roastId: 3 }],
+      ['saveAiKey', 'jev', 'ts-12345678'],
+      ['removeAiKey', 'claude'],
+      ['readTaste', 'tart'],
+      ['readSpecSheet', { kind: 'pdf' }, CALLER.window],
+    ]);
+  });
+
+  it.each([
+    [IPC_CHANNELS.saveRoastTaste, { id: 3, tags: ['smoky'], words: null }],
+    [IPC_CHANNELS.saveRoastTaste, { id: 3, tags: [], words: 'w'.repeat(501) }],
+    [IPC_CHANNELS.makeTasteProfile, { roastId: 'x' }],
+    [IPC_CHANNELS.saveAiKey, { provider: 'GPT 4', key: 'sk-12345678' }],
+    [IPC_CHANNELS.saveAiKey, { provider: 'claude', key: 'sk-ant-1234\n5678' }],
+    [IPC_CHANNELS.saveAiKey, { provider: 'claude', key: 'short' }],
+    [IPC_CHANNELS.removeAiKey, '../keys'],
+    [IPC_CHANNELS.readTaste, { words: '' }],
+    [IPC_CHANNELS.readSpecSheet, { kind: 'url', url: 'https://example.com' }],
+  ])('rejects a bad %s payload and calls nothing', async (channel, payload) => {
+    const { handlers, calls } = setup();
+    await expect(handle(handlers, channel, payload)).rejects.toThrow();
     expect(calls).toEqual([]);
   });
 });

@@ -52,4 +52,11 @@ describe('TextField', () => {
     expect(screen.getByRole('textbox', { name: 'Bean' })).toHaveValue('Kenya');
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
+
+  it('a password field hides what you type', () => {
+    render(<TextField label="Key" type="password" value="sk-secret" onChange={vi.fn()} />);
+    const field = screen.getByLabelText('Key');
+    expect(field).toHaveAttribute('type', 'password');
+    expect(field).toHaveValue('sk-secret');
+  });
 });

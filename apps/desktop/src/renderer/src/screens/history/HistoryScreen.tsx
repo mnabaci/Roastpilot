@@ -1,12 +1,13 @@
 import type { RoastId } from '@roastpilot/shared';
-import { Button, Menu, RoastList, SidebarLayout } from '@roastpilot/ui';
+import { Button, Menu, RoastList, ScopeLine, SidebarLayout } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { SelectionBar } from '../../features/SelectionBar';
 import { useRun } from '../../features/use-run';
 import { useSelection } from '../../features/use-selection';
 import { useTemperatureUnit } from '../../features/use-temperature-unit';
-import { useBeans, useRoast, useSettings } from '../../stores/use-stores';
+import { activeRoaster } from '../../stores/roasters-store';
+import { useBeans, useRoast, useRoasters, useSettings } from '../../stores/use-stores';
 import {
   inProgressId,
   roastRows,
@@ -15,9 +16,23 @@ import {
   wasStopped,
 } from './history-format';
 import { OpenRoast } from './OpenRoast';
+import { HistoryEmpty } from './HistoryEmpty';
 import { filterRoasts, NO_FILTER } from './roast-filter';
 import { RoastFilters } from './RoastFilters';
 import { RoastHeader } from './RoastHeader';
+import {
+  ACTIVE,
+  ALL_ROASTERS,
+  busiestOther,
+  hasRoasterScope,
+  normalScope,
+  roasterOf,
+  roasterScopeOptions,
+  roastsInScope,
+  scopeName,
+  scopeShowing,
+  type RoasterScope,
+} from './roaster-scope';
 import { useMakeProfile } from './use-make-profile';
 import { useRoastFiles } from './use-roast-files';
 import { useRoastList } from './use-roast-list';
@@ -39,7 +54,13 @@ export function HistoryScreen({
   const smoothingS = useSettings((s) => s.settings.chartSmoothingS);
   const unit = useTemperatureUnit();
   const beans = useBeans((s) => s.beans);
+  const roasters = useRoasters((s) => s.roasters);
+  const activeId = activeRoaster(roasters)?.id;
   const [picked, setPicked] = useState<RoastId | undefined>(openFirst);
+  // The active roaster's roasts, like Profiles; it follows the active roaster (docs/spec/ui.md).
+  const [scope, setScope] = useState<RoasterScope>(ACTIVE);
+  // A roast asked for (a bean's roast, an import) shows, even when it ran on another roaster.
+  const [reveal, setReveal] = useState<RoastId | undefined>(openFirst);
   const [compareId, setCompareId] = useState<RoastId>();
   const [deleteError, setDeleteError] = useState<string>();
   const [filter, setFilter] = useState(NO_FILTER);
@@ -49,12 +70,28 @@ export function HistoryScreen({
   const files = useRoastFiles((id) => {
     setFilter(NO_FILTER);
     setPicked(id);
+    setReveal(id);
   });
   const profileMaker = useMakeProfile(onOpenProfile);
 
   const list = roasts ?? [];
+  const asked = reveal === undefined ? undefined : list.find((r) => r.id === reveal);
+  if (asked) {
+    // Once the roast is listed: widen to every roaster if its own isn't the one shown.
+    setScope(scopeShowing(normalScope(scope, activeId), asked, activeId));
+    setReveal(undefined);
+  }
   const liveId = inProgressId(list, livePhase);
-  const listed = filterRoasts(list, filter);
+  // One roaster and no imports: every roast is its, and there is nothing to choose.
+  const scoped = hasRoasterScope(roasters, list);
+  const shownScope = scoped ? normalScope(scope, activeId) : ALL_ROASTERS;
+  const onRoaster = roastsInScope(list, shownScope, activeId);
+  const listed = filterRoasts(onRoaster, filter);
+  // "No roasts on Simulator yet", rather than blaming filters that aren't on.
+  const emptyRoaster =
+    onRoaster.length === 0 ? scopeName(shownScope, roasters, activeId) : undefined;
+  // From an empty roaster, the roaster with the most roasts is one click away.
+  const busiest = emptyRoaster ? busiestOther(list, roasters, activeId, shownScope) : undefined;
   const selection = useSelection(
     listed.map((r) => r.id),
     list.map((r) => r.id),
@@ -111,24 +148,79 @@ export function HistoryScreen({
   if (roasts === undefined) return <main className="flex-1" />;
   if (list.length === 0)
     return (
-      <main className="flex min-h-0 flex-1 flex-col items-start gap-2 p-6">
+      <main className="flex min-h-0 flex-1 flex-col items-start gap-4 p-6">
         <h1 className="text-title">History</h1>
-        <p className="text-body text-ink-muted">
-          No roasts yet · each roast saves itself from charge
-        </p>
-        <div className="flex gap-2">
-          <Button size="sm" onClick={files.importRoasts}>
-            Import a Roastpilot file
-          </Button>
-          <Button size="sm" variant="ghost" onClick={files.importAlog}>
-            Import from Artisan
-          </Button>
-        </div>
+        <HistoryEmpty
+          title="No roasts yet"
+          detail="Each roast saves itself from charge, or bring in the ones you have"
+          actions={
+            <>
+              <Button size="sm" onClick={files.importRoasts}>
+                Import a Roastpilot file
+              </Button>
+              <Button size="sm" variant="ghost" onClick={files.importAlog}>
+                Import from Artisan
+              </Button>
+            </>
+          }
+        />
       </main>
     );
 
   const live = selectedId !== undefined && selectedId === liveId;
   const note = profileMaker.noteFor(selectedId);
+  const roastsWord = (n: number) => `${String(n)} ${n === 1 ? 'roast' : 'roasts'}`;
+  // Nothing listed: say why where the roast would be, with what to do about it.
+  const empty =
+    listed.length > 0 ? undefined : emptyRoaster ? (
+      <HistoryEmpty
+        title={`No roasts on ${emptyRoaster} yet`}
+        detail={[
+          'Each roast saves itself from charge',
+          busiest ? `${busiest.name} has ${roastsWord(busiest.count)}` : undefined,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+        actions={
+          <>
+            {busiest ? (
+              <Button
+                size="sm"
+                onClick={() => {
+                  setScope(busiest.scope);
+                }}
+              >
+                Show {busiest.name}’s roasts
+              </Button>
+            ) : null}
+            <Button
+              size="sm"
+              variant={busiest ? 'ghost' : 'secondary'}
+              onClick={() => {
+                setScope(ALL_ROASTERS);
+              }}
+            >
+              All roasters
+            </Button>
+          </>
+        }
+      />
+    ) : (
+      <HistoryEmpty
+        title="No roasts match these filters"
+        detail={`None of the ${roastsWord(onRoaster.length)} here match`}
+        actions={
+          <Button
+            size="sm"
+            onClick={() => {
+              setFilter(NO_FILTER);
+            }}
+          >
+            Clear filters
+          </Button>
+        }
+      />
+    );
   return (
     <SidebarLayout
       title="History"
@@ -154,10 +246,26 @@ export function HistoryScreen({
           ]}
         />
       }
+      subtitle={
+        scoped ? (
+          <ScopeLine
+            label="Roaster"
+            value={shownScope}
+            options={roasterScopeOptions(list, roasters, activeId)}
+            onChange={(next) => {
+              setScope(next);
+              setDeleteError(undefined);
+            }}
+          />
+        ) : undefined
+      }
       contentLabel="Roast"
       sidebar={
         <>
-          <RoastFilters filter={filter} onChange={setFilter} beans={beans} roasts={list} />
+          {/* Nothing on this roaster: nothing to filter either. */}
+          {emptyRoaster ? null : (
+            <RoastFilters filter={filter} onChange={setFilter} beans={beans} roasts={onRoaster} />
+          )}
           {selection.selecting ? (
             <SelectionBar
               label="Selected roasts"
@@ -185,56 +293,66 @@ export function HistoryScreen({
               onDone={selection.done}
             />
           ) : null}
-          <RoastList
-            label="Saved roasts"
-            items={roastRows(listed, livePhase, unit, {}, beans)}
-            selectedId={selectedId}
-            onSelect={(id) => {
-              setPicked(id);
-              setDeleteError(undefined);
-            }}
-            {...(selection.selecting
-              ? { checked: selection.checked, onCheck: selection.check }
-              : {})}
-          />
+          {empty ? null : (
+            <RoastList
+              label="Saved roasts"
+              items={roastRows(listed, livePhase, unit, {}, beans).map((row, i) => {
+                const roast = listed[i];
+                // Several roasters' roasts in one list: each says which it ran on.
+                return shownScope === ALL_ROASTERS && scoped && roast
+                  ? { ...row, aside: roasterOf(roast, roasters) }
+                  : row;
+              })}
+              selectedId={selectedId}
+              onSelect={(id) => {
+                setPicked(id);
+                setDeleteError(undefined);
+              }}
+              {...(selection.selecting
+                ? { checked: selection.checked, onCheck: selection.check }
+                : {})}
+            />
+          )}
         </>
       }
     >
-      <div className="flex flex-col gap-5">
-        <RoastHeader
-          roast={selectedRoast}
-          others={others}
-          compareId={compareTo?.id}
-          onCompare={setCompareId}
-          live={live}
-          stopped={selected.status === 'loaded' && wasStopped(selected.detail)}
-          onMakeProfile={profileMaker.make}
-          onExport={(id, format) => {
-            files.exportRoasts({ format, ids: [id] });
-          }}
-          onDelete={remove}
-        />
-        {note ? (
-          <p role="status" className="text-label text-ink-muted">
-            {note}
-          </p>
-        ) : null}
-        {deleteError ? (
-          <p role="alert" className="text-body text-critical-text">
-            {deleteError}
-          </p>
-        ) : null}
-        <OpenRoast
-          selected={selected}
-          compared={compared}
-          compareLabel={compareTo ? roastTitle(compareTo.startedAt) : ''}
-          live={live}
-          beans={beans}
-          smoothingS={smoothingS}
-          showPreheat={showPreheat}
-          onShowPreheat={setShowPreheat}
-        />
-      </div>
+      {empty ?? (
+        <div className="flex flex-col gap-5">
+          <RoastHeader
+            roast={selectedRoast}
+            others={others}
+            compareId={compareTo?.id}
+            onCompare={setCompareId}
+            live={live}
+            stopped={selected.status === 'loaded' && wasStopped(selected.detail)}
+            onMakeProfile={profileMaker.make}
+            onExport={(id, format) => {
+              files.exportRoasts({ format, ids: [id] });
+            }}
+            onDelete={remove}
+          />
+          {note ? (
+            <p role="status" className="text-label text-ink-muted">
+              {note}
+            </p>
+          ) : null}
+          {deleteError ? (
+            <p role="alert" className="text-body text-critical-text">
+              {deleteError}
+            </p>
+          ) : null}
+          <OpenRoast
+            selected={selected}
+            compared={compared}
+            compareLabel={compareTo ? roastTitle(compareTo.startedAt) : ''}
+            live={live}
+            beans={beans}
+            smoothingS={smoothingS}
+            showPreheat={showPreheat}
+            onShowPreheat={setShowPreheat}
+          />
+        </div>
+      )}
     </SidebarLayout>
   );
 }

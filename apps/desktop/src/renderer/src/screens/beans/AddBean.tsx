@@ -3,6 +3,10 @@ import { cn } from '@roastpilot/ui';
 import { RecordHeader } from '../../features/RecordHeader';
 import { PAGE_WIDTH } from '../../lib/page-width';
 import { BeanAbout } from './BeanAbout';
+import { FillDetailsButton } from './FillDetailsButton';
+import { SheetFillNote } from './SheetFillNote';
+import { SpecSheetDialog } from './SpecSheetDialog';
+import { useSpecSheetFill } from './use-spec-sheet-fill';
 import { useBeanDraft } from './use-bean-draft';
 
 /**
@@ -17,6 +21,7 @@ export function AddBean({
   onAdded: (id: BeanId) => void;
 }) {
   const record = useBeanDraft(undefined);
+  const fill = useSpecSheetFill(record, { isNew: true });
   return (
     <section aria-label="Add bean" className={cn('flex flex-col gap-4', PAGE_WIDTH)}>
       <RecordHeader
@@ -40,6 +45,9 @@ export function AddBean({
           canSave: record.canSave,
           saveLabel: 'Add bean',
           placeholder: 'Name this bean',
+          lead: fill.offered ? (
+            <FillDetailsButton fill={fill} link={record.draft.link} />
+          ) : undefined,
         }}
         actions={null}
       />
@@ -48,6 +56,8 @@ export function AddBean({
           {record.problem}
         </p>
       ) : null}
+      <SheetFillNote fill={fill} />
+      <SpecSheetDialog open={fill.open} onClose={fill.close} onFilled={fill.onFilled} />
       {/* Always open while adding: there's nothing to fold it to yet. */}
       <BeanAbout bean={undefined} state={record} editing open onOpenChange={() => undefined} />
     </section>

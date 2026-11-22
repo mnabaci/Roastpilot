@@ -13,7 +13,15 @@ import { idByName, parseRoastFile, toRoastFile, type Names } from './roast-file'
 export interface RoastFileServiceDeps {
   repository: Pick<
     RoastRepository,
-    'list' | 'get' | 'create' | 'addSamples' | 'addEvent' | 'update' | 'saveResult' | 'delete'
+    | 'list'
+    | 'get'
+    | 'create'
+    | 'addSamples'
+    | 'addEvent'
+    | 'update'
+    | 'saveResult'
+    | 'saveTaste'
+    | 'delete'
   >;
   /** Bean and roaster names by id: written into files, and matched on import. */
   names: () => Promise<Names>;

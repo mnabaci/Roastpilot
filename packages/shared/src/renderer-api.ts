@@ -13,6 +13,7 @@ import type { RoastState } from './roast';
 import type { Roaster } from './roaster';
 import type { SafetyEvent } from './safety-event';
 import type { Screen } from './screen';
+import type { Supplier } from './supplier';
 import type { UpdateStatus } from './update-status';
 
 // The renderer's side of the IPC contract (docs/spec/architecture.md), one interface per area
@@ -148,6 +149,13 @@ export interface BeansApi {
   saveRoastResult: Invoke<typeof C.saveRoastResult>;
   /** A new profile of your own from a saved roast, on the roaster it ran on. */
   makeProfileFromRoast: Invoke<typeof C.makeProfileFromRoast>;
+  /** The taste tags and words of a saved roast (docs/spec/beans-favourites-ghost.md, Taste). */
+  saveRoastTaste: Invoke<typeof C.saveRoastTaste>;
+  /**
+   * Make <bean> profile: the roast's taste suggestion as a new profile, made the bean's own.
+   * Main works the suggestion out again from what is saved. All or nothing.
+   */
+  makeTasteProfile: Invoke<typeof C.makeTasteProfile>;
 }
 
 /** Roaster records (docs/spec/roasters.md). Changes wait while one is connected. */
@@ -198,6 +206,35 @@ export interface UpdatesApi {
   onUpdateStatus(listener: (status: UpdateStatus) => void): Unsubscribe;
 }
 
+/**
+ * AI helpers (docs/spec/ai-helpers.md): the providers main registered, each with what it says
+ * about itself and whether its key is saved (its last four characters, never the key). Keys are
+ * kept in main, encrypted; reads run in main.
+ */
+export interface AiApi {
+  listAiProviders: Invoke<typeof C.listAiProviders>;
+  saveAiKey: Invoke<typeof C.saveAiKey>;
+  removeAiKey: Invoke<typeof C.removeAiKey>;
+  /** Your tasting words into tags, by the provider Settings picked. */
+  readTaste: Invoke<typeof C.readTaste>;
+  /** A spec sheet into bean fields: pasted text, or a PDF main asks you to pick. */
+  readSpecSheet: Invoke<typeof C.readSpecSheet>;
+}
+
+/** Who you buy from, picked on each bean (docs/spec/beans-favourites-ghost.md, Suppliers). */
+export interface SuppliersApi {
+  /** Empty when storage can't be read (logged in main). */
+  listSuppliers: Invoke<typeof C.listSuppliers>;
+  addSupplier: Invoke<typeof C.addSupplier>;
+  updateSupplier: Invoke<typeof C.updateSupplier>;
+  /** Refused while any bean, archived ones too, names it. */
+  deleteSupplier: Invoke<typeof C.deleteSupplier>;
+  /** Opens the supplier's saved website in the browser; main reads it, never the caller. */
+  openSupplierWebsite: Invoke<typeof C.openSupplierWebsite>;
+  /** The list changed: a supplier written, or one added by saving a bean that names it. */
+  onSuppliers(listener: (suppliers: Supplier[]) => void): Unsubscribe;
+}
+
 /** The typed API the preload script exposes to the renderer as `window.roastpilot`. */
 export interface RoastpilotApi
   extends
@@ -212,6 +249,8 @@ export interface RoastpilotApi
     ProfilesApi,
     RoastersApi,
     BeansApi,
+    SuppliersApi,
     LibraryFilesApi,
     AppApi,
-    UpdatesApi {}
+    UpdatesApi,
+    AiApi {}

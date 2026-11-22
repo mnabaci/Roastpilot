@@ -1,0 +1,1 @@
+ALTER TABLE `beans` DROP COLUMN `supplier`;

@@ -1,6 +1,7 @@
 import {
   err,
   ok,
+  type AiApi,
   type AutoProfile,
   type BeansApi,
   type HistoryApi,
@@ -8,6 +9,7 @@ import {
   type ProfilesApi,
   type Roaster,
   type RoastersApi,
+  type SuppliersApi,
 } from '@roastpilot/shared';
 import { accepted, cancelled, done, listening } from './answers';
 
@@ -52,6 +54,27 @@ export const fakeBeansApi = (): BeansApi => ({
   setRoastSetup: done,
   saveRoastResult: accepted,
   makeProfileFromRoast: () => Promise.resolve(err({ kind: 'too-short' as const })),
+  saveRoastTaste: accepted,
+  makeTasteProfile: () => Promise.resolve(err({ kind: 'no-change' as const })),
+});
+
+/** No suppliers; a new one gets id 1, and has no website to open. */
+export const fakeSuppliersApi = (): SuppliersApi => ({
+  listSuppliers: () => Promise.resolve([]),
+  addSupplier: () => Promise.resolve(ok(1)),
+  updateSupplier: accepted,
+  deleteSupplier: accepted,
+  openSupplierWebsite: (id) => Promise.resolve(err({ kind: 'no-website' as const, id })),
+  onSuppliers: listening,
+});
+
+/** No AI providers registered; a read is off. */
+export const fakeAiApi = (): AiApi => ({
+  listAiProviders: () => Promise.resolve([]),
+  saveAiKey: () => Promise.resolve(err({ kind: 'unknown-provider' as const })),
+  removeAiKey: () => Promise.resolve(err({ kind: 'unknown-provider' as const })),
+  readTaste: () => Promise.resolve(err({ kind: 'off' as const })),
+  readSpecSheet: () => Promise.resolve(err({ kind: 'off' as const })),
 });
 
 /** No roasters; a new one is refused, a saved one comes back as sent. */

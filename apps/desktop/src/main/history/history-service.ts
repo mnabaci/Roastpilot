@@ -9,6 +9,7 @@ import {
   type RoastId,
   type RoastResult,
   type RoastSummary,
+  type RoastTaste,
   type StorageError,
   type TemperatureUnit,
 } from '@roastpilot/shared';
@@ -23,6 +24,7 @@ export interface HistoryServiceDeps {
     | 'get'
     | 'delete'
     | 'saveResult'
+    | 'saveTaste'
     | 'create'
     | 'addSamples'
     | 'addEvent'
@@ -71,6 +73,18 @@ export class HistoryService {
       this.#deps.onResultSaved(result.id);
     } else {
       this.#deps.logger.warn('history.result-failed', { id: result.id, error: saved.error });
+    }
+    return saved;
+  }
+
+  /** The taste tags and words; the windows hear of it as of a result. */
+  async saveTaste(taste: RoastTaste): Promise<Result<void, StorageError>> {
+    const saved = await this.#deps.repository.saveTaste(taste);
+    if (saved.ok) {
+      this.#deps.logger.info('history.taste-saved', { id: taste.id, tags: taste.tags.length });
+      this.#deps.onResultSaved(taste.id);
+    } else {
+      this.#deps.logger.warn('history.taste-failed', { id: taste.id, error: saved.error });
     }
     return saved;
   }

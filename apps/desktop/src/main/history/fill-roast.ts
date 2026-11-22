@@ -1,5 +1,12 @@
 import type { Logger, RoastRepository } from '@roastpilot/core';
-import type { Result, RoastId, SavedEvent, SavedSample, StorageError } from '@roastpilot/shared';
+import type {
+  Result,
+  RoastId,
+  SavedEvent,
+  SavedSample,
+  StorageError,
+  TasteTag,
+} from '@roastpilot/shared';
 
 /** A finished roast from a file, to write into a row that was just made. */
 export interface RoastToFill {
@@ -14,11 +21,17 @@ export interface RoastToFill {
   notes: string | null;
   rating?: number | null;
   isFavourite?: boolean;
+  /** Missing from Artisan and from files before taste. */
+  tasteTags?: readonly TasteTag[];
+  tasteWords?: string | null;
 }
 
 /** Writes an imported roast's samples, events, timings and result; stops at the first failure. */
 export async function fillRoast(
-  repository: Pick<RoastRepository, 'addSamples' | 'addEvent' | 'update' | 'saveResult'>,
+  repository: Pick<
+    RoastRepository,
+    'addSamples' | 'addEvent' | 'update' | 'saveResult' | 'saveTaste'
+  >,
   id: RoastId,
   roast: RoastToFill,
 ): Promise<Result<void, StorageError>> {
@@ -35,7 +48,7 @@ export async function fillRoast(
     dropTemp: roast.dropTemp,
   });
   if (!updated.ok) return updated;
-  return repository.saveResult({
+  const result = await repository.saveResult({
     id,
     batchG: roast.batchG,
     roastedG: roast.roastedG,
@@ -43,6 +56,11 @@ export async function fillRoast(
     isFavourite: roast.isFavourite ?? false,
     notes: roast.notes,
   });
+  if (!result.ok) return result;
+  const tags = roast.tasteTags ?? [];
+  const words = roast.tasteWords ?? null;
+  if (tags.length === 0 && words === null) return result;
+  return repository.saveTaste({ id, tags: [...tags], words });
 }
 
 /**
@@ -50,7 +68,10 @@ export async function fillRoast(
  * nothing. A delete that fails too is logged: that row stays, visible in History.
  */
 export async function fillOrRemove(
-  repository: Pick<RoastRepository, 'addSamples' | 'addEvent' | 'update' | 'saveResult' | 'delete'>,
+  repository: Pick<
+    RoastRepository,
+    'addSamples' | 'addEvent' | 'update' | 'saveResult' | 'saveTaste' | 'delete'
+  >,
   id: RoastId,
   roast: RoastToFill,
   logger: Logger,

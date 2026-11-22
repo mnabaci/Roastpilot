@@ -3,22 +3,24 @@
 New features are added by registering a new implementation, not by editing the core. Each
 extension point is a small interface plus a registry the app fills at startup.
 
-| Extension point    | Interface                | v1 implementations                                                                       | Later, no core changes                                       |
-| ------------------ | ------------------------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| Roaster hardware   | `RoasterDriver`          | Skywalker (TC4), Simulator                                                               | Other roasters and boards (with their own built-in profiles) |
-| TC4 board dialect  | `Tc4Dialect`             | SkyCommand, Stock TC4 (aArtisanQ_PID)                                                    | Other TC4-style sketches                                     |
-| Roaster model      | `RoasterModelDefinition` | Skywalker, Generic TC4, Simulator                                                        | Other roaster models                                         |
-| Connection         | `Transport`              | Serial                                                                                   | Wi-Fi, Bluetooth                                             |
-| Control per output | `OutputController`       | Fixed, Step target (PID), Curve follow (RoR PID), Manual                                 | Other control methods                                        |
-| End of roast       | `EndRule`                | Development time after FC, BT cap                                                        | Colour sensor, weight loss                                   |
-| Phase markers      | `PhaseMarker`            | Dry end by temperature                                                                   | Other automatic markers                                      |
-| Profile suggestion | `SuggestionStrategy`     | Same bean, then similar beans                                                            | Smarter matching                                             |
-| Manual coach       | `CoachRule`              | Auto's setting, first crack soon, drop soon                                              | New tips                                                     |
-| Chart layers       | `ChartLayer`             | Temp, ET, Target, RoR, Ghost, Events, Heater, Fan; Projection, Now line, Phase bands     | Other probes, annotations                                    |
-| Import / export    | `Exporter`, `Importer`   | Roastpilot files (roasts, beans, profiles, roasters), CSV export, Artisan `.alog` import | Artisan export, a whole-library backup                       |
-| Sync               | `SyncTarget`             | None (local only)                                                                        | Cloud Postgres for the phone                                 |
-| Alerts             | `Notifier`               | Banner + sound                                                                           | Phone push                                                   |
-| Log output         | `LogSink`                | Daily file, dev terminal, live viewer                                                    | Remote crash reporting                                       |
+| Extension point    | Interface                        | v1 implementations                                                                       | Later, no core changes                                       |
+| ------------------ | -------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Roaster hardware   | `RoasterDriver`                  | Skywalker (TC4), Simulator                                                               | Other roasters and boards (with their own built-in profiles) |
+| TC4 board dialect  | `Tc4Dialect`                     | SkyCommand, Stock TC4 (aArtisanQ_PID)                                                    | Other TC4-style sketches                                     |
+| Roaster model      | `RoasterModelDefinition`         | Skywalker, Generic TC4, Simulator                                                        | Other roaster models                                         |
+| Connection         | `Transport`                      | Serial                                                                                   | Wi-Fi, Bluetooth                                             |
+| Control per output | `OutputController`               | Fixed, Step target (PID), Curve follow (RoR PID), Manual                                 | Other control methods                                        |
+| End of roast       | `EndRule`                        | Development time after FC, BT cap                                                        | Colour sensor, weight loss                                   |
+| Phase markers      | `PhaseMarker`                    | Dry end by temperature                                                                   | Other automatic markers                                      |
+| Profile suggestion | `SuggestionStrategy`             | Same bean, then similar beans                                                            | Smarter matching                                             |
+| Manual coach       | `CoachRule`                      | Auto's setting, first crack soon, drop soon                                              | New tips                                                     |
+| Taste suggestion   | `TasteRule`                      | The rows of [Taste → next roast](beans-favourites-ghost.md#the-suggestion)               | New tags and rules                                           |
+| Reading text (AI)  | `TasteReader`, `SpecSheetReader` | Claude (both), Jev (taste) ([ai-helpers.md](ai-helpers.md))                              | A local model, other providers                               |
+| Chart layers       | `ChartLayer`                     | Temp, ET, Target, RoR, Ghost, Events, Heater, Fan; Projection, Now line, Phase bands     | Other probes, annotations                                    |
+| Import / export    | `Exporter`, `Importer`           | Roastpilot files (roasts, beans, profiles, roasters), CSV export, Artisan `.alog` import | Artisan export, a whole-library backup                       |
+| Sync               | `SyncTarget`                     | None (local only)                                                                        | Cloud Postgres for the phone                                 |
+| Alerts             | `Notifier`                       | Banner + sound                                                                           | Phone push                                                   |
+| Log output         | `LogSink`                        | Daily file, dev terminal, live viewer                                                    | Remote crash reporting                                       |
 
 ## Roaster models
 

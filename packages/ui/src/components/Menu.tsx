@@ -25,6 +25,8 @@ export interface MenuProps {
   items: readonly MenuItem[];
   /** The trigger waits, dimmed (Export before anything is ticked). */
   disabled?: boolean;
+  /** With `text`: a ghost button, its icon first, for a helper beside Cancel and Save. */
+  quiet?: { icon: ReactNode };
   className?: string;
 }
 
@@ -32,12 +34,17 @@ export interface MenuProps {
  * The actions you rarely need, behind a "⋯" button (design system: Menu). Arrows move, Enter picks,
  * Escape closes and focus goes back to the button.
  */
-export function Menu({ label, text, items, disabled, className }: MenuProps) {
+export function Menu({ label, text, items, disabled, quiet, className }: MenuProps) {
   const hintId = useId();
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild disabled={disabled}>
-        {text ? (
+        {text && quiet ? (
+          <Button size="sm" variant="ghost" icon={quiet.icon} className={className}>
+            <span className="truncate">{text}</span>
+            <ChevronDown aria-hidden="true" className="-ml-1 size-4! text-ink-muted" />
+          </Button>
+        ) : text ? (
           <Button
             size="sm"
             // Same chip as FilterSelect ("Compare ▾" beside "Make profile ▾"): 16 px chevron, tight gap.

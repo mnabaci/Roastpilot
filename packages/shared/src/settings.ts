@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { AiSettingsSchema, DEFAULT_AI_SETTINGS } from './ai';
 import { ConnectTargetSchema } from './connection';
 import { DEFAULT_PROFILE_ID, ProfileIdSchema } from './profile';
 import { DEFAULT_SOUNDS, SoundsSchema } from './sounds';
@@ -90,6 +91,8 @@ export const SettingsSchema = z.object({
     .max(64)
     .catch([...DEFAULT_OPEN_CARDS])
     .default([...DEFAULT_OPEN_CARDS]),
+  /** AI helpers: off until you turn them on (docs/spec/ai-helpers.md). The keys live apart. */
+  ai: AiSettingsSchema.catch({ ...DEFAULT_AI_SETTINGS }).default({ ...DEFAULT_AI_SETTINGS }),
   /** The safety notice version you accepted; 0 until you do (docs/spec/safety.md, Safety notice). */
   safetyNoticeAccepted: z.number().int().min(0).catch(0).default(0),
 });

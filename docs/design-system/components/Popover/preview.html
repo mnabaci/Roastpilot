@@ -1,0 +1,137 @@
+<!-- @dsCard group="Feedback" height=360 subtitle="A short read from a button, on click: a supplier's card" -->
+<!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
+<link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+  }
+  .wrap {
+    padding: 20px;
+  }
+  .label {
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+  .trigger {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 2px;
+  }
+  .name {
+    font-size: 15px;
+    text-decoration: underline;
+    text-decoration-color: var(--ink);
+    text-underline-offset: 4px;
+  }
+  .panel {
+    margin-top: 4px;
+    width: 384px;
+    box-sizing: border-box;
+    padding: 16px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--surface-raised);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .panel p {
+    margin: 0;
+  }
+  .title {
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .muted {
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 12px 0 0;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+  }
+  li .icon {
+    width: 16px;
+    height: 16px;
+    color: var(--ink-muted);
+  }
+  li .copy {
+    margin-left: auto;
+    width: 14px;
+    height: 14px;
+    color: var(--ink-muted);
+  }
+  li .copy.done {
+    color: var(--good);
+  }
+  .action {
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+</style>
+<div class="wrap">
+  <div class="label">Supplier</div>
+  <div class="trigger">
+    <span class="name">Green Coffee Collective ⌃</span>
+    <span class="label">hello@greencoffeecollective.com · +44 20 7946 0958</span>
+  </div>
+  <div class="panel">
+    <div>
+      <p class="title">Green Coffee Collective</p>
+      <p class="muted">Supplies African Moon and Washed Eratoi</p>
+    </div>
+    <ul>
+      <li>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20" />
+        </svg>
+        <u>greencoffeecollective.com</u>
+        <svg class="copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="8" y="8" width="14" height="14" rx="2" />
+          <path d="M4 16V4h12" />
+        </svg>
+      </li>
+      <li>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="4" width="20" height="16" rx="2" />
+          <path d="m22 7-10 6L2 7" />
+        </svg>
+        hello@greencoffeecollective.com
+        <svg
+          class="copy done"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      </li>
+    </ul>
+    <p class="muted">Free UK delivery over 5 kg.</p>
+    <span class="action">✎ Edit supplier</span>
+  </div>
+</div>

@@ -38,6 +38,8 @@ Every request that changes what users see or do is checked against these first (
 | Dry end / first crack | Dry end marked automatically by temperature; first crack with a button press                                                                                                                  |
 | End of roast          | Auto drop: heater off, cooling on, prompt to dump beans                                                                                                                                       |
 | Safety                | Max temp cutoff, lost-connection stop, max roast time, stalled-temp alarm                                                                                                                     |
+| Taste                 | Taste tags on a roast; one suggested change for the next roast, as a new profile for the bean                                                                                                 |
+| AI helpers            | Optional, off by default, your own keys (Claude, Jev): read tasting words and spec sheets, never control a roast ([ai-helpers.md](ai-helpers.md))                                             |
 | Storage               | Local SQLite file                                                                                                                                                                             |
 | Platform              | macOS and Windows: macOS DMG and Windows installer                                                                                                                                            |
 

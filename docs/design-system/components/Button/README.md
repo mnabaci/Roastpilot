@@ -12,7 +12,7 @@ Compact, tonal buttons with an icon: one ember primary per phase, quiet tonal se
 - **Danger**: `critical` fill, `on-critical` text and icon; hover brightens it 10%. Emergency stop only.
 - **Delete**: a ghost (or the confirm's secondary) with `critical-text` text and icon, never a `critical` fill. Delete always asks once, inline: "Delete this roast? · can't be undone", both buttons in `critical-text`.
 - **Disabled**: 50% opacity and no pointer events (no hover, no press); keep the label so the user sees what comes next ("Heating to 150 °C").
-- **On / off (toggle)**: a secondary with `aria-pressed`; when on, `heat-tint` fill and `heat` text. For choices and filters: Guided / Full control, log level and scope chips. Chips use `control-sm` (44px).
+- **On / off (toggle)**: a secondary with `aria-pressed`; when on, `heat-tint` fill and `heat` text. For choices and filters: Guided / Full control, log level and scope chips, a roast's taste tags. Chips use `control-sm` (44px).
 
 ## Sizes
 

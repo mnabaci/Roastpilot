@@ -136,4 +136,59 @@ describe('Select', () => {
     await userEvent.click(screen.getByRole('button', { name: 'No bean' }));
     expect(screen.queryByRole('listbox')).toBeNull();
   });
+
+  describe('with create', () => {
+    const SUPPLIERS: SelectOption<string>[] = [
+      { value: '', label: 'None' },
+      { value: 'Falcon', label: 'Falcon' },
+    ];
+    function Supplier({ onCreate }: { onCreate: (typed: string) => void }) {
+      return (
+        <Select
+          label="Supplier"
+          value=""
+          options={SUPPLIERS}
+          onChange={vi.fn()}
+          create={{ label: (typed) => `Add supplier "${typed}"`, onCreate }}
+        >
+          Pick
+        </Select>
+      );
+    }
+
+    it('searches even a short list, and offers what you typed as a last row', async () => {
+      const onCreate = vi.fn();
+      render(<Supplier onCreate={onCreate} />);
+      await userEvent.click(screen.getByRole('button', { name: 'Pick' }));
+      const search = screen.getByRole('combobox', { name: 'Search Supplier' });
+      expect(screen.queryByRole('option', { name: /Add supplier/ })).not.toBeInTheDocument();
+      await userEvent.type(search, '  Nordic ');
+      expect(screen.queryByText('No match')).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole('option', { name: 'Add supplier "Nordic"' }));
+      expect(onCreate).toHaveBeenCalledWith('Nordic');
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+
+    it('offers no new row for a name the list has, in any case; Enter adds a new one', async () => {
+      const onCreate = vi.fn();
+      render(<Supplier onCreate={onCreate} />);
+      await userEvent.click(screen.getByRole('button', { name: 'Pick' }));
+      const search = screen.getByRole('combobox', { name: 'Search Supplier' });
+      await userEvent.type(search, 'falcon');
+      expect(screen.getByRole('option', { name: 'Falcon' })).toBeInTheDocument();
+      expect(screen.queryByRole('option', { name: /Add supplier/ })).not.toBeInTheDocument();
+      await userEvent.clear(search);
+      await userEvent.type(search, 'Aurora{Enter}');
+      expect(onCreate).toHaveBeenCalledWith('Aurora');
+    });
+
+    it('starts each opening with an empty search', async () => {
+      render(<Supplier onCreate={vi.fn()} />);
+      await userEvent.click(screen.getByRole('button', { name: 'Pick' }));
+      await userEvent.type(screen.getByRole('combobox', { name: 'Search Supplier' }), 'Nor');
+      await userEvent.keyboard('{Escape}');
+      await userEvent.click(screen.getByRole('button', { name: 'Pick' }));
+      expect(screen.getByRole('combobox', { name: 'Search Supplier' })).toHaveValue('');
+    });
+  });
 });

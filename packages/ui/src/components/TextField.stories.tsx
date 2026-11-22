@@ -26,4 +26,7 @@ export const SearchFilled: Story = { args: { value: 'connect-failed' } };
 export const Text: Story = {
   args: { label: 'Bean', type: 'text', value: 'Kenya AA', placeholder: undefined },
 };
+export const Password: Story = {
+  args: { label: 'Key', type: 'password', value: 'sk-ant-1234567890', placeholder: undefined },
+};
 export const Disabled: Story = { args: { disabled: true } };

@@ -58,12 +58,20 @@ export { soakLengthS, withCapUnder } from './auto/phase-plan';
 export { clampBatch, expectedRoastedG, splitStock } from './beans/batch-plans';
 export { beanHints } from './beans/bean-hints';
 export {
+  isBeansRow,
+  ROAST_GUIDE,
+  roastNote,
+  type NotedField,
+  type NotedValues,
+} from './beans/roast-notes';
+export {
   stockSummary,
   stockTimeline,
   type StockStep,
   type StockSummary,
 } from './beans/stock-history';
 export type { BeanRepository } from './beans/bean-repository';
+export type { SupplierRepository } from './beans/supplier-repository';
 export { bestFavourite, defaultGhost, suggestProfile } from './beans/suggest-profile';
 export type { Updater, UpdaterEvent } from './updates/updater';
 export { UpdateService } from './updates/update-service';
@@ -82,3 +90,7 @@ export {
   type ReportPhase,
   type RoastReport,
 } from './history/roast-report/report-types';
+export type { SpecSheetReader, SpecSheetSource, TasteReader } from './ai/readers';
+export { isEmptySheet, specSheetFields } from './ai/spec-sheet-fields';
+export { applyTasteChange, suggestTasteChange, tasteInput } from './taste/suggest-taste-change';
+export type { TasteField, TasteReason, TasteSuggestion } from './taste/taste-rule';

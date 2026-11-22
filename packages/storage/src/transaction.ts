@@ -24,12 +24,12 @@ function rollBack(sqlite: DatabaseSync): string | undefined {
  * `work` must use the `tx` it is given, never `db`: statements on `db` wait for the transaction to
  * end, so they would never run. Other calls on `db` wait meanwhile, so nothing interleaves.
  */
-export function transaction<T>(
+export function transaction<T, E = StorageError>(
   db: SqliteRemoteDatabase,
-  work: (tx: SqliteRemoteDatabase) => Promise<Result<T, StorageError>>,
-): Promise<Result<T, StorageError>> {
+  work: (tx: SqliteRemoteDatabase) => Promise<Result<T, E | StorageError>>,
+): Promise<Result<T, E | StorageError>> {
   const { sqlite, gate, inside } = connectionOf(db);
-  return gate.hold(async (): Promise<Result<T, StorageError>> => {
+  return gate.hold(async (): Promise<Result<T, E | StorageError>> => {
     try {
       sqlite.exec('BEGIN IMMEDIATE');
       const result = await work(inside);

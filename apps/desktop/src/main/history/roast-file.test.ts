@@ -85,6 +85,34 @@ describe('Roastpilot roast file', () => {
     expect(parsed.ok && parsed.value[0]?.notes).toBe('Bright');
   });
 
+  it('carries the taste through a file and back', () => {
+    const tasted = { ...ROAST, tasteTags: ['sour' as const, 'thin' as const], tasteWords: 'tart' };
+    const parsed = parseRoastFile(JSON.stringify(toRoastFile([tasted], NAMES, new Date())));
+    expect(parsed.ok && parsed.value[0]).toMatchObject({
+      tasteTags: ['sour', 'thin'],
+      tasteWords: 'tart',
+    });
+  });
+
+  it('refuses a file whose tasting words are longer than History takes', () => {
+    const file = toRoastFile([ROAST], NAMES, new Date());
+    const long = {
+      ...file,
+      roasts: file.roasts.map((r) => ({ ...r, tasteWords: 'w'.repeat(501) })),
+    };
+    expect(parseRoastFile(JSON.stringify(long))).toEqual({
+      ok: false,
+      error: { kind: 'not-roastpilot' },
+    });
+  });
+
+  it('reads a version 2 file from before taste, with none', () => {
+    const file = toRoastFile([ROAST], NAMES, new Date());
+    const parsed = parseRoastFile(JSON.stringify(file));
+    expect(file.version).toBe(2);
+    expect(parsed.ok && parsed.value[0]?.tasteTags).toBeUndefined();
+  });
+
   it.each([
     ['not JSON', 'nope'],
     ['another JSON file', '{"name":"package"}'],

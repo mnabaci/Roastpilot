@@ -61,6 +61,27 @@ describe('HistoryService', () => {
     expect(onResultSaved).toHaveBeenCalledWith(1);
   });
 
+  it('saves taste and tells the windows', async () => {
+    const repository = {
+      ...unavailableRepository('x'),
+      saveTaste: vi.fn(() => Promise.resolve(ok(undefined))),
+    };
+    const { service, onResultSaved, entries } = setup(repository);
+    const taste = { id: 1, tags: ['sour' as const], words: 'tart' };
+    expect(await service.saveTaste(taste)).toEqual(ok(undefined));
+    expect(repository.saveTaste).toHaveBeenCalledWith(taste);
+    expect(onResultSaved).toHaveBeenCalledWith(1);
+    expect(entries.map((e) => e.event)).toEqual(['history.taste-saved']);
+    expect(JSON.stringify(entries)).not.toContain('tart');
+  });
+
+  it('a failed taste save stays quiet and is logged', async () => {
+    const { service, onResultSaved, entries } = setup();
+    expect((await service.saveTaste({ id: 1, tags: [], words: null })).ok).toBe(false);
+    expect(onResultSaved).not.toHaveBeenCalled();
+    expect(entries.map((e) => e.event)).toEqual(['history.taste-failed']);
+  });
+
   it('a failed result stays quiet and is logged', async () => {
     const { service, onResultSaved, entries } = setup();
     expect((await service.saveResult(RESULT)).ok).toBe(false);

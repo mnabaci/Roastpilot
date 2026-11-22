@@ -11,7 +11,7 @@ export const BeanIdSchema = z.number().int().positive();
 const positive = (message = 'Must be above 0') => z.number().positive(message);
 
 /** A web address the app may open in the browser: http or https only. */
-const WebLinkSchema = z
+export const WebLinkSchema = z
   .string()
   .trim()
   .max(2000)
@@ -33,6 +33,10 @@ export const BeanFieldsSchema = z.object({
   moisturePct: z.number().min(0, 'At least 0').max(100, 'At most 100').nullable(),
   screen: positive().nullable(),
   decaf: z.boolean(),
+  /**
+   * Its supplier's name. Saving links the supplier of that name, in any case, or adds one
+   * (docs/spec/data-model.md, Suppliers).
+   */
   supplier: z.string().trim().max(120).nullable(),
   /** Where to order it again. Missing from files and beans saved before it: none. */
   link: WebLinkSchema.nullable().default(null),
@@ -42,6 +46,8 @@ export const BeanFieldsSchema = z.object({
 
 export const BeanSchema = BeanFieldsSchema.extend({
   id: BeanIdSchema,
+  /** Its supplier's record, the one `supplier` names; null with none. */
+  supplierId: z.number().int().positive().nullable(),
   /** The bean's own profile: its first suggestion. */
   profileId: ProfileIdSchema.nullable(),
   greenG: z.number().nonnegative(),

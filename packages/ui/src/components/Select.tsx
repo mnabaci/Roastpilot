@@ -1,6 +1,6 @@
 import * as Popover from '@radix-ui/react-popover';
 import { Command } from 'cmdk';
-import { Check, Search } from 'lucide-react';
+import { Check, Plus, Search } from 'lucide-react';
 import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { cn } from '../lib/utils';
 import { Badge } from './Badge';
@@ -32,7 +32,23 @@ export interface SelectProps<V extends string> {
   disabled?: boolean;
   /** Which edge of the button the panel lines up with. */
   align?: 'start' | 'end';
+  /**
+   * A list you add to as you pick (a bean's supplier): always searchable, and while the search
+   * names no option exactly, a last row `label(typed)` ("Add supplier "Falcon"") calls `onCreate`.
+   */
+  create?: SelectCreate;
 }
+
+/** The last row of a list you add to as you pick (Select's `create`). */
+export interface SelectCreate {
+  /** The row's words for what was typed: `Add supplier "${typed}"`. */
+  label: (typed: string) => string;
+  /** Picked: the typed text, trimmed. */
+  onCreate: (typed: string) => void;
+}
+
+/** cmdk's value for the create row: no option's value can be it. */
+const CREATE_ROW = '__select-create__';
 
 /** Longer lists than this start with a search box (docs/spec/ui.md, Dropdowns). */
 export const SEARCH_FROM = 9;
@@ -56,12 +72,19 @@ export function Select<V extends string>({
   'aria-label': ariaLabel,
   disabled = false,
   align = 'start',
+  create,
 }: SelectProps<V>) {
   const [open, setOpen] = useState(false);
   // The option under the keyboard; cmdk shows it highlighted.
   const [active, setActive] = useState<string>(value);
+  const [search, setSearch] = useState('');
   const list = useRef<HTMLDivElement>(null);
-  const searchable = options.length >= SEARCH_FROM;
+  const searchable = create !== undefined || options.length >= SEARCH_FROM;
+  const typed = search.trim();
+  const creatable =
+    create !== undefined &&
+    typed !== '' &&
+    !options.some((o) => o.label.trim().toLowerCase() === typed.toLowerCase());
   const pick = (next: V) => {
     setOpen(false);
     if (next !== value) onChange(next);
@@ -78,7 +101,10 @@ export function Select<V extends string>({
     <Popover.Root
       open={open}
       onOpenChange={(next) => {
-        if (next) setActive(value);
+        if (next) {
+          setActive(value);
+          setSearch('');
+        }
         setOpen(next);
       }}
     >
@@ -113,9 +139,10 @@ export function Select<V extends string>({
             value={active}
             onValueChange={setActive}
             onKeyDown={jump}
-            filter={(optionValue, search) => {
+            filter={(optionValue, searched) => {
+              if (optionValue === CREATE_ROW) return 1;
               const option = options.find((o) => o.value === optionValue);
-              return option && words(option).includes(search.toLowerCase().trim()) ? 1 : 0;
+              return option && words(option).includes(searched.toLowerCase().trim()) ? 1 : 0;
             }}
             className="flex min-h-0 flex-col outline-none"
           >
@@ -123,15 +150,19 @@ export function Select<V extends string>({
               <div className="-m-1 mb-0.5 flex h-control-sm items-center gap-2 border-b border-border px-3">
                 <Search aria-hidden="true" className="size-4 shrink-0 text-ink-muted" />
                 <Command.Input
+                  value={search}
+                  onValueChange={setSearch}
                   placeholder="Search…"
                   className="min-w-0 flex-1 bg-transparent text-body text-ink outline-none placeholder:text-ink-muted"
                 />
               </div>
             ) : null}
             <Command.List label={label} className="max-h-96 overflow-y-auto">
-              <Command.Empty className="flex min-h-control-sm items-center px-3 text-body text-ink-muted">
-                No match
-              </Command.Empty>
+              {creatable ? null : (
+                <Command.Empty className="flex min-h-control-sm items-center px-3 text-body text-ink-muted">
+                  No match
+                </Command.Empty>
+              )}
               {options.map((option) => (
                 <Command.Item
                   key={option.value}
@@ -164,6 +195,20 @@ export function Select<V extends string>({
                   </span>
                 </Command.Item>
               ))}
+              {creatable ? (
+                <Command.Item
+                  value={CREATE_ROW}
+                  forceMount
+                  onSelect={() => {
+                    setOpen(false);
+                    create.onCreate(typed);
+                  }}
+                  className={DROPDOWN_ROW}
+                >
+                  <Plus aria-hidden="true" className="size-4 shrink-0" />
+                  <span className="min-w-0 flex-1 truncate text-ink">{create.label(typed)}</span>
+                </Command.Item>
+              ) : null}
             </Command.List>
           </Command>
         </Popover.Content>

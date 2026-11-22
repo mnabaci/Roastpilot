@@ -80,12 +80,57 @@ describe('SqliteBeanRepository', () => {
     expect(await one(beans)).toEqual({
       ...FIELDS,
       id,
+      supplierId: null,
       profileId: null,
       greenG: 0,
       roastedG: 0,
       archived: false,
       avgLossPct: null,
     });
+  });
+
+  it("links a bean to the supplier it names, in any case, adding it when it's new", async () => {
+    const { beans, sqlite } = setup();
+    const first = await beans.add({ ...FIELDS, supplier: 'Falcon' });
+    const second = await beans.add({ ...FIELDS, name: 'Guji', supplier: ' falcon ' });
+    expect(first.ok && second.ok).toBe(true);
+    expect(sqlite.prepare('SELECT id, name FROM suppliers').all()).toEqual([
+      { id: 1, name: 'Falcon' },
+    ]);
+    const list = await beans.list();
+    expect(list.ok && list.value.map((b) => [b.name, b.supplier, b.supplierId])).toEqual([
+      ['Guji', 'Falcon', 1],
+      ['Yirgacheffe', 'Falcon', 1],
+    ]);
+    if (!second.ok) return;
+    await beans.update(second.value, { ...FIELDS, name: 'Guji', supplier: 'Nordic' }, null);
+    await beans.update(1, { ...FIELDS, supplier: null }, null);
+    const after = await beans.list();
+    expect(after.ok && after.value.map((b) => [b.name, b.supplier, b.supplierId])).toEqual([
+      ['Guji', 'Nordic', 2],
+      ['Yirgacheffe', null, null],
+    ]);
+  });
+
+  it("adds an imported list's suppliers with the beans, all or nothing", async () => {
+    const { beans, sqlite } = setup();
+    sqlite.exec(`CREATE TRIGGER no_guji BEFORE INSERT ON beans WHEN NEW.name = 'Guji'
+      BEGIN SELECT RAISE(ABORT, 'disk said no'); END`);
+    const imported = await beans.addAll([
+      { fields: { ...FIELDS, supplier: 'Falcon' }, profileId: null },
+      { fields: { ...FIELDS, name: 'Guji', supplier: 'Nordic' }, profileId: null },
+    ]);
+    expect(imported.ok).toBe(false);
+    expect(sqlite.prepare('SELECT count(*) AS n FROM suppliers').get()).toEqual({ n: 0 });
+  });
+
+  it("changes nothing when the bean to update isn't there", async () => {
+    const { beans, sqlite } = setup();
+    expect(await beans.update(9, { ...FIELDS, supplier: 'Falcon' }, null)).toEqual({
+      ok: false,
+      error: { kind: 'not-found', id: 9 },
+    });
+    expect(sqlite.prepare('SELECT count(*) AS n FROM suppliers').get()).toEqual({ n: 0 });
   });
 
   it('adds stock to the green stock', async () => {

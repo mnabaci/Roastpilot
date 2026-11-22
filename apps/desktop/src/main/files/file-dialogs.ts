@@ -6,8 +6,8 @@ import type { BrowserWindow } from 'electron';
 export const ROAST_FILE_EXTENSION = 'rpr';
 
 export type ExportFormat = 'csv' | 'roastpilot';
-/** What an import asks for: a Roastpilot file of a kind, or an Artisan roast. */
-export type ImportKind = FileKind | 'artisan';
+/** What an import asks for: a Roastpilot file of a kind, an Artisan roast, or a bean's spec sheet. */
+export type ImportKind = FileKind | 'artisan' | 'spec-sheet';
 
 interface Filter {
   name: string;
@@ -46,6 +46,9 @@ export function importDialog(kind: ImportKind): { title: string; filters: Filter
       title: 'Import an Artisan roast',
       filters: [{ name: 'Artisan roast', extensions: ['alog'] }],
     };
+  }
+  if (kind === 'spec-sheet') {
+    return { title: 'Choose a spec sheet', filters: [{ name: 'PDF', extensions: ['pdf'] }] };
   }
   const name = `Roastpilot ${NOUNS[kind][1]}`;
   return {

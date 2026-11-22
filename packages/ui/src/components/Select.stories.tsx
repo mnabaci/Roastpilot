@@ -50,6 +50,19 @@ export const WithBadges: Story = {
   },
 };
 export const WithBadgesLight: Story = { ...WithBadges, globals: { theme: 'Light' } };
+/** A list you add to as you pick: type a name it doesn't have, and the last row adds it. */
+export const WithCreate: Story = {
+  args: {
+    label: 'Supplier',
+    value: 'Falcon',
+    options: [
+      { value: '', label: 'None' },
+      { value: 'Falcon', label: 'Falcon', detail: 'falcon.coffee' },
+      { value: 'Nordic Approach', label: 'Nordic Approach', detail: 'nordicapproach.no' },
+    ],
+    create: { label: (typed) => `Add supplier "${typed}"`, onCreate: () => undefined },
+  },
+};
 export const Short: Story = {
   args: {
     label: 'Process',

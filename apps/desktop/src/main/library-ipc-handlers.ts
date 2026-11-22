@@ -15,7 +15,10 @@ import {
   RoasterSchema,
   SaveWiringRequestSchema,
   SetArchivedSchema,
+  SupplierFieldsSchema,
+  SupplierIdSchema,
   UpdateBeanSchema,
+  UpdateSupplierSchema,
   IPC_CHANNELS,
 } from '@roastpilot/shared';
 import type { IpcDeps, IpcHandlers } from './ipc-deps';
@@ -94,6 +97,32 @@ export function beanIpcHandlers({
     ),
     [IPC_CHANNELS.makeBeanProfile]: handler((payload) =>
       makeBeanProfile(MakeBeanProfileRequestSchema.parse(payload)),
+    ),
+  };
+}
+
+/** Suppliers, picked on each bean and kept in the Beans screen's Suppliers dialog. */
+export function supplierIpcHandlers({
+  suppliers,
+  openSupplierWebsite,
+}: Pick<IpcDeps, 'suppliers' | 'openSupplierWebsite'>): Pick<
+  IpcHandlers,
+  (typeof IPC_CHANNELS)[
+    'listSuppliers' | 'addSupplier' | 'updateSupplier' | 'deleteSupplier' | 'openSupplierWebsite']
+> {
+  return {
+    [IPC_CHANNELS.listSuppliers]: handler(() => suppliers.list()),
+    [IPC_CHANNELS.addSupplier]: handler((payload) =>
+      suppliers.add(SupplierFieldsSchema.parse(payload)),
+    ),
+    [IPC_CHANNELS.updateSupplier]: handler((payload) =>
+      suppliers.update(UpdateSupplierSchema.parse(payload)),
+    ),
+    [IPC_CHANNELS.deleteSupplier]: handler((payload) =>
+      suppliers.delete(SupplierIdSchema.parse(payload)),
+    ),
+    [IPC_CHANNELS.openSupplierWebsite]: handler((payload) =>
+      openSupplierWebsite(SupplierIdSchema.parse(payload)),
     ),
   };
 }

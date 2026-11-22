@@ -126,4 +126,34 @@ describe('Roastpilot files between two computers, on real storage', () => {
     friend.stores.close();
     mine.stores.close();
   });
+
+  it("a bean's supplier goes across by name: matched in any case, else added", async () => {
+    const mine = await computer();
+    const guji = await mine.beans.add({ ...GUJI, supplier: 'Falcon Specialty' });
+    const huila = await mine.beans.add({ ...GUJI, name: 'Huila', supplier: 'Nordic Approach' });
+    if (!guji.ok || !huila.ok) throw new Error('no beans');
+    const beanFile = textOf(await mine.kinds.beans.exportFile([guji.value, huila.value]));
+
+    const friend = await computer();
+    await friend.stores.supplierStore.add({
+      name: 'falcon specialty',
+      website: 'https://falcon.coffee',
+      email: null,
+      phone: null,
+      notes: null,
+    });
+    expect(await friend.kinds.beans.importFile(beanFile)).toMatchObject(ok({ added: 2 }));
+    const beans = await friend.beans.list();
+    expect(beans.map((b) => [b.name, b.supplier, b.supplierId])).toEqual([
+      ['Ethiopia Guji', 'falcon specialty', 1],
+      ['Huila', 'Nordic Approach', 2],
+    ]);
+    const suppliers = await friend.stores.supplierStore.list();
+    expect(suppliers.ok && suppliers.value.map((s) => [s.name, s.website])).toEqual([
+      ['falcon specialty', 'https://falcon.coffee'],
+      ['Nordic Approach', null],
+    ]);
+    friend.stores.close();
+    mine.stores.close();
+  });
 });

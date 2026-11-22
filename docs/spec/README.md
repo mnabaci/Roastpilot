@@ -14,8 +14,9 @@ The source of truth for what Roastpilot does and how it is built. Change the spe
 | [hardware.md](hardware.md)                             | Skywalker mod, Arduino, serial protocol                          |
 | [architecture.md](architecture.md)                     | Main vs renderer, device layer, modules                          |
 | [roast-control.md](roast-control.md)                   | Profiles, PID, fan schedule, phases, manual override, conditions |
-| [beans-favourites-ghost.md](beans-favourites-ghost.md) | Profiles, beans, favourites, suggestions, ghost layer            |
+| [beans-favourites-ghost.md](beans-favourites-ghost.md) | Profiles, beans, favourites, suggestions, taste, ghost layer     |
 | [roasters.md](roasters.md)                             | Plug-and-play roaster records                                    |
+| [ai-helpers.md](ai-helpers.md)                         | Optional AI that reads tasting words and spec sheets             |
 | [manual-mode.md](manual-mode.md)                       | Manual mode and the live coach                                   |
 | [batch-and-stock.md](batch-and-stock.md)               | Batch calculator and stock tracking                              |
 | [ui.md](ui.md)                                         | Screens                                                          |

@@ -1,4 +1,4 @@
-import type { Bean, RoastSummary } from '@roastpilot/shared';
+import { TASTE_TAG_LABELS, type Bean, type RoastSummary } from '@roastpilot/shared';
 import { formatNumber } from '@roastpilot/ui';
 import { weightLossPct } from '../../features/roast-result';
 
@@ -20,7 +20,7 @@ function weights({ batchG, roastedG }: Pick<RoastSummary, 'batchG' | 'roastedG'>
 
 /**
  * The Roast details card's line while folded (docs/spec/ui.md, History): bean, green → roasted,
- * weight loss, rating as stars out of 5, Favourite, and the notes' first line; only the parts the
+ * weight loss, rating as stars out of 5, the taste tags, Favourite, and the notes' first line; only the parts the
  * roast has. Undefined when it has none.
  */
 export function roastDetailsSummary(
@@ -45,6 +45,9 @@ export function roastDetailsSummary(
             spoken: `rated ${String(roast.rating)} of ${String(STARS)}`,
           },
         ]),
+    ...((roast.tasteTags ?? []).length > 0
+      ? [{ shown: (roast.tasteTags ?? []).map((tag) => TASTE_TAG_LABELS[tag]).join(', ') }]
+      : []),
     ...(roast.isFavourite ? [{ shown: 'Favourite' }] : []),
     ...(firstLine ? [{ shown: firstLine }] : []),
   ];

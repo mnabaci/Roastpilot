@@ -13,6 +13,7 @@ import { createAppServices } from './app-services';
 import type { RetiredSoakSetting } from './settings/move-soak';
 import {
   unavailableBeans,
+  unavailableSuppliers,
   unavailableProfiles,
   unavailableRepository,
   unavailableRoasters,
@@ -38,6 +39,7 @@ function setup(
     profileStore: unavailableProfiles('not in this test'),
     roasterStore: unavailableRoasters('not in this test'),
     beanStore: unavailableBeans('not in this test'),
+    supplierStore: unavailableSuppliers('not in this test'),
     newProfileId: () => 'custom-1',
     nowIso: () => '2026-11-04T10:00:00.000Z',
     onConnectionChange: () => undefined,

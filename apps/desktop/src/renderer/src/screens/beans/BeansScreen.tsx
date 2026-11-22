@@ -14,6 +14,9 @@ import { BatchCalculator } from './BatchCalculator';
 import { beanDetail } from './bean-detail';
 import { BeanDetail } from './BeanDetail';
 import { AddBean } from './AddBean';
+import { notedOf, RoastingGuideContext, type OpenGuide } from './roasting-guide';
+import { RoastingGuideDialog } from './RoastingGuideDialog';
+import { SuppliersDialog } from './SuppliersDialog';
 
 type RightSide = { kind: 'bean' } | { kind: 'add' };
 
@@ -46,6 +49,12 @@ export function BeansScreen({
   const [showArchived, setShowArchived] = useState(false);
   // The calculator is a dialog over the list: a quick "what would this order make", then back.
   const [calculating, setCalculating] = useState(false);
+  const [keepingSuppliers, setKeepingSuppliers] = useState(false);
+  // The Roasting cheat sheet: where it opens, and whose rows it marks.
+  const [guide, setGuide] = useState<Parameters<OpenGuide>>();
+  const openGuide: OpenGuide = (start, values) => {
+    setGuide([start, values]);
+  };
   const [orderG, setOrderG] = useState('');
   const [calcBatchG, setCalcBatchG] = useState('');
   const shown = beans.filter((b) => showArchived || !b.archived);
@@ -83,134 +92,162 @@ export function BeansScreen({
     );
   };
   return (
-    <SidebarLayout
-      title="Beans"
-      titleAction={
-        <Menu
-          label="More for Beans"
-          items={[
-            {
-              label: 'Batch calculator',
-              onSelect: () => {
-                setCalculating(true);
+    <RoastingGuideContext value={openGuide}>
+      <SidebarLayout
+        title="Beans"
+        titleAction={
+          <Menu
+            label="More for Beans"
+            items={[
+              {
+                label: 'Batch calculator',
+                onSelect: () => {
+                  setCalculating(true);
+                },
               },
-            },
-            ...(hasArchived
-              ? [
-                  {
-                    label: showArchived ? 'Hide archived' : 'Show archived',
-                    onSelect: () => {
-                      setShowArchived(!showArchived);
+              {
+                label: 'Suppliers',
+                onSelect: () => {
+                  setKeepingSuppliers(true);
+                },
+              },
+              {
+                label: 'Roasting cheat sheet',
+                onSelect: () => {
+                  openGuide(undefined, open && right.kind !== 'add' ? notedOf(open) : undefined);
+                },
+              },
+              ...(hasArchived
+                ? [
+                    {
+                      label: showArchived ? 'Hide archived' : 'Show archived',
+                      onSelect: () => {
+                        setShowArchived(!showArchived);
+                      },
                     },
-                  },
-                ]
-              : []),
-            {
-              label: 'Export all',
-              disabled: beans.length === 0,
-              onSelect: () => {
-                files.exportFile({ kind: 'beans' });
+                  ]
+                : []),
+              {
+                label: 'Export all',
+                disabled: beans.length === 0,
+                onSelect: () => {
+                  files.exportFile({ kind: 'beans' });
+                },
               },
-            },
-            { label: 'Import a Roastpilot file', onSelect: files.importFile },
-            { label: 'Select', disabled: shown.length === 0, onSelect: selection.start },
-          ]}
-        />
-      }
-      contentLabel="Bean"
-      sidebar={
-        <>
-          {selection.selecting ? (
-            <SelectionBar
-              label="Selected beans"
-              count={selection.checked.size}
-              exportAction={() => {
-                files.exportFile({ kind: 'beans', ids: [...selection.checked] });
-              }}
-              remove={{
-                verb: 'Archive',
-                noun: ['bean', 'beans'],
-                detail: 'Show archived brings them back',
-                onConfirm: archiveTicked,
-              }}
-              onDone={selection.done}
-            />
-          ) : null}
-          <NavList
-            label="Beans"
-            items={shown.map((bean) => ({
-              id: bean.id,
-              label: bean.name,
-              detail: selection.selecting && bean.archived ? 'Archived' : beanDetail(bean),
-              locked: bean.archived,
-              // Shown with Show archived, an archived bean says so; in select mode its line does.
-              badge: listBadges(
-                bean.archived ? (
-                  selection.selecting ? undefined : (
-                    <Badge>Archived</Badge>
-                  )
-                ) : bean.greenG < bean.lowStockG ? (
-                  <Badge tone="heat">Low</Badge>
-                ) : undefined,
-                edited[bean.id] ? <Badge tone="heat">Edited</Badge> : undefined,
-              ),
-            }))}
-            openId={right.kind === 'bean' ? open?.id : undefined}
-            onOpen={showBean}
-            {...(selection.selecting
-              ? { checked: selection.checked, onCheck: selection.check }
-              : {})}
+              { label: 'Import a Roastpilot file', onSelect: files.importFile },
+              { label: 'Select', disabled: shown.length === 0, onSelect: selection.start },
+            ]}
           />
-          <Button
-            variant="ghost"
-            // px-3 like the list rows above, so the icon lines up with their names.
-            className="justify-start px-3"
-            icon={<Plus aria-hidden="true" />}
-            aria-current={right.kind === 'add' ? 'true' : undefined}
-            onClick={() => {
-              setRight({ kind: 'add' });
-            }}
-          >
-            Add bean
-          </Button>
-          <Dialog
-            open={calculating}
-            onOpenChange={setCalculating}
-            title="Batch calculator"
-            description="What an order makes in equal batches on the active roaster"
-          >
-            <BatchCalculator
-              orderG={orderG}
-              onOrderG={setOrderG}
-              batchG={calcBatchG}
-              onBatchG={setCalcBatchG}
+        }
+        contentLabel="Bean"
+        sidebar={
+          <>
+            {selection.selecting ? (
+              <SelectionBar
+                label="Selected beans"
+                count={selection.checked.size}
+                exportAction={() => {
+                  files.exportFile({ kind: 'beans', ids: [...selection.checked] });
+                }}
+                remove={{
+                  verb: 'Archive',
+                  noun: ['bean', 'beans'],
+                  detail: 'Show archived brings them back',
+                  onConfirm: archiveTicked,
+                }}
+                onDone={selection.done}
+              />
+            ) : null}
+            <NavList
+              label="Beans"
+              items={shown.map((bean) => ({
+                id: bean.id,
+                label: bean.name,
+                detail: selection.selecting && bean.archived ? 'Archived' : beanDetail(bean),
+                locked: bean.archived,
+                // Shown with Show archived, an archived bean says so; in select mode its line does.
+                badge: listBadges(
+                  bean.archived ? (
+                    selection.selecting ? undefined : (
+                      <Badge>Archived</Badge>
+                    )
+                  ) : bean.greenG < bean.lowStockG ? (
+                    <Badge tone="heat">Low</Badge>
+                  ) : undefined,
+                  edited[bean.id] ? <Badge tone="heat">Edited</Badge> : undefined,
+                ),
+              }))}
+              openId={right.kind === 'bean' ? open?.id : undefined}
+              onOpen={showBean}
+              {...(selection.selecting
+                ? { checked: selection.checked, onCheck: selection.check }
+                : {})}
             />
-          </Dialog>
-        </>
-      }
-    >
-      {right.kind === 'add' ? (
-        <AddBean
-          onCancel={() => {
-            setRight({ kind: 'bean' });
-          }}
-          onAdded={showBean}
-        />
-      ) : open ? (
-        <BeanDetail
-          key={open.id}
-          bean={open}
-          beans={beans}
-          roasts={roasts}
-          onRoast={onRoast}
-          onOpenProfile={onOpenProfile}
-          onOpenRoast={onOpenRoast}
-        />
-      ) : (
-        <p className="flex min-h-control-sm items-center text-body text-ink-muted">
-          No beans yet · add one to track its stock and find its best roast
-        </p>
-      )}
-    </SidebarLayout>
+            <Button
+              variant="ghost"
+              // px-3 like the list rows above, so the icon lines up with their names.
+              className="justify-start px-3"
+              icon={<Plus aria-hidden="true" />}
+              aria-current={right.kind === 'add' ? 'true' : undefined}
+              onClick={() => {
+                setRight({ kind: 'add' });
+              }}
+            >
+              Add bean
+            </Button>
+            <Dialog
+              open={calculating}
+              onOpenChange={setCalculating}
+              title="Batch calculator"
+              description="What an order makes in equal batches on the active roaster"
+            >
+              <BatchCalculator
+                orderG={orderG}
+                onOrderG={setOrderG}
+                batchG={calcBatchG}
+                onBatchG={setCalcBatchG}
+              />
+            </Dialog>
+            <SuppliersDialog
+              open={keepingSuppliers}
+              onClose={() => {
+                setKeepingSuppliers(false);
+              }}
+            />
+            <RoastingGuideDialog
+              open={guide !== undefined}
+              start={guide?.[0]}
+              values={guide?.[1]}
+              onClose={() => {
+                setGuide(undefined);
+              }}
+            />
+          </>
+        }
+      >
+        {right.kind === 'add' ? (
+          <AddBean
+            onCancel={() => {
+              setRight({ kind: 'bean' });
+            }}
+            onAdded={showBean}
+          />
+        ) : open ? (
+          <BeanDetail
+            key={open.id}
+            bean={open}
+            beans={beans}
+            roasts={roasts}
+            onRoast={onRoast}
+            onOpenProfile={onOpenProfile}
+            onOpenRoast={onOpenRoast}
+          />
+        ) : (
+          <p className="flex min-h-control-sm items-center text-body text-ink-muted">
+            No beans yet · add one to track its stock and find its best roast
+          </p>
+        )}
+      </SidebarLayout>
+    </RoastingGuideContext>
   );
 }

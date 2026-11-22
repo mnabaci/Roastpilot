@@ -11,8 +11,11 @@ export interface TextFieldProps extends Omit<
   label: string;
   value: string;
   onChange: (value: string) => void;
-  /** `search` adds the search icon, a Clear button while there is text, and Escape to clear. */
-  type?: 'text' | 'search';
+  /**
+   * `search` adds the search icon, a Clear button while there is text, and Escape to clear.
+   * `password` shows dots: an API key.
+   */
+  type?: 'text' | 'search' | 'password';
   /** Read mode: the value as text where the field would be, "–" when empty (ReadValue). */
   readOnly?: boolean;
 }
@@ -45,7 +48,7 @@ export function TextField({
         ) : null}
         <input
           id={id}
-          type={search ? 'search' : 'text'}
+          type={type}
           value={value}
           onChange={(event) => {
             onChange(event.target.value);

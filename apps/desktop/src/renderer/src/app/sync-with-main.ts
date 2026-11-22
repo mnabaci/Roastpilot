@@ -13,6 +13,8 @@ type SyncApi = Pick<
   | 'listRoasters'
   | 'listBeans'
   | 'onBeans'
+  | 'listSuppliers'
+  | 'onSuppliers'
   | 'onRoastsChanged'
   | 'onRoasters'
   | 'onReading'
@@ -34,6 +36,8 @@ export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsu
   let profilesHeard = false;
   // An update status that arrives before the app info is newer than the info's.
   let updateHeard = false;
+  // A pushed supplier list is newer than the one the first load asked for.
+  let suppliersHeard = false;
   const stops = [
     api.onReading((reading) => {
       stores.roast.setState((data) => addReading(data, reading));
@@ -60,6 +64,10 @@ export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsu
     }),
     api.onBeans((beans) => {
       stores.beans.setState({ beans });
+    }),
+    api.onSuppliers((suppliers) => {
+      suppliersHeard = true;
+      stores.beans.setState({ suppliers });
     }),
     api.onRoastsChanged(({ id, deleted, current }) => {
       const { setup, currentRoastId } = stores.beans.getState();
@@ -91,8 +99,9 @@ export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsu
     api.listProfiles(),
     api.listRoasters(),
     api.listBeans(),
+    api.listSuppliers(),
   ])
-    .then(([snapshot, settings, profiles, roasters, beans]) => {
+    .then(([snapshot, settings, profiles, roasters, beans, suppliers]) => {
       stores.connection.setState({ connection: snapshot.connection });
       stores.roast.setState({ roast: snapshot.roast, readings: [...snapshot.readings] });
       stores.safety.setState(snapshot.safety, true);
@@ -105,6 +114,7 @@ export function syncWithMain(api: SyncApi, stores: Stores, logger: Logger): Unsu
       stores.roasters.setState({ roasters });
       stores.beans.setState({
         beans,
+        ...(suppliersHeard ? {} : { suppliers }),
         setup: snapshot.setup,
         currentRoastId: snapshot.currentRoastId,
       });

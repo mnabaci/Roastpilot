@@ -1,6 +1,10 @@
 import type { Bean, RoastSummary } from '@roastpilot/shared';
 import { Badge, Button, cn, Menu, formatNumber, StatCard } from '@roastpilot/ui';
 import { ExternalLink } from 'lucide-react';
+import { FillDetailsButton } from './FillDetailsButton';
+import { SheetFillNote } from './SheetFillNote';
+import { SpecSheetDialog } from './SpecSheetDialog';
+import { useSpecSheetFill } from './use-spec-sheet-fill';
 import { useState } from 'react';
 import { planLine } from './batch-format';
 import { beanPlan } from './bean-plan';
@@ -45,6 +49,7 @@ export function BeanDetail({
     setPanel('none');
   };
   const record = useBeanDraft(bean);
+  const fill = useSpecSheetFill(record, { isNew: false });
   // An unsaved edit kept from before opens in Edit, so it shows (as on Profiles and Roasters).
   const [editing, setEditing] = useState(record.edited);
   const cards = useRecordCards(editing, ['bean.about']);
@@ -72,14 +77,19 @@ export function BeanDetail({
           edited: record.edited,
           onCancel: () => {
             record.cancel();
+            fill.forget();
             setEditing(false);
           },
           onSave: () => {
             record.save(() => {
+              fill.forget();
               setEditing(false);
             });
           },
           canSave: record.canSave,
+          lead: fill.offered ? (
+            <FillDetailsButton fill={fill} link={record.draft.link} />
+          ) : undefined,
         }}
         actions={
           <>
@@ -162,6 +172,8 @@ export function BeanDetail({
           {record.problem}
         </p>
       ) : null}
+      {editing ? <SheetFillNote fill={fill} /> : null}
+      <SpecSheetDialog open={fill.open} onClose={fill.close} onFilled={fill.onFilled} />
       {actions.problem ? (
         <p role="alert" className="text-label text-critical-text">
           {actions.problem}

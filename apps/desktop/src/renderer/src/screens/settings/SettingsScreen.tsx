@@ -1,6 +1,7 @@
 import { NavList, SidebarLayout } from '@roastpilot/ui';
 import type { ReactNode } from 'react';
 import { AboutSection } from './AboutSection';
+import { AiSection } from './AiSection';
 import { AppearanceSection } from './AppearanceSection';
 import { ChartSection } from './ChartSection';
 import { ControlsSection } from './ControlsSection';
@@ -14,6 +15,7 @@ const SECTION: Readonly<Record<SettingsSection, () => ReactNode>> = {
   sounds: () => <SoundsSection />,
   chart: () => <ChartSection />,
   appearance: () => <AppearanceSection />,
+  ai: () => <AiSection />,
   about: () => <AboutSection />,
 };
 

@@ -11,7 +11,10 @@ import type {
   MakeBeanProfileRequest,
   MakeProfileError,
   MakeProfileRequest,
+  MakeTasteProfileError,
+  MakeTasteProfileRequest,
   OpenBeanLinkError,
+  OpenSupplierWebsiteError,
   ProfileEntry,
   ReadInputsError,
   Result,
@@ -20,9 +23,13 @@ import type {
   SaveWiringRequest,
   SerialPortInfo,
   Snapshot,
+  SupplierId,
   Tc4Inputs,
 } from '@roastpilot/shared';
+import type { AiKeyStore } from './ai/ai-key-store';
+import type { AiService } from './ai/ai-service';
 import type { BeanService } from './beans/bean-service';
+import type { SupplierService } from './beans/supplier-service';
 import type { CoachActions } from './coach-apply';
 import type { HandOutput } from './hand-output';
 import type { HistoryService } from './history/history-service';
@@ -42,7 +49,7 @@ export interface IpcDeps {
   setOutputByHand: HandOutput;
   coach: CoachActions;
   settings: Pick<SettingsService, 'get' | 'set'>;
-  history: Pick<HistoryService, 'list' | 'get' | 'delete' | 'saveResult' | 'setBean'>;
+  history: Pick<HistoryService, 'list' | 'get' | 'delete' | 'saveResult' | 'saveTaste' | 'setBean'>;
   roastFiles: RoastFiles;
   /** Beans, profiles and roasters as Roastpilot files. */
   libraryFiles: LibraryFileActions;
@@ -71,6 +78,17 @@ export interface IpcDeps {
     request: MakeBeanProfileRequest,
   ) => Promise<Result<ProfileEntry, MakeBeanProfileError>>;
   openBeanLink: (id: BeanId) => Promise<Result<void, OpenBeanLinkError>>;
+  suppliers: Pick<SupplierService, 'list' | 'add' | 'update' | 'delete'>;
+  openSupplierWebsite: (id: SupplierId) => Promise<Result<void, OpenSupplierWebsiteError>>;
+  /** Make <bean> profile from a roast's taste (make-taste-profile.ts). */
+  makeTasteProfile: (
+    request: MakeTasteProfileRequest,
+  ) => Promise<Result<ProfileEntry, MakeTasteProfileError>>;
+  /** The AI helpers: keys kept here, reads run here (docs/spec/ai-helpers.md). */
+  ai: {
+    keys: Pick<AiKeyStore, 'save' | 'remove'>;
+    reads: Pick<AiService, 'list' | 'readTaste' | 'readSpecSheet'>;
+  };
   /** The clock's now, for Charge soon. */
   nowMs: () => number;
   snapshot: () => Snapshot;

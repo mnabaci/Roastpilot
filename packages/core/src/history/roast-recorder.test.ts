@@ -64,6 +64,9 @@ class FakeRepository implements RoastRepository {
   saveResult(): Saved<void> {
     return Promise.resolve(ok(undefined));
   }
+  saveTaste(): Saved<void> {
+    return Promise.resolve(ok(undefined));
+  }
   addSamples(id: RoastId, samples: readonly SavedSample[]): Saved<void> {
     if (this.failing) return this.#fail();
     this.roasts.get(id)?.samples.push(...samples);

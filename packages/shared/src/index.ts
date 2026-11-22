@@ -60,6 +60,7 @@ export type {
   AppApi,
   AutoApi,
   BeansApi,
+  SuppliersApi,
   LibraryFilesApi,
   CoachApi,
   RoastersApi,
@@ -73,6 +74,7 @@ export type {
   SettingsApi,
   Unsubscribe,
   UpdatesApi,
+  AiApi,
 } from './renderer-api';
 export {
   LOG_LEVELS,
@@ -229,6 +231,19 @@ export {
   type UpdateBean,
 } from './bean';
 export {
+  SupplierFieldsSchema,
+  SupplierIdSchema,
+  supplierNamed,
+  SupplierSchema,
+  UpdateSupplierSchema,
+  type OpenSupplierWebsiteError,
+  type Supplier,
+  type SupplierError,
+  type SupplierFields,
+  type SupplierId,
+  type UpdateSupplier,
+} from './supplier';
+export {
   MakeBeanProfileRequestSchema,
   MakeProfileRequestSchema,
   type MakeBeanProfileError,
@@ -236,6 +251,41 @@ export {
   type MakeProfileError,
   type MakeProfileRequest,
 } from './make-profile';
+export {
+  MakeTasteProfileRequestSchema,
+  orderedTags,
+  RoastTasteSchema,
+  TASTE_TAG_LABELS,
+  TASTE_TAGS,
+  TASTE_WORDS_MAX,
+  TasteTagSchema,
+  type MakeTasteProfileError,
+  type MakeTasteProfileRequest,
+  type RoastTaste,
+  type TasteTag,
+} from './taste';
+export {
+  AiProviderIdSchema,
+  ReadSpecSheetRequestSchema,
+  ReadTasteRequestSchema,
+  SaveAiKeyRequestSchema,
+  SPEC_SHEET_PDF_MAX_BYTES,
+  SPEC_SHEET_PDF_MAX_PAGES,
+  SPEC_SHEET_TEXT_MAX,
+  RawSpecSheetSchema,
+  SpecSheetFieldsSchema,
+  type AiKeyError,
+  type AiKeyStatus,
+  type AiProviderEntry,
+  type AiProviderId,
+  type AiProviderInfo,
+  type AiReadError,
+  type AiSettings,
+  type ReadSpecSheetRequest,
+  type ReadSpecSheetResult,
+  type RawSpecSheet,
+  type SpecSheetFields,
+} from './ai';
 export {
   MILESTONE_BACKUP_MARGIN_S,
   MILESTONE_CAP_MARGIN_C,

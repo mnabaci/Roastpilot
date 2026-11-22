@@ -14,6 +14,7 @@ export const BEAN: Bean = {
   screen: null,
   decaf: false,
   supplier: null,
+  supplierId: null,
   link: null,
   lowStockG: 500,
   notes: null,

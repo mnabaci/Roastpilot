@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
 import { useToast } from '../../features/use-toast';
-import { ChipGroup } from './ChipGroup';
+import { ChipGroup } from '../../features/ChipGroup';
 import { dayLabel, localDay, viewerDays } from './log-days';
 import { countLevels, DEFAULT_LEVELS, filterLogs, scopesOf } from './log-filter';
 import { LogEntries } from './LogEntries';
