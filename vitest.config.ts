@@ -13,6 +13,7 @@ export default defineConfig({
             'packages/{core,shared,drivers,storage}/src/**/*.test.ts',
             'apps/desktop/src/{main,preload}/**/*.test.ts',
             'scripts/**/*.test.ts',
+            'apps/desktop/scripts/**/*.test.ts',
           ],
         },
       },
