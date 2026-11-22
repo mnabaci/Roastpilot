@@ -261,7 +261,7 @@ describe('Fill from spec sheet and suppliers', () => {
       { settings: AI_ON, suppliers },
       api,
     );
-    await userEvent.click(await screen.findByRole('button', { name: 'Fill from spec sheet' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Fill details' }));
     const dialog = within(await screen.findByRole('dialog', { name: 'Fill from spec sheet' }));
     await userEvent.type(dialog.getByLabelText('Paste the sheet'), 'a sheet');
     await userEvent.click(dialog.getByRole('button', { name: 'Fill' }));

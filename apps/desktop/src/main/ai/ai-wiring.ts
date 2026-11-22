@@ -1,6 +1,6 @@
 import type { Logger } from '@roastpilot/core';
 import type { AiSettings } from '@roastpilot/shared';
-import { safeStorage } from 'electron';
+import { net, safeStorage } from 'electron';
 import { open, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import type { ChooseImportPath } from '../files/file-dialogs';
 import type { IpcDeps } from '../ipc-deps';
@@ -57,6 +57,8 @@ export function aiWiring({
         }
       },
     },
+    // Chromium's own fetch: the shop sees a browser, with its proxy and certificates.
+    fetchPage: (url, init) => net.fetch(url, init),
     logger,
     deadline: () => AbortSignal.timeout(AI_READ_LIMIT_MS),
     now: () => Date.now(),

@@ -31,5 +31,9 @@ export function aiReadMessage(error: AiReadError, fallback: Fallback): string {
       return `Too long · up to ${error.limit}`;
     case 'busy':
       return 'Still reading the last one · a moment';
+    case 'page-unreachable':
+      return "Couldn't open the order page · check its link, or use a spec sheet";
+    case 'page-empty':
+      return 'Nothing to read on that page · use a spec sheet instead';
   }
 }

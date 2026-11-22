@@ -27,7 +27,7 @@ function setup(
 }
 
 const openDialog = async () => {
-  await userEvent.click(await screen.findByRole('button', { name: 'Fill from spec sheet' }));
+  await userEvent.click(await screen.findByRole('button', { name: 'Fill details' }));
   return within(await screen.findByRole('dialog', { name: 'Fill from spec sheet' }));
 };
 
@@ -35,11 +35,11 @@ describe('Fill from spec sheet on Add bean', () => {
   it('is not offered while the AI helpers are off, or without a Claude key', async () => {
     const off = setup({}, { settings: ACCEPTED_SETTINGS });
     await off.findByRole('button', { name: 'Add bean' });
-    expect(screen.queryByRole('button', { name: 'Fill from spec sheet' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Fill details' })).toBeNull();
     off.unmount();
     setup({}, { providers: [WORDS_AND_SHEETS, withKey(WORDS_ONLY, 'abcd')] });
     await screen.findByRole('button', { name: 'Add bean' });
-    expect(screen.queryByRole('button', { name: 'Fill from spec sheet' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Fill details' })).toBeNull();
   });
 
   it('fills empty fields from pasted text, saves nothing, and says how many', async () => {
@@ -96,5 +96,52 @@ describe('Fill from spec sheet on Add bean', () => {
     setup();
     const dialog = await openDialog();
     expect(dialog.getByRole('button', { name: 'Fill' })).toBeDisabled();
+  });
+});
+
+describe('Fill details from the order page', () => {
+  const withLink = async () => {
+    await userEvent.type(
+      await screen.findByLabelText('Order link'),
+      'https://shop.example/products/kiambu',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Fill details' }));
+  };
+
+  it('offers the order page once there is a link, and fills from it', async () => {
+    const { api } = setup({
+      readSpecSheet: () =>
+        Promise.resolve(ok({ status: 'read', fields: { origin: 'Kenya', variety: 'SL28' } })),
+    });
+    await withLink();
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'From the order page · shop.example' }),
+    );
+    expect(api.readSpecSheet).toHaveBeenCalledWith({
+      kind: 'page',
+      url: 'https://shop.example/products/kiambu',
+    });
+    expect(
+      await screen.findByText('Filled 2 fields from the order page · check them, then Save'),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Origin')).toHaveValue('Kenya');
+  });
+
+  it('still offers a spec sheet from the same menu', async () => {
+    setup();
+    await withLink();
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'From a spec sheet…' }));
+    expect(await screen.findByRole('dialog', { name: 'Fill from spec sheet' })).toBeInTheDocument();
+  });
+
+  it('says why when the page could not be read', async () => {
+    setup({ readSpecSheet: () => Promise.resolve(err({ kind: 'page-empty' })) });
+    await withLink();
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'From the order page · shop.example' }),
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Nothing to read on that page · use a spec sheet instead',
+    );
   });
 });

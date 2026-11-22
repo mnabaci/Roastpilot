@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { BeanFieldsSchema, BeanSpeciesSchema } from './bean';
+import { BeanFieldsSchema, BeanSpeciesSchema, WebLinkSchema } from './bean';
 import { SupplierFieldsSchema } from './supplier';
 import { TasteWordsSchema } from './taste';
 
@@ -77,10 +77,14 @@ export const SPEC_SHEET_PDF_MAX_PAGES = 20;
 
 export const ReadTasteRequestSchema = z.object({ words: TasteWordsSchema.min(1) });
 
-/** Pasted text, or a PDF main asks you to pick (the renderer never names a file). */
+/**
+ * Pasted text, a PDF main asks you to pick (the renderer never names a file), or the bean's order
+ * page, which main fetches and reads as text.
+ */
 export const ReadSpecSheetRequestSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('text'), text: z.string().trim().min(1).max(SPEC_SHEET_TEXT_MAX) }),
   z.object({ kind: z.literal('pdf') }),
+  z.object({ kind: z.literal('page'), url: WebLinkSchema }),
 ]);
 
 /** What a spec sheet filled: only fields it had, each as the bean form would take it. */
@@ -150,6 +154,10 @@ export const AiReadErrorSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('too-long'), limit: z.string() }),
   /** Another read of the same kind is running. */
   z.object({ kind: z.literal('busy') }),
+  /** The order page didn't open (no answer, not found, not a web page): nothing was sent. */
+  z.object({ kind: z.literal('page-unreachable') }),
+  /** The order page had too little text to read, as a page built by script: nothing was sent. */
+  z.object({ kind: z.literal('page-empty') }),
 ]);
 
 export type AiProviderId = z.infer<typeof AiProviderIdSchema>;

@@ -49,7 +49,7 @@ Then a second card, **Who reads what**, one row per job some provider can do:
 
 With no key for a job: "Nothing sent · add a key that reads them", and a dash (no choice to make yet).
 
-**ⓘ beside the switch and each job** (an InfoButton, on click): what it does, where you use it, and what it sends, in three short lines (`ai-info.ts`). Tasting words: write how a roast tasted and Read ticks the matching taste tags, which suggest the next roast's change; History › a roast › Roast details › Taste › In your words; only those words, up to 500 characters. Spec sheets: a supplier's sheet as PDF or pasted text fills the bean's fields for you to check before Save; Beans › Add bean, or a bean's Edit › Fill from spec sheet; only the sheet, up to 20 pages or 20,000 characters. The switch: the two helpers, with your own key; nothing they return is saved or changes a profile until you click, never mid-roast; off, tap tags and type details yourself. Under the cards, one line: "Roasts, beans and profiles stay on this computer."
+**ⓘ beside the switch and each job** (an InfoButton, on click): what it does, where you use it, and what it sends, in three short lines (`ai-info.ts`). Tasting words: write how a roast tasted and Read ticks the matching taste tags, which suggest the next roast's change; History › a roast › Roast details › Taste › In your words; only those words, up to 500 characters. Spec sheets: a supplier's sheet as PDF or pasted text, or the bean's order page, fills the bean's fields for you to check before Save; Beans › Add bean, or a bean's Edit › Fill details, from a spec sheet or its order page; only the sheet, or the page's text, up to 20 pages or 20,000 characters. The switch: the two helpers, with your own key; nothing they return is saved or changes a profile until you click, never mid-roast; off, tap tags and type details yourself. Under the cards, one line: "Roasts, beans and profiles stay on this computer."
 
 - The switch can't turn on without at least one key (its hint ends "· save a key first").
 - **Who reads:** tasting words go to the chosen provider while it has a key, else the first registered that can; spec sheets to the first registered that reads them and has a key. **Which helpers show:** each while some provider for it has a key.
@@ -64,7 +64,7 @@ With no key for a job: "Nothing sent · add a key that reads them", and a dash (
 - Each job's model list is one constant, in its provider's module (`claude-models.ts`, `jev-taste-reader.ts`).
 - **Runs in main only;** the renderer asks over IPC and gets the checked result.
 - **Sent:** the words, or the sheet's text or PDF, with fixed instructions. Never a roast, bean, profile, name or file path.
-- **Limits:** words up to 500 characters; pasted text up to 20,000; a PDF up to 10 MB and 20 pages. Over a limit nothing is sent: "Too long · up to 20 pages". One call per helper at a time; the button waits ("Reading…"). A call gives up after about 30 s: two tries of 15 s each, under one hard stop at 30 s whatever a server's retry-after asks.
+- **Limits:** words up to 500 characters; pasted text, or an order page's text, up to 20,000; a PDF up to 10 MB and 20 pages. Over a limit nothing is sent: "Too long · up to 20 pages". One call per helper at a time; the button waits ("Reading…"). A call gives up after about 30 s: two tries of 15 s each, under one hard stop at 30 s whatever a server's retry-after asks.
 - **Read ticks nothing:** "Nothing to tick from those words" (not an error).
 
 ## When it fails

@@ -50,11 +50,13 @@ function setup({
   keys = { claude: 'sk-claude', jev: 'ts-jev' },
   files = {},
   deadline = new AbortController(),
+  page = PRODUCT_PAGE,
 }: {
   settings?: AiSettings;
   keys?: Partial<Record<AiProviderId, string>>;
   files?: Partial<SheetFiles>;
   deadline?: AbortController;
+  page?: Response | Error;
 } = {}) {
   const entries: LogEntry[] = [];
   const logger = createLogger({ write: (e) => entries.push(e) }, 'ai');
@@ -97,6 +99,7 @@ function setup({
       { info: { id: 'jev', label: 'Jev', company: 'TypeSafe', keyFrom: 'b.example' }, taste: jev },
     ],
     files: sheetFiles,
+    fetchPage: vi.fn(() => (page instanceof Error ? Promise.reject(page) : Promise.resolve(page))),
     logger,
     deadline: () => deadline.signal,
     now: () => (clock += 250),
@@ -255,7 +258,40 @@ describe('AiService.readTaste', () => {
   });
 });
 
+const PRODUCT_PAGE = new Response(
+  `<html><head><title>Kiambu AA</title></head><body><p>${'Kenya, washed, SL28. '.repeat(20)}</p></body></html>`,
+  { headers: { 'content-type': 'text/html; charset=utf-8' } },
+);
+
 describe('AiService.readSpecSheet', () => {
+  it("reads a bean's order page as text", async () => {
+    const { service, sheetReader } = setup();
+    expect(
+      await service.readSpecSheet({ kind: 'page', url: 'https://shop.example/kiambu' }, PARENT),
+    ).toEqual(ok({ status: 'read', fields: { origin: 'Kenya' } }));
+    expect(vi.mocked(sheetReader.readSpecSheet).mock.calls[0]?.[0]).toEqual({
+      kind: 'text',
+      text: expect.stringContaining('Title: Kiambu AA') as string,
+    });
+  });
+
+  it('sends nothing when the order page is unreachable or has nothing to read', async () => {
+    const down = setup({ page: new Error('ENOTFOUND') });
+    expect(
+      await down.service.readSpecSheet({ kind: 'page', url: 'https://shop.example/x' }, PARENT),
+    ).toEqual(err({ kind: 'page-unreachable' }));
+    const empty = setup({
+      page: new Response('<html><body><div id="app"></div></body></html>', {
+        headers: { 'content-type': 'text/html' },
+      }),
+    });
+    expect(
+      await empty.service.readSpecSheet({ kind: 'page', url: 'https://shop.example/x' }, PARENT),
+    ).toEqual(err({ kind: 'page-empty' }));
+    expect(down.sheetReader.readSpecSheet).not.toHaveBeenCalled();
+    expect(empty.sheetReader.readSpecSheet).not.toHaveBeenCalled();
+  });
+
   it('needs the helpers on and a Claude key, whatever reads tasting words', async () => {
     const off = setup({ settings: { enabled: false, tasteProvider: 'claude' } });
     expect(await off.service.readSpecSheet({ kind: 'text', text: 'x' }, PARENT)).toEqual(

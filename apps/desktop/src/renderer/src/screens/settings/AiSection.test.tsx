@@ -143,7 +143,7 @@ describe('AiSection', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'About spec sheets' }));
     expect(await screen.findByRole('dialog', { name: 'About spec sheets' })).toHaveTextContent(
-      'Fill from spec sheet',
+      'Fill details, from a spec sheet or its order page',
     );
   });
 

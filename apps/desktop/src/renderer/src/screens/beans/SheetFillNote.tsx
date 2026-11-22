@@ -16,7 +16,8 @@ function withWhat({ website, email, phone }: { website: unknown; email: unknown;
 }
 
 /**
- * The line after Fill from spec sheet, and the offer to add a supplier the sheet named that you
+ * The line after Fill details (from a spec sheet or the order page), or why the page wasn't read,
+ * and the offer to add a supplier the sheet named that you
  * don't have, with the website and contacts it gave (docs/spec/beans-favourites-ghost.md,
  * Suppliers). Not taken, Save still adds it, by name only.
  */
@@ -25,6 +26,13 @@ export function SheetFillNote({ fill }: { fill: SpecSheetFill }) {
   const run = useRun();
   const [problem, setProblem] = useState<string>();
   const offer = fill.supplierOffer;
+  if (fill.problem) {
+    return (
+      <p role="alert" className="text-label text-critical-text">
+        {fill.problem}
+      </p>
+    );
+  }
   if (!fill.filled && !offer && !fill.added) return null;
   return (
     <div role="status" className="flex flex-col gap-1.5 text-label text-ink-muted">
@@ -33,7 +41,7 @@ export function SheetFillNote({ fill }: { fill: SpecSheetFill }) {
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <p>
             New supplier {offer.name}
-            {withWhat(offer)} from the sheet
+            {withWhat(offer)} from {fill.source}
           </p>
           <Button
             size="sm"

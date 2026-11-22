@@ -28,6 +28,10 @@ a roast: minor for a new roasting capability, patch for everything else
   name (whatever the case, "Çağ Kahve" and "ÇAĞ KAHVE" too); bean files carry the supplier by name, and Fill from spec sheet picks a supplier you have
   or offers to add a new one with the website and contacts on the sheet.
 
+- **Fill details from the order page:** a bean's Fill from spec sheet is now Fill details, and
+  with an order link it also reads the shop's product page: origin, process, variety and the
+  rest, for you to check before Save.
+
 ### Changed
 
 - **A bean's Low stock badge sits beside its name:** switching between beans no longer moves the

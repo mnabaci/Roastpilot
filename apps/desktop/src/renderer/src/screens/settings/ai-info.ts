@@ -20,7 +20,7 @@ export const TASTE_INFO = [
 ] as const;
 
 export const SHEET_INFO = [
-  'Give it a supplier’s spec sheet as a PDF or pasted text. It fills origin, process, variety, altitude, density, moisture and the rest, for you to check before Save.',
-  'Where: Beans › Add bean, or a bean’s Edit › Fill from spec sheet.',
-  'Sends only the sheet: up to 20 pages, or 20,000 characters.',
+  'Give it a supplier’s spec sheet as a PDF or pasted text, or the bean’s order page. It fills origin, process, variety, altitude, density, moisture and the rest, for you to check before Save.',
+  'Where: Beans › Add bean, or a bean’s Edit › Fill details, from a spec sheet or its order page.',
+  'Sends only the sheet, or the page’s text: up to 20 pages, or 20,000 characters.',
 ] as const;

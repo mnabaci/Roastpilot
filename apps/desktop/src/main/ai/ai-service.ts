@@ -14,6 +14,7 @@ import {
 import type { DialogParent } from '../files/file-dialogs';
 import type { AiKeyStore } from './ai-key-store';
 import { providerEntries, type AiProvider } from './ai-provider';
+import { readOrderPage, type FetchPage } from './order-page';
 import { readSheetPdf, type SheetFiles } from './sheet-pdf';
 
 export interface AiServiceDeps {
@@ -23,6 +24,8 @@ export interface AiServiceDeps {
   /** The registered providers, in the order Settings lists them. */
   providers: readonly AiProvider[];
   files: SheetFiles;
+  /** Fetches a bean's order page, for Fill details › From the order page. */
+  fetchPage: FetchPage;
   logger: Logger;
   /** A new read's hard stop, for every provider and model it asks (read-limits.ts). */
   deadline: () => AbortSignal;
@@ -123,6 +126,10 @@ export class AiService {
       let sheet: SpecSheetSource;
       if (request.kind === 'text') {
         sheet = request;
+      } else if (request.kind === 'page') {
+        const page = await readOrderPage(request.url, this.#deps.fetchPage, this.#deps.logger);
+        if (!page.ok) return page;
+        sheet = { kind: 'text', text: page.value };
       } else {
         const pdf = await readSheetPdf(this.#deps.files, this.#deps.logger, parent, first);
         if (!pdf.ok) return pdf;
@@ -138,7 +145,7 @@ export class AiService {
       const answered = await this.#stillOn(read);
       if (!answered.ok) return answered;
       const fields = specSheetFields(answered.value);
-      if (isEmptySheet(fields)) this.#deps.logger.info('ai.sheet-empty', { kind: sheet.kind });
+      if (isEmptySheet(fields)) this.#deps.logger.info('ai.sheet-empty', { kind: request.kind });
       return ok({ status: 'read', fields });
     });
   }

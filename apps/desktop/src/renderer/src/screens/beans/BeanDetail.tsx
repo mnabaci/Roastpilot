@@ -1,7 +1,7 @@
 import type { Bean, RoastSummary } from '@roastpilot/shared';
 import { Badge, Button, cn, Menu, formatNumber, StatCard } from '@roastpilot/ui';
 import { ExternalLink } from 'lucide-react';
-import { FillFromSheetButton } from './FillFromSheetButton';
+import { FillDetailsButton } from './FillDetailsButton';
 import { SheetFillNote } from './SheetFillNote';
 import { SpecSheetDialog } from './SpecSheetDialog';
 import { useSpecSheetFill } from './use-spec-sheet-fill';
@@ -87,7 +87,9 @@ export function BeanDetail({
             });
           },
           canSave: record.canSave,
-          lead: fill.offered ? <FillFromSheetButton onClick={fill.show} /> : undefined,
+          lead: fill.offered ? (
+            <FillDetailsButton fill={fill} link={record.draft.link} />
+          ) : undefined,
         }}
         actions={
           <>

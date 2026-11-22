@@ -3,7 +3,7 @@ import { cn } from '@roastpilot/ui';
 import { RecordHeader } from '../../features/RecordHeader';
 import { PAGE_WIDTH } from '../../lib/page-width';
 import { BeanAbout } from './BeanAbout';
-import { FillFromSheetButton } from './FillFromSheetButton';
+import { FillDetailsButton } from './FillDetailsButton';
 import { SheetFillNote } from './SheetFillNote';
 import { SpecSheetDialog } from './SpecSheetDialog';
 import { useSpecSheetFill } from './use-spec-sheet-fill';
@@ -45,7 +45,9 @@ export function AddBean({
           canSave: record.canSave,
           saveLabel: 'Add bean',
           placeholder: 'Name this bean',
-          lead: fill.offered ? <FillFromSheetButton onClick={fill.show} /> : undefined,
+          lead: fill.offered ? (
+            <FillDetailsButton fill={fill} link={record.draft.link} />
+          ) : undefined,
         }}
         actions={null}
       />

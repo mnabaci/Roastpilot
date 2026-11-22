@@ -17,7 +17,7 @@ export function EditActions({
   /** `Add bean` for a new one. */
   saveLabel?: string;
   canSave: boolean;
-  /** A quiet helper before Cancel, such as a bean's Fill from spec sheet. */
+  /** A quiet helper before Cancel, such as a bean's Fill details. */
   lead?: ReactNode;
 }) {
   return (
