@@ -23,10 +23,13 @@ function setup(answer: Parameters<typeof vi.fn>[0]) {
   return { reader, ask, askWith, entries };
 }
 
+/** The read's hard stop, as the service passes it: not aborted. */
+const SIGNAL = new AbortController().signal;
+
 describe('JevTasteReader', () => {
   it('asks one question per tag about the words, with the key', async () => {
     const { reader, ask, askWith } = setup(() => Promise.resolve(allNo()));
-    await reader.readTaste('tart', 'ts-key');
+    await reader.readTaste('tart', 'ts-key', SIGNAL);
     expect(askWith).toHaveBeenCalledWith('ts-key');
     const [{ model, state, questions, signal }] = ask.mock.calls[0] as unknown as [
       { model: string; state: string; questions: Record<string, unknown>; signal: unknown },
@@ -48,12 +51,15 @@ describe('JevTasteReader', () => {
         thin: { noul: JEV_TICK_AT - 0.01 },
       }),
     );
-    expect(await reader.readTaste('words', 'k')).toEqual({ ok: true, value: ['sour', 'roasty'] });
+    expect(await reader.readTaste('words', 'k', SIGNAL)).toEqual({
+      ok: true,
+      value: ['sour', 'roasty'],
+    });
   });
 
   it('ticks nothing when every answer is no', async () => {
     const { reader } = setup(() => Promise.resolve(allNo()));
-    expect(await reader.readTaste('words', 'k')).toEqual({ ok: true, value: [] });
+    expect(await reader.readTaste('words', 'k', SIGNAL)).toEqual({ ok: true, value: [] });
   });
 
   it.each([
@@ -69,7 +75,7 @@ describe('JevTasteReader', () => {
     ['a probability that is not a number', () => ({ ...allNo(), sour: { noul: 'yes' } })],
   ])('calls %s unreadable', async (_name, answers) => {
     const { reader, entries } = setup(() => Promise.resolve(answers()));
-    expect(await reader.readTaste('words', 'k')).toEqual({
+    expect(await reader.readTaste('words', 'k', SIGNAL)).toEqual({
       ok: false,
       error: { kind: 'unreadable', provider: 'jev' },
     });
@@ -78,7 +84,7 @@ describe('JevTasteReader', () => {
 
   it('says retired when its model is gone, and logs which', async () => {
     const { reader, entries } = setup(() => Promise.reject(goneError()));
-    expect(await reader.readTaste('words', 'k')).toEqual({
+    expect(await reader.readTaste('words', 'k', SIGNAL)).toEqual({
       ok: false,
       error: { kind: 'model-retired', provider: 'jev' },
     });
@@ -86,6 +92,25 @@ describe('JevTasteReader', () => {
       ['ai.model-gone', 'jev-1.14.0'],
       ['ai.read-failed', undefined],
     ]);
+  });
+
+  it('asks the next model of its list when the first is retired', async () => {
+    const entries: LogEntry[] = [];
+    const logger = createLogger({ write: (e) => entries.push(e) }, 'ai');
+    const ask = vi.fn(({ model }: { model: string }) =>
+      model === 'jev-2.0.0' ? Promise.reject(goneError()) : Promise.resolve(allNo()),
+    );
+    const reader = new JevTasteReader(
+      logger,
+      [
+        { id: 'jev-2.0.0', label: 'Jev 2' },
+        { id: 'jev-1.14.0', label: 'Jev 1.14' },
+      ],
+      () => ask,
+    );
+    expect(reader.modelName).toBe('Jev 2');
+    expect(await reader.readTaste('words', 'k', SIGNAL)).toEqual({ ok: true, value: [] });
+    expect(ask.mock.calls.map(([request]) => request.model)).toEqual(['jev-2.0.0', 'jev-1.14.0']);
   });
 
   it.each([
@@ -99,7 +124,7 @@ describe('JevTasteReader', () => {
     ['anything else', new Error('boom'), 'failed'],
   ])('maps %s to %s, never logging the key or words', async (_name, error, kind) => {
     const { reader, entries } = setup(() => Promise.reject(error));
-    expect(await reader.readTaste('secret words', 'ts-secret')).toEqual({
+    expect(await reader.readTaste('secret words', 'ts-secret', SIGNAL)).toEqual({
       ok: false,
       error: { kind, provider: 'jev' },
     });

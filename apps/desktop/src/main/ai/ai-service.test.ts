@@ -46,10 +46,12 @@ function setup({
   settings = { enabled: true, tasteProvider: 'claude' },
   keys = { claude: 'sk-claude', jev: 'ts-jev' },
   files = {},
+  deadline = new AbortController(),
 }: {
   settings?: AiSettings;
   keys?: Partial<Record<AiProviderId, string>>;
   files?: Partial<SheetFiles>;
+  deadline?: AbortController;
 } = {}) {
   const entries: LogEntry[] = [];
   const logger = createLogger({ write: (e) => entries.push(e) }, 'ai');
@@ -93,6 +95,7 @@ function setup({
     ],
     files: sheetFiles,
     logger,
+    deadline: () => deadline.signal,
     now: () => (clock += 250),
   });
   return { service, claude, jev, sheetReader, sheetFiles, entries };
@@ -108,7 +111,7 @@ describe('AiService.readTaste', () => {
   it('reads with the chosen provider and its key', async () => {
     const { service, jev, claude } = setup({ settings: { enabled: true, tasteProvider: 'jev' } });
     expect(await service.readTaste('tart')).toEqual(ok(['sour']));
-    expect(jev.readTaste).toHaveBeenCalledWith('tart', 'ts-jev');
+    expect(jev.readTaste).toHaveBeenCalledWith('tart', 'ts-jev', expect.any(AbortSignal));
     expect(claude.readTaste).not.toHaveBeenCalled();
   });
 
@@ -118,7 +121,7 @@ describe('AiService.readTaste', () => {
       keys: { claude: 'sk-claude' },
     });
     await service.readTaste('tart');
-    expect(claude.readTaste).toHaveBeenCalledWith('tart', 'sk-claude');
+    expect(claude.readTaste).toHaveBeenCalledWith('tart', 'sk-claude', expect.any(AbortSignal));
   });
 
   it('says no key when no provider that reads tasting words has one', async () => {
@@ -129,7 +132,7 @@ describe('AiService.readTaste', () => {
   it('reads with the first provider that can when none is chosen', async () => {
     const { service, claude } = setup({ settings: { enabled: true, tasteProvider: null } });
     await service.readTaste('tart');
-    expect(claude.readTaste).toHaveBeenCalledWith('tart', 'sk-claude');
+    expect(claude.readTaste).toHaveBeenCalledWith('tart', 'sk-claude', expect.any(AbortSignal));
   });
 
   it('reads with the next provider when all the chosen one’s models are retired', async () => {
@@ -138,7 +141,46 @@ describe('AiService.readTaste', () => {
       err({ kind: 'model-retired', provider: 'claude' }),
     );
     expect(await service.readTaste('tart')).toEqual(ok(['sour']));
-    expect(jev.readTaste).toHaveBeenCalledWith('tart', 'ts-jev');
+    expect(jev.readTaste).toHaveBeenCalledWith('tart', 'ts-jev', expect.any(AbortSignal));
+    // Both under the read's one hard stop.
+    expect(vi.mocked(jev.readTaste).mock.calls[0]?.[2]).toBe(
+      vi.mocked(claude.readTaste).mock.calls[0]?.[2],
+    );
+  });
+
+  it('sends nothing to the next provider once the helpers were turned off', async () => {
+    const settings: AiSettings = { enabled: true, tasteProvider: 'claude' };
+    const { service, claude, jev } = setup({ settings });
+    vi.mocked(claude.readTaste).mockImplementationOnce(() => {
+      settings.enabled = false;
+      return Promise.resolve(err({ kind: 'model-retired', provider: 'claude' }));
+    });
+    expect(await service.readTaste('tart')).toEqual(err({ kind: 'off' }));
+    expect(jev.readTaste).not.toHaveBeenCalled();
+  });
+
+  it('sends nothing with a key removed while the first provider read', async () => {
+    const keys: Partial<Record<AiProviderId, string>> = { claude: 'sk-claude', jev: 'ts-jev' };
+    const { service, claude, jev } = setup({ keys });
+    vi.mocked(claude.readTaste).mockImplementationOnce(() => {
+      delete keys.jev;
+      return Promise.resolve(err({ kind: 'model-retired', provider: 'claude' }));
+    });
+    expect(await service.readTaste('tart')).toEqual(
+      err({ kind: 'model-retired', provider: 'claude' }),
+    );
+    expect(jev.readTaste).not.toHaveBeenCalled();
+  });
+
+  it('asks no next provider once the read’s hard stop has passed', async () => {
+    const deadline = new AbortController();
+    const { service, claude, jev } = setup({ deadline });
+    vi.mocked(claude.readTaste).mockImplementationOnce(() => {
+      deadline.abort();
+      return Promise.resolve(err({ kind: 'model-retired', provider: 'claude' }));
+    });
+    expect(await service.readTaste('tart')).toEqual(err({ kind: 'offline', provider: 'jev' }));
+    expect(jev.readTaste).not.toHaveBeenCalled();
   });
 
   it('says retired when every provider with a key is retired', async () => {
@@ -231,6 +273,7 @@ describe('AiService.readSpecSheet', () => {
     expect(sheetReader.readSpecSheet).toHaveBeenCalledWith(
       { kind: 'text', text: 'Kenya AA' },
       'sk-claude',
+      expect.any(AbortSignal),
     );
   });
 
@@ -243,6 +286,7 @@ describe('AiService.readSpecSheet', () => {
     expect(sheetReader.readSpecSheet).toHaveBeenCalledWith(
       { kind: 'pdf', bytes: pdf(2) },
       'sk-claude',
+      expect.any(AbortSignal),
     );
   });
 

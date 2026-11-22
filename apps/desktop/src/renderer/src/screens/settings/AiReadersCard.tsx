@@ -1,7 +1,7 @@
 import type { AiProviderEntry, AiProviderId } from '@roastpilot/shared';
 import { SegmentedControl } from '@roastpilot/ui';
 import { SettingRow, SettingRows } from './SettingRow';
-import { capableOf, jobLine, sheetReader, tasteReader } from './what-goes';
+import { capableOf, jobLine, sheetReader, tasteReader } from './who-reads';
 
 /**
  * Who reads what (docs/spec/ai-helpers.md, Turning it on): one row per job, saying where its text
@@ -27,17 +27,17 @@ export function AiReadersCard({
         <SettingRow
           name="Tasting words"
           hint={
-            tasteCapable.length > 1 && !choosable
+            taste && tasteCapable.length > 1 && !choosable
               ? `${jobLine(taste, 'taste')} · a second key lets you choose`
               : jobLine(taste, 'taste')
           }
         >
-          {tasteCapable.length > 1 ? (
+          {taste && tasteCapable.length > 1 ? (
             <SegmentedControl
               label="Read tasting words with"
               options={tasteCapable.map((p) => ({ value: p.id, label: p.label }))}
               // The reader actually used: with one key, that one, whatever was chosen before.
-              value={taste?.id ?? chosen ?? tasteCapable[0]?.id ?? ''}
+              value={taste.id}
               disabled={!choosable}
               onChange={onChoose}
             />

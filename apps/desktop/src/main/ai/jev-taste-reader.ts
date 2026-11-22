@@ -15,10 +15,10 @@ import {
   TypeSafeClient,
   type NoulQuestion,
 } from '@typesafe-ai/sdk';
-import { readErrorOf, statusOf } from './ai-errors';
+import { readErrorOf, statusOf, type ProviderReadError } from './ai-errors';
 import { askChain, type ModelChain } from './ai-model';
 import type { AiProvider } from './ai-provider';
-import { AI_READ_LIMIT_MS, AI_RETRIES, AI_TRY_TIMEOUT_MS } from './read-limits';
+import { AI_RETRIES, AI_TRY_TIMEOUT_MS } from './read-limits';
 import { TASTE_MEANINGS } from './taste-words';
 
 /** What Jev says about itself in Settings: the one place these facts are written. */
@@ -85,10 +85,12 @@ export class JevTasteReader implements TasteReader {
     this.#askWith = askWith;
   }
 
-  async readTaste(words: string, key: string): Promise<Result<TasteTag[], AiReadError>> {
+  async readTaste(
+    words: string,
+    key: string,
+    signal: AbortSignal,
+  ): Promise<Result<TasteTag[], AiReadError>> {
     const ask = this.#askWith(key);
-    // One hard stop for the whole read, however many models it asks.
-    const signal = AbortSignal.timeout(AI_READ_LIMIT_MS);
     try {
       const chain = await askChain({
         chain: this.#models,
@@ -105,19 +107,23 @@ export class JevTasteReader implements TasteReader {
         return this.#failed('unreadable');
       return ok(TASTE_TAGS.filter((_tag, i) => (read[i] ?? 0) >= JEV_TICK_AT));
     } catch (error) {
-      const failed = readErrorOf(this.provider, error, isConnection);
-      this.#logger.warn('ai.read-failed', {
-        helper: 'taste',
-        provider: this.provider,
-        kind: failed.kind,
+      return this.#failed(readErrorOf(this.provider, error, isConnection).kind, {
         status: statusOf(error),
       });
-      return err(failed);
     }
   }
 
-  #failed(kind: 'unreadable' | 'model-retired'): Result<never, AiReadError> {
-    this.#logger.warn('ai.read-failed', { helper: 'taste', provider: this.provider, kind });
+  /** A read that failed, logged with why: never the key or the words. */
+  #failed(
+    kind: ProviderReadError['kind'],
+    context: Record<string, unknown> = {},
+  ): Result<never, AiReadError> {
+    this.#logger.warn('ai.read-failed', {
+      helper: 'taste',
+      provider: this.provider,
+      kind,
+      ...context,
+    });
     return err({ kind, provider: this.provider });
   }
 }

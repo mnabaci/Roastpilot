@@ -15,7 +15,7 @@ import { z } from 'zod';
 import { readErrorOf, statusOf, type ProviderReadError } from './ai-errors';
 import { askChain, type ModelChain } from './ai-model';
 import { CLAUDE_MODELS, requestFor, type ClaudeAsk, type ClaudeModel } from './claude-models';
-import { AI_READ_LIMIT_MS, AI_RETRIES, AI_TRY_TIMEOUT_MS } from './read-limits';
+import { AI_RETRIES, AI_TRY_TIMEOUT_MS } from './read-limits';
 import type { AiProvider } from './ai-provider';
 import { SPEC_SHEET_INSTRUCTION, TASTE_INSTRUCTION } from './taste-words';
 
@@ -78,9 +78,13 @@ export class ClaudeReader implements TasteReader, SpecSheetReader {
     this.#parseWith = parseWith;
   }
 
-  async readTaste(words: string, key: string): Promise<Result<TasteTag[], AiReadError>> {
+  async readTaste(
+    words: string,
+    key: string,
+    signal: AbortSignal,
+  ): Promise<Result<TasteTag[], AiReadError>> {
     // Room for a little thinking before the tags, as Haiku thinks when it needs to.
-    const read = await this.#read('taste', key, {
+    const read = await this.#read('taste', key, signal, {
       instruction: TASTE_INSTRUCTION,
       content: words,
       schema: TasteAnswerSchema,
@@ -89,7 +93,11 @@ export class ClaudeReader implements TasteReader, SpecSheetReader {
     return read.ok ? ok(orderedTags(read.value.tags)) : read;
   }
 
-  readSpecSheet(sheet: SpecSheetSource, key: string): Promise<Result<RawSpecSheet, AiReadError>> {
+  readSpecSheet(
+    sheet: SpecSheetSource,
+    key: string,
+    signal: AbortSignal,
+  ): Promise<Result<RawSpecSheet, AiReadError>> {
     const content: Anthropic.Beta.BetaContentBlockParam[] =
       sheet.kind === 'text'
         ? [{ type: 'text', text: sheet.text }]
@@ -103,7 +111,7 @@ export class ClaudeReader implements TasteReader, SpecSheetReader {
               },
             },
           ];
-    return this.#read('spec-sheet', key, {
+    return this.#read('spec-sheet', key, signal, {
       instruction: SPEC_SHEET_INSTRUCTION,
       content,
       schema: RawSpecSheetSchema,
@@ -114,11 +122,10 @@ export class ClaudeReader implements TasteReader, SpecSheetReader {
   async #read<T>(
     helper: 'taste' | 'spec-sheet',
     key: string,
+    signal: AbortSignal,
     ask: Omit<ClaudeAsk<T>, 'model'>,
   ): Promise<Result<T, AiReadError>> {
     const parse = this.#parseWith(key);
-    // One hard stop for the whole read, however many models it asks.
-    const signal = AbortSignal.timeout(AI_READ_LIMIT_MS);
     try {
       const chain = await askChain({
         chain: this.#models,

@@ -54,11 +54,14 @@ const gone = (model: string) =>
 const modelsAsked = (parse: { mock: { calls: unknown[][] } }) =>
   parse.mock.calls.map(([params]) => (params as { model: string }).model);
 
+/** The read's hard stop, as the service passes it: not aborted. */
+const SIGNAL = new AbortController().signal;
+
 describe('ClaudeReader', () => {
   it('reads tags in their order with the key it was given, by Haiku at low effort', async () => {
     const { reader, parse, parseWith } = setup(answered({ tags: ['thin', 'sour'] }));
     expect(reader.modelName).toBe('Haiku 5.5');
-    expect(await reader.readTaste('tart and watery', 'sk-ant-123')).toEqual({
+    expect(await reader.readTaste('tart and watery', 'sk-ant-123', SIGNAL)).toEqual({
       ok: true,
       value: ['sour', 'thin'],
     });
@@ -78,13 +81,13 @@ describe('ClaudeReader', () => {
 
   it('reads no tags when none fit', async () => {
     const { reader } = setup(answered({ tags: [] }));
-    expect(await reader.readTaste('nice cup', 'k')).toEqual({ ok: true, value: [] });
+    expect(await reader.readTaste('nice cup', 'k', SIGNAL)).toEqual({ ok: true, value: [] });
   });
 
   it('reads a sheet with Opus, the refusal fallback on', async () => {
     const { reader, parse } = setup(answered(SHEET), CLAUDE_MODELS.specSheet);
     expect(reader.modelName).toBe('Opus 5.5');
-    await reader.readSpecSheet({ kind: 'text', text: 'Guji' }, 'k');
+    await reader.readSpecSheet({ kind: 'text', text: 'Guji' }, 'k', SIGNAL);
     expect(parse.mock.calls[0]?.[0]).toMatchObject({
       model: 'claude-opus-5-5',
       fallbacks: 'default',
@@ -98,7 +101,7 @@ describe('ClaudeReader', () => {
         ? Promise.reject(gone(params.model))
         : answered({ tags: ['sour'] })(),
     );
-    expect(await reader.readTaste('tart', 'k')).toEqual({ ok: true, value: ['sour'] });
+    expect(await reader.readTaste('tart', 'k', SIGNAL)).toEqual({ ok: true, value: ['sour'] });
     expect(modelsAsked(parse)).toEqual(['claude-haiku-5-5', 'claude-sonnet-5-5']);
     expect(parse.mock.calls[1]?.[0]).toMatchObject({ fallbacks: 'default' });
     expect(entries.map((e) => [e.event, e.context?.model])).toEqual([
@@ -108,14 +111,13 @@ describe('ClaudeReader', () => {
 
   it('says retired when every model is gone, and shares one hard stop', async () => {
     const { reader, parse, entries } = setup((params) => Promise.reject(gone(params.model)));
-    expect(await reader.readTaste('tart', 'k')).toEqual({
+    expect(await reader.readTaste('tart', 'k', SIGNAL)).toEqual({
       ok: false,
       error: { kind: 'model-retired', provider: 'claude' },
     });
+    // Every model is asked under the read's one hard stop, the service's.
     const calls = parse.mock.calls as unknown as [unknown, { signal: unknown }][];
-    const signals = calls.map(([, options]) => options.signal);
-    expect(signals).toHaveLength(2);
-    expect(signals[0]).toBe(signals[1]);
+    expect(calls.map(([, options]) => options.signal)).toEqual([SIGNAL, SIGNAL]);
     expect(entries.map((e) => e.event)).toEqual([
       'ai.model-gone',
       'ai.model-gone',
@@ -123,10 +125,38 @@ describe('ClaudeReader', () => {
     ]);
   });
 
+  it('reads a sheet with Sonnet when Opus is retired', async () => {
+    const { reader, parse } = setup(
+      (params) =>
+        params.model === 'claude-opus-5-5' ? Promise.reject(gone(params.model)) : answered(SHEET)(),
+      CLAUDE_MODELS.specSheet,
+    );
+    expect(await reader.readSpecSheet({ kind: 'text', text: 'Guji' }, 'k', SIGNAL)).toEqual({
+      ok: true,
+      value: SHEET,
+    });
+    expect(modelsAsked(parse)).toEqual(['claude-opus-5-5', 'claude-sonnet-5-5']);
+  });
+
+  it('gives up as offline when the hard stop ends the read partway down the chain', async () => {
+    const { reader, parse } = setup((params) =>
+      Promise.reject(
+        params.model === 'claude-haiku-5-5'
+          ? gone(params.model)
+          : new Anthropic.APIUserAbortError(),
+      ),
+    );
+    expect(await reader.readTaste('tart', 'k', SIGNAL)).toEqual({
+      ok: false,
+      error: { kind: 'offline', provider: 'claude' },
+    });
+    expect(parse).toHaveBeenCalledTimes(2);
+  });
+
   it('asks no other model after a 404 that is not a missing model', async () => {
     const notFound = new Anthropic.NotFoundError(404, undefined, 'gone', new Headers());
     const { reader, parse } = setup(thrown(notFound));
-    expect(await reader.readTaste('tart', 'k')).toEqual({
+    expect(await reader.readTaste('tart', 'k', SIGNAL)).toEqual({
       ok: false,
       error: { kind: 'failed', provider: 'claude' },
     });
@@ -135,11 +165,17 @@ describe('ClaudeReader', () => {
 
   it('sends pasted text as text, and a PDF as a base64 document', async () => {
     const { reader, parse } = setup(answered(SHEET), CLAUDE_MODELS.specSheet);
-    expect(await reader.readSpecSheet({ kind: 'text', text: 'Guji, natural' }, 'k')).toEqual({
+    expect(
+      await reader.readSpecSheet({ kind: 'text', text: 'Guji, natural' }, 'k', SIGNAL),
+    ).toEqual({
       ok: true,
       value: SHEET,
     });
-    await reader.readSpecSheet({ kind: 'pdf', bytes: new Uint8Array([37, 80, 68, 70]) }, 'k');
+    await reader.readSpecSheet(
+      { kind: 'pdf', bytes: new Uint8Array([37, 80, 68, 70]) },
+      'k',
+      SIGNAL,
+    );
     const pdfCall = parse.mock.calls[1] as unknown as [{ messages: { content: unknown }[] }];
     expect(pdfCall[0].messages[0]?.content).toEqual([
       {
@@ -156,7 +192,7 @@ describe('ClaudeReader', () => {
     ['an answer that is not the shape', answered({ tags: ['smoky'] })],
   ])('calls %s unreadable and logs it', async (_name, answer) => {
     const { reader, entries } = setup(answer);
-    expect(await reader.readTaste('words', 'k')).toEqual({
+    expect(await reader.readTaste('words', 'k', SIGNAL)).toEqual({
       ok: false,
       error: { kind: 'unreadable', provider: 'claude' },
     });
@@ -181,7 +217,7 @@ describe('ClaudeReader', () => {
     ],
   ])('maps %s to %s, logging the status but never the key or words', async (_n, error, kind) => {
     const { reader, entries } = setup(thrown(error));
-    expect(await reader.readTaste('secret tasting words', 'sk-ant-secret')).toEqual({
+    expect(await reader.readTaste('secret tasting words', 'sk-ant-secret', SIGNAL)).toEqual({
       ok: false,
       error: { kind, provider: 'claude' },
     });

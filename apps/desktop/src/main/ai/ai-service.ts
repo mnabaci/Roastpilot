@@ -24,6 +24,8 @@ export interface AiServiceDeps {
   providers: readonly AiProvider[];
   files: SheetFiles;
   logger: Logger;
+  /** A new read's hard stop, for every provider and model it asks (read-limits.ts). */
+  deadline: () => AbortSignal;
   /** Milliseconds, for how long a read took (logged). */
   now: () => number;
 }
@@ -52,35 +54,44 @@ export class AiService {
     return providerEntries(this.#deps.providers, await this.#deps.keys.status());
   }
 
-  /** The providers that do `job` and have a key, the one chosen first, then in their order. */
-  async #ready<J extends 'taste' | 'specSheet'>(
+  /** The providers that do `job`, the one chosen first, then in their order; keys not read. */
+  #able<J extends 'taste' | 'specSheet'>(
     job: J,
     chosen: AiProviderId | null,
-  ): Promise<Ready<NonNullable<AiProvider[J]>>[]> {
-    const providers = this.#deps.providers.toSorted(
-      (a, b) => Number(b.info.id === chosen) - Number(a.info.id === chosen),
-    );
-    const ready = [];
-    for (const provider of providers) {
-      const reader = provider[job];
-      if (!reader) continue;
-      const key = await this.#deps.keys.read(provider.info.id);
-      if (key !== undefined) ready.push({ id: provider.info.id, reader, key });
-    }
-    return ready;
+  ): { id: AiProviderId; reader: NonNullable<AiProvider[J]> }[] {
+    return this.#deps.providers
+      .toSorted((a, b) => Number(b.info.id === chosen) - Number(a.info.id === chosen))
+      .flatMap((provider) => {
+        const reader = provider[job];
+        return reader ? [{ id: provider.info.id, reader }] : [];
+      });
+  }
+
+  /** The first provider that does `job` and has a key now; undefined when none has. */
+  async #firstReady(job: 'taste' | 'specSheet'): Promise<AiProviderId | undefined> {
+    for (const { id } of this.#able(job, null))
+      if ((await this.#deps.keys.read(id)) !== undefined) return id;
+    return undefined;
   }
 
   /**
-   * The read by the first ready provider; by the next while one says all its models are retired,
-   * so a retired model never stops a helper another key can still do.
+   * The read by the first provider with a key; by the next while one says all its models are
+   * retired, so a retired model never stops a helper another key can still do. Before each, the
+   * helpers must still be on and its key is read afresh: turning them off or removing a key
+   * mid-read stops what hasn't been sent. One deadline covers every provider asked.
    */
   async #readWith<R, T>(
-    ready: readonly Ready<R>[],
-    read: (provider: Ready<R>) => Promise<Result<T, AiReadError>>,
+    able: readonly { id: AiProviderId; reader: R }[],
+    read: (provider: Ready<R>, signal: AbortSignal) => Promise<Result<T, AiReadError>>,
   ): Promise<Result<T, AiReadError>> {
+    const signal = this.#deps.deadline();
     let answer: Result<T, AiReadError> = err({ kind: 'no-key' });
-    for (const provider of ready) {
-      answer = await read(provider);
+    for (const { id, reader } of able) {
+      if (!(await this.#deps.settings()).enabled) return err({ kind: 'off' });
+      if (signal.aborted) return err({ kind: 'offline', provider: id });
+      const key = await this.#deps.keys.read(id);
+      if (key === undefined) continue;
+      answer = await read({ id, reader, key }, signal);
       if (answer.ok || answer.error.kind !== 'model-retired') return answer;
     }
     return answer;
@@ -91,10 +102,9 @@ export class AiService {
     return this.#once('taste', async () => {
       const { enabled, tasteProvider } = await this.#deps.settings();
       if (!enabled) return err({ kind: 'off' });
-      const ready = await this.#ready('taste', tasteProvider);
-      const read = await this.#readWith(ready, (picked) =>
+      const read = await this.#readWith(this.#able('taste', tasteProvider), (picked, signal) =>
         this.#timed('taste', picked.id, words.length, () =>
-          picked.reader.readTaste(words, picked.key),
+          picked.reader.readTaste(words, picked.key, signal),
         ),
       );
       return this.#stillOn(read);
@@ -108,22 +118,21 @@ export class AiService {
   ): Promise<Result<ReadSpecSheetResult, AiReadError>> {
     return this.#once('spec-sheet', async (): Promise<Result<ReadSpecSheetResult, AiReadError>> => {
       if (!(await this.#deps.settings()).enabled) return err({ kind: 'off' });
-      const ready = await this.#ready('specSheet', null);
-      const [first] = ready;
-      if (!first) return err({ kind: 'no-key' });
+      const first = await this.#firstReady('specSheet');
+      if (first === undefined) return err({ kind: 'no-key' });
       let sheet: SpecSheetSource;
       if (request.kind === 'text') {
         sheet = request;
       } else {
-        const pdf = await readSheetPdf(this.#deps.files, this.#deps.logger, parent, first.id);
+        const pdf = await readSheetPdf(this.#deps.files, this.#deps.logger, parent, first);
         if (!pdf.ok) return pdf;
         if (pdf.value === undefined) return ok({ status: 'cancelled' });
         sheet = { kind: 'pdf', bytes: pdf.value };
       }
       const size = sheet.kind === 'text' ? sheet.text.length : sheet.bytes.length;
-      const read = await this.#readWith(ready, (picked) =>
+      const read = await this.#readWith(this.#able('specSheet', null), (picked, signal) =>
         this.#timed('spec-sheet', picked.id, size, () =>
-          picked.reader.readSpecSheet(sheet, picked.key),
+          picked.reader.readSpecSheet(sheet, picked.key, signal),
         ),
       );
       const answered = await this.#stillOn(read);

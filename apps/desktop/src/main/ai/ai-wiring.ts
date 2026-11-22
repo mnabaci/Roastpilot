@@ -8,6 +8,7 @@ import { AiKeyStore } from './ai-key-store';
 import { AiService } from './ai-service';
 import { claudeProvider } from './claude-reader';
 import { jevProvider } from './jev-taste-reader';
+import { AI_READ_LIMIT_MS } from './read-limits';
 
 /**
  * The AI helpers, made in main (docs/spec/ai-helpers.md, ADR 0027): keys in the user-data folder,
@@ -57,6 +58,7 @@ export function aiWiring({
       },
     },
     logger,
+    deadline: () => AbortSignal.timeout(AI_READ_LIMIT_MS),
     now: () => Date.now(),
   });
   return { keys, reads };

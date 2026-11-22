@@ -11,7 +11,7 @@ export interface AiModel {
 export type ModelChain<M extends AiModel = AiModel> = readonly [M, ...M[]];
 
 /** What a read in a chain came to: a model's answer, or every model gone. */
-export type ChainAnswer<T> = { answered: true; value: T } | { answered: false };
+type ChainAnswer<T> = { answered: true; value: T } | { answered: false };
 
 /**
  * Asks the first model of the chain, and the next while the provider says the one asked is gone

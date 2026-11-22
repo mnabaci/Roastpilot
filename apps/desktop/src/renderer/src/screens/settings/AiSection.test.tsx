@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { WORDS_AND_SHEETS, WORDS_ONLY, withKey } from '../../test/ai-providers';
 import { ACCEPTED_SETTINGS, fakeApi, renderApp } from '../../test/render-app';
 import { AiSection } from './AiSection';
-import { jobLine } from './what-goes';
+import { jobLine } from './who-reads';
 
 const both = [withKey(WORDS_AND_SHEETS, '1234'), withKey(WORDS_ONLY, 'abcd')];
 const firstOnly = [withKey(WORDS_AND_SHEETS, '1234'), WORDS_ONLY];
@@ -162,6 +162,14 @@ describe('AiSection', () => {
     ).toBeInTheDocument();
     expect(card.getByRole('radiogroup', { name: 'Read tasting words with' })).toBeInTheDocument();
     expect(card.getByText('To Alpha Labs · Alpha Max')).toBeInTheDocument();
+  });
+
+  it('shows a dash, not a choice, while no provider that reads tasting words has a key', async () => {
+    setup();
+    const card = within(await screen.findByRole('region', { name: 'Who reads what' }));
+    expect(card.queryByRole('radiogroup', { name: 'Read tasting words with' })).toBeNull();
+    expect(card.getAllByText('Nothing sent · add a key that reads them')).toHaveLength(2);
+    expect(card.getAllByText('–')).toHaveLength(2);
   });
 
   it('says nothing is sent for a job no key reads', async () => {
