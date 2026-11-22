@@ -1,13 +1,20 @@
 import type { AiProviderEntry, AiProviderId } from '@roastpilot/shared';
 
+/** A job the AI helpers do. */
+export type AiJob = 'taste' | 'specSheet';
+
+/** The providers that do `job`, as main listed them. */
+export const capableOf = (providers: readonly AiProviderEntry[], job: AiJob): AiProviderEntry[] =>
+  providers.filter((p) => p.models[job] !== null);
+
 /** The providers that do `job` and have a key, the chosen one first. */
 function usable(
   providers: readonly AiProviderEntry[],
-  job: 'taste' | 'specSheet',
+  job: AiJob,
   chosen: AiProviderId | null,
 ): AiProviderEntry[] {
-  return providers
-    .filter((p) => p.reads[job] && p.key.saved)
+  return capableOf(providers, job)
+    .filter((p) => p.key.saved)
     .toSorted((a, b) => Number(b.id === chosen) - Number(a.id === chosen));
 }
 
@@ -22,23 +29,11 @@ export const sheetReader = (providers: readonly AiProviderEntry[]): AiProviderEn
   usable(providers, 'specSheet', null)[0];
 
 /**
- * Who the words and sheets go to, for the keys you have, then what never leaves; each company as
- * its provider says it.
+ * Where a job's text goes and the model that reads it, as the provider says: "To Anthropic ·
+ * Haiku 5.5"; with no key for it, that nothing is sent.
  */
-export function whatGoes(
-  providers: readonly AiProviderEntry[],
-  chosen: AiProviderId | null,
-): string {
-  const stays = 'Roasts, beans and profiles stay on this computer.';
-  const taste = tasteReader(providers, chosen)?.company;
-  const sheets = sheetReader(providers)?.company;
-  if (taste && sheets && taste === sheets)
-    return `Tasting words and spec sheets go to ${taste}. ${stays}`;
-  const parts = [
-    ...(taste ? [`tasting words go to ${taste}`] : []),
-    ...(sheets ? [`spec sheets ${taste ? 'to' : 'go to'} ${sheets}`] : []),
-  ];
-  if (parts.length === 0) return stays;
-  const sent = parts.join(', ');
-  return `${sent.charAt(0).toUpperCase()}${sent.slice(1)}. ${stays}`;
+export function jobLine(reader: AiProviderEntry | undefined, job: AiJob): string {
+  const model = reader?.models[job];
+  if (!reader || !model) return 'Nothing sent · add a key that reads them';
+  return `To ${reader.company} · ${model}`;
 }

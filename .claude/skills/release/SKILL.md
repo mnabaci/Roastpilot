@@ -20,6 +20,8 @@ Releases are built by GitHub Actions from a tag, never on a laptop
    `## [X.Y.Z] - YYYY-MM-DD` (Added / Changed / Fixed, written for the user, one line each). This
    section becomes the GitHub release notes, word for word.
 4. Run `pnpm screenshots`; if `docs/images` changed, commit `docs: readme screenshots regenerated with pnpm screenshots` first.
+   Check the AI models (docs/spec/ai-helpers.md, Models): each id in `claude-models.ts` and
+   `JEV_MODELS` is still offered and none is deprecated; put a successor at the front of its list.
    Bump `apps/desktop/package.json` `version` to `X.Y.Z`. Commit `chore(release): vX.Y.Z` and open
    a PR. Check locally: `node scripts/release-notes.ts --tag vX.Y.Z --out <scratch file>` passes.
 5. After merge, tag the merge commit on `main` and push the tag:

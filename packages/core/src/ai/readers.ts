@@ -6,6 +6,8 @@ import type { AiProviderId, AiReadError, RawSpecSheet, Result, TasteTag } from '
  */
 export interface TasteReader {
   readonly provider: AiProviderId;
+  /** The model it reads with first, by its name on screen ("Haiku 5.5"). */
+  readonly modelName: string;
   readTaste(words: string, key: string): Promise<Result<TasteTag[], AiReadError>>;
 }
 
@@ -15,5 +17,7 @@ export type SpecSheetSource = { kind: 'text'; text: string } | { kind: 'pdf'; by
 /** Reads a supplier's spec sheet into raw bean values, checked afterwards (`specSheetFields`). */
 export interface SpecSheetReader {
   readonly provider: AiProviderId;
+  /** The model it reads with first, by its name on screen ("Opus 5.5"). */
+  readonly modelName: string;
   readSpecSheet(sheet: SpecSheetSource, key: string): Promise<Result<RawSpecSheet, AiReadError>>;
 }

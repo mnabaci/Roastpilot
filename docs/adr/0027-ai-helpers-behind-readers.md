@@ -26,10 +26,15 @@ can't pull numbers and names off a sheet and doesn't take PDFs.
 - **Providers describe themselves.** Each provider's module exports its id, name, company, key
   host and readers; main registers them at startup and sends the list to the screens. Nothing
   else names a provider: Settings, its lines and the messages are built from the list.
-- **Two providers, each with the roaster's own key:** Claude (`@anthropic-ai/sdk`,
-  `claude-opus-5-5` at low effort, structured output, refusal fallback) reads both; Jev
-  (`@typesafe-ai/sdk`, `jev-1.14.0`, one Noul question per tag) reads tasting words. A setting
-  picks the taste reader. No Roastpilot server, account or billing.
+- **Two providers, each with the roaster's own key:** Claude (`@anthropic-ai/sdk`, low effort,
+  structured output, refusal fallback where the model takes it) reads both; Jev
+  (`@typesafe-ai/sdk`, one Noul question per tag) reads tasting words. A setting picks the taste
+  reader. No Roastpilot server, account or billing.
+- **Models per job, in a fixed list:** each provider module lists its models per job, cheapest
+  that does the job first (Claude: Haiku 5.5 for tasting words, Opus 5.5 for sheets, Sonnet 5.5
+  behind both; Jev: 1.14). A model the API says doesn't exist is passed over for the next, then
+  the next provider; none left is `model-retired`. Never a moving alias like `jev-latest`: a
+  model reads roasters' words only once a release has tested it.
 - **Off by default.** Keys are encrypted with the OS keychain (`safeStorage`), one file per
   provider, never in `settings.json`, logs, exports or the renderer. Only the words or the sheet
   are sent; roasts, beans and profiles never leave the computer.
@@ -45,3 +50,5 @@ can't pull numbers and names off a sheet and doesn't take PDFs.
 - Roasters pay their own API costs, pennies a month. A local or hosted provider later is another
   reader, not a rewrite.
 - Jev's 0.6 tick threshold is a starting guess; tasted roasts will tell whether to move it.
+- Model retirement is a release chore, not an outage: providers announce it months ahead, the
+  `release` skill checks each list, and the fallback chain keeps the helpers working meanwhile.

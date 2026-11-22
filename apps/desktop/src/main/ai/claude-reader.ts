@@ -1,5 +1,4 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import type { Logger, SpecSheetReader, SpecSheetSource, TasteReader } from '@roastpilot/core';
 import {
   err,
@@ -13,7 +12,10 @@ import {
   type TasteTag,
 } from '@roastpilot/shared';
 import { z } from 'zod';
-import { readErrorOf, statusOf } from './ai-errors';
+import { readErrorOf, statusOf, type ProviderReadError } from './ai-errors';
+import { askChain, type ModelChain } from './ai-model';
+import { CLAUDE_MODELS, requestFor, type ClaudeAsk, type ClaudeModel } from './claude-models';
+import { AI_READ_LIMIT_MS, AI_RETRIES, AI_TRY_TIMEOUT_MS } from './read-limits';
 import type { AiProvider } from './ai-provider';
 import { SPEC_SHEET_INSTRUCTION, TASTE_INSTRUCTION } from './taste-words';
 
@@ -25,25 +27,26 @@ const CLAUDE_INFO = {
   keyFrom: 'console.anthropic.com',
 } as const;
 
-/** The model both reads use (docs/spec/ai-helpers.md, Reading). */
-export const CLAUDE_MODEL = 'claude-opus-5-5';
-/** Each try gives up after this long, and a failed try is retried once: about 30 s in all. */
-export const AI_TRY_TIMEOUT_MS = 15_000;
-export const AI_RETRIES = 1;
-/** A read stops here whatever the SDK's retries or a server's retry-after asks: one hard stop. */
-export const AI_READ_LIMIT_MS = 30_000;
 /** Each provider's own host, so no environment variable can send a key elsewhere. */
 const CLAUDE_HOST = 'https://api.anthropic.com';
-const FALLBACK_BETA = 'server-side-fallback-2026-07-01';
-
 const TasteAnswerSchema = z.object({ tags: z.array(TasteTagSchema) });
 
 /** The one SDK call the reader makes, so tests can stand in for it. */
 export type ClaudeParse = Anthropic['beta']['messages']['parse'];
 
+/** Stop reasons that leave nothing to use: a refusal, or an answer cut short. */
+const STOPPED_SHORT = new Set(['refusal', 'max_tokens']);
+
 /** No connection, a try that timed out, or the hard stop: the AI couldn't be reached in time. */
 const isConnection = (error: unknown): boolean =>
   error instanceof Anthropic.APIConnectionError || error instanceof Anthropic.APIUserAbortError;
+
+/**
+ * The API's "no such model": a retired model, or one the key's account can't use. The host is
+ * pinned, so nothing else can be missing; the error's type is checked, never its wording.
+ */
+const isGone = (error: unknown): boolean =>
+  error instanceof Anthropic.NotFoundError && error.type === 'not_found_error';
 
 /** The SDK's own error with no HTTP status and no connection behind it: the answer didn't parse. */
 const isUnparsed = (error: unknown): boolean =>
@@ -53,21 +56,36 @@ const isUnparsed = (error: unknown): boolean =>
 
 /**
  * Claude reads tasting words and spec sheets with the roaster's own key: structured output against
- * the result's schema, low effort, server-side refusal fallback on.
+ * the result's schema, low effort, server-side refusal fallback on where the model takes it. One
+ * reader per job, each with its own models.
  */
 export class ClaudeReader implements TasteReader, SpecSheetReader {
   readonly provider = CLAUDE_INFO.id;
+  readonly modelName: string;
+  readonly #models: ModelChain<ClaudeModel>;
   readonly #parseWith: (key: string) => ClaudeParse;
   readonly #logger: Logger;
 
   /** `parseWith` builds the SDK call for a key; the default is the real client. */
-  constructor(logger: Logger, parseWith: (key: string) => ClaudeParse = realParse) {
+  constructor(
+    logger: Logger,
+    models: ModelChain<ClaudeModel>,
+    parseWith: (key: string) => ClaudeParse = realParse,
+  ) {
     this.#logger = logger;
+    this.#models = models;
+    this.modelName = models[0].label;
     this.#parseWith = parseWith;
   }
 
   async readTaste(words: string, key: string): Promise<Result<TasteTag[], AiReadError>> {
-    const read = await this.#read('taste', key, TASTE_INSTRUCTION, words, TasteAnswerSchema, 1_024);
+    // Room for a little thinking before the tags, as Haiku thinks when it needs to.
+    const read = await this.#read('taste', key, {
+      instruction: TASTE_INSTRUCTION,
+      content: words,
+      schema: TasteAnswerSchema,
+      maxTokens: 2_048,
+    });
     return read.ok ? ok(orderedTags(read.value.tags)) : read;
   }
 
@@ -85,66 +103,56 @@ export class ClaudeReader implements TasteReader, SpecSheetReader {
               },
             },
           ];
-    return this.#read(
-      'spec-sheet',
-      key,
-      SPEC_SHEET_INSTRUCTION,
+    return this.#read('spec-sheet', key, {
+      instruction: SPEC_SHEET_INSTRUCTION,
       content,
-      RawSpecSheetSchema,
-      4_096,
-    );
+      schema: RawSpecSheetSchema,
+      maxTokens: 8_192,
+    });
   }
 
   async #read<T>(
     helper: 'taste' | 'spec-sheet',
     key: string,
-    instruction: string,
-    content: string | Anthropic.Beta.BetaContentBlockParam[],
-    schema: z.ZodType<T>,
-    maxTokens: number,
+    ask: Omit<ClaudeAsk<T>, 'model'>,
   ): Promise<Result<T, AiReadError>> {
+    const parse = this.#parseWith(key);
+    // One hard stop for the whole read, however many models it asks.
+    const signal = AbortSignal.timeout(AI_READ_LIMIT_MS);
     try {
-      const message = await this.#parseWith(key)(
-        {
-          model: CLAUDE_MODEL,
-          max_tokens: maxTokens,
-          betas: [FALLBACK_BETA],
-          fallbacks: 'default',
-          system: instruction,
-          messages: [{ role: 'user', content }],
-          output_config: { effort: 'low', format: betaZodOutputFormat(schema) },
-        },
-        { timeout: AI_TRY_TIMEOUT_MS, signal: AbortSignal.timeout(AI_READ_LIMIT_MS) },
-      );
-      // A refusal, or an answer cut short, may not fit the schema: nothing to use.
-      const checked = schema.safeParse(message.parsed_output);
-      if (
-        message.stop_reason !== 'refusal' &&
-        message.stop_reason !== 'max_tokens' &&
-        checked.success
-      )
-        return ok(checked.data);
-      this.#logger.warn('ai.read-failed', {
-        helper,
-        provider: this.provider,
-        kind: 'unreadable',
-        stopReason: message.stop_reason,
+      const chain = await askChain({
+        chain: this.#models,
+        isGone,
+        logger: this.#logger,
+        context: { helper, provider: this.provider },
+        ask: (model) =>
+          parse(requestFor({ ...ask, model }), { timeout: AI_TRY_TIMEOUT_MS, signal }),
       });
-      return err({ kind: 'unreadable', provider: this.provider });
+      if (!chain.answered) return this.#failed(helper, 'model-retired');
+      const message = chain.value;
+      // A refusal, or an answer cut short, may not fit the schema: nothing to use.
+      const checked = ask.schema.safeParse(message.parsed_output);
+      if (STOPPED_SHORT.has(message.stop_reason ?? '') || !checked.success)
+        return this.#failed(helper, 'unreadable', { stopReason: message.stop_reason });
+      return ok(checked.data);
     } catch (error) {
       // The SDK throws when an answer doesn't parse into the schema: a refusal's words, or an
       // answer cut short. That is unreadable, not a failure to answer.
-      const failed = isUnparsed(error)
-        ? { kind: 'unreadable' as const, provider: this.provider }
-        : readErrorOf(this.provider, error, isConnection);
-      this.#logger.warn('ai.read-failed', {
-        helper,
-        provider: this.provider,
-        kind: failed.kind,
-        status: statusOf(error),
-      });
-      return err(failed);
+      const kind = isUnparsed(error)
+        ? 'unreadable'
+        : readErrorOf(this.provider, error, isConnection).kind;
+      return this.#failed(helper, kind, { status: statusOf(error) });
     }
+  }
+
+  /** A read that failed, logged with why: never the key, the words or the sheet. */
+  #failed(
+    helper: 'taste' | 'spec-sheet',
+    kind: ProviderReadError['kind'],
+    context: Record<string, unknown> = {},
+  ): Result<never, AiReadError> {
+    this.#logger.warn('ai.read-failed', { helper, provider: this.provider, kind, ...context });
+    return err({ kind, provider: this.provider });
   }
 }
 
@@ -159,8 +167,11 @@ function realParse(key: string): ClaudeParse {
   return client.beta.messages.parse.bind(client.beta.messages);
 }
 
-/** Claude as main registers it: it reads tasting words and spec sheets. */
+/** Claude as main registers it: it reads tasting words and spec sheets, each with its models. */
 export function claudeProvider(logger: Logger): AiProvider {
-  const reader = new ClaudeReader(logger);
-  return { info: CLAUDE_INFO, taste: reader, specSheet: reader };
+  return {
+    info: CLAUDE_INFO,
+    taste: new ClaudeReader(logger, CLAUDE_MODELS.taste),
+    specSheet: new ClaudeReader(logger, CLAUDE_MODELS.specSheet),
+  };
 }

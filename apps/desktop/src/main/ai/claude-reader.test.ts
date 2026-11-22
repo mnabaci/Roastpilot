@@ -2,7 +2,9 @@ import Anthropic from '@anthropic-ai/sdk';
 import { createLogger } from '@roastpilot/core';
 import type { LogEntry, RawSpecSheet } from '@roastpilot/shared';
 import { describe, expect, it, vi } from 'vitest';
-import { CLAUDE_MODEL, ClaudeReader, type ClaudeParse } from './claude-reader';
+import { ClaudeReader, type ClaudeParse } from './claude-reader';
+import { CLAUDE_MODELS, type ClaudeModel } from './claude-models';
+import type { ModelChain } from './ai-model';
 
 const SHEET: RawSpecSheet = {
   name: 'Guji',
@@ -20,12 +22,15 @@ const SHEET: RawSpecSheet = {
   tastingNotes: [],
 };
 
-function setup(answer: () => Promise<unknown>) {
+function setup(
+  answer: (params: { model: string }) => Promise<unknown>,
+  models: ModelChain<ClaudeModel> = CLAUDE_MODELS.taste,
+) {
   const entries: LogEntry[] = [];
   const logger = createLogger({ write: (e) => entries.push(e) }, 'ai');
   const parse = vi.fn(answer);
   const parseWith = vi.fn(() => parse as unknown as ClaudeParse);
-  return { reader: new ClaudeReader(logger, parseWith), parse, parseWith, entries };
+  return { reader: new ClaudeReader(logger, models, parseWith), parse, parseWith, entries };
 }
 
 const answered =
@@ -36,9 +41,23 @@ const answered =
 // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
 const thrown = (error: unknown) => () => Promise.reject(error);
 
+/** The API's answer to a model that is retired, or not on the key's account. */
+const gone = (model: string) =>
+  new Anthropic.NotFoundError(
+    404,
+    { type: 'error', error: { type: 'not_found_error', message: `model: ${model}` } },
+    undefined,
+    new Headers(),
+  );
+
+/** The models each call asked, in order. */
+const modelsAsked = (parse: { mock: { calls: unknown[][] } }) =>
+  parse.mock.calls.map(([params]) => (params as { model: string }).model);
+
 describe('ClaudeReader', () => {
-  it('reads tags in their order with the key it was given', async () => {
+  it('reads tags in their order with the key it was given, by Haiku at low effort', async () => {
     const { reader, parse, parseWith } = setup(answered({ tags: ['thin', 'sour'] }));
+    expect(reader.modelName).toBe('Haiku 5.5');
     expect(await reader.readTaste('tart and watery', 'sk-ant-123')).toEqual({
       ok: true,
       value: ['sour', 'thin'],
@@ -46,12 +65,13 @@ describe('ClaudeReader', () => {
     expect(parseWith).toHaveBeenCalledWith('sk-ant-123');
     const [params, options] = parse.mock.calls[0] as unknown as [Record<string, unknown>, unknown];
     expect(params).toMatchObject({
-      model: CLAUDE_MODEL,
-      fallbacks: 'default',
-      betas: ['server-side-fallback-2026-07-01'],
+      model: 'claude-haiku-5-5',
       messages: [{ role: 'user', content: 'tart and watery' }],
       output_config: { effort: 'low' },
     });
+    // Haiku takes no server-side refusal fallback: sending one would be refused.
+    expect(params).not.toHaveProperty('fallbacks');
+    expect(params).not.toHaveProperty('betas');
     expect(options).toMatchObject({ timeout: 15_000 });
     expect((options as { signal?: unknown }).signal).toBeInstanceOf(AbortSignal);
   });
@@ -61,8 +81,60 @@ describe('ClaudeReader', () => {
     expect(await reader.readTaste('nice cup', 'k')).toEqual({ ok: true, value: [] });
   });
 
+  it('reads a sheet with Opus, the refusal fallback on', async () => {
+    const { reader, parse } = setup(answered(SHEET), CLAUDE_MODELS.specSheet);
+    expect(reader.modelName).toBe('Opus 5.5');
+    await reader.readSpecSheet({ kind: 'text', text: 'Guji' }, 'k');
+    expect(parse.mock.calls[0]?.[0]).toMatchObject({
+      model: 'claude-opus-5-5',
+      fallbacks: 'default',
+      betas: ['server-side-fallback-2026-07-01'],
+    });
+  });
+
+  it('asks Sonnet when Haiku is retired, and logs the model that was gone', async () => {
+    const { reader, parse, entries } = setup((params) =>
+      params.model === 'claude-haiku-5-5'
+        ? Promise.reject(gone(params.model))
+        : answered({ tags: ['sour'] })(),
+    );
+    expect(await reader.readTaste('tart', 'k')).toEqual({ ok: true, value: ['sour'] });
+    expect(modelsAsked(parse)).toEqual(['claude-haiku-5-5', 'claude-sonnet-5-5']);
+    expect(parse.mock.calls[1]?.[0]).toMatchObject({ fallbacks: 'default' });
+    expect(entries.map((e) => [e.event, e.context?.model])).toEqual([
+      ['ai.model-gone', 'claude-haiku-5-5'],
+    ]);
+  });
+
+  it('says retired when every model is gone, and shares one hard stop', async () => {
+    const { reader, parse, entries } = setup((params) => Promise.reject(gone(params.model)));
+    expect(await reader.readTaste('tart', 'k')).toEqual({
+      ok: false,
+      error: { kind: 'model-retired', provider: 'claude' },
+    });
+    const calls = parse.mock.calls as unknown as [unknown, { signal: unknown }][];
+    const signals = calls.map(([, options]) => options.signal);
+    expect(signals).toHaveLength(2);
+    expect(signals[0]).toBe(signals[1]);
+    expect(entries.map((e) => e.event)).toEqual([
+      'ai.model-gone',
+      'ai.model-gone',
+      'ai.read-failed',
+    ]);
+  });
+
+  it('asks no other model after a 404 that is not a missing model', async () => {
+    const notFound = new Anthropic.NotFoundError(404, undefined, 'gone', new Headers());
+    const { reader, parse } = setup(thrown(notFound));
+    expect(await reader.readTaste('tart', 'k')).toEqual({
+      ok: false,
+      error: { kind: 'failed', provider: 'claude' },
+    });
+    expect(parse).toHaveBeenCalledTimes(1);
+  });
+
   it('sends pasted text as text, and a PDF as a base64 document', async () => {
-    const { reader, parse } = setup(answered(SHEET));
+    const { reader, parse } = setup(answered(SHEET), CLAUDE_MODELS.specSheet);
     expect(await reader.readSpecSheet({ kind: 'text', text: 'Guji, natural' }, 'k')).toEqual({
       ok: true,
       value: SHEET,

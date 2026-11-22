@@ -118,7 +118,7 @@ Worked out in `core` from the ticked tags and this roast's measured values and f
 
 ## Fill from a spec sheet
 
-- **Fill from spec sheet** (ghost button, before Cancel) on a bean in Edit, and on Add bean, with [AI helpers](ai-helpers.md) on and a Claude key. A Dialog, "Fills empty fields only · check them, then Save": Paste the sheet, Choose PDF… (ghost, at the left), then Cancel and Fill (primary, waiting for pasted text). A failed read says why in the dialog, which stays open with your text.
+- **Fill from spec sheet** (ghost button, before Cancel) on a bean in Edit, and on Add bean, with [AI helpers](ai-helpers.md) on and a key for a provider that reads sheets. A Dialog, "Fills empty fields only · check them, then Save": Paste the sheet, Choose PDF… (ghost, at the left), then Cancel and Fill (primary, waiting for pasted text). A failed read says why in the dialog, which stays open with your text.
 - **What it fills:** name (on Add bean), origin, process (washed, natural, honey or other), species, variety, altitude, density, moisture, screen size, decaf, supplier, and the sheet's tasting notes into Notes. An altitude range ("1,800–2,000 m") fills its middle, 1900. A value the form would refuse is left out.
 - **Only empty fields:** what you typed stays. Process and decaf have no empty state, so a sheet sets them only on a new bean, while still as the form started. One line under the header says what happened ("Filled 7 fields from the sheet · check them, then Save"); nothing is saved until you press Save.
 - A filled record feeds the [profile suggestion](#profile-suggestion) and the [hints](#hints) as one typed by hand.

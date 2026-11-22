@@ -30,7 +30,7 @@ const PROVIDERS = [
     label: 'Claude',
     company: 'Anthropic',
     keyFrom: 'console.anthropic.com',
-    reads: { taste: true, specSheet: true },
+    models: { taste: 'Small 2', specSheet: 'Big 2' },
     key: { saved: false, last4: null },
   },
 ];

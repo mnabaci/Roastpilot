@@ -9,7 +9,8 @@ import {
 } from '@roastpilot/shared';
 import { describe, expect, it, vi } from 'vitest';
 import type { DialogParent } from '../files/file-dialogs';
-import { AiService, pdfPageCount, type SheetFiles } from './ai-service';
+import { AiService } from './ai-service';
+import type { SheetFiles } from './sheet-pdf';
 
 const PARENT = {} as DialogParent;
 
@@ -34,7 +35,11 @@ const pdf = (pages: number) =>
   new Uint8Array(Buffer.from(`%PDF-1.7\n${'<< /Type /Page >>\n'.repeat(pages)}%%EOF`));
 
 function tasteReader(provider: AiProviderId): TasteReader {
-  return { provider, readTaste: vi.fn(() => Promise.resolve(ok(['sour' as const]))) };
+  return {
+    provider,
+    modelName: `${provider} 1`,
+    readTaste: vi.fn(() => Promise.resolve(ok(['sour' as const]))),
+  };
 }
 
 function setup({
@@ -52,6 +57,7 @@ function setup({
   const jev = tasteReader('jev');
   const sheetReader: SpecSheetReader = {
     provider: 'claude',
+    modelName: 'claude big',
     readSpecSheet: vi.fn(() =>
       Promise.resolve(ok({ ...EMPTY_SHEET, origin: 'Kenya', moisturePct: 400 })),
     ),
@@ -124,6 +130,33 @@ describe('AiService.readTaste', () => {
     const { service, claude } = setup({ settings: { enabled: true, tasteProvider: null } });
     await service.readTaste('tart');
     expect(claude.readTaste).toHaveBeenCalledWith('tart', 'sk-claude');
+  });
+
+  it('reads with the next provider when all the chosen one’s models are retired', async () => {
+    const { service, claude, jev } = setup();
+    vi.mocked(claude.readTaste).mockResolvedValueOnce(
+      err({ kind: 'model-retired', provider: 'claude' }),
+    );
+    expect(await service.readTaste('tart')).toEqual(ok(['sour']));
+    expect(jev.readTaste).toHaveBeenCalledWith('tart', 'ts-jev');
+  });
+
+  it('says retired when every provider with a key is retired', async () => {
+    const { service, claude, jev } = setup();
+    vi.mocked(claude.readTaste).mockResolvedValueOnce(
+      err({ kind: 'model-retired', provider: 'claude' }),
+    );
+    vi.mocked(jev.readTaste).mockResolvedValueOnce(err({ kind: 'model-retired', provider: 'jev' }));
+    expect(await service.readTaste('tart')).toEqual(
+      err({ kind: 'model-retired', provider: 'jev' }),
+    );
+  });
+
+  it('tries no other provider after any other failure', async () => {
+    const { service, claude, jev } = setup();
+    vi.mocked(claude.readTaste).mockResolvedValueOnce(err({ kind: 'offline', provider: 'claude' }));
+    expect(await service.readTaste('tart')).toEqual(err({ kind: 'offline', provider: 'claude' }));
+    expect(jev.readTaste).not.toHaveBeenCalled();
   });
 
   it('drops an answer that came after the helpers were turned off', async () => {
@@ -281,6 +314,16 @@ describe('AiService.readSpecSheet', () => {
     );
   });
 
+  it('passes on a retired sheet model when no other provider reads sheets', async () => {
+    const { service, sheetReader } = setup();
+    vi.mocked(sheetReader.readSpecSheet).mockResolvedValueOnce(
+      err({ kind: 'model-retired', provider: 'claude' }),
+    );
+    expect(await service.readSpecSheet({ kind: 'text', text: 'x' }, PARENT)).toEqual(
+      err({ kind: 'model-retired', provider: 'claude' }),
+    );
+  });
+
   it('reads an empty sheet as no fields, and logs it', async () => {
     const { service, sheetReader, entries } = setup();
     vi.mocked(sheetReader.readSpecSheet).mockResolvedValueOnce(ok(EMPTY_SHEET));
@@ -301,7 +344,7 @@ describe('AiService.readSpecSheet', () => {
 });
 
 describe('AiService.list', () => {
-  it('lists each provider with what it reads and its key, never the key itself', async () => {
+  it('lists each provider with the model for each job and its key, never the key itself', async () => {
     const { service } = setup({ keys: { jev: 'ts-jev-secret' } });
     const list = await service.list();
     expect(list).toEqual([
@@ -310,7 +353,7 @@ describe('AiService.list', () => {
         label: 'Claude',
         company: 'Anthropic',
         keyFrom: 'a.example',
-        reads: { taste: true, specSheet: true },
+        models: { taste: 'claude 1', specSheet: 'claude big' },
         key: { saved: false, last4: null },
       },
       {
@@ -318,25 +361,10 @@ describe('AiService.list', () => {
         label: 'Jev',
         company: 'TypeSafe',
         keyFrom: 'b.example',
-        reads: { taste: true, specSheet: false },
+        models: { taste: 'jev 1', specSheet: null },
         key: { saved: true, last4: 'cret' },
       },
     ]);
     expect(JSON.stringify(list)).not.toContain('ts-jev-secret');
-  });
-});
-
-describe('pdfPageCount', () => {
-  it('reads the page tree’s count, the largest when a saved change repeats it', () => {
-    const tree = (count: number) => `<< /Type /Pages /Kids [3 0 R] /Count ${String(count)} >>`;
-    const bytes = (text: string) => new Uint8Array(Buffer.from(`%PDF-1.7\n${text}`));
-    expect(pdfPageCount(bytes(`${tree(15)}\n${'<< /Type /Page >>\n'.repeat(30)}`))).toBe(15);
-    expect(pdfPageCount(bytes(`${tree(12)}\n${tree(15)}`))).toBe(15);
-  });
-
-  it('counts page objects when there is no page tree in plain sight', () => {
-    expect(pdfPageCount(pdf(3))).toBe(3);
-    expect(pdfPageCount(new Uint8Array(Buffer.from('/Type/Page /Type /Page/Contents')))).toBe(2);
-    expect(pdfPageCount(new Uint8Array(Buffer.from('%PDF-1.7 compressed')))).toBe(0);
   });
 });

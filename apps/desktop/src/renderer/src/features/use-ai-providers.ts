@@ -36,6 +36,7 @@ export function useAiProviders(): {
 export function useAiHelpers(): { taste: boolean; sheets: boolean } {
   const enabled = useSettings((s) => s.settings.ai.enabled);
   const { providers } = useAiProviders();
-  const can = (job: 'taste' | 'specSheet') => providers.some((p) => p.reads[job] && p.key.saved);
+  const can = (job: 'taste' | 'specSheet') =>
+    providers.some((p) => p.models[job] !== null && p.key.saved);
   return { taste: enabled && can('taste'), sheets: enabled && can('specSheet') };
 }

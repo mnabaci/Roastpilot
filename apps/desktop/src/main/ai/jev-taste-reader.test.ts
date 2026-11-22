@@ -1,8 +1,16 @@
 import { createLogger } from '@roastpilot/core';
 import { TASTE_TAGS, type LogEntry } from '@roastpilot/shared';
-import { APIConnectionError, APITimeoutError, APIUserAbortError } from '@typesafe-ai/sdk';
 import { describe, expect, it, vi } from 'vitest';
-import { JEV_TICK_AT, JevTasteReader, type JevAsk } from './jev-taste-reader';
+import {
+  APIConnectionError,
+  APITimeoutError,
+  APIUserAbortError,
+  NotFoundError,
+} from '@typesafe-ai/sdk';
+import { JEV_MODELS, JEV_TICK_AT, JevTasteReader, type JevAsk } from './jev-taste-reader';
+
+/** TypeSafe's answer to a model it doesn't have. */
+const goneError = () => new NotFoundError(404, { error: 'model not found' }, new Headers());
 
 const allNo = () => Object.fromEntries(TASTE_TAGS.map((tag) => [tag, { noul: 0.05 }]));
 
@@ -11,7 +19,8 @@ function setup(answer: Parameters<typeof vi.fn>[0]) {
   const logger = createLogger({ write: (e) => entries.push(e) }, 'ai');
   const ask = vi.fn(answer);
   const askWith = vi.fn(() => ask as unknown as JevAsk);
-  return { reader: new JevTasteReader(logger, askWith), ask, askWith, entries };
+  const reader = new JevTasteReader(logger, JEV_MODELS, askWith);
+  return { reader, ask, askWith, entries };
 }
 
 describe('JevTasteReader', () => {
@@ -19,10 +28,15 @@ describe('JevTasteReader', () => {
     const { reader, ask, askWith } = setup(() => Promise.resolve(allNo()));
     await reader.readTaste('tart', 'ts-key');
     expect(askWith).toHaveBeenCalledWith('ts-key');
-    const [state, questions] = ask.mock.calls[0] as unknown as [string, Record<string, unknown>];
+    const [{ model, state, questions, signal }] = ask.mock.calls[0] as unknown as [
+      { model: string; state: string; questions: Record<string, unknown>; signal: unknown },
+    ];
+    expect(model).toBe('jev-1.14.0');
+    expect(reader.modelName).toBe('Jev 1.14');
     expect(state).toBe('tart');
     expect(Object.keys(questions)).toEqual([...TASTE_TAGS]);
     expect(questions.sour).toMatchObject({ type: 'noul' });
+    expect(signal).toBeInstanceOf(AbortSignal);
   });
 
   it('ticks tags at the threshold or above, in their order', async () => {
@@ -60,6 +74,18 @@ describe('JevTasteReader', () => {
       error: { kind: 'unreadable', provider: 'jev' },
     });
     expect(entries.map((e) => e.event)).toEqual(['ai.read-failed']);
+  });
+
+  it('says retired when its model is gone, and logs which', async () => {
+    const { reader, entries } = setup(() => Promise.reject(goneError()));
+    expect(await reader.readTaste('words', 'k')).toEqual({
+      ok: false,
+      error: { kind: 'model-retired', provider: 'jev' },
+    });
+    expect(entries.map((e) => [e.event, e.context?.model])).toEqual([
+      ['ai.model-gone', 'jev-1.14.0'],
+      ['ai.read-failed', undefined],
+    ]);
   });
 
   it.each([

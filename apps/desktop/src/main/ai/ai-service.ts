@@ -1,15 +1,7 @@
-import {
-  isEmptySheet,
-  serializeError,
-  specSheetFields,
-  type Logger,
-  type SpecSheetSource,
-} from '@roastpilot/core';
+import { isEmptySheet, specSheetFields, type Logger, type SpecSheetSource } from '@roastpilot/core';
 import {
   err,
   ok,
-  SPEC_SHEET_PDF_MAX_BYTES,
-  SPEC_SHEET_PDF_MAX_PAGES,
   type AiProviderEntry,
   type AiProviderId,
   type AiReadError,
@@ -22,15 +14,7 @@ import {
 import type { DialogParent } from '../files/file-dialogs';
 import type { AiKeyStore } from './ai-key-store';
 import { providerEntries, type AiProvider } from './ai-provider';
-
-/** Reading the PDF you picked, the file system injected. */
-export interface SheetFiles {
-  /** The PDF you pick in a dialog on `parent`; undefined when you cancel. */
-  choosePdf: (parent: DialogParent) => Promise<string | undefined>;
-  sizeOf: (path: string) => Promise<number>;
-  /** At most `limit` bytes, so a file that grew after `sizeOf` is never read whole. */
-  readBytes: (path: string, limit: number) => Promise<Uint8Array>;
-}
+import { readSheetPdf, type SheetFiles } from './sheet-pdf';
 
 export interface AiServiceDeps {
   /** The AI helpers' settings as they are now. */
@@ -44,28 +28,12 @@ export interface AiServiceDeps {
   now: () => number;
 }
 
-/** A PDF file starts with these bytes. */
-const PDF_MAGIC = '%PDF-';
-
-/**
- * The pages a PDF says it has: its page objects, counted. A PDF that packs its objects into
- * compressed streams shows none here, and is sent: Claude's own limit still applies.
- */
-export function pdfPageCount(bytes: Uint8Array): number {
-  const text = Buffer.from(bytes).toString('latin1');
-  // The page tree's root says how many pages there are (/Type /Pages … /Count n). A file saved
-  // with changes repeats it, so the largest is the document's; it is never counted twice.
-  const counts = [...text.matchAll(/<<(?:(?!<<|>>)[\s\S])*?>>/g)]
-    .map(([dictionary]) => dictionary)
-    .filter((dictionary) => /\/Type\s*\/Pages(?![a-zA-Z])/.test(dictionary))
-    .map((dictionary) => Number(/\/Count\s+(\d+)/.exec(dictionary)?.[1] ?? 0));
-  if (counts.length > 0) return Math.max(...counts);
-  // No page tree in plain sight: count the page objects.
-  return text.match(/\/Type\s*\/Page(?![a-zA-Z])/g)?.length ?? 0;
+/** A provider ready to read a job: its reader, and its key. */
+interface Ready<R> {
+  id: AiProviderId;
+  reader: R;
+  key: string;
 }
-
-const isPdf = (bytes: Uint8Array): boolean =>
-  Buffer.from(bytes.subarray(0, PDF_MAGIC.length)).toString('latin1') === PDF_MAGIC;
 
 /**
  * The AI helpers (docs/spec/ai-helpers.md): checks they are on and have a key, picks the reader,
@@ -84,24 +52,38 @@ export class AiService {
     return providerEntries(this.#deps.providers, await this.#deps.keys.status());
   }
 
-  /**
-   * The provider that does `job` and has a key: the one chosen first, then the rest in their
-   * order; undefined when none does.
-   */
-  async #pick<J extends 'taste' | 'specSheet'>(
+  /** The providers that do `job` and have a key, the one chosen first, then in their order. */
+  async #ready<J extends 'taste' | 'specSheet'>(
     job: J,
     chosen: AiProviderId | null,
-  ): Promise<{ id: AiProviderId; reader: NonNullable<AiProvider[J]>; key: string } | undefined> {
+  ): Promise<Ready<NonNullable<AiProvider[J]>>[]> {
     const providers = this.#deps.providers.toSorted(
       (a, b) => Number(b.info.id === chosen) - Number(a.info.id === chosen),
     );
+    const ready = [];
     for (const provider of providers) {
       const reader = provider[job];
       if (!reader) continue;
       const key = await this.#deps.keys.read(provider.info.id);
-      if (key !== undefined) return { id: provider.info.id, reader, key };
+      if (key !== undefined) ready.push({ id: provider.info.id, reader, key });
     }
-    return undefined;
+    return ready;
+  }
+
+  /**
+   * The read by the first ready provider; by the next while one says all its models are retired,
+   * so a retired model never stops a helper another key can still do.
+   */
+  async #readWith<R, T>(
+    ready: readonly Ready<R>[],
+    read: (provider: Ready<R>) => Promise<Result<T, AiReadError>>,
+  ): Promise<Result<T, AiReadError>> {
+    let answer: Result<T, AiReadError> = err({ kind: 'no-key' });
+    for (const provider of ready) {
+      answer = await read(provider);
+      if (answer.ok || answer.error.kind !== 'model-retired') return answer;
+    }
+    return answer;
   }
 
   /** Your tasting words into tags, by the chosen provider, else the first that can. */
@@ -109,10 +91,11 @@ export class AiService {
     return this.#once('taste', async () => {
       const { enabled, tasteProvider } = await this.#deps.settings();
       if (!enabled) return err({ kind: 'off' });
-      const picked = await this.#pick('taste', tasteProvider);
-      if (!picked) return err({ kind: 'no-key' });
-      const read = await this.#timed('taste', picked.id, words.length, () =>
-        picked.reader.readTaste(words, picked.key),
+      const ready = await this.#ready('taste', tasteProvider);
+      const read = await this.#readWith(ready, (picked) =>
+        this.#timed('taste', picked.id, words.length, () =>
+          picked.reader.readTaste(words, picked.key),
+        ),
       );
       return this.#stillOn(read);
     });
@@ -125,20 +108,23 @@ export class AiService {
   ): Promise<Result<ReadSpecSheetResult, AiReadError>> {
     return this.#once('spec-sheet', async (): Promise<Result<ReadSpecSheetResult, AiReadError>> => {
       if (!(await this.#deps.settings()).enabled) return err({ kind: 'off' });
-      const picked = await this.#pick('specSheet', null);
-      if (!picked) return err({ kind: 'no-key' });
+      const ready = await this.#ready('specSheet', null);
+      const [first] = ready;
+      if (!first) return err({ kind: 'no-key' });
       let sheet: SpecSheetSource;
       if (request.kind === 'text') {
         sheet = request;
       } else {
-        const pdf = await this.#readPdf(parent, picked.id);
+        const pdf = await readSheetPdf(this.#deps.files, this.#deps.logger, parent, first.id);
         if (!pdf.ok) return pdf;
         if (pdf.value === undefined) return ok({ status: 'cancelled' });
         sheet = { kind: 'pdf', bytes: pdf.value };
       }
       const size = sheet.kind === 'text' ? sheet.text.length : sheet.bytes.length;
-      const read = await this.#timed('spec-sheet', picked.id, size, () =>
-        picked.reader.readSpecSheet(sheet, picked.key),
+      const read = await this.#readWith(ready, (picked) =>
+        this.#timed('spec-sheet', picked.id, size, () =>
+          picked.reader.readSpecSheet(sheet, picked.key),
+        ),
       );
       const answered = await this.#stillOn(read);
       if (!answered.ok) return answered;
@@ -146,34 +132,6 @@ export class AiService {
       if (isEmptySheet(fields)) this.#deps.logger.info('ai.sheet-empty', { kind: sheet.kind });
       return ok({ status: 'read', fields });
     });
-  }
-
-  /** The PDF's bytes; undefined when you cancelled; refused over the limits or not a PDF. */
-  async #readPdf(
-    parent: DialogParent,
-    provider: AiProviderId,
-  ): Promise<Result<Uint8Array | undefined, AiReadError>> {
-    const { files, logger } = this.#deps;
-    const path = await files.choosePdf(parent);
-    if (path === undefined) return ok(undefined);
-    let bytes: Uint8Array;
-    try {
-      if ((await files.sizeOf(path)) > SPEC_SHEET_PDF_MAX_BYTES)
-        return err({ kind: 'too-long', limit: '10 MB' });
-      // One byte past the limit tells a file that grew since it was measured.
-      bytes = await files.readBytes(path, SPEC_SHEET_PDF_MAX_BYTES + 1);
-      if (bytes.length > SPEC_SHEET_PDF_MAX_BYTES) return err({ kind: 'too-long', limit: '10 MB' });
-    } catch (error) {
-      logger.warn('ai.sheet-read-failed', { error: serializeError(error) });
-      return err({ kind: 'failed', provider });
-    }
-    if (!isPdf(bytes)) {
-      logger.info('ai.sheet-not-pdf', { bytes: bytes.length });
-      return err({ kind: 'unreadable', provider });
-    }
-    if (pdfPageCount(bytes) > SPEC_SHEET_PDF_MAX_PAGES)
-      return err({ kind: 'too-long', limit: `${String(SPEC_SHEET_PDF_MAX_PAGES)} pages` });
-    return ok(bytes);
   }
 
   /** An answer that came after the AI helpers were turned off is dropped. */

@@ -10,13 +10,15 @@ import {
 import {
   APIConnectionError,
   APIUserAbortError,
+  NotFoundError,
   noul,
   TypeSafeClient,
   type NoulQuestion,
 } from '@typesafe-ai/sdk';
 import { readErrorOf, statusOf } from './ai-errors';
+import { askChain, type ModelChain } from './ai-model';
 import type { AiProvider } from './ai-provider';
-import { AI_READ_LIMIT_MS, AI_RETRIES, AI_TRY_TIMEOUT_MS } from './claude-reader';
+import { AI_READ_LIMIT_MS, AI_RETRIES, AI_TRY_TIMEOUT_MS } from './read-limits';
 import { TASTE_MEANINGS } from './taste-words';
 
 /** What Jev says about itself in Settings: the one place these facts are written. */
@@ -27,8 +29,11 @@ const JEV_INFO = {
   keyFrom: 'console.typesafe.ai',
 } as const;
 
-/** The model Jev reads with (docs/spec/ai-helpers.md, Reading). */
-export const JEV_MODEL = 'jev-1.14.0';
+/**
+ * The models Jev reads with, first to last (docs/spec/ai-helpers.md, Models). One for now: a
+ * newer one goes in front when TypeSafe releases it, never `jev-latest`, which changes unseen.
+ */
+export const JEV_MODELS: ModelChain = [{ id: 'jev-1.14.0', label: 'Jev 1.14' }];
 /** A tag is ticked at this probability or more: a starting guess to revisit. */
 export const JEV_TICK_AT = 0.6;
 
@@ -47,10 +52,12 @@ const QUESTIONS: Readonly<Record<TasteTag, NoulQuestion>> = Object.fromEntries(
 type NoulAnswers = Readonly<Record<string, { noul: number } | undefined>>;
 
 /** The one SDK call the reader makes, so tests can stand in for it. */
-export type JevAsk = (
-  state: string,
-  questions: Record<TasteTag, NoulQuestion>,
-) => Promise<NoulAnswers>;
+export type JevAsk = (request: {
+  model: string;
+  state: string;
+  questions: Record<TasteTag, NoulQuestion>;
+  signal: AbortSignal;
+}) => Promise<NoulAnswers>;
 
 /** TypeSafe's own host, so no environment variable can send the key elsewhere. */
 const JEV_HOST = 'https://api.typesafe.ai';
@@ -59,31 +66,43 @@ const JEV_HOST = 'https://api.typesafe.ai';
 const isConnection = (error: unknown): boolean =>
   error instanceof APIConnectionError || error instanceof APIUserAbortError;
 
+/** TypeSafe's "no such model": retired, or not on the key's account. The host is pinned. */
+const isGone = (error: unknown): boolean => error instanceof NotFoundError;
+
 /** Jev reads tasting words: each tag one yes/no question, all asked at once. */
 export class JevTasteReader implements TasteReader {
   readonly provider = JEV_INFO.id;
+  readonly modelName: string;
+  readonly #models: ModelChain;
   readonly #askWith: (key: string) => JevAsk;
   readonly #logger: Logger;
 
   /** `askWith` builds the SDK call for a key; the default is the real client. */
-  constructor(logger: Logger, askWith: (key: string) => JevAsk = realAsk) {
+  constructor(logger: Logger, models: ModelChain, askWith: (key: string) => JevAsk = realAsk) {
     this.#logger = logger;
+    this.#models = models;
+    this.modelName = models[0].label;
     this.#askWith = askWith;
   }
 
   async readTaste(words: string, key: string): Promise<Result<TasteTag[], AiReadError>> {
+    const ask = this.#askWith(key);
+    // One hard stop for the whole read, however many models it asks.
+    const signal = AbortSignal.timeout(AI_READ_LIMIT_MS);
     try {
-      const answers = await this.#askWith(key)(words, QUESTIONS);
+      const chain = await askChain({
+        chain: this.#models,
+        isGone,
+        logger: this.#logger,
+        context: { helper: 'taste', provider: this.provider },
+        ask: (model) => ask({ model: model.id, state: words, questions: QUESTIONS, signal }),
+      });
+      if (!chain.answered) return this.#failed('model-retired');
+      const answers = chain.value;
       const read = TASTE_TAGS.map((tag) => answers[tag]?.noul);
       // Every answer a probability, or nothing is trusted.
-      if (!read.every((p) => typeof p === 'number' && p >= 0 && p <= 1)) {
-        this.#logger.warn('ai.read-failed', {
-          helper: 'taste',
-          provider: this.provider,
-          kind: 'unreadable',
-        });
-        return err({ kind: 'unreadable', provider: this.provider });
-      }
+      if (!read.every((p) => typeof p === 'number' && p >= 0 && p <= 1))
+        return this.#failed('unreadable');
       return ok(TASTE_TAGS.filter((_tag, i) => (read[i] ?? 0) >= JEV_TICK_AT));
     } catch (error) {
       const failed = readErrorOf(this.provider, error, isConnection);
@@ -96,6 +115,11 @@ export class JevTasteReader implements TasteReader {
       return err(failed);
     }
   }
+
+  #failed(kind: 'unreadable' | 'model-retired'): Result<never, AiReadError> {
+    this.#logger.warn('ai.read-failed', { helper: 'taste', provider: this.provider, kind });
+    return err({ kind, provider: this.provider });
+  }
 }
 
 function realAsk(key: string): JevAsk {
@@ -107,11 +131,8 @@ function realAsk(key: string): JevAsk {
     timeout: AI_TRY_TIMEOUT_MS,
     retry: { maxRetries: AI_RETRIES },
   });
-  return async (state, questions) => {
-    const { answers } = await client.systemOne(
-      { model: JEV_MODEL, state, questions },
-      { signal: AbortSignal.timeout(AI_READ_LIMIT_MS) },
-    );
+  return async ({ model, state, questions, signal }) => {
+    const { answers } = await client.systemOne({ model, state, questions }, { signal });
     return answers;
   };
 }
@@ -121,5 +142,5 @@ function realAsk(key: string): JevAsk {
  * questions and can't pull numbers and names off a spec sheet.
  */
 export function jevProvider(logger: Logger): AiProvider {
-  return { info: JEV_INFO, taste: new JevTasteReader(logger) };
+  return { info: JEV_INFO, taste: new JevTasteReader(logger, JEV_MODELS) };
 }

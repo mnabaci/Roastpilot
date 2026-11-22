@@ -8,6 +8,9 @@ import { TasteWordsSchema } from './taste';
  */
 export const AiProviderIdSchema = z.string().regex(/^[a-z][a-z0-9-]{0,31}$/);
 
+/** A model's name on screen: "Haiku 5.5". */
+export const AiModelNameSchema = z.string().min(1).max(40);
+
 /** What a provider says about itself, for Settings and the screens' lines. */
 export const AiProviderInfoSchema = z.object({
   id: AiProviderIdSchema,
@@ -17,8 +20,14 @@ export const AiProviderInfoSchema = z.object({
   company: z.string().min(1).max(60),
   /** Where you get a key, as a host: "console.anthropic.com". */
   keyFrom: z.string().min(1).max(120),
-  /** What it can read. */
-  reads: z.object({ taste: z.boolean(), specSheet: z.boolean() }),
+  /**
+   * The model that reads each job, by its name on screen ("Haiku 5.5"); null for a job it doesn't
+   * do. The first it tries: a retired one is passed over for the next (ai-helpers.md, Models).
+   */
+  models: z.object({
+    taste: AiModelNameSchema.nullable(),
+    specSheet: AiModelNameSchema.nullable(),
+  }),
 });
 
 /** Whether a provider's key is saved, and its last four characters: never the key itself. */
@@ -125,6 +134,8 @@ export const AiReadErrorSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('offline'), provider: AiProviderIdSchema }),
   z.object({ kind: z.literal('unreadable'), provider: AiProviderIdSchema }),
   z.object({ kind: z.literal('failed'), provider: AiProviderIdSchema }),
+  /** Every model the provider would read this with is retired: a newer Roastpilot reads it. */
+  z.object({ kind: z.literal('model-retired'), provider: AiProviderIdSchema }),
   /** Over a limit: nothing was sent. */
   z.object({ kind: z.literal('too-long'), limit: z.string() }),
   /** Another read of the same kind is running. */

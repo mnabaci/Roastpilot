@@ -11,7 +11,7 @@ export const WORDS_AND_SHEETS: AiProviderEntry = {
   label: 'Alpha',
   company: 'Alpha Labs',
   keyFrom: 'keys.alpha.example',
-  reads: { taste: true, specSheet: true },
+  models: { taste: 'Alpha Mini', specSheet: 'Alpha Max' },
   key: NO_KEY,
 };
 
@@ -21,7 +21,7 @@ export const WORDS_ONLY: AiProviderEntry = {
   label: 'Beta',
   company: 'Beta Inc',
   keyFrom: 'keys.beta.example',
-  reads: { taste: true, specSheet: false },
+  models: { taste: 'Beta 3', specSheet: null },
   key: NO_KEY,
 };
 

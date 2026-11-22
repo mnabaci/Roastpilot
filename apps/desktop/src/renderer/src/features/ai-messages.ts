@@ -25,6 +25,8 @@ export function aiReadMessage(error: AiReadError, fallback: Fallback): string {
       return `Couldn't read that · ${FALLBACKS[fallback]}`;
     case 'failed':
       return "The AI didn't answer · see Logs";
+    case 'model-retired':
+      return 'This AI model was retired · update Roastpilot';
     case 'too-long':
       return `Too long · up to ${error.limit}`;
     case 'busy':

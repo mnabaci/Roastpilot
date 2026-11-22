@@ -7,15 +7,15 @@ import type { AiKeyStatus, AiProviderEntry, AiProviderInfo } from '@roastpilot/s
  * of these and a line in ai-wiring.ts; nothing else names it.
  */
 export interface AiProvider {
-  info: Omit<AiProviderInfo, 'reads'>;
+  info: Omit<AiProviderInfo, 'models'>;
   taste?: TasteReader;
   specSheet?: SpecSheetReader;
 }
 
-/** What a provider can read, from the readers it has. */
-export const readsOf = (provider: AiProvider): AiProviderInfo['reads'] => ({
-  taste: provider.taste !== undefined,
-  specSheet: provider.specSheet !== undefined,
+/** The model each of its readers reads with first; null for a job it has no reader for. */
+export const modelsOf = (provider: AiProvider): AiProviderInfo['models'] => ({
+  taste: provider.taste?.modelName ?? null,
+  specSheet: provider.specSheet?.modelName ?? null,
 });
 
 /** The providers as Settings lists them, each with its key's status. */
@@ -25,7 +25,7 @@ export function providerEntries(
 ): AiProviderEntry[] {
   return providers.map((provider) => ({
     ...provider.info,
-    reads: readsOf(provider),
+    models: modelsOf(provider),
     key: keys[provider.info.id] ?? { saved: false, last4: null },
   }));
 }
