@@ -57,7 +57,8 @@ export function SuppliersDialog({ open, onClose }: { open: boolean; onClose: () 
           <Button
             size="sm"
             variant="ghost"
-            className="-mt-2 self-start"
+            // The icon lines up with the fields' edge.
+            className="-mt-2 -ml-3 self-start px-3"
             icon={<ChevronLeft aria-hidden="true" />}
             onClick={back}
           >
@@ -98,7 +99,8 @@ export function SuppliersDialog({ open, onClose }: { open: boolean; onClose: () 
           )}
           <Button
             variant="ghost"
-            className="self-start"
+            // px-2 like the rows above, so the icon lines up with their names.
+            className="-ml-2 self-start px-2"
             icon={<Plus aria-hidden="true" />}
             onClick={() => {
               setPage({ kind: 'add' });

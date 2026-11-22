@@ -71,7 +71,8 @@ function SupplierTile({
   const contacts = supplier ? contactsOf(supplier) : '';
   const under = contacts !== '' ? contacts : name ? site : '';
   return (
-    <div className="flex min-w-0 flex-col gap-0.5">
+    // Two columns: a supplier's name and its email run longer than a number.
+    <div className="col-span-2 flex min-w-0 flex-col gap-0.5">
       <span id={id} className="text-label text-ink-muted">
         Supplier
       </span>
