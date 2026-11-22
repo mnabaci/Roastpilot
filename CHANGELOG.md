@@ -15,6 +15,11 @@ a roast: minor for a new roasting capability, patch for everything else
   end, first crack, development and drop against the plan. It's in History, and on the Roast
   screen as soon as the roast finishes.
 
+### Changed
+
+- **Smaller app:** the installed app is about 35 MB smaller. It no longer ships a second copy of
+  the screen libraries that are already built into it.
+
 ## [0.3.4] - 2026-11-14
 
 ### Changed
