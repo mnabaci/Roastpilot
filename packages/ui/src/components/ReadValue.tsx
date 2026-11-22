@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, type ReactNode } from 'react';
 import { cn } from '../lib/utils';
 
 export interface ReadValueProps {
@@ -10,6 +10,8 @@ export interface ReadValueProps {
   numeric?: boolean;
   /** One line under it, as the field's hint would be. */
   hint?: string | undefined;
+  /** Beside the label, an InfoButton saying more about the value (a bean's roast notes). */
+  info?: ReactNode;
   className?: string;
 }
 
@@ -25,13 +27,18 @@ export function ReadValue({
   hideLabel = false,
   numeric = false,
   hint,
+  info,
   className,
 }: ReadValueProps) {
   const id = useId();
   return (
     <div className={cn('flex min-w-0 flex-col', hideLabel ? 'gap-1.5' : 'gap-0.5', className)}>
-      <span id={id} className={hideLabel ? 'sr-only' : 'text-label text-ink-muted'}>
-        {label}
+      <span className="flex min-w-0 items-center gap-1">
+        <span id={id} className={hideLabel ? 'sr-only' : 'truncate text-label text-ink-muted'}>
+          {label}
+        </span>
+        {/* Its 24 px button doesn't make the label's line taller: tiles stay lined up. */}
+        {info && !hideLabel ? <span className="-my-1 flex shrink-0">{info}</span> : null}
       </span>
       <p
         aria-labelledby={id}

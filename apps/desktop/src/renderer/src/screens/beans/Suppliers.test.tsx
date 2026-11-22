@@ -305,3 +305,28 @@ describe('Fill from spec sheet and suppliers', () => {
     expect(await screen.findByText("Couldn't add the supplier · see Logs")).toBeInTheDocument();
   });
 });
+
+describe("A bean's roast notes", () => {
+  it('explain a value beside its name, read and in Edit, and follow what you type', async () => {
+    const user = userEvent.setup();
+    show(fakeApi(), [{ ...WITH_FALCON, process: 'natural', altitudeM: 1900 }]);
+    await user.click(about().getByRole('button', { name: 'About Process' }));
+    expect(await screen.findByRole('dialog', { name: 'About Process' })).toHaveTextContent(
+      /^Natural: dried inside the whole fruit/,
+    );
+    await user.keyboard('{Escape}');
+    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    await user.clear(screen.getByLabelText('Altitude'));
+    await user.type(screen.getByLabelText('Altitude'), '900');
+    await user.click(screen.getByRole('button', { name: 'About Altitude' }));
+    expect(await screen.findByRole('dialog', { name: 'About Altitude' })).toHaveTextContent(
+      /^Low grown/,
+    );
+  });
+
+  it('has nothing to say for an empty value', () => {
+    show(fakeApi(), [{ ...WITH_FALCON, moisturePct: null, decaf: false }]);
+    expect(screen.queryByRole('button', { name: 'About Moisture' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'About Decaf' })).toBeNull();
+  });
+});

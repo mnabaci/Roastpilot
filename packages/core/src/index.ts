@@ -57,6 +57,7 @@ export { createDriver, newRoaster, roasterModels } from './roasters/roaster-mode
 export { soakLengthS, withCapUnder } from './auto/phase-plan';
 export { clampBatch, expectedRoastedG, splitStock } from './beans/batch-plans';
 export { beanHints } from './beans/bean-hints';
+export { roastNote, type NotedValues } from './beans/roast-notes';
 export {
   stockSummary,
   stockTimeline,

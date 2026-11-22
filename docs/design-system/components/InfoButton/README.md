@@ -1,6 +1,6 @@
 # InfoButton
 
-A small ⓘ beside a name, for what its one-line hint can't say: Settings' AI helpers (what each helper does, where you use it, what it sends).
+A small ⓘ beside a name, for what its one-line hint can't say: Settings' AI helpers (what each helper does, where you use it, what it sends), and a bean's roast notes (what its process, species, altitude and the rest mean for roasting).
 
 ## Anatomy
 

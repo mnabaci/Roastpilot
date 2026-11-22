@@ -1,4 +1,4 @@
-import { useId, type ComponentProps } from 'react';
+import { useId, type ComponentProps, type ReactNode } from 'react';
 import { cn } from '../lib/utils';
 import { ReadValue } from './ReadValue';
 
@@ -22,6 +22,8 @@ export interface NumberFieldProps extends Omit<
    * field would be; "–" when empty.
    */
   readOnly?: boolean;
+  /** Beside the label, an InfoButton saying more about the value (a bean's roast notes). */
+  info?: ReactNode;
 }
 
 /** A short numeric or m:ss input, for tables and rows of values (design system: NumberField). */
@@ -35,6 +37,7 @@ export function NumberField({
   hint,
   readOnly = false,
   className,
+  info,
   ...props
 }: NumberFieldProps) {
   const id = useId();
@@ -47,15 +50,19 @@ export function NumberField({
         hideLabel={hideLabel}
         numeric
         hint={invalid ? undefined : hint}
+        info={info}
         className={className}
       />
     );
   }
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
-      <label htmlFor={id} className={hideLabel ? 'sr-only' : 'text-label text-ink-muted'}>
-        {label}
-      </label>
+      <span className="flex min-w-0 items-center gap-1">
+        <label htmlFor={id} className={hideLabel ? 'sr-only' : 'text-label text-ink-muted'}>
+          {label}
+        </label>
+        {info && !hideLabel ? <span className="-my-1 flex shrink-0">{info}</span> : null}
+      </span>
       <div className="relative flex items-center">
         <input
           id={id}

@@ -21,6 +21,7 @@ import { useRun } from '../../features/use-run';
 import { useBeans } from '../../stores/use-stores';
 import { siteOf, tastingNotes } from './bean-detail';
 import { contactsOf } from './supplier-options';
+import { RoastNoteInfo } from './RoastNoteInfo';
 import { SupplierCard } from './SupplierCard';
 import { SupplierField } from './SupplierField';
 import { SuppliersDialog } from './SuppliersDialog';
@@ -44,6 +45,8 @@ const SPECIES: readonly { value: BeanSpecies | ''; label: string }[] = [
 
 type NumberKey = 'densityGL' | 'altitudeM' | 'moisturePct' | 'screen' | 'lowStockG';
 type TextKey = 'origin' | 'variety' | 'link' | 'notes';
+/** The fields whose value has a roast note behind an ⓘ. */
+const NOTED: ReadonlySet<string> = new Set(['altitudeM', 'screen', 'densityGL', 'moisturePct']);
 
 const NUMBER_CELLS: Readonly<Record<NumberKey, { label: string; unit?: string }>> = {
   altitudeM: { label: 'Altitude', unit: 'm' },
@@ -123,16 +126,33 @@ function BeanTiles({
 }) {
   const t = (v: string) => v.trim();
   const site = t(draft.link) ? siteOf(t(draft.link)) : '';
-  const tiles: { label: string; value: string; under?: string }[] = [
+  const tiles: {
+    label: string;
+    value: string;
+    under?: string;
+    field?: 'process' | 'species' | 'altitudeM' | 'densityGL' | 'moisturePct' | 'screen' | 'decaf';
+  }[] = [
     { label: 'Origin', value: t(draft.origin) },
     { label: 'Variety', value: t(draft.variety) },
-    { label: 'Species', value: draft.species ? capital(draft.species) : '' },
-    { label: 'Process', value: capital(draft.process) },
-    { label: 'Altitude', value: t(draft.altitudeM) && `${t(draft.altitudeM)} m` },
-    { label: 'Screen size', value: t(draft.screen) },
-    { label: 'Density', value: t(draft.densityGL) && `${t(draft.densityGL)} g/L` },
-    { label: 'Moisture', value: t(draft.moisturePct) && `${t(draft.moisturePct)} %` },
-    { label: 'Decaf', value: draft.decaf ? 'Yes' : '' },
+    { label: 'Species', value: draft.species ? capital(draft.species) : '', field: 'species' },
+    { label: 'Process', value: capital(draft.process), field: 'process' },
+    {
+      label: 'Altitude',
+      value: t(draft.altitudeM) && `${t(draft.altitudeM)} m`,
+      field: 'altitudeM',
+    },
+    { label: 'Screen size', value: t(draft.screen), field: 'screen' },
+    {
+      label: 'Density',
+      value: t(draft.densityGL) && `${t(draft.densityGL)} g/L`,
+      field: 'densityGL',
+    },
+    {
+      label: 'Moisture',
+      value: t(draft.moisturePct) && `${t(draft.moisturePct)} %`,
+      field: 'moisturePct',
+    },
+    { label: 'Decaf', value: draft.decaf ? 'Yes' : '', field: 'decaf' },
     { label: 'Low stock below', value: t(draft.lowStockG) && `${t(draft.lowStockG)} g` },
   ];
   const notes = tastingNotes(draft.notes);
@@ -141,9 +161,14 @@ function BeanTiles({
       <div className="grid grid-cols-3 gap-x-4 gap-y-3 @3xl:grid-cols-4 @5xl:grid-cols-6">
         {tiles
           .filter((tile) => tile.value !== '')
-          .map(({ label, value, under }) => (
+          .map(({ label, value, under, field }) => (
             <div key={label} className="min-w-0">
-              <ReadValue label={label} value={value} numeric />
+              <ReadValue
+                label={label}
+                value={value}
+                numeric
+                info={field ? <RoastNoteInfo field={field} draft={draft} label={label} /> : null}
+              />
               {under ? <p className="truncate text-label text-ink-muted">{under}</p> : null}
             </div>
           ))}
@@ -214,6 +239,15 @@ export function BeanFields({
       <NumberField
         label={label}
         {...(unit ? { unit } : {})}
+        info={
+          NOTED.has(key) ? (
+            <RoastNoteInfo
+              field={key as 'altitudeM' | 'screen' | 'densityGL' | 'moisturePct'}
+              draft={draft}
+              label={label}
+            />
+          ) : null
+        }
         value={draft[key]}
         invalid={errors[key] !== undefined}
         hint={errors[key]}
@@ -267,6 +301,7 @@ export function BeanFields({
       {textCell('variety', 'Variety', '')}
       <SelectField
         label="Species"
+        info={<RoastNoteInfo field="species" draft={draft} label="Species" />}
         value={draft.species}
         options={SPECIES}
         onChange={(species) => {
@@ -275,6 +310,7 @@ export function BeanFields({
       />
       <SelectField
         label="Process"
+        info={<RoastNoteInfo field="process" draft={draft} label="Process" />}
         value={draft.process}
         options={PROCESSES}
         onChange={(process) => {
@@ -282,7 +318,12 @@ export function BeanFields({
         }}
       />
       <div className="flex flex-col gap-1.5">
-        <p className="text-label text-ink-muted">Decaf</p>
+        <p className="flex items-center gap-1 text-label text-ink-muted">
+          Decaf
+          <span className="-my-1 flex">
+            <RoastNoteInfo field="decaf" draft={draft} label="Decaf" />
+          </span>
+        </p>
         <SegmentedControl
           label="Decaf"
           fill

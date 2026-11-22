@@ -20,5 +20,6 @@ A labelled drop-down for picking one of a list: Bean, Profile, Ghost, Process, M
 - The first option says what "nothing picked" means (`None`), never a blank row.
 - **Numeric** (`numeric`): for numbers (times, temperatures) in a row of NumberFields. Tabular numerals and NumberField's 10px left padding (8px right, 4px before the chevron), so its value lines up with theirs.
 - **Hint** (`hint`, optional): one line of `label` in `ink-muted` under the field (Preheat hold: "Next batch · the drum is still hot").
+- **Info** (`info`, optional): an InfoButton beside the label, saying more about the value (a bean's roast notes); it doesn't make the label's line taller, so a row of fields stays lined up.
 - **Add to the list** (`create`): a list you add to as you pick (a bean's Supplier) has Select's search and its Add row for what you typed. A name added this way shows in the list with a "New" badge until the screen saves it.
 - **Hidden label** (`hideLabel`): in a table whose column header already names it, the label is read by screen readers only.

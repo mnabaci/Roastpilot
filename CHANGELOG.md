@@ -32,6 +32,10 @@ a roast: minor for a new roasting capability, patch for everything else
   with an order link it also reads the shop's product page: origin, process, variety and the
   rest, for you to check before Save.
 
+- **Roast notes:** an ⓘ beside a bean's process, species, altitude, screen size, density,
+  moisture and decaf says in two or three lines what that value means for roasting and what to
+  try.
+
 ### Changed
 
 - **A bean's Low stock badge sits beside its name:** switching between beans no longer moves the

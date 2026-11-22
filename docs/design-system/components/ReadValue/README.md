@@ -7,6 +7,7 @@ A field's value in read mode: a record page (bean, profile, roaster) before Edit
 - **Label** above, `label` style in `ink-muted`, 2px over the value.
 - **Value**: `body` in `ink`, one line, truncated at its end; numbers tabular. With a unit: "240 °C". Empty: "–". Compact, so a card of values reads at a glance; in a table it keeps a field's 44px row so rows line up with Edit's.
 - **Hint**: one `label` line under it, as the field's.
+- **Info** (`info`, optional): an InfoButton beside the label, saying more about the value (a bean's roast notes); it doesn't make the label's line taller, so a row of fields stays lined up.
 
 ## Rules
 

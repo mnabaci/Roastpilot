@@ -1,5 +1,5 @@
 import { ChevronDown } from 'lucide-react';
-import { useId } from 'react';
+import { useId, type ReactNode } from 'react';
 import { cn } from '../lib/utils';
 import { ReadValue } from './ReadValue';
 import { Select, type SelectCreate, type SelectOption } from './Select';
@@ -21,6 +21,8 @@ export interface SelectFieldProps<V extends string> {
   readOnly?: boolean;
   /** A list you add to as you pick: a last "Add …" row for what you typed (Select). */
   create?: SelectCreate | undefined;
+  /** Beside the label, an InfoButton saying more about the value (a bean's roast notes). */
+  info?: ReactNode;
 }
 
 /** A labelled drop-down that opens the app's own panel (design system: SelectField, Select). */
@@ -36,6 +38,7 @@ export function SelectField<V extends string>({
   className,
   readOnly = false,
   create,
+  info,
 }: SelectFieldProps<V>) {
   const id = useId();
   const current = options.find((o) => o.value === value);
@@ -47,15 +50,19 @@ export function SelectField<V extends string>({
         hideLabel={hideLabel}
         numeric={numeric}
         hint={hint}
+        info={info}
         className={className}
       />
     );
   }
   return (
     <div className={cn('flex min-w-0 flex-col gap-1.5', className)}>
-      <label htmlFor={id} className={hideLabel ? 'sr-only' : 'text-label text-ink-muted'}>
-        {label}
-      </label>
+      <span className="flex min-w-0 items-center gap-1">
+        <label htmlFor={id} className={hideLabel ? 'sr-only' : 'text-label text-ink-muted'}>
+          {label}
+        </label>
+        {info && !hideLabel ? <span className="-my-1 flex shrink-0">{info}</span> : null}
+      </span>
       <Select
         id={id}
         label={label}

@@ -56,6 +56,12 @@ Before preheat, with Auto on, the app picks in this order, among the active roas
 - A bean can have its own profile. "Make a profile for this bean" duplicates the suggested one, names it after the bean and opens it in the editor; from then on it is that bean's first suggestion, ahead of its favourites. It is one step in main, all or nothing: if linking the copy to the bean fails, the copy is deleted again, so no unnamed profile is left behind; the bean shows "Couldn't make the profile · see Logs".
 - Choosing another profile before a roast doesn't change the bean's own.
 
+## Roast notes
+
+- An ⓘ (InfoButton) beside Process, Species, Altitude, Screen size, Density, Moisture and Decaf, read and in Edit, says what that value means for roasting (`roast-notes.ts`): the first line what it is ("Natural: dried inside the whole fruit, so the bean carries more sugar."), then how it roasts and what to try ("Try easing the heat after yellowing and a shorter development, 15–20 %."). Two or three short lines, never more.
+- Only for a value with something to say: none while a field is empty, for Other, or for Decaf No. It follows what you type in Edit.
+- The same starting guesses as the hints (soft under 700 g/L, dense over 800, wet over 12 %), plus altitude (low under 1,200 m, high from 1,600), moisture (dry under 9 %) and screen size (small to 14, large from 17). Worded "try" and "often": general roasting knowledge, not measured on this roaster.
+
 ## Hints
 
 - One line under the suggestion, from what the bean's record says. Only ever advice: the app never changes a profile from a bean's characteristics, and no formula calculates one.
