@@ -10,6 +10,7 @@ The Electron app. May import every package.
 - `contextIsolation` on, `nodeIntegration` off, no remote content.
 - Renderer: screens are compositions of `@roastpilot/ui` components. Feature state in small Zustand stores. No hex colours.
 - On quit or crash paths, send safe-stop before anything else.
+- The preload is sandboxed: it may load only `electron` at runtime, so everything else it uses is bundled into it. The build fails otherwise (`scripts/preload-imports.ts`).
 - Keep the window locked down: `contextIsolation`, `sandbox`, no `nodeIntegration`, deny new windows and external navigation, strict CSP.
 
 ## Renderer layout

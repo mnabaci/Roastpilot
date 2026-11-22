@@ -1,6 +1,7 @@
 import { defineConfig } from 'electron-vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { preloadLoadsOnlyElectron } from './scripts/preload-imports';
 
 // Workspace packages are devDependencies, so electron-vite bundles their TypeScript source
 // instead of loading them from node_modules at runtime. Renderer libraries (React, Zustand, icons,
@@ -13,6 +14,8 @@ export default defineConfig({
   preload: {
     // Sandboxed preload scripts must be CommonJS, and can't load packages: zod is a dependency
     // (for main), so bundle it here instead of leaving a require("zod") the sandbox can't run.
+    // The plugin fails the build if anything but electron is still loaded at runtime.
+    plugins: [preloadLoadsOnlyElectron()],
     build: {
       externalizeDeps: { exclude: ['zod'] },
       rollupOptions: { output: { format: 'cjs', entryFileNames: '[name].cjs' } },
