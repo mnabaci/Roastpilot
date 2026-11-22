@@ -1,13 +1,14 @@
 import { isBeansRow, ROAST_GUIDE, type NotedField, type NotedValues } from '@roastpilot/core';
-import { Badge, cn, Dialog } from '@roastpilot/ui';
-import { useEffect, useRef } from 'react';
+import { Badge, cn, Dialog, NavList } from '@roastpilot/ui';
+import { useState } from 'react';
 
 const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /**
- * The Roasting cheat sheet (docs/spec/beans-favourites-ghost.md, Roast notes): every value's
- * note on one page, a section per field, the bean's own rows marked "This bean". The same words
- * as the ⓘ beside each field.
+ * The Roasting cheat sheet (docs/spec/beans-favourites-ghost.md, Roast notes): every value's note,
+ * a section at a time, as Settings: the sections on the left, each with the bean's own value
+ * under it, and the open one's values as cards on the right, the bean's own marked "This bean".
+ * The same words as the ⓘ beside each field.
  */
 export function RoastingGuideDialog({
   open,
@@ -22,90 +23,79 @@ export function RoastingGuideDialog({
   /** The bean's values, to mark its rows; none from the Beans list with no bean open. */
   values?: NotedValues | undefined;
 }) {
-  const sections = useRef(new Map<NotedField, HTMLElement>());
-  useEffect(() => {
-    if (!open || !start) return;
-    // After the dialog has laid out: its own scroller brings the section to the top.
-    const frame = requestAnimationFrame(() => {
-      sections.current.get(start)?.scrollIntoView({ block: 'start' });
-    });
-    return () => {
-      cancelAnimationFrame(frame);
-    };
-  }, [open, start]);
+  const [picked, setPicked] = useState<NotedField>();
+  const shown = picked ?? start ?? 'process';
+  const section = ROAST_GUIDE.find((s) => s.field === shown) ?? ROAST_GUIDE[0];
+  /** The bean's row in a section ("High grown"), if it has one there. */
+  const beansRow = (field: NotedField) =>
+    values
+      ? ROAST_GUIDE.find((s) => s.field === field)?.rows.find((row) =>
+          isBeansRow(field, values[field], row),
+        )
+      : undefined;
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (!next) onClose();
+        if (!next) {
+          onClose();
+          setPicked(undefined);
+        }
       }}
       title="Roasting cheat sheet"
       description="What a bean's values often mean for roasting · starting points, not rules"
-      className="max-w-180"
+      // As tall whichever section is open, so the dialog never jumps as you switch.
+      className="h-140 max-w-200"
     >
-      {/* Stays at the top as the sheet scrolls: one click to any section. */}
-      <nav
-        aria-label="Sections"
-        className="sticky -top-5 z-10 -mx-5 -my-2 flex flex-wrap gap-1.5 border-b border-border bg-surface px-5 py-2.5"
-      >
-        {ROAST_GUIDE.map((section) => (
-          <button
-            key={section.field}
-            type="button"
-            onClick={() => {
-              sections.current.get(section.field)?.scrollIntoView({ block: 'start' });
-            }}
-            className="rounded-full bg-surface-hover px-3 py-1 text-label text-ink hover:bg-border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-          >
-            {section.title}
-          </button>
-        ))}
-      </nav>
-      <div className="flex flex-col gap-5">
-        {ROAST_GUIDE.map((section) => (
+      <div className="grid min-h-0 flex-1 grid-cols-[11rem_1fr] gap-6">
+        <NavList
+          label="Sections"
+          className="min-h-0 overflow-y-auto"
+          items={ROAST_GUIDE.map((s) => {
+            const own = beansRow(s.field);
+            return { id: s.field, label: s.title, ...(own ? { detail: own.name } : {}) };
+          })}
+          openId={shown}
+          onOpen={setPicked}
+        />
+        {section ? (
           <section
-            key={section.field}
-            aria-labelledby={`guide-${section.field}`}
-            ref={(element) => {
-              if (element) sections.current.set(section.field, element);
-            }}
-            className="flex scroll-mt-16 flex-col gap-2"
+            aria-labelledby="guide-section"
+            className="-mr-2 flex min-h-0 flex-col gap-3 overflow-y-auto pr-2"
           >
-            <h3 id={`guide-${section.field}`} className="text-body font-semibold text-ink">
+            <h3 id="guide-section" className="text-body font-semibold text-ink">
               {section.title}
             </h3>
-            <ul className="flex flex-col divide-y divide-border rounded-lg border border-border">
+            <ul className="flex flex-col gap-2">
               {section.rows.map((row) => {
-                const own = values ? isBeansRow(section.field, values[section.field], row) : false;
+                const own = beansRow(section.field) === row;
                 return (
                   <li
                     key={row.name}
                     className={cn(
-                      'grid grid-cols-[7rem_1fr] gap-x-4 px-3.5 py-2.5 first:rounded-t-lg last:rounded-b-lg',
-                      own && 'bg-surface-hover',
+                      'flex flex-col gap-1 rounded-lg border px-4 py-3',
+                      own ? 'border-border-strong bg-surface-hover' : 'border-border',
                     )}
                   >
-                    <div className="flex min-w-0 flex-col items-start gap-0.5">
-                      <span className="text-body font-medium text-ink">{row.name}</span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-body font-semibold text-ink">{row.name}</span>
                       {row.range ? (
                         <span className="text-label text-ink-muted tabular-nums">{row.range}</span>
                       ) : null}
-                      {own ? <Badge className="mt-1">This bean</Badge> : null}
+                      {own ? <Badge className="ml-auto self-center">This bean</Badge> : null}
                     </div>
-                    <div className="flex min-w-0 flex-col gap-0.5 text-label">
-                      <p className="text-ink-muted">{capital(row.what)}.</p>
-                      {row.how.map((line) => (
-                        <p key={line} className="text-ink">
-                          {line}
-                        </p>
-                      ))}
-                    </div>
+                    <p className="text-label text-ink-muted">{capital(row.what)}.</p>
+                    {row.how.map((line) => (
+                      <p key={line} className="text-label text-ink">
+                        {line}
+                      </p>
+                    ))}
                   </li>
                 );
               })}
             </ul>
           </section>
-        ))}
+        ) : null}
       </div>
     </Dialog>
   );
