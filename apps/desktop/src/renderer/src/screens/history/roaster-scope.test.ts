@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ACTIVE,
   ALL_ROASTERS,
+  busiestOther,
   hasRoasterScope,
   NO_ROASTER,
   normalScope,
@@ -86,5 +87,21 @@ describe('roasterOf and scopeName', () => {
     expect(scopeName(ACTIVE, ROASTERS, 2)).toBe('Simulator');
     expect(scopeName('3', ROASTERS, 1)).toBe('Artisan box');
     expect(scopeName(ALL_ROASTERS, ROASTERS, 1)).toBeUndefined();
+  });
+});
+
+describe('busiestOther', () => {
+  it('offers the other roaster with the most roasts, not the one shown, nor no roaster', () => {
+    expect(busiestOther(ROASTS, ROASTERS, 2, ACTIVE)).toEqual({
+      scope: '1',
+      name: 'Skywalker',
+      count: 2,
+    });
+    expect(busiestOther(ROASTS, ROASTERS, 1, '3')).toEqual({
+      scope: ACTIVE,
+      name: 'Skywalker',
+      count: 2,
+    });
+    expect(busiestOther([roast(1, null)], ROASTERS, 1, ACTIVE)).toBeUndefined();
   });
 });

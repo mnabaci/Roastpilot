@@ -108,3 +108,22 @@ export const scopeName = (
   const id = scope === ACTIVE ? activeId : Number(scope);
   return roasters.find((r) => r.id === id)?.name;
 };
+
+/**
+ * Another roaster with roasts, to offer from an empty one: the one with the most (by name on a
+ * tie). Roasts with no roaster aren't a roaster to show.
+ */
+export function busiestOther(
+  roasts: readonly Pick<RoastSummary, 'roasterId'>[],
+  roasters: readonly RoasterName[],
+  activeId: number | undefined,
+  shown: RoasterScope,
+): { scope: RoasterScope; name: string; count: number } | undefined {
+  return roasters
+    .map((r) => {
+      const scope = scopeOfId(r.id, activeId);
+      return { scope, name: r.name, count: roastsInScope(roasts, scope, activeId).length };
+    })
+    .filter((r) => r.count > 0 && r.scope !== shown)
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))[0];
+}
