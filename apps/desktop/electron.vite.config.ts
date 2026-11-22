@@ -11,8 +11,12 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   main: {},
   preload: {
-    // Sandboxed preload scripts must be CommonJS.
-    build: { rollupOptions: { output: { format: 'cjs', entryFileNames: '[name].cjs' } } },
+    // Sandboxed preload scripts must be CommonJS, and can't load packages: zod is a dependency
+    // (for main), so bundle it here instead of leaving a require("zod") the sandbox can't run.
+    build: {
+      externalizeDeps: { exclude: ['zod'] },
+      rollupOptions: { output: { format: 'cjs', entryFileNames: '[name].cjs' } },
+    },
   },
   renderer: {
     plugins: [react(), tailwindcss()],
