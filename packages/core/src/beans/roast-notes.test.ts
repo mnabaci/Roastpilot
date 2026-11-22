@@ -22,8 +22,8 @@ describe('roastNote', () => {
     expect(roastNote('altitudeM', 900)?.[0]).toMatch(/^Low grown/);
     expect(roastNote('densityGL', 820)?.[0]).toMatch(/^Dense/);
     expect(roastNote('densityGL', 650)?.[0]).toMatch(/^Soft/);
-    expect(roastNote('moisturePct', 13)?.[0]).toMatch(/^Wetter/);
-    expect(roastNote('moisturePct', 8)?.[0]).toMatch(/^Drier/);
+    expect(roastNote('moisturePct', 13)?.[0]).toMatch(/^Wet: /);
+    expect(roastNote('moisturePct', 8)?.[0]).toMatch(/^Dry: /);
     expect(roastNote('screen', 14)?.[0]).toMatch(/^Small/);
     expect(roastNote('screen', 18)?.[0]).toMatch(/^Large/);
     expect(roastNote('altitudeM', null)).toBeUndefined();

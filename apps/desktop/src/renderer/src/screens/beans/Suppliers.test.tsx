@@ -330,3 +330,29 @@ describe("A bean's roast notes", () => {
     expect(screen.queryByRole('button', { name: 'About Decaf' })).toBeNull();
   });
 });
+
+describe('The Roasting cheat sheet', () => {
+  it('opens from Beans "⋯" with every value, the open bean\'s rows marked', async () => {
+    const user = userEvent.setup();
+    show(fakeApi(), [{ ...WITH_FALCON, process: 'natural', species: 'arabica' }]);
+    await user.click(screen.getByRole('button', { name: 'More for Beans' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Roasting cheat sheet' }));
+    const sheet = within(await screen.findByRole('dialog', { name: 'Roasting cheat sheet' }));
+    const process = within(sheet.getByRole('region', { name: 'Process' }));
+    expect(process.getAllByRole('listitem')).toHaveLength(3);
+    const natural = process.getAllByRole('listitem')[1];
+    expect(natural).toHaveTextContent(/^NaturalThis bean/);
+    expect(process.getAllByRole('listitem')[0]).not.toHaveTextContent('This bean');
+  });
+
+  it("opens from a field's ⓘ at its section", async () => {
+    const user = userEvent.setup();
+    show(fakeApi(), [{ ...WITH_FALCON, altitudeM: 1900 }]);
+    await user.click(about().getByRole('button', { name: 'About Altitude' }));
+    await user.click(await screen.findByRole('button', { name: 'Roasting cheat sheet' }));
+    const sheet = within(await screen.findByRole('dialog', { name: 'Roasting cheat sheet' }));
+    expect(
+      within(sheet.getByRole('region', { name: 'Altitude' })).getByText('This bean'),
+    ).toBeInTheDocument();
+  });
+});

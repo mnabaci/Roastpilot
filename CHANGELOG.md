@@ -34,7 +34,7 @@ a roast: minor for a new roasting capability, patch for everything else
 
 - **Roast notes:** an ⓘ beside a bean's process, species, altitude, screen size, density,
   moisture and decaf says in two or three lines what that value means for roasting and what to
-  try.
+  try. Beans "⋯" › Roasting cheat sheet shows them all on one page, your bean's marked.
 
 ### Changed
 

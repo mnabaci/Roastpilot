@@ -1,5 +1,7 @@
 import { roastNote, type NotedValues } from '@roastpilot/core';
 import { InfoButton } from '@roastpilot/ui';
+import { BookOpen } from 'lucide-react';
+import { useOpenGuide } from './roasting-guide';
 import type { BeanDraftState } from './use-bean-draft';
 
 type Draft = BeanDraftState['draft'];
@@ -35,6 +37,25 @@ export function RoastNoteInfo({
   /** The field's name, for the button's: "About Process". */
   label: string;
 }) {
-  const note = roastNote(field, notedValues(draft)[field]);
-  return note ? <InfoButton label={`About ${label}`} lines={note} /> : null;
+  const openGuide = useOpenGuide();
+  const values = notedValues(draft);
+  const note = roastNote(field, values[field]);
+  if (!note) return null;
+  return (
+    <InfoButton
+      label={`About ${label}`}
+      lines={note}
+      more={
+        openGuide
+          ? {
+              label: 'Roasting cheat sheet',
+              icon: <BookOpen aria-hidden="true" />,
+              onSelect: () => {
+                openGuide(field, values);
+              },
+            }
+          : undefined
+      }
+    />
+  );
 }
