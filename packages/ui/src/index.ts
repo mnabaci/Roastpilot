@@ -45,4 +45,5 @@ export { ConfirmDialog } from './components/ConfirmDialog';
 export { Tooltip } from './components/Tooltip';
 export { FilterSelect } from './components/FilterSelect';
 export { ScopeLine } from './components/ScopeLine';
+export { InfoButton } from './components/InfoButton';
 export { Toaster, type ToastKind, type ToastMessage } from './components/Toaster';

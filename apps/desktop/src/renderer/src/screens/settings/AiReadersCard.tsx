@@ -1,5 +1,6 @@
 import type { AiProviderEntry, AiProviderId } from '@roastpilot/shared';
-import { SegmentedControl } from '@roastpilot/ui';
+import { InfoButton, SegmentedControl } from '@roastpilot/ui';
+import { SHEET_INFO, TASTE_INFO } from './ai-info';
 import { SettingRow, SettingRows } from './SettingRow';
 import { capableOf, jobLine, sheetReader, tasteReader } from './who-reads';
 
@@ -26,6 +27,7 @@ export function AiReadersCard({
       {tasteCapable.length > 0 ? (
         <SettingRow
           name="Tasting words"
+          info={<InfoButton label="About tasting words" lines={TASTE_INFO} />}
           hint={
             taste && tasteCapable.length > 1 && !choosable
               ? `${jobLine(taste, 'taste')} · a second key lets you choose`
@@ -47,7 +49,11 @@ export function AiReadersCard({
         </SettingRow>
       ) : null}
       {capableOf(providers, 'specSheet').length > 0 ? (
-        <SettingRow name="Spec sheets" hint={jobLine(sheets, 'specSheet')}>
+        <SettingRow
+          name="Spec sheets"
+          hint={jobLine(sheets, 'specSheet')}
+          info={<InfoButton label="About spec sheets" lines={SHEET_INFO} />}
+        >
           <Reader provider={sheets} />
         </SettingRow>
       ) : null}

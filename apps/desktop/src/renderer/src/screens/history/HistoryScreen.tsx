@@ -16,12 +16,14 @@ import {
   wasStopped,
 } from './history-format';
 import { OpenRoast } from './OpenRoast';
+import { HistoryEmpty } from './HistoryEmpty';
 import { filterRoasts, NO_FILTER } from './roast-filter';
 import { RoastFilters } from './RoastFilters';
 import { RoastHeader } from './RoastHeader';
 import {
   ACTIVE,
   ALL_ROASTERS,
+  busiestOther,
   hasRoasterScope,
   normalScope,
   roasterOf,
@@ -88,6 +90,8 @@ export function HistoryScreen({
   // "No roasts on Simulator yet", rather than blaming filters that aren't on.
   const emptyRoaster =
     onRoaster.length === 0 ? scopeName(shownScope, roasters, activeId) : undefined;
+  // From an empty roaster, the roaster with the most roasts is one click away.
+  const busiest = emptyRoaster ? busiestOther(list, roasters, activeId, shownScope) : undefined;
   const selection = useSelection(
     listed.map((r) => r.id),
     list.map((r) => r.id),
@@ -144,24 +148,79 @@ export function HistoryScreen({
   if (roasts === undefined) return <main className="flex-1" />;
   if (list.length === 0)
     return (
-      <main className="flex min-h-0 flex-1 flex-col items-start gap-2 p-6">
+      <main className="flex min-h-0 flex-1 flex-col items-start gap-4 p-6">
         <h1 className="text-title">History</h1>
-        <p className="text-body text-ink-muted">
-          No roasts yet · each roast saves itself from charge
-        </p>
-        <div className="flex gap-2">
-          <Button size="sm" onClick={files.importRoasts}>
-            Import a Roastpilot file
-          </Button>
-          <Button size="sm" variant="ghost" onClick={files.importAlog}>
-            Import from Artisan
-          </Button>
-        </div>
+        <HistoryEmpty
+          title="No roasts yet"
+          detail="Each roast saves itself from charge, or bring in the ones you have"
+          actions={
+            <>
+              <Button size="sm" onClick={files.importRoasts}>
+                Import a Roastpilot file
+              </Button>
+              <Button size="sm" variant="ghost" onClick={files.importAlog}>
+                Import from Artisan
+              </Button>
+            </>
+          }
+        />
       </main>
     );
 
   const live = selectedId !== undefined && selectedId === liveId;
   const note = profileMaker.noteFor(selectedId);
+  const roastsWord = (n: number) => `${String(n)} ${n === 1 ? 'roast' : 'roasts'}`;
+  // Nothing listed: say why where the roast would be, with what to do about it.
+  const empty =
+    listed.length > 0 ? undefined : emptyRoaster ? (
+      <HistoryEmpty
+        title={`No roasts on ${emptyRoaster} yet`}
+        detail={[
+          'Each roast saves itself from charge',
+          busiest ? `${busiest.name} has ${roastsWord(busiest.count)}` : undefined,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+        actions={
+          <>
+            {busiest ? (
+              <Button
+                size="sm"
+                onClick={() => {
+                  setScope(busiest.scope);
+                }}
+              >
+                Show {busiest.name}’s roasts
+              </Button>
+            ) : null}
+            <Button
+              size="sm"
+              variant={busiest ? 'ghost' : 'secondary'}
+              onClick={() => {
+                setScope(ALL_ROASTERS);
+              }}
+            >
+              All roasters
+            </Button>
+          </>
+        }
+      />
+    ) : (
+      <HistoryEmpty
+        title="No roasts match these filters"
+        detail={`None of the ${roastsWord(onRoaster.length)} here match`}
+        actions={
+          <Button
+            size="sm"
+            onClick={() => {
+              setFilter(NO_FILTER);
+            }}
+          >
+            Clear filters
+          </Button>
+        }
+      />
+    );
   return (
     <SidebarLayout
       title="History"
@@ -203,7 +262,10 @@ export function HistoryScreen({
       contentLabel="Roast"
       sidebar={
         <>
-          <RoastFilters filter={filter} onChange={setFilter} beans={beans} roasts={onRoaster} />
+          {/* Nothing on this roaster: nothing to filter either. */}
+          {emptyRoaster ? null : (
+            <RoastFilters filter={filter} onChange={setFilter} beans={beans} roasts={onRoaster} />
+          )}
           {selection.selecting ? (
             <SelectionBar
               label="Selected roasts"
@@ -231,20 +293,7 @@ export function HistoryScreen({
               onDone={selection.done}
             />
           ) : null}
-          {emptyRoaster ? (
-            <div className="flex flex-col items-start gap-2 px-1">
-              <p className="text-label text-ink-muted">No roasts on {emptyRoaster} yet</p>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setScope(ALL_ROASTERS);
-                }}
-              >
-                All roasters
-              </Button>
-            </div>
-          ) : (
+          {empty ? null : (
             <RoastList
               label="Saved roasts"
               items={roastRows(listed, livePhase, unit, {}, beans).map((row, i) => {
@@ -267,42 +316,43 @@ export function HistoryScreen({
         </>
       }
     >
-      <div className="flex flex-col gap-5">
-        <RoastHeader
-          roast={selectedRoast}
-          others={others}
-          compareId={compareTo?.id}
-          onCompare={setCompareId}
-          live={live}
-          stopped={selected.status === 'loaded' && wasStopped(selected.detail)}
-          onMakeProfile={profileMaker.make}
-          onExport={(id, format) => {
-            files.exportRoasts({ format, ids: [id] });
-          }}
-          onDelete={remove}
-        />
-        {note ? (
-          <p role="status" className="text-label text-ink-muted">
-            {note}
-          </p>
-        ) : null}
-        {deleteError ? (
-          <p role="alert" className="text-body text-critical-text">
-            {deleteError}
-          </p>
-        ) : null}
-        <OpenRoast
-          selected={selected}
-          compared={compared}
-          compareLabel={compareTo ? roastTitle(compareTo.startedAt) : ''}
-          live={live}
-          beans={beans}
-          smoothingS={smoothingS}
-          emptyText={emptyRoaster ? `No roasts on ${emptyRoaster} yet` : undefined}
-          showPreheat={showPreheat}
-          onShowPreheat={setShowPreheat}
-        />
-      </div>
+      {empty ?? (
+        <div className="flex flex-col gap-5">
+          <RoastHeader
+            roast={selectedRoast}
+            others={others}
+            compareId={compareTo?.id}
+            onCompare={setCompareId}
+            live={live}
+            stopped={selected.status === 'loaded' && wasStopped(selected.detail)}
+            onMakeProfile={profileMaker.make}
+            onExport={(id, format) => {
+              files.exportRoasts({ format, ids: [id] });
+            }}
+            onDelete={remove}
+          />
+          {note ? (
+            <p role="status" className="text-label text-ink-muted">
+              {note}
+            </p>
+          ) : null}
+          {deleteError ? (
+            <p role="alert" className="text-body text-critical-text">
+              {deleteError}
+            </p>
+          ) : null}
+          <OpenRoast
+            selected={selected}
+            compared={compared}
+            compareLabel={compareTo ? roastTitle(compareTo.startedAt) : ''}
+            live={live}
+            beans={beans}
+            smoothingS={smoothingS}
+            showPreheat={showPreheat}
+            onShowPreheat={setShowPreheat}
+          />
+        </div>
+      )}
     </SidebarLayout>
   );
 }

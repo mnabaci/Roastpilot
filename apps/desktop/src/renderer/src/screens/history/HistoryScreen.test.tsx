@@ -289,7 +289,16 @@ describe('HistoryScreen', () => {
     });
     renderApp(<HistoryScreen onOpenProfile={() => undefined} />, {}, api);
     await user.click(await screen.findByRole('button', { name: 'Favourites only' }));
-    expect(screen.getByText('No roasts match these filters')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'No roasts match these filters' })).toBeTruthy();
+    expect(screen.getByText('None of the 1 roast here match')).toBeTruthy();
+    // No roast open: no Compare or Make profile over nothing.
+    expect(screen.queryByRole('button', { name: /^Compare/ })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(screen.getByRole('button', { name: 'Favourites only' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    expect(screen.queryByRole('heading', { name: 'No roasts match these filters' })).toBeNull();
   });
 
   it('Make profile offers step and curve, then opens the new profile', async () => {
@@ -521,10 +530,26 @@ describe('HistoryScreen › roaster', () => {
     ]);
   });
 
-  it('says when the roaster has no roasts yet, with a way to all of them', async () => {
+  it('says once when the roaster has no roasts, with no filters, and offers the busiest one', async () => {
     setup([ON_SIMULATOR], { roasters: roastersWith(null) });
-    expect(await screen.findAllByText('No roasts on Skywalker yet')).not.toHaveLength(0);
-    await userEvent.click(screen.getByRole('button', { name: 'All roasters' }));
+    expect(
+      await screen.findByRole('heading', { name: 'No roasts on Skywalker yet' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Each roast saves itself from charge · Simulator has 1 roast'),
+    ).toBeTruthy();
+    expect(screen.getAllByText(/No roasts on Skywalker yet/)).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'Favourites only' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Compare/ })).toBeNull();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Show Simulator’s roasts' }));
+    expect(rows()).toHaveLength(1);
+    expect(roasterPicker()).toHaveAccessibleName('Roaster: Simulator');
+  });
+
+  it('offers every roaster from an empty one', async () => {
+    setup([ON_SIMULATOR], { roasters: roastersWith(null) });
+    await userEvent.click(await screen.findByRole('button', { name: 'All roasters' }));
     expect(rows()).toHaveLength(1);
     expect(roasterPicker()).toHaveAccessibleName('Roaster: All roasters');
   });
