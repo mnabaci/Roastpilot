@@ -16,10 +16,13 @@ import tc4Wiring0012 from './migrations/0012_tc4_wiring.sql?raw';
 import roastTaste0013 from './migrations/0013_roast_taste.sql?raw';
 import suppliers0014 from './migrations/0014_suppliers.sql?raw';
 import dropBeanSupplier0015 from './migrations/0015_drop_bean_supplier.sql?raw';
+import { linkSuppliers } from './link-suppliers';
 
 interface Migration {
   tag: string;
   sql: string;
+  /** Data the SQL can't move as the app would, run after it in the same transaction. */
+  data?: (db: DatabaseSync) => void;
 }
 
 /**
@@ -41,7 +44,7 @@ export const MIGRATIONS: readonly Migration[] = [
   { tag: '0011_stock_movements', sql: stockMovements0011 },
   { tag: '0012_tc4_wiring', sql: tc4Wiring0012 },
   { tag: '0013_roast_taste', sql: roastTaste0013 },
-  { tag: '0014_suppliers', sql: suppliers0014 },
+  { tag: '0014_suppliers', sql: suppliers0014, data: linkSuppliers },
   { tag: '0015_drop_bean_supplier', sql: dropBeanSupplier0015 },
 ];
 
@@ -84,6 +87,7 @@ export function migrate(
     try {
       db.exec('BEGIN');
       db.exec(migration.sql);
+      migration.data?.(db);
       db.exec(`PRAGMA user_version = ${String(version + offset + 1)}`);
       db.exec('COMMIT');
       applied.push(migration.tag);

@@ -52,4 +52,27 @@ describe('migrations 0014 and 0015: suppliers', () => {
       supplier_id: null,
     });
   });
+
+  it('treats names differing only in a non-English letter’s case as one, as the app does', () => {
+    const db = new DatabaseSync(':memory:');
+    migrate(db, MIGRATIONS.slice(0, 14));
+    db.exec(`
+      INSERT INTO beans (name, origin, process, supplier, archived) VALUES
+        ('Yirgacheffe', 'Ethiopia', 'washed', 'Çağ Kahve', 0),
+        ('Antigua', 'Guatemala', 'washed', 'ÇAĞ KAHVE', 0),
+        ('Tarrazú', 'Costa Rica', 'honey', 'Öz Kavurma', 0),
+        ('Nariño', 'Colombia', 'washed', 'öz kavurma ', 0);
+    `);
+    migrate(db);
+    expect(db.prepare('SELECT id, name FROM suppliers').all()).toEqual([
+      { id: 1, name: 'Çağ Kahve' },
+      { id: 2, name: 'Öz Kavurma' },
+    ]);
+    expect(db.prepare('SELECT supplier_id FROM beans ORDER BY id').all()).toEqual([
+      { supplier_id: 1 },
+      { supplier_id: 1 },
+      { supplier_id: 2 },
+      { supplier_id: 2 },
+    ]);
+  });
 });
