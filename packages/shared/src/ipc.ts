@@ -10,6 +10,7 @@ import type { Roaster } from './roaster';
 import { RoastStateSchema, type RoastState } from './roast';
 import { RoastIdSchema, type RoastId } from './saved-roast';
 import type { Screen } from './screen';
+import type { Supplier } from './supplier';
 import type { SafetyEvent } from './safety-event';
 import type { UpdateStatus } from './update-status';
 
@@ -73,6 +74,11 @@ export const INVOKE_CHANNELS = {
   adjustStock: 'beans:adjust-stock',
   stockHistory: 'beans:stock-history',
   makeBeanProfile: 'beans:make-profile',
+  listSuppliers: 'suppliers:list',
+  addSupplier: 'suppliers:add',
+  updateSupplier: 'suppliers:update',
+  deleteSupplier: 'suppliers:delete',
+  openSupplierWebsite: 'suppliers:open-website',
   setRoastSetup: 'roast:set-setup',
   saveRoastResult: 'history:save-result',
   makeProfileFromRoast: 'history:make-profile',
@@ -104,6 +110,7 @@ export const EVENT_CHANNELS = {
   profilesChanged: 'profiles:changed',
   roastersChanged: 'roasters:changed',
   beansChanged: 'beans:changed',
+  suppliersChanged: 'suppliers:changed',
   updateStatus: 'updates:status',
 } as const;
 
@@ -149,6 +156,7 @@ export interface IpcEventPayloads {
   [EVENT_CHANNELS.profilesChanged]: ProfileEntry[];
   [EVENT_CHANNELS.roastersChanged]: Roaster[];
   [EVENT_CHANNELS.beansChanged]: Bean[];
+  [EVENT_CHANNELS.suppliersChanged]: Supplier[];
   [EVENT_CHANNELS.updateStatus]: UpdateStatus;
 }
 export type IpcEventChannel = keyof IpcEventPayloads;

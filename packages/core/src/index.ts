@@ -64,6 +64,7 @@ export {
   type StockSummary,
 } from './beans/stock-history';
 export type { BeanRepository } from './beans/bean-repository';
+export type { SupplierRepository } from './beans/supplier-repository';
 export { bestFavourite, defaultGhost, suggestProfile } from './beans/suggest-profile';
 export type { Updater, UpdaterEvent } from './updates/updater';
 export { UpdateService } from './updates/update-service';

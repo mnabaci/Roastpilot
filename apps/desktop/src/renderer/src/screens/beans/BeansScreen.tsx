@@ -14,6 +14,7 @@ import { BatchCalculator } from './BatchCalculator';
 import { beanDetail } from './bean-detail';
 import { BeanDetail } from './BeanDetail';
 import { AddBean } from './AddBean';
+import { SuppliersDialog } from './SuppliersDialog';
 
 type RightSide = { kind: 'bean' } | { kind: 'add' };
 
@@ -46,6 +47,7 @@ export function BeansScreen({
   const [showArchived, setShowArchived] = useState(false);
   // The calculator is a dialog over the list: a quick "what would this order make", then back.
   const [calculating, setCalculating] = useState(false);
+  const [keepingSuppliers, setKeepingSuppliers] = useState(false);
   const [orderG, setOrderG] = useState('');
   const [calcBatchG, setCalcBatchG] = useState('');
   const shown = beans.filter((b) => showArchived || !b.archived);
@@ -93,6 +95,12 @@ export function BeansScreen({
               label: 'Batch calculator',
               onSelect: () => {
                 setCalculating(true);
+              },
+            },
+            {
+              label: 'Suppliers',
+              onSelect: () => {
+                setKeepingSuppliers(true);
               },
             },
             ...(hasArchived
@@ -186,6 +194,12 @@ export function BeansScreen({
               onBatchG={setCalcBatchG}
             />
           </Dialog>
+          <SuppliersDialog
+            open={keepingSuppliers}
+            onClose={() => {
+              setKeepingSuppliers(false);
+            }}
+          />
         </>
       }
     >

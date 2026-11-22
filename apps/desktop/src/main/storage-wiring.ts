@@ -5,6 +5,7 @@ import type {
   ProfileRepository,
   RoasterRepository,
   RoastRepository,
+  SupplierRepository,
 } from '@roastpilot/core';
 import {
   type BackupPlan,
@@ -14,12 +15,14 @@ import {
   SqliteProfileRepository,
   SqliteRoasterRepository,
   SqliteRoastRepository,
+  SqliteSupplierRepository,
 } from '@roastpilot/storage';
 import {
   unavailableBeans,
   unavailableProfiles,
   unavailableRepository,
   unavailableRoasters,
+  unavailableSuppliers,
 } from './history/unavailable-repository';
 
 export interface Stores {
@@ -27,6 +30,7 @@ export interface Stores {
   profileStore: ProfileRepository;
   roasterStore: RoasterRepository;
   beanStore: BeanRepository;
+  supplierStore: SupplierRepository;
   /** Closes the database, if it opened. */
   close: () => void;
 }
@@ -53,6 +57,7 @@ export function openStores(
       profileStore: unavailableProfiles(reason),
       roasterStore: unavailableRoasters(reason),
       beanStore: unavailableBeans(reason),
+      supplierStore: unavailableSuppliers(reason),
       close: () => undefined,
     };
   }
@@ -62,6 +67,7 @@ export function openStores(
     profileStore: new SqliteProfileRepository(db, clock, logger),
     roasterStore: new SqliteRoasterRepository(db, logger),
     beanStore: new SqliteBeanRepository(db, logger),
+    supplierStore: new SqliteSupplierRepository(db),
     close: () => {
       database.value.close();
     },

@@ -13,9 +13,18 @@ changes no stock and shows "No bean" in History.
 ## Beans
 
 - **Required:** name, origin, process (washed, natural, honey, other).
-- **Optional:** variety, altitude (m), density (g/L), moisture (%), bean size (screen), decaf, supplier, order link (a web address: Order again on the bean opens it in the browser), purchase date, notes. Density is the one to measure yourself: weigh a fixed volume of green beans.
+- **Optional:** variety, altitude (m), density (g/L), moisture (%), bean size (screen), decaf, supplier (picked from [your suppliers](#suppliers)), order link (this bean's page, a web address: Order again on the bean opens it in the browser), purchase date, notes. Density is the one to measure yourself: weigh a fixed volume of green beans.
 - **Stock:** see [batch-and-stock.md](batch-and-stock.md).
 - **Archive** a finished bean; its roasts stay in History.
+
+## Suppliers
+
+Who you buy from is kept once, with its website and contacts, and picked on each bean instead of typed again ([data-model.md](data-model.md#suppliers)).
+
+- **Pick:** a bean's Supplier, in Edit and on Add bean, is a dropdown of your suppliers (None, then each by name with its site), with a search. Typing a name you don't have ends the list with Add supplier "<name>"; picking it is the whole step: the field shows the name with a New badge in the list and "New supplier · added when you save" under it, and Save adds the supplier with the bean. A name you have in another case is that supplier.
+- **Read:** the Supplier tile shows the name, underlined as a link with a small external-link icon when it has a website (main opens the saved address, http or https only; the screen only names the supplier), and its email · phone on the line under it; without contacts, the order link's site, as before. Not opened: "Couldn't open Falcon's website · see Logs".
+- **Keep them:** Beans "⋯" › Suppliers opens a Dialog, "Picked on each bean · their website and contacts kept here once": each supplier with its beans and site ("3 beans · falcon.coffee"), archived beans counted, then Add supplier (ghost, +). One opens in the same dialog, its name the title, with a back button (‹ Suppliers): Name, Website, Email, Phone, Notes; Delete (ghost, red text) at the left, Cancel and Save at the right. Save waits until something changed and every field checks out (a website starting https://, an email address); another supplier's name says "You have a supplier named Nordic" under Name. Delete asks once ("Delete Nordic? · Its website and contacts go too"); while beans name it, it stays there disabled with why, "Used by 3 beans · pick another supplier on them first".
+- **No new tab:** suppliers belong to beans, so they live in the Beans screen's "⋯", not the top bar.
 
 ## Favourites
 
@@ -119,8 +128,9 @@ Worked out in `core` from the ticked tags and this roast's measured values and f
 ## Fill from a spec sheet
 
 - **Fill from spec sheet** (ghost button, before Cancel) on a bean in Edit, and on Add bean, with [AI helpers](ai-helpers.md) on and a key for a provider that reads sheets. A Dialog, "Fills empty fields only · check them, then Save": Paste the sheet, Choose PDF… (ghost, at the left), then Cancel and Fill (primary, waiting for pasted text). A failed read says why in the dialog, which stays open with your text.
-- **What it fills:** name (on Add bean), origin, process (washed, natural, honey or other), species, variety, altitude, density, moisture, screen size, decaf, supplier, and the sheet's tasting notes into Notes. An altitude range ("1,800–2,000 m") fills its middle, 1900. A value the form would refuse is left out.
+- **What it fills:** name (on Add bean), origin, process (washed, natural, honey or other), species, variety, altitude, density, moisture, screen size, decaf, supplier, and the sheet's tasting notes into Notes. A supplier you have is picked by its name, in any case, as you spell it. An altitude range ("1,800–2,000 m") fills its middle, 1900. A value the form would refuse is left out.
 - **Only empty fields:** what you typed stays. Process and decaf have no empty state, so a sheet sets them only on a new bean, while still as the form started. One line under the header says what happened ("Filled 7 fields from the sheet · check them, then Save"); nothing is saved until you press Save.
+- **A new supplier:** when the sheet names a supplier you don't have, a line under the fill line offers it with what the sheet gave: "New supplier Nordic Approach with its website and email from the sheet" and Add supplier (ghost, +), which adds it now with those details ("Added Nordic Approach to your suppliers"). Not taken, Save still adds it, by name only. A website without its scheme ("www.nordicapproach.no") is read as https; an email or website the form would refuse is left out.
 - A filled record feeds the [profile suggestion](#profile-suggestion) and the [hints](#hints) as one typed by hand.
 - Nothing found: "Nothing to fill from that sheet".
 

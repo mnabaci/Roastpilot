@@ -14,6 +14,7 @@ import type {
   MakeTasteProfileError,
   MakeTasteProfileRequest,
   OpenBeanLinkError,
+  OpenSupplierWebsiteError,
   ProfileEntry,
   ReadInputsError,
   Result,
@@ -22,11 +23,13 @@ import type {
   SaveWiringRequest,
   SerialPortInfo,
   Snapshot,
+  SupplierId,
   Tc4Inputs,
 } from '@roastpilot/shared';
 import type { AiKeyStore } from './ai/ai-key-store';
 import type { AiService } from './ai/ai-service';
 import type { BeanService } from './beans/bean-service';
+import type { SupplierService } from './beans/supplier-service';
 import type { CoachActions } from './coach-apply';
 import type { HandOutput } from './hand-output';
 import type { HistoryService } from './history/history-service';
@@ -75,6 +78,8 @@ export interface IpcDeps {
     request: MakeBeanProfileRequest,
   ) => Promise<Result<ProfileEntry, MakeBeanProfileError>>;
   openBeanLink: (id: BeanId) => Promise<Result<void, OpenBeanLinkError>>;
+  suppliers: Pick<SupplierService, 'list' | 'add' | 'update' | 'delete'>;
+  openSupplierWebsite: (id: SupplierId) => Promise<Result<void, OpenSupplierWebsiteError>>;
   /** Make <bean> profile from a roast's taste (make-taste-profile.ts). */
   makeTasteProfile: (
     request: MakeTasteProfileRequest,

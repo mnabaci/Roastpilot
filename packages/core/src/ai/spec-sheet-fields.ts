@@ -28,6 +28,13 @@ function text(value: string | null): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+/** A site as sheets print it ("www.falcon.coffee") as a web address: https when none is given. */
+function website(value: string | null): string | null {
+  const site = text(value);
+  if (site === null) return null;
+  return /^[a-z][a-z0-9+.-]*:/i.test(site) ? site : `https://${site}`;
+}
+
 /**
  * What a sheet fills in the bean form (docs/spec/beans-favourites-ghost.md, Fill from a spec
  * sheet): only values it had, each checked as the form checks it. A value the form would refuse
@@ -46,6 +53,9 @@ export function specSheetFields(raw: RawSpecSheet): SpecSheetFields {
     screen: raw.screen,
     decaf: raw.decaf,
     supplier: text(raw.supplier),
+    supplierWebsite: website(raw.supplierWebsite),
+    supplierEmail: text(raw.supplierEmail),
+    supplierPhone: text(raw.supplierPhone),
     notes: notes(raw.tastingNotes),
   };
   const fields: Record<string, unknown> = {};

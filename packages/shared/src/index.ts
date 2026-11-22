@@ -60,6 +60,7 @@ export type {
   AppApi,
   AutoApi,
   BeansApi,
+  SuppliersApi,
   LibraryFilesApi,
   CoachApi,
   RoastersApi,
@@ -229,6 +230,19 @@ export {
   type StockMovement,
   type UpdateBean,
 } from './bean';
+export {
+  SupplierFieldsSchema,
+  SupplierIdSchema,
+  supplierNamed,
+  SupplierSchema,
+  UpdateSupplierSchema,
+  type OpenSupplierWebsiteError,
+  type Supplier,
+  type SupplierError,
+  type SupplierFields,
+  type SupplierId,
+  type UpdateSupplier,
+} from './supplier';
 export {
   MakeBeanProfileRequestSchema,
   MakeProfileRequestSchema,

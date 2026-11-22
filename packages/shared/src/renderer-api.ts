@@ -13,6 +13,7 @@ import type { RoastState } from './roast';
 import type { Roaster } from './roaster';
 import type { SafetyEvent } from './safety-event';
 import type { Screen } from './screen';
+import type { Supplier } from './supplier';
 import type { UpdateStatus } from './update-status';
 
 // The renderer's side of the IPC contract (docs/spec/architecture.md), one interface per area
@@ -220,6 +221,20 @@ export interface AiApi {
   readSpecSheet: Invoke<typeof C.readSpecSheet>;
 }
 
+/** Who you buy from, picked on each bean (docs/spec/beans-favourites-ghost.md, Suppliers). */
+export interface SuppliersApi {
+  /** Empty when storage can't be read (logged in main). */
+  listSuppliers: Invoke<typeof C.listSuppliers>;
+  addSupplier: Invoke<typeof C.addSupplier>;
+  updateSupplier: Invoke<typeof C.updateSupplier>;
+  /** Refused while any bean, archived ones too, names it. */
+  deleteSupplier: Invoke<typeof C.deleteSupplier>;
+  /** Opens the supplier's saved website in the browser; main reads it, never the caller. */
+  openSupplierWebsite: Invoke<typeof C.openSupplierWebsite>;
+  /** The list changed: a supplier written, or one added by saving a bean that names it. */
+  onSuppliers(listener: (suppliers: Supplier[]) => void): Unsubscribe;
+}
+
 /** The typed API the preload script exposes to the renderer as `window.roastpilot`. */
 export interface RoastpilotApi
   extends
@@ -234,6 +249,7 @@ export interface RoastpilotApi
     ProfilesApi,
     RoastersApi,
     BeansApi,
+    SuppliersApi,
     LibraryFilesApi,
     AppApi,
     UpdatesApi,

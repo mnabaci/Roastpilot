@@ -1,4 +1,10 @@
-import type { Bean, BeanProcess, BeanSpecies } from '@roastpilot/shared';
+import {
+  supplierNamed,
+  type Bean,
+  type BeanProcess,
+  type BeanSpecies,
+  type Supplier,
+} from '@roastpilot/shared';
 import {
   Button,
   NumberField,
@@ -8,9 +14,13 @@ import {
   TextField,
 } from '@roastpilot/ui';
 import { ExternalLink } from 'lucide-react';
+import { useId } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
+import { useBeans } from '../../stores/use-stores';
 import { siteOf, tastingNotes } from './bean-detail';
+import { contactsOf } from './supplier-options';
+import { SupplierField } from './SupplierField';
 import type { BeanDraftState } from './use-bean-draft';
 
 const PROCESSES: readonly { value: BeanProcess; label: string }[] = [
@@ -30,7 +40,7 @@ const SPECIES: readonly { value: BeanSpecies | ''; label: string }[] = [
 ];
 
 type NumberKey = 'densityGL' | 'altitudeM' | 'moisturePct' | 'screen' | 'lowStockG';
-type TextKey = 'origin' | 'variety' | 'supplier' | 'link' | 'notes';
+type TextKey = 'origin' | 'variety' | 'link' | 'notes';
 
 const NUMBER_CELLS: Readonly<Record<NumberKey, { label: string; unit?: string }>> = {
   altitudeM: { label: 'Altitude', unit: 'm' },
@@ -43,11 +53,69 @@ const NUMBER_CELLS: Readonly<Record<NumberKey, { label: string; unit?: string }>
 const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /**
- * Read, a bean's record as compact tiles (docs/spec/ui.md, Beans screen): as many columns as the
- * card holds (3 to 6), only the values it has, the order link's site under the supplier, and
- * tasting notes as chips.
+ * The Supplier tile: its name, a link to its website when it has one (main opens the saved
+ * address), and how to reach it under it, else the order link's site.
  */
-function BeanTiles({ draft }: { draft: BeanDraftState['draft'] }) {
+function SupplierTile({
+  name,
+  supplier,
+  site,
+  onOpenWebsite,
+}: {
+  name: string;
+  supplier: Supplier | undefined;
+  site: string;
+  onOpenWebsite: (supplier: Supplier) => void;
+}) {
+  const id = useId();
+  const contacts = supplier ? contactsOf(supplier) : '';
+  const under = contacts !== '' ? contacts : name ? site : '';
+  return (
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <span id={id} className="text-label text-ink-muted">
+        Supplier
+      </span>
+      <p aria-labelledby={id} className="flex min-h-6 min-w-0 items-center text-body text-ink">
+        {supplier?.website ? (
+          <button
+            type="button"
+            aria-label={`Open ${supplier.name}'s website`}
+            title={siteOf(supplier.website)}
+            onClick={() => {
+              onOpenWebsite(supplier);
+            }}
+            className="inline-flex min-w-0 items-center gap-1 rounded-sm text-left underline decoration-border-strong underline-offset-4 hover:decoration-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          >
+            <span className="truncate">{supplier.name}</span>
+            <ExternalLink aria-hidden="true" className="size-4 shrink-0 text-ink-muted" />
+          </button>
+        ) : (
+          <span className="truncate">{name || site}</span>
+        )}
+      </p>
+      {under ? (
+        <p className="truncate text-label text-ink-muted" title={under}>
+          {under}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Read, a bean's record as compact tiles (docs/spec/ui.md, Beans screen): as many columns as the
+ * card holds (3 to 6), only the values it has, the supplier linking to its website with how to
+ * reach it under it, and tasting notes as chips.
+ */
+function BeanTiles({
+  draft,
+  supplier,
+  onOpenWebsite,
+}: {
+  draft: BeanDraftState['draft'];
+  supplier: Supplier | undefined;
+  onOpenWebsite: (supplier: Supplier) => void;
+}) {
   const t = (v: string) => v.trim();
   const site = t(draft.link) ? siteOf(t(draft.link)) : '';
   const tiles: { label: string; value: string; under?: string }[] = [
@@ -61,11 +129,6 @@ function BeanTiles({ draft }: { draft: BeanDraftState['draft'] }) {
     { label: 'Moisture', value: t(draft.moisturePct) && `${t(draft.moisturePct)} %` },
     { label: 'Decaf', value: draft.decaf ? 'Yes' : '' },
     { label: 'Low stock below', value: t(draft.lowStockG) && `${t(draft.lowStockG)} g` },
-    {
-      label: 'Supplier',
-      value: t(draft.supplier) || site,
-      ...(t(draft.supplier) && site ? { under: site } : {}),
-    },
   ];
   const notes = tastingNotes(draft.notes);
   return (
@@ -79,6 +142,14 @@ function BeanTiles({ draft }: { draft: BeanDraftState['draft'] }) {
               {under ? <p className="truncate text-label text-ink-muted">{under}</p> : null}
             </div>
           ))}
+        {t(draft.supplier) || site ? (
+          <SupplierTile
+            name={supplier?.name ?? t(draft.supplier)}
+            supplier={supplier}
+            site={site}
+            onOpenWebsite={onOpenWebsite}
+          />
+        ) : null}
       </div>
       {t(draft.notes) ? (
         notes.length > 0 ? (
@@ -146,8 +217,28 @@ export function BeanFields({
       />
     );
   };
+  const suppliers = useBeans((s) => s.suppliers);
   const savedLink = bean?.link != null && draft.link.trim() === bean.link;
-  if (readOnly) return <BeanTiles draft={draft} />;
+  // Main opens the website saved with the supplier; the screen only names the supplier.
+  const openWebsite = (supplier: Supplier) => {
+    run(
+      'beans.supplier-website-failed',
+      async () => {
+        const opened = await api.openSupplierWebsite(supplier.id);
+        if (!opened.ok) setProblem(`Couldn't open ${supplier.name}'s website · see Logs`);
+      },
+      { failed: "Couldn't open the website · try again" },
+    );
+  };
+  if (readOnly) {
+    return (
+      <BeanTiles
+        draft={draft}
+        supplier={supplierNamed(suppliers, draft.supplier)}
+        onOpenWebsite={openWebsite}
+      />
+    );
+  }
   return (
     // Five columns: the ten short values in two rows, then the shop and its link, then notes.
     <div className="grid grid-cols-5 items-start gap-x-3 gap-y-4">
@@ -192,7 +283,14 @@ export function BeanFields({
       <p className="col-span-5 -mt-2 text-label text-ink-muted">
         Density is the one to measure: weigh a fixed volume of green beans.
       </p>
-      {textCell('supplier', 'Supplier', 'col-span-2')}
+      <SupplierField
+        className="col-span-2"
+        value={draft.supplier}
+        error={errors.supplier}
+        onChange={(supplier) => {
+          change({ supplier });
+        }}
+      />
       {/* Where to order it again: the button opens the saved link (main opens only a saved one). */}
       <div className="col-span-3 flex items-end gap-2">
         {textCell('link', 'Order link', 'min-w-0 flex-1')}

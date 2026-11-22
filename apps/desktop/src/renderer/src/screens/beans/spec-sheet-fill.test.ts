@@ -66,4 +66,16 @@ describe('fillFromSheet', () => {
     const full = { ...toBeanDraft(undefined), origin: 'Ethiopia' };
     expect(fillFromSheet(full, { origin: 'Ethiopia' }, { isNew: true }).count).toBe(0);
   });
+
+  it('fills a supplier you have as you spell it, and a new one as the sheet does', () => {
+    const falcon = { id: 1, name: 'Falcon', website: null, email: null, phone: null, notes: null };
+    const blank = toBeanDraft(undefined);
+    const opts = { isNew: true, suppliers: [falcon] };
+    expect(fillFromSheet(blank, { supplier: 'FALCON ' }, opts).cells).toEqual({
+      supplier: 'Falcon',
+    });
+    expect(fillFromSheet(blank, { supplier: 'Nordic' }, opts).cells).toEqual({
+      supplier: 'Nordic',
+    });
+  });
 });

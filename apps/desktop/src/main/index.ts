@@ -56,6 +56,7 @@ const services = createAppServices({
   profileStore: stores.profileStore,
   roasterStore: stores.roasterStore,
   beanStore: stores.beanStore,
+  supplierStore: stores.supplierStore,
   newProfileId: () => `custom-${randomUUID()}`,
   nowIso: () => new Date().toISOString(),
   onConnectionChange: (state) => {

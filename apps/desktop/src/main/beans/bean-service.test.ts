@@ -82,6 +82,7 @@ describe('BeanService find and linkProfile', () => {
   const FULL: Bean = {
     ...FULL_FIELDS,
     id: 1,
+    supplierId: null,
     profileId: null,
     greenG: 300,
     roastedG: 0,

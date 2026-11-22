@@ -27,6 +27,9 @@ const EMPTY_SHEET: RawSpecSheet = {
   screen: null,
   decaf: null,
   supplier: null,
+  supplierWebsite: null,
+  supplierEmail: null,
+  supplierPhone: null,
   tastingNotes: [],
 };
 

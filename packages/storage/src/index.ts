@@ -6,3 +6,4 @@ export { SqliteBeanRepository } from './sqlite-bean-repository';
 export { SqliteProfileRepository } from './sqlite-profile-repository';
 export { SqliteRoastRepository } from './sqlite-roast-repository';
 export { SqliteRoasterRepository } from './sqlite-roaster-repository';
+export { SqliteSupplierRepository } from './sqlite-supplier-repository';

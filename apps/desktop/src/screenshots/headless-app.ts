@@ -49,6 +49,7 @@ export async function startHeadlessApp(): Promise<HeadlessApp> {
     profileStore: stores.profileStore,
     roasterStore: stores.roasterStore,
     beanStore: stores.beanStore,
+    supplierStore: stores.supplierStore,
     newProfileId: () => `custom-${String(++ownIds)}`,
     nowIso: () => new Date(wallStartMs + clock.now()).toISOString(),
     onConnectionChange: () => undefined,

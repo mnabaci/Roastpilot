@@ -20,7 +20,12 @@ import {
 import { tasteIpcHandlers } from './ai-ipc-handlers';
 import type { IpcDeps, IpcHandlers } from './ipc-deps';
 import { handler } from './ipc-handler';
-import { beanIpcHandlers, profileIpcHandlers, roasterIpcHandlers } from './library-ipc-handlers';
+import {
+  beanIpcHandlers,
+  supplierIpcHandlers,
+  profileIpcHandlers,
+  roasterIpcHandlers,
+} from './library-ipc-handlers';
 
 export type { AnyIpcHandler, IpcCaller, IpcDeps, IpcHandler, IpcHandlers } from './ipc-deps';
 export { handleRendererLog, withErrorLogging } from './ipc-logging';
@@ -45,6 +50,8 @@ export function createIpcHandlers({
   makeProfile,
   makeBeanProfile,
   openBeanLink,
+  suppliers,
+  openSupplierWebsite,
   makeTasteProfile,
   ai,
   nowMs,
@@ -121,6 +128,7 @@ export function createIpcHandlers({
     ...tasteIpcHandlers({ history, makeTasteProfile, ai }),
     ...profileIpcHandlers({ profiles }),
     ...beanIpcHandlers({ beans, openBeanLink, makeBeanProfile }),
+    ...supplierIpcHandlers({ suppliers, openSupplierWebsite }),
     ...roasterIpcHandlers({ roasters, tc4 }),
     [IPC_CHANNELS.getAppInfo]: handler(() => updates.info()),
     [IPC_CHANNELS.checkForUpdates]: handler(() => updates.check()),

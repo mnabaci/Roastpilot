@@ -11,6 +11,7 @@ import type {
   RoastRepository,
   RoasterSession,
   SettingsStore,
+  SupplierRepository,
 } from '@roastpilot/core';
 import type {
   ConnectionState,
@@ -21,6 +22,7 @@ import type {
   Snapshot,
 } from '@roastpilot/shared';
 import type { BeanService } from './beans/bean-service';
+import type { SupplierService } from './beans/supplier-service';
 import type { CoachActions } from './coach-apply';
 import type { HandOutput } from './hand-output';
 import type { HistoryService } from './history/history-service';
@@ -40,6 +42,7 @@ export interface AppServicesDeps {
   profileStore: ProfileRepository;
   roasterStore: RoasterRepository;
   beanStore: BeanRepository;
+  supplierStore: SupplierRepository;
   /** New ids for your own profiles. */
   newProfileId: () => string;
   /** Wall-clock time as ISO 8601, for saved roasts. */
@@ -70,5 +73,6 @@ export interface AppServices {
   profiles: ProfileService;
   roasters: RoasterService;
   beans: BeanService;
+  suppliers: SupplierService;
   snapshot: () => Snapshot;
 }

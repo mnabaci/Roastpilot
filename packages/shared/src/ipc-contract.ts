@@ -10,6 +10,14 @@ import type {
   StockMovement,
   UpdateBean,
 } from './bean';
+import type {
+  OpenSupplierWebsiteError,
+  Supplier,
+  SupplierError,
+  SupplierFields,
+  SupplierId,
+  UpdateSupplier,
+} from './supplier';
 import type { CoachApplyError, CoachRequest } from './coach';
 import type { ConnectTarget, SerialPortInfo } from './connection';
 import type { ConnectError, DriverError } from './driver-error';
@@ -158,6 +166,11 @@ export interface InvokeContract {
   [C.adjustStock]: Call<AdjustStock, Result<void, StorageError>>;
   [C.stockHistory]: Call<BeanId, Result<StockMovement[], StorageError>>;
   [C.makeBeanProfile]: Call<MakeBeanProfileRequest, Result<ProfileEntry, MakeBeanProfileError>>;
+  [C.listSuppliers]: Call<undefined, Supplier[]>;
+  [C.addSupplier]: Call<SupplierFields, Result<SupplierId, SupplierError>>;
+  [C.updateSupplier]: Call<UpdateSupplier, Result<void, SupplierError>>;
+  [C.deleteSupplier]: Call<SupplierId, Result<void, SupplierError>>;
+  [C.openSupplierWebsite]: Call<SupplierId, Result<void, OpenSupplierWebsiteError>>;
   [C.setRoastSetup]: Call<RoastSetup, void>;
   [C.saveRoastResult]: Call<RoastResult, Result<void, StorageError>>;
   [C.makeProfileFromRoast]: Call<MakeProfileRequest, Result<ProfileEntry, MakeProfileError>>;

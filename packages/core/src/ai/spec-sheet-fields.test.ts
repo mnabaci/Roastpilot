@@ -15,10 +15,26 @@ const EMPTY: RawSpecSheet = {
   screen: null,
   decaf: null,
   supplier: null,
+  supplierWebsite: null,
+  supplierEmail: null,
+  supplierPhone: null,
   tastingNotes: [],
 };
 
 describe('specSheetFields', () => {
+  it("keeps the supplier's contacts, with https on a bare site, and leaves out a bad email", () => {
+    expect(
+      specSheetFields({
+        ...EMPTY,
+        supplier: ' Falcon ',
+        supplierWebsite: 'www.falcon.coffee',
+        supplierEmail: 'not an email',
+        supplierPhone: ' ',
+      }),
+    ).toEqual({ supplier: 'Falcon', supplierWebsite: 'https://www.falcon.coffee' });
+    expect(specSheetFields({ ...EMPTY, supplierWebsite: 'ftp://falcon.coffee' })).toEqual({});
+  });
+
   it('fills what a full sheet had', () => {
     expect(
       specSheetFields({
@@ -34,6 +50,9 @@ describe('specSheetFields', () => {
         screen: 15,
         decaf: false,
         supplier: 'Falcon',
+        supplierWebsite: 'https://falcon.coffee',
+        supplierEmail: 'sales@falcon.coffee',
+        supplierPhone: '+44 1234 567890',
         tastingNotes: ['Blueberry', 'Dark Chocolate'],
       }),
     ).toEqual({
@@ -48,6 +67,9 @@ describe('specSheetFields', () => {
       screen: 15,
       decaf: false,
       supplier: 'Falcon',
+      supplierWebsite: 'https://falcon.coffee',
+      supplierEmail: 'sales@falcon.coffee',
+      supplierPhone: '+44 1234 567890',
       notes: 'Blueberry | Dark Chocolate',
     });
   });

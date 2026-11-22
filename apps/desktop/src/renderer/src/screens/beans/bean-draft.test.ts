@@ -62,6 +62,7 @@ describe('bean draft', () => {
     const bean = {
       ...filled.value,
       id: 1,
+      supplierId: null,
       profileId: null,
       greenG: 0,
       roastedG: 0,

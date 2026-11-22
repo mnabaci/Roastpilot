@@ -7,6 +7,7 @@ import { aiWiring } from './ai/ai-wiring';
 import type { AppServices } from './app-services-types';
 import { makeTasteProfile, oneAtATime } from './profiles/make-taste-profile';
 import { openBeanLink } from './beans/open-bean-link';
+import { openSupplierWebsite } from './beans/open-supplier-website';
 import { makeBeanProfile } from './beans/make-bean-profile';
 import { connectWiring } from './connect-wiring';
 import { pathChoosers } from './files/file-dialogs';
@@ -50,7 +51,7 @@ export function buildIpcDeps({
   openLogFolder: () => Promise<void>;
   logger: Logger;
 }): IpcDeps {
-  const { session, roast, history, profiles, roasters, beans } = services;
+  const { session, roast, history, profiles, roasters, beans, suppliers } = services;
   const filesLogger = logger.child('files');
   const beansLogger = logger.child('beans');
   const newProfileId = () => `custom-${randomUUID()}`;
@@ -119,6 +120,13 @@ export function buildIpcDeps({
         beans,
         openExternal: (url) => shell.openExternal(url),
         logger: beansLogger,
+      }),
+    suppliers,
+    openSupplierWebsite: (id) =>
+      openSupplierWebsite(id, {
+        suppliers,
+        openExternal: (url) => shell.openExternal(url),
+        logger: logger.child('suppliers'),
       }),
     nowMs: () => systemClock.now(),
     snapshot: services.snapshot,

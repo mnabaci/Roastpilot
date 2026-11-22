@@ -20,6 +20,14 @@ a roast: minor for a new roasting capability, patch for everything else
   end, first crack, development and drop against the plan. It's in History, and on the Roast
   screen as soon as the roast finishes.
 
+- **Suppliers, kept once:** a bean's supplier is now picked from your suppliers, not typed again;
+  type a new name and Add supplier, and Save adds it with the bean. Each supplier keeps its
+  website, email, phone and notes: on a bean, its name links to its website with the email and
+  phone under it. Beans "⋯" › Suppliers lists them with how many beans each has, to change one
+  or delete one no bean uses. Your beans' suppliers become supplier records on update, one per
+  name; bean files carry the supplier by name, and Fill from spec sheet picks a supplier you have
+  or offers to add a new one with the website and contacts on the sheet.
+
 ### Changed
 
 - **Smaller app:** the installed app is about 35 MB smaller. It no longer ships a second copy of

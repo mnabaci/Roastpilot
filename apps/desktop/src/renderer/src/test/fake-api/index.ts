@@ -7,6 +7,7 @@ import {
   fakeLibraryFilesApi,
   fakeProfilesApi,
   fakeRoastersApi,
+  fakeSuppliersApi,
 } from './library';
 import { fakeRoastApi, fakeRoasterApi } from './session';
 
@@ -22,6 +23,7 @@ export function fakeAppApi(overrides: Partial<RoastpilotApi> = {}): RoastpilotAp
     ...fakeHistoryApi(),
     ...fakeProfilesApi(),
     ...fakeBeansApi(),
+    ...fakeSuppliersApi(),
     ...fakeRoastersApi(),
     ...fakeLibraryFilesApi(),
     ...fakeWindowApi(),

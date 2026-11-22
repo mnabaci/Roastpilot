@@ -9,6 +9,7 @@ import type {
   RoastSetup,
   RoastState,
   Settings,
+  Supplier,
   UpdateStatus,
 } from '@roastpilot/shared';
 import { createAutoStore, type AutoStore } from './auto-store';
@@ -59,6 +60,7 @@ export interface StoresSeed {
   profiles?: ProfileEntry[];
   roasters?: Roaster[];
   beans?: Bean[];
+  suppliers?: Supplier[];
   setup?: RoastSetup;
   currentRoastId?: number;
   version?: string;
@@ -78,7 +80,7 @@ export function createStores(seed: StoresSeed = {}): Stores {
     auto: createAutoStore(seed.auto, seed.profiles),
     coach: createCoachStore(seed.coach),
     roasters: createRoastersStore(seed.roasters),
-    beans: createBeansStore(seed.beans, seed.setup, seed.currentRoastId),
+    beans: createBeansStore(seed.beans, seed.setup, seed.currentRoastId, seed.suppliers),
     edits: createEditsStore(),
     updates: createUpdatesStore(seed.version, seed.update),
     toasts: createToastsStore(),

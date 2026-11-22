@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { BeanFieldsSchema, BeanSpeciesSchema } from './bean';
+import { SupplierFieldsSchema } from './supplier';
 import { TasteWordsSchema } from './taste';
 
 /**
@@ -97,7 +98,13 @@ export const SpecSheetFieldsSchema = BeanFieldsSchema.pick({
   notes: true,
 })
   // The form's species defaults to none; a sheet that doesn't say leaves it out instead.
-  .extend({ species: BeanSpeciesSchema })
+  .extend({
+    species: BeanSpeciesSchema,
+    // How to reach the supplier, for adding it when it is new (Suppliers).
+    supplierWebsite: SupplierFieldsSchema.shape.website.unwrap(),
+    supplierEmail: SupplierFieldsSchema.shape.email.unwrap(),
+    supplierPhone: SupplierFieldsSchema.shape.phone.unwrap(),
+  })
   .partial();
 
 /**
@@ -117,6 +124,9 @@ export const RawSpecSheetSchema = z.object({
   screen: z.number().nullable(),
   decaf: z.boolean().nullable(),
   supplier: z.string().nullable(),
+  supplierWebsite: z.string().nullable(),
+  supplierEmail: z.string().nullable(),
+  supplierPhone: z.string().nullable(),
   tastingNotes: z.array(z.string()),
 });
 

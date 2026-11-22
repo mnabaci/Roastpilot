@@ -2,6 +2,7 @@ import type { Bean, RoastSummary } from '@roastpilot/shared';
 import { Badge, Button, cn, Menu, formatNumber, StatCard } from '@roastpilot/ui';
 import { ExternalLink } from 'lucide-react';
 import { FillFromSheetButton } from './FillFromSheetButton';
+import { SheetFillNote } from './SheetFillNote';
 import { SpecSheetDialog } from './SpecSheetDialog';
 import { useSpecSheetFill } from './use-spec-sheet-fill';
 import { useState } from 'react';
@@ -169,11 +170,7 @@ export function BeanDetail({
           {record.problem}
         </p>
       ) : null}
-      {editing && fill.filled ? (
-        <p role="status" className="text-label text-ink-muted">
-          {fill.filled}
-        </p>
-      ) : null}
+      {editing ? <SheetFillNote fill={fill} /> : null}
       <SpecSheetDialog open={fill.open} onClose={fill.close} onFilled={fill.onFilled} />
       {actions.problem ? (
         <p role="alert" className="text-label text-critical-text">

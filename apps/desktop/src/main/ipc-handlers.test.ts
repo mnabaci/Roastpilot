@@ -228,6 +228,25 @@ function setup() {
       calls.push(['openBeanLink', id]);
       return Promise.resolve(err({ kind: 'no-link', id }));
     },
+    suppliers: {
+      list: () => Promise.resolve([]),
+      add: (fields) => {
+        calls.push(['addSupplier', fields]);
+        return Promise.resolve(ok(1));
+      },
+      update: (update) => {
+        calls.push(['updateSupplier', update]);
+        return Promise.resolve(ok(undefined));
+      },
+      delete: (id) => {
+        calls.push(['deleteSupplier', id]);
+        return Promise.resolve(ok(undefined));
+      },
+    },
+    openSupplierWebsite: (id) => {
+      calls.push(['openSupplierWebsite', id]);
+      return Promise.resolve(err({ kind: 'no-website', id }));
+    },
     roasters: {
       load: () => Promise.resolve([]),
       add: (r) => {
@@ -499,6 +518,39 @@ describe('roast, snapshot and settings handlers', () => {
       ['adjustStock', 5],
       ['makeProfile', made],
       ['openBeanLink', 1],
+    ]);
+  });
+
+  it('checks supplier requests at the boundary', async () => {
+    const { handlers, calls } = setup();
+    const falcon = {
+      name: 'Falcon',
+      website: 'https://falcon.coffee',
+      email: 'sales@falcon.coffee',
+      phone: null,
+      notes: null,
+    };
+    await expect(handlers[IPC_CHANNELS.addSupplier]?.({ ...falcon, name: ' ' })).rejects.toThrow();
+    await expect(
+      handlers[IPC_CHANNELS.addSupplier]?.({ ...falcon, website: 'javascript:alert(1)' }),
+    ).rejects.toThrow();
+    await expect(
+      handlers[IPC_CHANNELS.updateSupplier]?.({ id: 1, fields: { ...falcon, email: 'no' } }),
+    ).rejects.toThrow();
+    // A supplier id only: an address from the renderer is refused before anything opens.
+    await expect(
+      handlers[IPC_CHANNELS.openSupplierWebsite]?.('https://elsewhere.example'),
+    ).rejects.toThrow();
+    expect(calls).toEqual([]);
+    await handlers[IPC_CHANNELS.addSupplier]?.(falcon);
+    await handlers[IPC_CHANNELS.updateSupplier]?.({ id: 1, fields: falcon });
+    await handlers[IPC_CHANNELS.deleteSupplier]?.(1);
+    await handlers[IPC_CHANNELS.openSupplierWebsite]?.(1);
+    expect(calls).toEqual([
+      ['addSupplier', falcon],
+      ['updateSupplier', { id: 1, fields: falcon }],
+      ['deleteSupplier', 1],
+      ['openSupplierWebsite', 1],
     ]);
   });
 

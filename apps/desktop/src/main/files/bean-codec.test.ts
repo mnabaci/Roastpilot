@@ -15,6 +15,7 @@ const GUJI: Bean = {
   screen: 15,
   decaf: false,
   supplier: 'Sweet Maria',
+  supplierId: 2,
   species: 'arabica',
   link: 'https://sweetmarias.example/guji',
   lowStockG: 500,
@@ -79,7 +80,16 @@ describe('bean files', () => {
     expect(await filesOf('beans', codec).importFile(text)).toEqual(
       ok({ added: 1, skipped: 0, archived: 0, newestId: 20 }),
     );
-    const fields = without(GUJI, 'id', 'profileId', 'greenG', 'roastedG', 'archived', 'avgLossPct');
+    const fields = without(
+      GUJI,
+      'id',
+      'supplierId',
+      'profileId',
+      'greenG',
+      'roastedG',
+      'archived',
+      'avgLossPct',
+    );
     expect(beans.addAll).toHaveBeenCalledWith([{ fields, profileId: 'p9' }]);
   });
 
@@ -116,7 +126,16 @@ describe('bean files', () => {
     expect(beans.addAll).toHaveBeenCalledWith([
       {
         fields: {
-          ...without(GUJI, 'id', 'profileId', 'greenG', 'roastedG', 'archived', 'avgLossPct'),
+          ...without(
+            GUJI,
+            'id',
+            'supplierId',
+            'profileId',
+            'greenG',
+            'roastedG',
+            'archived',
+            'avgLossPct',
+          ),
           name: 'Guji (imported)',
           origin: 'Ethiopia',
         },
