@@ -25,12 +25,22 @@ const detailOf = (supplier: Supplier, beans: number): string =>
 /**
  * Suppliers, from the Beans list's "⋯" (docs/spec/beans-favourites-ghost.md, Suppliers): every
  * supplier with how many beans name it; one opens to change its details, or to delete it while no
- * bean names it.
+ * bean names it. From a bean's supplier card it opens on that supplier.
  */
-export function SuppliersDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function SuppliersDialog({
+  open,
+  onClose,
+  start,
+}: {
+  open: boolean;
+  onClose: () => void;
+  /** Opens on this supplier's details, from a bean; done there, it closes back to the bean. */
+  start?: SupplierId | undefined;
+}) {
   const suppliers = useBeans((s) => s.suppliers);
   const beans = useBeans((s) => s.beans);
-  const [page, setPage] = useState<Page>({ kind: 'list' });
+  const first: Page = start === undefined ? { kind: 'list' } : { kind: 'edit', id: start };
+  const [page, setPage] = useState<Page>(first);
   const counts = countsOf(beans);
   const opened = page.kind === 'edit' ? suppliers.find((s) => s.id === page.id) : undefined;
   const back = () => {
@@ -38,8 +48,10 @@ export function SuppliersDialog({ open, onClose }: { open: boolean; onClose: () 
   };
   const close = () => {
     onClose();
-    back();
+    setPage(first);
   };
+  // Opened on a supplier from its bean: Save or Cancel goes back to the bean, not the list.
+  const done = start !== undefined && page.kind === 'edit' && page.id === start ? close : back;
   const onForm = page.kind === 'add' || opened !== undefined;
   return (
     <Dialog
@@ -68,7 +80,7 @@ export function SuppliersDialog({ open, onClose }: { open: boolean; onClose: () 
             key={opened?.id ?? 'new'}
             supplier={opened}
             beans={opened ? (counts.get(opened.id) ?? 0) : 0}
-            onDone={back}
+            onDone={done}
           />
         </>
       ) : (

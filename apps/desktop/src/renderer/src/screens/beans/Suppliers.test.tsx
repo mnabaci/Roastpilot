@@ -31,22 +31,58 @@ function show(api = fakeApi(), beans: Bean[] = [WITH_FALCON], suppliers = [FALCO
 const about = () => within(screen.getByRole('region', { name: 'About this bean' }));
 
 describe("A bean's supplier", () => {
-  it('reads as its name linking to its website, with its email and phone under it', async () => {
+  it('reads as its name with its email and phone under it, opening its card', async () => {
     const user = userEvent.setup();
     const { api } = show();
-    expect(about().getByLabelText('Supplier')).toHaveTextContent('Falcon');
     expect(about().getByText('sales@falcon.coffee · +44 1234 567890')).toBeInTheDocument();
-    await user.click(about().getByRole('button', { name: "Open Falcon's website" }));
+    await user.click(about().getByRole('button', { name: 'Falcon, supplier details' }));
+    const card = within(await screen.findByRole('dialog', { name: 'Falcon' }));
+    expect(card.getByText('Supplies Yirgacheffe')).toBeInTheDocument();
+    expect(card.getByText('sales@falcon.coffee')).toBeInTheDocument();
+    expect(card.getByText('+44 1234 567890')).toBeInTheDocument();
+    await user.click(card.getByRole('button', { name: 'falcon.coffee' }));
     expect(api.openSupplierWebsite).toHaveBeenCalledWith(1);
+    expect(screen.queryByRole('dialog', { name: 'Falcon' })).toBeNull();
   });
 
-  it('reads as plain text without a website, and shows in Edit as picked', async () => {
+  it('copies each detail from its card', async () => {
     const user = userEvent.setup();
-    show(fakeApi(), [{ ...BEAN, supplier: 'Nordic', supplierId: 2 }]);
-    expect(about().getByLabelText('Supplier')).toHaveTextContent('Nordic');
-    expect(about().queryByRole('button', { name: /website/ })).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Edit' }));
-    expect(screen.getByRole('button', { name: 'Supplier' })).toHaveTextContent('Nordic');
+    show();
+    await user.click(about().getByRole('button', { name: 'Falcon, supplier details' }));
+    await user.click(await screen.findByRole('button', { name: 'Copy email' }));
+    expect(await navigator.clipboard.readText()).toBe('sales@falcon.coffee');
+    expect(screen.getByText('Copied')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Copy website' }));
+    expect(await navigator.clipboard.readText()).toBe('https://www.falcon.coffee');
+  });
+
+  it('opens Edit supplier from its card, and Save goes back to the bean', async () => {
+    const user = userEvent.setup();
+    const { api } = show();
+    await user.click(about().getByRole('button', { name: 'Falcon, supplier details' }));
+    await user.click(await screen.findByRole('button', { name: 'Edit supplier' }));
+    const dialog = within(await screen.findByRole('dialog', { name: 'Falcon' }));
+    await user.clear(dialog.getByLabelText('Phone'));
+    await user.click(dialog.getByRole('button', { name: 'Save' }));
+    await waitFor(() => {
+      expect(api.updateSupplier).toHaveBeenCalled();
+    });
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+  });
+
+  it('offers Add details on a supplier with nothing to reach it by', async () => {
+    const user = userEvent.setup();
+    show(
+      fakeApi(),
+      [{ ...BEAN, supplier: 'Bare', supplierId: 3 }],
+      [{ ...FALCON, id: 3, name: 'Bare', website: null, email: null, phone: null }],
+    );
+    await user.click(about().getByRole('button', { name: 'Bare, supplier details' }));
+    expect(await screen.findByText('No website, email or phone yet')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Add details' }));
+    expect(await screen.findByLabelText('Website')).toHaveValue('');
   });
 
   it('says so when its website will not open', async () => {
@@ -56,7 +92,8 @@ describe("A bean's supplier", () => {
         openSupplierWebsite: vi.fn(() => Promise.resolve(err({ kind: 'open-failed' as const }))),
       }),
     );
-    await user.click(about().getByRole('button', { name: "Open Falcon's website" }));
+    await user.click(about().getByRole('button', { name: 'Falcon, supplier details' }));
+    await user.click(await screen.findByRole('button', { name: 'falcon.coffee' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       "Couldn't open Falcon's website · see Logs",
     );

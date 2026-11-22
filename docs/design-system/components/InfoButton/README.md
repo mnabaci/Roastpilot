@@ -9,6 +9,8 @@ A small ⓘ beside a name, for what its one-line hint can't say: Settings' AI he
 
 ## Rules
 
+- Built on Popover: its panel, focus and closing are Popover's.
+
 - Opens on click, Enter or Space, not on hover; stays open while you read; Escape or a click away closes it and focus goes back to the button.
 - Named by what it explains ("About tasting words"); the panel has the same name.
 - Not a Tooltip: a Tooltip only shows the whole of a cut-off line. Not for anything you need to use the row: that belongs in the hint.

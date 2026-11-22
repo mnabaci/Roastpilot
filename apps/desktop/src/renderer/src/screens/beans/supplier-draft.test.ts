@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { beanCount, fromSupplierDraft, toSupplierDraft } from './supplier-draft';
+import { beanCount, fromSupplierDraft, suppliedLine, toSupplierDraft } from './supplier-draft';
 
 const FALCON = {
   id: 1,
@@ -46,5 +46,14 @@ describe('supplier draft', () => {
 
   it('counts beans in words', () => {
     expect([beanCount(0), beanCount(1), beanCount(3)]).toEqual(['0 beans', '1 bean', '3 beans']);
+  });
+});
+
+describe('suppliedLine', () => {
+  it('names up to two beans, then counts the rest', () => {
+    expect(suppliedLine([])).toBe('No beans yet');
+    expect(suppliedLine(['Guji'])).toBe('Supplies Guji');
+    expect(suppliedLine(['Guji', 'Kiambu'])).toBe('Supplies Guji and Kiambu');
+    expect(suppliedLine(['Guji', 'Kiambu', 'Huila', 'Santos'])).toBe('Supplies Guji and 3 more');
   });
 });

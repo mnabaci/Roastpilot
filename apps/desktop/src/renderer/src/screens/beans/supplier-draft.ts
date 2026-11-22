@@ -47,3 +47,15 @@ export function fromSupplierDraft(
 
 /** "1 bean", "3 beans": how many beans name a supplier, archived ones too. */
 export const beanCount = (n: number): string => `${String(n)} ${n === 1 ? 'bean' : 'beans'}`;
+
+/**
+ * Which beans a supplier supplies, on its card: up to two by name ("Supplies African Moon and
+ * Kiambu"), more as a count with the first ("Supplies Guji and 3 more").
+ */
+export function suppliedLine(names: readonly string[]): string {
+  const [first, second] = names;
+  if (first === undefined) return 'No beans yet';
+  if (second === undefined) return `Supplies ${first}`;
+  if (names.length === 2) return `Supplies ${first} and ${second}`;
+  return `Supplies ${first} and ${String(names.length - 1)} more`;
+}

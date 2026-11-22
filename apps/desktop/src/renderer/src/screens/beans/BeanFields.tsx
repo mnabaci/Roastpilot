@@ -4,6 +4,7 @@ import {
   type BeanProcess,
   type BeanSpecies,
   type Supplier,
+  type SupplierId,
 } from '@roastpilot/shared';
 import {
   Button,
@@ -14,13 +15,15 @@ import {
   TextField,
 } from '@roastpilot/ui';
 import { ExternalLink } from 'lucide-react';
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { useRun } from '../../features/use-run';
 import { useBeans } from '../../stores/use-stores';
 import { siteOf, tastingNotes } from './bean-detail';
 import { contactsOf } from './supplier-options';
+import { SupplierCard } from './SupplierCard';
 import { SupplierField } from './SupplierField';
+import { SuppliersDialog } from './SuppliersDialog';
 import type { BeanDraftState } from './use-bean-draft';
 
 const PROCESSES: readonly { value: BeanProcess; label: string }[] = [
@@ -53,19 +56,21 @@ const NUMBER_CELLS: Readonly<Record<NumberKey, { label: string; unit?: string }>
 const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /**
- * The Supplier tile: its name, a link to its website when it has one (main opens the saved
- * address), and how to reach it under it, else the order link's site.
+ * The Supplier tile: its name, which opens the supplier's card (website, contacts, notes, Edit),
+ * and how to reach it under it, else the order link's site.
  */
 function SupplierTile({
   name,
   supplier,
   site,
   onOpenWebsite,
+  onEdit,
 }: {
   name: string;
   supplier: Supplier | undefined;
   site: string;
   onOpenWebsite: (supplier: Supplier) => void;
+  onEdit: (supplier: Supplier) => void;
 }) {
   const id = useId();
   const contacts = supplier ? contactsOf(supplier) : '';
@@ -76,46 +81,45 @@ function SupplierTile({
       <span id={id} className="text-label text-ink-muted">
         Supplier
       </span>
-      <p aria-labelledby={id} className="flex min-h-6 min-w-0 items-center text-body text-ink">
-        {supplier?.website ? (
-          <button
-            type="button"
-            aria-label={`Open ${supplier.name}'s website`}
-            title={siteOf(supplier.website)}
-            onClick={() => {
-              onOpenWebsite(supplier);
-            }}
-            className="inline-flex min-w-0 items-center gap-1 rounded-sm text-left underline decoration-border-strong underline-offset-4 hover:decoration-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-          >
-            <span className="truncate">{supplier.name}</span>
-            <ExternalLink aria-hidden="true" className="size-4 shrink-0 text-ink-muted" />
-          </button>
-        ) : (
-          <span className="truncate">{name || site}</span>
-        )}
-      </p>
-      {under ? (
-        <p className="truncate text-label text-ink-muted" title={under}>
-          {under}
-        </p>
-      ) : null}
+      {supplier ? (
+        // Name and contacts are one button, so its card opens under both.
+        <SupplierCard
+          supplier={supplier}
+          under={under}
+          onOpenWebsite={onOpenWebsite}
+          onEdit={onEdit}
+        />
+      ) : (
+        <>
+          <p aria-labelledby={id} className="flex min-h-6 min-w-0 items-center text-body text-ink">
+            <span className="truncate">{name || site}</span>
+          </p>
+          {under ? (
+            <p className="truncate text-label text-ink-muted" title={under}>
+              {under}
+            </p>
+          ) : null}
+        </>
+      )}
     </div>
   );
 }
 
 /**
  * Read, a bean's record as compact tiles (docs/spec/ui.md, Beans screen): as many columns as the
- * card holds (3 to 6), only the values it has, the supplier linking to its website with how to
- * reach it under it, and tasting notes as chips.
+ * card holds (3 to 6), only the values it has, the supplier opening its card with how to reach it
+ * under it, and tasting notes as chips.
  */
 function BeanTiles({
   draft,
   supplier,
   onOpenWebsite,
+  onEditSupplier,
 }: {
   draft: BeanDraftState['draft'];
   supplier: Supplier | undefined;
   onOpenWebsite: (supplier: Supplier) => void;
+  onEditSupplier: (supplier: Supplier) => void;
 }) {
   const t = (v: string) => v.trim();
   const site = t(draft.link) ? siteOf(t(draft.link)) : '';
@@ -149,6 +153,7 @@ function BeanTiles({
             supplier={supplier}
             site={site}
             onOpenWebsite={onOpenWebsite}
+            onEdit={onEditSupplier}
           />
         ) : null}
       </div>
@@ -219,6 +224,7 @@ export function BeanFields({
     );
   };
   const suppliers = useBeans((s) => s.suppliers);
+  const [editingSupplier, setEditingSupplier] = useState<SupplierId>();
   const savedLink = bean?.link != null && draft.link.trim() === bean.link;
   // Main opens the website saved with the supplier; the screen only names the supplier.
   const openWebsite = (supplier: Supplier) => {
@@ -233,11 +239,25 @@ export function BeanFields({
   };
   if (readOnly) {
     return (
-      <BeanTiles
-        draft={draft}
-        supplier={supplierNamed(suppliers, draft.supplier)}
-        onOpenWebsite={openWebsite}
-      />
+      <>
+        <BeanTiles
+          draft={draft}
+          supplier={supplierNamed(suppliers, draft.supplier)}
+          onOpenWebsite={openWebsite}
+          onEditSupplier={(supplier) => {
+            setEditingSupplier(supplier.id);
+          }}
+        />
+        {/* From the supplier's card: straight to its details; Save or Cancel back to the bean. */}
+        <SuppliersDialog
+          key={editingSupplier ?? 'none'}
+          open={editingSupplier !== undefined}
+          start={editingSupplier}
+          onClose={() => {
+            setEditingSupplier(undefined);
+          }}
+        />
+      </>
     );
   }
   return (
