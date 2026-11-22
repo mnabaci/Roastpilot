@@ -9,6 +9,11 @@ a roast: minor for a new roasting capability, patch for everything else
 
 ### Added
 
+- **History follows your roaster:** with more than one roaster, History lists the active
+  roaster's roasts, as Profiles lists its profiles, and says which under the title. Pick another
+  roaster or All roasters there; under All roasters each roast names the roaster it ran on.
+  Profiles now says whose profiles they are too.
+
 - **Roast report:** every finished roast now says how it went. Drying, Maillard and development
   as one bar with each phase's length and share; a RoR crash or flick after first crack, or a
   stall before it; missing readings and a short or long development; and for an Auto roast, dry

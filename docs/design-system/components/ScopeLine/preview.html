@@ -1,0 +1,57 @@
+<!-- @dsCard group="Navigation" height=120 subtitle="Whose list the sidebar shows, under its title" -->
+<!-- Opened as a file: the token variables from the repo. Served by the design system page, which supplies them. -->
+<link rel="stylesheet" href="../../../../packages/ui/src/styles/tokens.css" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+/>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+  }
+  .wrap {
+    padding: 20px 24px;
+    display: flex;
+    gap: 64px;
+  }
+  h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 44px;
+  }
+  .scope {
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 24px;
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+</style>
+<div class="wrap">
+  <div>
+    <h1>History</h1>
+    <div class="scope">
+      Skywalker
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path d="m6 9 6 6 6-6" />
+      </svg>
+    </div>
+  </div>
+  <div>
+    <h1>Profiles</h1>
+    <div class="scope">Skywalker</div>
+  </div>
+</div>

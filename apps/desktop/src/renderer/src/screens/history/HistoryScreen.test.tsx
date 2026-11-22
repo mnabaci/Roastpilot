@@ -14,6 +14,7 @@ import { READY_ROAST } from '@roastpilot/shared';
 import { BEAN } from '../../test/beans';
 import { STEPS } from '../../test/profiles';
 import { fakeApi, renderApp } from '../../test/render-app';
+import { roastersWith } from '../../test/roasters';
 import { HistoryScreen } from './HistoryScreen';
 
 const summary = (id: number, startedAt: string, over: Partial<RoastSummary> = {}) => ({
@@ -482,5 +483,72 @@ describe('HistoryScreen', () => {
     const roast = within(screen.getByRole('region', { name: 'Roast' }));
     await pick(roast.getByRole('button', { name: 'Bean' }), /^Ethiopia Guji/);
     expect(api.setRoastBean).toHaveBeenCalledWith({ id: NEWER.id, beanId: 4 });
+  });
+});
+
+describe('HistoryScreen › roaster', () => {
+  // Skywalker (1) is active; Simulator (2) is the other roaster.
+  const ON_SKYWALKER = summary(3, '2026-11-08T16:45:00.000Z', { roasterId: 1 });
+  const ALSO_SKYWALKER = summary(4, '2026-11-08T16:15:00.000Z', { roasterId: 1 });
+  const ON_SIMULATOR = summary(5, '2026-11-06T10:00:00.000Z', { roasterId: 2 });
+  const ROASTS = [ON_SKYWALKER, ALSO_SKYWALKER, ON_SIMULATOR];
+  const rows = () =>
+    within(screen.getByRole('list', { name: 'Saved roasts' }))
+      .getAllByRole('button')
+      .map((row) => row.textContent);
+  const roasterPicker = () => screen.getByRole('button', { name: /^Roaster:/ });
+
+  it('lists the active roaster’s roasts, under its name, like Profiles', async () => {
+    setup(ROASTS, { roasters: roastersWith(null) });
+    expect(await screen.findByRole('button', { name: 'Roaster: Skywalker' })).toBeInTheDocument();
+    expect(rows()).toHaveLength(2);
+    expect(rows().join()).not.toMatch(/Sat 6 Nov|Fri 6 Nov/);
+  });
+
+  it('shows another roaster’s roasts, or every roast with its roaster named on the row', async () => {
+    setup(ROASTS, { roasters: roastersWith(null) });
+    await screen.findByRole('button', { name: 'Roaster: Skywalker' });
+    await pick(roasterPicker(), /^Simulator/);
+    expect(rows()).toHaveLength(1);
+    expect(rows()[0]).not.toMatch(/Simulator$/);
+
+    await pick(roasterPicker(), /^All roasters/);
+    expect(rows()).toHaveLength(3);
+    expect(rows().map((row) => /(Skywalker|Simulator)/.exec(row)?.[1])).toEqual([
+      'Skywalker',
+      'Skywalker',
+      'Simulator',
+    ]);
+  });
+
+  it('says when the roaster has no roasts yet, with a way to all of them', async () => {
+    setup([ON_SIMULATOR], { roasters: roastersWith(null) });
+    expect(await screen.findAllByText('No roasts on Skywalker yet')).not.toHaveLength(0);
+    await userEvent.click(screen.getByRole('button', { name: 'All roasters' }));
+    expect(rows()).toHaveLength(1);
+    expect(roasterPicker()).toHaveAccessibleName('Roaster: All roasters');
+  });
+
+  it('opens a roast asked for from elsewhere, even on another roaster', async () => {
+    const api = fakeApi({ listRoasts: vi.fn(() => Promise.resolve(ROASTS)) });
+    renderApp(
+      <HistoryScreen onOpenProfile={() => undefined} openFirst={ON_SIMULATOR.id} />,
+      { roasters: roastersWith(null) },
+      api,
+    );
+    expect(
+      await screen.findByRole('button', { name: 'Roaster: All roasters' }),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('list', { name: 'Saved roasts' })).getByRole('button', {
+        current: true,
+      }),
+    ).toHaveTextContent(/Simulator/);
+  });
+
+  it('has no roaster to choose with one roaster and no roasts without one', async () => {
+    setup([ON_SKYWALKER], { roasters: [roastersWith(null)[0]].filter((r) => r !== undefined) });
+    await screen.findByRole('list', { name: 'Saved roasts' });
+    expect(screen.queryByRole('button', { name: /^Roaster:/ })).toBeNull();
   });
 });

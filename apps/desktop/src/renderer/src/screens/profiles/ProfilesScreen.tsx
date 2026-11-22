@@ -1,7 +1,8 @@
 import { builderBase } from '@roastpilot/core';
-import { Badge, Menu, NavList, SidebarLayout } from '@roastpilot/ui';
+import { Badge, Menu, NavList, ScopeLine, SidebarLayout } from '@roastpilot/ui';
 import { useState } from 'react';
-import { useAuto, useSettings } from '../../stores/use-stores';
+import { activeRoaster } from '../../stores/roasters-store';
+import { useAuto, useRoasters, useSettings } from '../../stores/use-stores';
 import { activeEntry } from '../roast/use-active-profile';
 import { MilestoneBuilder } from './MilestoneBuilder';
 import { ProfileEditor } from './ProfileEditor';
@@ -14,6 +15,9 @@ export function ProfilesScreen({ openFirst }: { openFirst?: string | undefined }
   const profiles = useAuto((s) => s.profiles);
   const drafts = useAuto((s) => s.drafts);
   const chosenId = useSettings((s) => s.settings.autoProfile);
+  const roasters = useRoasters((s) => s.roasters);
+  // With more than one roaster, whose profiles these are (docs/spec/ui.md, Profiles screen).
+  const roasterName = roasters.length > 1 ? activeRoaster(roasters)?.name : undefined;
   const [openId, setOpenId] = useState(openFirst);
   const [building, setBuilding] = useState(false);
   const base = builderBase(profiles.filter((e) => e.builtIn).map((e) => e.profile));
@@ -31,6 +35,15 @@ export function ProfilesScreen({ openFirst }: { openFirst?: string | undefined }
   return (
     <SidebarLayout
       title="Profiles"
+      subtitle={
+        roasterName ? (
+          <ScopeLine
+            label="Roaster"
+            text={roasterName}
+            tooltip="Profiles follow the active roaster · change it in Roasters"
+          />
+        ) : undefined
+      }
       contentLabel="Profile"
       titleAction={
         <Menu

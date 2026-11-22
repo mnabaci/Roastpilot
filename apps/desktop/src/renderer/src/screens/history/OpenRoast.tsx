@@ -26,7 +26,10 @@ export function OpenRoast({
   smoothingS,
   showPreheat,
   onShowPreheat,
+  emptyText,
 }: {
+  /** Why nothing shows, when it isn't the filters ("No roasts on Simulator yet"). */
+  emptyText?: string | undefined;
   selected: SavedRoastState;
   compared: SavedRoastState;
   compareLabel: string;
@@ -53,7 +56,9 @@ export function OpenRoast({
   });
   switch (selected.status) {
     case 'none':
-      return <p className="text-body text-ink-muted">No roasts match these filters</p>;
+      return (
+        <p className="text-body text-ink-muted">{emptyText ?? 'No roasts match these filters'}</p>
+      );
     case 'loading':
       return <p className="text-label text-ink-muted">Loading…</p>;
     case 'failed':

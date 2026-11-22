@@ -24,6 +24,8 @@ export interface RoastListItem {
   favourite?: boolean;
   /** A short status, e.g. `Unfinished`. */
   badge?: string;
+  /** A quiet last line, e.g. the roaster it ran on while several roasters' roasts show. */
+  aside?: string | undefined;
 }
 
 export interface RoastListProps {
@@ -99,6 +101,9 @@ export function RoastList({
                 {item.detail && item.detail.length > 0 ? (
                   <DetailLine parts={item.detail} rating={item.rating} />
                 ) : null}
+                {item.aside ? (
+                  <span className="truncate text-label text-ink-muted">{item.aside}</span>
+                ) : null}
               </button>
             </WholeLine>
           </li>
@@ -128,7 +133,9 @@ function WholeLine({
 /** The second line in words, for its tooltip: `Yirgacheffe · Auto · Light · Steps · Rated 4 of 5`. */
 function wholeLine(item: RoastListItem): string[] | undefined {
   if (!item.detail || item.detail.length === 0) return undefined;
-  return item.rating == null ? [...item.detail] : [...item.detail, spokenRating(item.rating)];
+  const parts =
+    item.rating == null ? [...item.detail] : [...item.detail, spokenRating(item.rating)];
+  return item.aside ? [item.aside, ...parts] : parts;
 }
 
 /**

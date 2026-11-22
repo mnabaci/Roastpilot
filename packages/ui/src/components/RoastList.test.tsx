@@ -109,4 +109,16 @@ describe('RoastList', () => {
       vi.useRealTimers();
     }
   });
+
+  it('says a quiet last line, as the roaster while several roasters show', () => {
+    render(
+      <RoastList
+        label="Saved roasts"
+        items={[{ id: 1, title: 'Sun 8 Nov · 16:45', numbers: '10:20', aside: 'Simulator' }]}
+        selectedId={undefined}
+        onSelect={() => undefined}
+      />,
+    );
+    expect(screen.getByRole('button')).toHaveTextContent('Sun 8 Nov · 16:4510:20Simulator');
+  });
 });

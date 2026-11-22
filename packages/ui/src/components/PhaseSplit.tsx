@@ -25,7 +25,7 @@ const TONE: Record<PhaseSplitPart['tone'], string> = {
  * Each column as wide as its segment, so a phase's numbers sit under it; never so narrow its
  * name won't fit (a short development), the others giving way.
  */
-const column = (share: number) => ({ flexGrow: share, flexBasis: 0, minWidth: '5.5rem' });
+const column = (share: number) => ({ flexGrow: share, flexBasis: 0, minWidth: '7rem' });
 
 /**
  * A roast split into its phases (design system: PhaseSplit): one bar, each phase as wide as its
@@ -58,7 +58,7 @@ export function PhaseSplit({
         {parts.map((part) => (
           <div
             key={part.key}
-            className="flex min-w-0 flex-col gap-0.5 pr-3"
+            className="flex min-w-0 flex-col gap-0.5 pr-3 last:pr-0"
             style={column(part.share)}
           >
             <dt className="flex min-w-0 items-center gap-1.5 text-label text-ink-muted">

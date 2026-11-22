@@ -1,12 +1,13 @@
 import type { RoastId } from '@roastpilot/shared';
-import { Button, Menu, RoastList, SidebarLayout } from '@roastpilot/ui';
+import { Button, Menu, RoastList, ScopeLine, SidebarLayout } from '@roastpilot/ui';
 import { useState } from 'react';
 import { useDeps } from '../../app/app-context';
 import { SelectionBar } from '../../features/SelectionBar';
 import { useRun } from '../../features/use-run';
 import { useSelection } from '../../features/use-selection';
 import { useTemperatureUnit } from '../../features/use-temperature-unit';
-import { useBeans, useRoast, useSettings } from '../../stores/use-stores';
+import { activeRoaster } from '../../stores/roasters-store';
+import { useBeans, useRoast, useRoasters, useSettings } from '../../stores/use-stores';
 import {
   inProgressId,
   roastRows,
@@ -18,6 +19,18 @@ import { OpenRoast } from './OpenRoast';
 import { filterRoasts, NO_FILTER } from './roast-filter';
 import { RoastFilters } from './RoastFilters';
 import { RoastHeader } from './RoastHeader';
+import {
+  ACTIVE,
+  ALL_ROASTERS,
+  hasRoasterScope,
+  normalScope,
+  roasterOf,
+  roasterScopeOptions,
+  roastsInScope,
+  scopeName,
+  scopeShowing,
+  type RoasterScope,
+} from './roaster-scope';
 import { useMakeProfile } from './use-make-profile';
 import { useRoastFiles } from './use-roast-files';
 import { useRoastList } from './use-roast-list';
@@ -39,7 +52,13 @@ export function HistoryScreen({
   const smoothingS = useSettings((s) => s.settings.chartSmoothingS);
   const unit = useTemperatureUnit();
   const beans = useBeans((s) => s.beans);
+  const roasters = useRoasters((s) => s.roasters);
+  const activeId = activeRoaster(roasters)?.id;
   const [picked, setPicked] = useState<RoastId | undefined>(openFirst);
+  // The active roaster's roasts, like Profiles; it follows the active roaster (docs/spec/ui.md).
+  const [scope, setScope] = useState<RoasterScope>(ACTIVE);
+  // A roast asked for (a bean's roast, an import) shows, even when it ran on another roaster.
+  const [reveal, setReveal] = useState<RoastId | undefined>(openFirst);
   const [compareId, setCompareId] = useState<RoastId>();
   const [deleteError, setDeleteError] = useState<string>();
   const [filter, setFilter] = useState(NO_FILTER);
@@ -49,12 +68,26 @@ export function HistoryScreen({
   const files = useRoastFiles((id) => {
     setFilter(NO_FILTER);
     setPicked(id);
+    setReveal(id);
   });
   const profileMaker = useMakeProfile(onOpenProfile);
 
   const list = roasts ?? [];
+  const asked = reveal === undefined ? undefined : list.find((r) => r.id === reveal);
+  if (asked) {
+    // Once the roast is listed: widen to every roaster if its own isn't the one shown.
+    setScope(scopeShowing(normalScope(scope, activeId), asked, activeId));
+    setReveal(undefined);
+  }
   const liveId = inProgressId(list, livePhase);
-  const listed = filterRoasts(list, filter);
+  // One roaster and no imports: every roast is its, and there is nothing to choose.
+  const scoped = hasRoasterScope(roasters, list);
+  const shownScope = scoped ? normalScope(scope, activeId) : ALL_ROASTERS;
+  const onRoaster = roastsInScope(list, shownScope, activeId);
+  const listed = filterRoasts(onRoaster, filter);
+  // "No roasts on Simulator yet", rather than blaming filters that aren't on.
+  const emptyRoaster =
+    onRoaster.length === 0 ? scopeName(shownScope, roasters, activeId) : undefined;
   const selection = useSelection(
     listed.map((r) => r.id),
     list.map((r) => r.id),
@@ -154,10 +187,23 @@ export function HistoryScreen({
           ]}
         />
       }
+      subtitle={
+        scoped ? (
+          <ScopeLine
+            label="Roaster"
+            value={shownScope}
+            options={roasterScopeOptions(list, roasters, activeId)}
+            onChange={(next) => {
+              setScope(next);
+              setDeleteError(undefined);
+            }}
+          />
+        ) : undefined
+      }
       contentLabel="Roast"
       sidebar={
         <>
-          <RoastFilters filter={filter} onChange={setFilter} beans={beans} roasts={list} />
+          <RoastFilters filter={filter} onChange={setFilter} beans={beans} roasts={onRoaster} />
           {selection.selecting ? (
             <SelectionBar
               label="Selected roasts"
@@ -185,18 +231,39 @@ export function HistoryScreen({
               onDone={selection.done}
             />
           ) : null}
-          <RoastList
-            label="Saved roasts"
-            items={roastRows(listed, livePhase, unit, {}, beans)}
-            selectedId={selectedId}
-            onSelect={(id) => {
-              setPicked(id);
-              setDeleteError(undefined);
-            }}
-            {...(selection.selecting
-              ? { checked: selection.checked, onCheck: selection.check }
-              : {})}
-          />
+          {emptyRoaster ? (
+            <div className="flex flex-col items-start gap-2 px-1">
+              <p className="text-label text-ink-muted">No roasts on {emptyRoaster} yet</p>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setScope(ALL_ROASTERS);
+                }}
+              >
+                All roasters
+              </Button>
+            </div>
+          ) : (
+            <RoastList
+              label="Saved roasts"
+              items={roastRows(listed, livePhase, unit, {}, beans).map((row, i) => {
+                const roast = listed[i];
+                // Several roasters' roasts in one list: each says which it ran on.
+                return shownScope === ALL_ROASTERS && scoped && roast
+                  ? { ...row, aside: roasterOf(roast, roasters) }
+                  : row;
+              })}
+              selectedId={selectedId}
+              onSelect={(id) => {
+                setPicked(id);
+                setDeleteError(undefined);
+              }}
+              {...(selection.selecting
+                ? { checked: selection.checked, onCheck: selection.check }
+                : {})}
+            />
+          )}
         </>
       }
     >
@@ -231,6 +298,7 @@ export function HistoryScreen({
           live={live}
           beans={beans}
           smoothingS={smoothingS}
+          emptyText={emptyRoaster ? `No roasts on ${emptyRoaster} yet` : undefined}
           showPreheat={showPreheat}
           onShowPreheat={setShowPreheat}
         />
